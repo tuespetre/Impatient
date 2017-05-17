@@ -16,7 +16,8 @@ namespace Impatient.Query.ExpressionVisitors
         {
             switch (node)
             {
-                case NewExpression newExpression:
+                case NewExpression newExpression
+                when newExpression.Members != null:
                 {
                     var arguments = new Expression[newExpression.Arguments.Count];
 

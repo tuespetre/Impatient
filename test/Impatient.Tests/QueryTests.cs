@@ -1977,6 +1977,42 @@ INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Key] = [m2].[Prop2]",
                 sqlLog);
         }
 
+        [TestMethod]
+        public void Materialize_with_constructor()
+        {
+            var table = new BaseTableExpression("dbo", "MyClass1", "m", typeof(MyClass1));
+
+            var properties = new[]
+            {
+                typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop1)),
+                typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop2))
+            };
+
+            var materializer
+                = Expression.New(
+                    constructor: typeof(MyClass1).GetConstructor(new[] { typeof(string), typeof(int) }),
+                    arguments: from p in properties select new SqlColumnExpression(table, p.Name, p.PropertyType),
+                    members: properties);
+
+            var queryExpression
+                = new EnumerableRelationalQueryExpression(
+                    new SelectExpression(
+                        new ServerProjectionExpression(materializer),
+                        table));
+
+            var query = from m in impatient.CreateQuery<MyClass1>(queryExpression)
+                        where m.Prop2 == 77
+                        select m;
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+WHERE [m].[Prop2] = 77",
+                sqlLog);
+        }
+
         private static void AssertRelationalQueryWithServerProjection(IQueryable query, ImpatientQueryProvider provider)
         {
             var visitor = new ImpatientQueryProviderExpressionVisitor(provider);
@@ -2013,6 +2049,16 @@ INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Key] = [m2].[Prop2]",
 
         private class MyClass1
         {
+            public MyClass1()
+            {
+            }
+
+            public MyClass1(string prop1, int prop2)
+            {
+                Prop1 = prop1;
+                Prop2 = prop2;
+            }
+
             public string Prop1 { get; set; }
 
             public int Prop2 { get; set; }
