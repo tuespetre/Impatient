@@ -1,0 +1,39 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.6
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Impatient", "src\Impatient\Impatient.csproj", "{5BC8F670-3E44-4654-B07F-952B2D9DF02C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Impatient.Tests", "test\Impatient.Tests\Impatient.Tests.csproj", "{5D590EE1-ACD0-40E6-9B17-F09CDD4D0190}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5BC8F670-3E44-4654-B07F-952B2D9DF02C} = {5BC8F670-3E44-4654-B07F-952B2D9DF02C}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{CF819EA4-E9EF-4864-A221-CA2346F8DA09}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{249EB7A3-AB3A-4ADF-86EA-51286A9F14F7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5BC8F670-3E44-4654-B07F-952B2D9DF02C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5BC8F670-3E44-4654-B07F-952B2D9DF02C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5BC8F670-3E44-4654-B07F-952B2D9DF02C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5BC8F670-3E44-4654-B07F-952B2D9DF02C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D590EE1-ACD0-40E6-9B17-F09CDD4D0190}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D590EE1-ACD0-40E6-9B17-F09CDD4D0190}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D590EE1-ACD0-40E6-9B17-F09CDD4D0190}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D590EE1-ACD0-40E6-9B17-F09CDD4D0190}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{5BC8F670-3E44-4654-B07F-952B2D9DF02C} = {CF819EA4-E9EF-4864-A221-CA2346F8DA09}
+		{5D590EE1-ACD0-40E6-9B17-F09CDD4D0190} = {249EB7A3-AB3A-4ADF-86EA-51286A9F14F7}
+	EndGlobalSection
+EndGlobal
