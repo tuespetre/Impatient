@@ -122,6 +122,18 @@ A number of features distinguish this project from a complete ORM solution:
 
 - Eventual support for the full gamut of standard LINQ query operators, 
   **even `TakeWhile` and `Zip`.**
+
+- Currently unsupported operators:
+
+  - Aggregate
+  - ElementAt
+  - ElementAtOrDefault
+  - SequenceEqual
+  - SkipWhile
+  - TakeWhile
+  - Zip
+  - Operators with index parameter overloads
+  - Operators with `IComparer` and `IEqualityComparer` overloads
   
 ### Examples and explanations
 
