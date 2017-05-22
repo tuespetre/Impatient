@@ -101,7 +101,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
         {
             var visitedExpression = Visit(node.Expression);
 
-            if (!unevaluableMembers.Contains(node.Member) 
+            if (!unevaluableMembers.Contains(node.Member)
                 && (visitedExpression is null || visitedExpression is ConstantExpression))
             {
                 var @object = (visitedExpression as ConstantExpression)?.Value;
@@ -222,7 +222,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                     case ExpressionType.NewArrayInit:
                     {
                         var array = Array.CreateInstance(
-                            node.Type.GetElementType(), 
+                            node.Type.GetElementType(),
                             visitedExpressions.Count);
 
                         var values = visitedExpressions
@@ -410,21 +410,21 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
         private static readonly IReadOnlyCollection<MemberInfo> unevaluableMembers = new List<MemberInfo>
         {
-            typeof(DateTime).GetTypeInfo().GetDeclaredProperty(nameof(DateTime.Now)),
-            typeof(DateTime).GetTypeInfo().GetDeclaredProperty(nameof(DateTime.UtcNow)),
-            typeof(DateTimeOffset).GetTypeInfo().GetDeclaredProperty(nameof(DateTimeOffset.Now)),
-            typeof(DateTimeOffset).GetTypeInfo().GetDeclaredProperty(nameof(DateTimeOffset.UtcNow)),
-            typeof(Environment).GetTypeInfo().GetDeclaredProperty(nameof(Environment.TickCount)),
+            typeof(DateTime).GetRuntimeProperty(nameof(DateTime.Now)),
+            typeof(DateTime).GetRuntimeProperty(nameof(DateTime.UtcNow)),
+            typeof(DateTimeOffset).GetRuntimeProperty(nameof(DateTimeOffset.Now)),
+            typeof(DateTimeOffset).GetRuntimeProperty(nameof(DateTimeOffset.UtcNow)),
+            typeof(Environment).GetRuntimeProperty(nameof(Environment.TickCount)),
         };
 
         private static readonly IReadOnlyCollection<MethodInfo> unevaluableMethods = new List<MethodInfo>
         {
-            typeof(Guid).GetTypeInfo().GetDeclaredMethod(nameof(Guid.NewGuid)),
-            typeof(Random).GetTypeInfo().GetDeclaredMethods(nameof(Random.Next)).First(),
-            typeof(Random).GetTypeInfo().GetDeclaredMethods(nameof(Random.Next)).Skip(1).First(),
-            typeof(Random).GetTypeInfo().GetDeclaredMethods(nameof(Random.Next)).Skip(2).First(),
-            typeof(Random).GetTypeInfo().GetDeclaredMethod(nameof(Random.NextBytes)),
-            typeof(Random).GetTypeInfo().GetDeclaredMethod(nameof(Random.NextDouble)),
+            typeof(Guid).GetRuntimeMethod(nameof(Guid.NewGuid), new Type[0]),
+            typeof(Random).GetRuntimeMethod(nameof(Random.Next), new Type[0]),
+            typeof(Random).GetRuntimeMethod(nameof(Random.Next), new[]{ typeof(int) }),
+            typeof(Random).GetRuntimeMethod(nameof(Random.Next), new[]{ typeof(int), typeof(int) }),
+            typeof(Random).GetRuntimeMethod(nameof(Random.NextBytes), new[] { typeof(byte[]) }),
+            typeof(Random).GetRuntimeMethod(nameof(Random.NextDouble), new Type[0]),
         };
     }
 }
