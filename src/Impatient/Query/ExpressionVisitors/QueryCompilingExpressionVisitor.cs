@@ -863,7 +863,26 @@ namespace Impatient.Query.ExpressionVisitors
 
                         case nameof(Queryable.Take):
                         {
-                            // TODO: Inspect whether the outer query needs to be pushed down
+                            if (outerQuery.SelectExpression.IsDistinct
+                                || outerQuery.SelectExpression.Limit != null)
+                            {
+                                if (!(outerQuery.SelectExpression.Projection is ServerProjectionExpression))
+                                {
+                                    goto ReturnEnumerableCall;
+                                }
+
+                                var subquery = new SubqueryTableExpression(outerQuery.SelectExpression, "take");
+
+                                var projection
+                                    = new ProjectionReferenceRewritingExpressionVisitor(subquery)
+                                        .Visit(outerQuery.SelectExpression.Projection.ResultLambda.Body);
+
+                                outerQuery 
+                                    = outerQuery.UpdateSelectExpression(
+                                        new SelectExpression(
+                                            new ServerProjectionExpression(projection), 
+                                            subquery));
+                            }
 
                             var count = Visit(node.Arguments[1]);
 
@@ -880,7 +899,27 @@ namespace Impatient.Query.ExpressionVisitors
 
                         case nameof(Queryable.Skip):
                         {
-                            // TODO: Inspect whether the outer query needs to be pushed down
+                            if (outerQuery.SelectExpression.IsDistinct
+                                || outerQuery.SelectExpression.Offset != null
+                                || outerQuery.SelectExpression.Limit != null)
+                            {
+                                if (!(outerQuery.SelectExpression.Projection is ServerProjectionExpression))
+                                {
+                                    goto ReturnEnumerableCall;
+                                }
+
+                                var subquery = new SubqueryTableExpression(outerQuery.SelectExpression, "skip");
+
+                                var projection
+                                    = new ProjectionReferenceRewritingExpressionVisitor(subquery)
+                                        .Visit(outerQuery.SelectExpression.Projection.ResultLambda.Body);
+
+                                outerQuery
+                                    = outerQuery.UpdateSelectExpression(
+                                        new SelectExpression(
+                                            new ServerProjectionExpression(projection),
+                                            subquery));
+                            }
 
                             var count = Visit(node.Arguments[1]);
 

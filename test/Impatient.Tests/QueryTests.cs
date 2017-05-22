@@ -899,23 +899,6 @@ OFFSET 1 ROWS",
         }
 
         [TestMethod]
-        public void Skip_with_Take()
-        {
-            var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Skip(1).Take(1);
-
-            var results = query.ToList();
-
-            Assert.AreEqual(1, results.Count);
-
-            Assert.AreEqual(
-                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
-FROM [dbo].[MyClass1] AS [m]
-ORDER BY (SELECT 1)
-OFFSET 1 ROWS FETCH NEXT 1 ROWS ONLY",
-                sqlLog);
-        }
-
-        [TestMethod]
         public void Any_without_predicate()
         {
             var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Where(m => m.Prop2 > 88).Any();
@@ -2010,6 +1993,109 @@ INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Key] = [m2].[Prop2]",
                 @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 WHERE [m].[Prop2] = 77",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Take_after_Take()
+        {
+            var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Take(2).Take(1);
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT TOP (1) [take].[Prop1] AS [Prop1], [take].[Prop2] AS [Prop2]
+FROM (
+    SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m]
+) AS [take]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Take_after_Skip()
+        {
+            var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Skip(2).Take(1);
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+ORDER BY (SELECT 1)
+OFFSET 2 ROWS FETCH NEXT 1 ROWS ONLY",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Take_after_Distinct()
+        {
+            var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Distinct().Take(1);
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT TOP (1) [take].[Prop1] AS [Prop1], [take].[Prop2] AS [Prop2]
+FROM (
+    SELECT DISTINCT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m]
+) AS [take]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Skip_after_Take()
+        {
+            var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Take(2).Skip(1);
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [skip].[Prop1] AS [Prop1], [skip].[Prop2] AS [Prop2]
+FROM (
+    SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m]
+) AS [skip]
+ORDER BY (SELECT 1)
+OFFSET 1 ROWS",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Skip_after_Skip()
+        {
+            var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Skip(2).Skip(1);
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [skip].[Prop1] AS [Prop1], [skip].[Prop2] AS [Prop2]
+FROM (
+    SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m]
+    ORDER BY (SELECT 1)
+    OFFSET 2 ROWS
+) AS [skip]
+ORDER BY (SELECT 1)
+OFFSET 1 ROWS",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Skip_after_Distinct()
+        {
+            var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Distinct().Skip(1);
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [skip].[Prop1] AS [Prop1], [skip].[Prop2] AS [Prop2]
+FROM (
+    SELECT DISTINCT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m]
+) AS [skip]
+ORDER BY (SELECT 1)
+OFFSET 1 ROWS",
                 sqlLog);
         }
 
