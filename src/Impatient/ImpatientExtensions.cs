@@ -11,6 +11,11 @@ namespace Impatient
 {
     internal static class ImpatientExtensions
     {
+        public static bool IsBoolean(this Type type)
+        {
+            return type == typeof(bool) || type == typeof(bool?);
+        }
+
         public static Expression ApplyVisitors(this Expression expression, params ExpressionVisitor[] visitors)
         {
             return visitors.Aggregate(expression, (e, v) => v.Visit(e));

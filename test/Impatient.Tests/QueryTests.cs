@@ -2099,6 +2099,38 @@ OFFSET 1 ROWS",
                 sqlLog);
         }
 
+        [TestMethod]
+        public void OrderBy_boolean_expression()
+        {
+            var query = from m in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                        orderby m.Prop2 == 77
+                        select m;
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+ORDER BY (CASE WHEN [m].[Prop2] = 77 THEN 1 ELSE 0 END) ASC",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void GroupBy_boolean_expression()
+        {
+            var query = from m in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                        group m by m.Prop2 == 77 into mg
+                        select new { count = mg.Count() };
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT COUNT(*) AS [count]
+FROM [dbo].[MyClass1] AS [m]
+GROUP BY (CASE WHEN [m].[Prop2] = 77 THEN 1 ELSE 0 END)",
+                sqlLog);
+        }
+
         private static void AssertRelationalQueryWithServerProjection(IQueryable query, ImpatientQueryProvider provider)
         {
             var visitor = new ImpatientQueryProviderExpressionVisitor(provider);

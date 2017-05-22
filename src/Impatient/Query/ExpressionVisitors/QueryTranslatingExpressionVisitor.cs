@@ -274,7 +274,6 @@ namespace Impatient.Query.ExpressionVisitors
                     var projectionVisitor = new ReaderParameterInjectingExpressionVisitor(readerParameter);
 
                     var selectorBody = FlattenProjection(selectExpression.Projection, projectionVisitor);
-                    // projectionVisitor.Visit(selectExpression.Projection.Flatten().Body);
 
                     var projectionExpressions
                         = projectionVisitor.GatheredExpressions
@@ -288,7 +287,22 @@ namespace Impatient.Query.ExpressionVisitors
                             builder.Append(", ");
                         }
 
-                        EmitProjectionExpression(expression);
+                        if (queryDepth == 0
+                            && expression.Type.IsBoolean()
+                            && !(expression is SqlAliasExpression
+                               || expression is SqlColumnExpression
+                               || expression is SqlCastExpression))
+                        {
+                            builder.Append("CAST(");
+
+                            EmitExpressionListExpression(expression);
+
+                            builder.Append(" AS BIT)");
+                        }
+                        else
+                        {
+                            EmitExpressionListExpression(expression);
+                        }
 
                         if (!string.IsNullOrEmpty(alias))
                         {
@@ -328,7 +342,7 @@ namespace Impatient.Query.ExpressionVisitors
                                 builder.Append(", ");
                             }
 
-                            Visit(expression);
+                            EmitExpressionListExpression(expression);
                         }
                     }
 
@@ -730,7 +744,7 @@ namespace Impatient.Query.ExpressionVisitors
                         builder.Append(", ");
                     }
 
-                    Visit(orderBy.Expression);
+                    EmitExpressionListExpression(orderBy.Expression);
 
                     builder.Append(" ");
                     builder.Append(orderBy.Descending ? "DESC" : "ASC");
@@ -792,26 +806,25 @@ namespace Impatient.Query.ExpressionVisitors
             return subquery;
         }
 
-        protected virtual void EmitProjectionExpression(Expression expression)
+        protected virtual void EmitExpressionListExpression(Expression expression)
         {
-            if (queryDepth == 0
-                && (expression.Type == typeof(bool)
-                   || expression.Type == typeof(bool?))
+            if (expression.Type.IsBoolean()
                 && !(expression is ConditionalExpression
-                   || expression is SqlAliasExpression
-                   || expression is SqlColumnExpression
-                   || expression is SqlCastExpression))
+                    || expression is ConstantExpression
+                    || expression is SqlAliasExpression
+                    || expression is SqlColumnExpression
+                    || expression is SqlCastExpression))
             {
-                builder.Append("CAST((CASE WHEN ");
+                builder.Append("(CASE WHEN ");
 
                 Visit(expression);
 
-                builder.Append(" THEN 1 ELSE 0 END) AS BIT)");
-
-                return;
+                builder.Append(" THEN 1 ELSE 0 END)");                    
             }
-
-            Visit(expression);
+            else
+            {
+                Visit(expression);
+            }
         }
 
         protected virtual string FormatIdentifier(string identifier)
