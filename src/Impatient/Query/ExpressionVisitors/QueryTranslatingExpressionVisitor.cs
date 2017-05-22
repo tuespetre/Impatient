@@ -164,6 +164,24 @@ namespace Impatient.Query.ExpressionVisitors
                                 .Zip(rightBindings, Expression.Equal)
                                 .Aggregate(Expression.AndAlso));
                     }
+                    else if (node.Left is ConstantExpression leftConstantExpression
+                        && leftConstantExpression.Value is null)
+                    {
+                        var visitedRight = Visit(node.Right);
+
+                        builder.Append(" IS NULL");
+
+                        return node.Update(node.Left, node.Conversion, visitedRight);
+                    }
+                    else if (node.Right is ConstantExpression rightConstantExpression
+                        && rightConstantExpression.Value is null)
+                    {
+                        var visitedLeft = Visit(node.Left);
+
+                        builder.Append(" IS NULL");
+
+                        return node.Update(visitedLeft, node.Conversion, node.Right);
+                    }
 
                     return VisitSimple(" = ");
                 }
@@ -193,6 +211,75 @@ namespace Impatient.Query.ExpressionVisitors
                             leftBindings
                                 .Zip(rightBindings, Expression.NotEqual)
                                 .Aggregate(Expression.OrElse));
+                    }
+                    else if (node.Left is ConstantExpression leftConstantExpression
+                        && leftConstantExpression.Value is null)
+                    {
+                        var visitedRight = Visit(node.Right);
+
+                        builder.Append(" IS NOT NULL");
+
+                        return node.Update(node.Left, node.Conversion, visitedRight);
+                    }
+                    else if (node.Right is ConstantExpression rightConstantExpression
+                        && rightConstantExpression.Value is null)
+                    {
+                        var visitedLeft = Visit(node.Left);
+
+                        builder.Append(" IS NOT NULL");
+
+                        return node.Update(visitedLeft, node.Conversion, node.Right);
+                    }
+
+                    var leftIsNullable
+                        = node.Left is SqlExpression leftSqlExpression
+                            && leftSqlExpression.IsNullable;
+
+                    var rightIsNullable
+                        = node.Right is SqlExpression rightSqlExpression
+                            && rightSqlExpression.IsNullable;
+
+                    if (leftIsNullable && rightIsNullable)
+                    {
+                        builder.Append("((");
+                        Visit(node.Left);
+                        builder.Append(" IS NULL AND ");
+                        Visit(node.Right);
+                        builder.Append(" IS NOT NULL) OR (");
+                        Visit(node.Left);
+                        builder.Append(" IS NOT NULL AND ");
+                        Visit(node.Right);
+                        builder.Append(" IS NULL) OR (");
+                        var visitedLeft = Visit(node.Left);
+                        builder.Append(" <> ");
+                        var visitedRight = Visit(node.Right);
+                        builder.Append("))");
+
+                        return node.Update(visitedLeft, node.Conversion, visitedRight);
+                    }
+                    else if (leftIsNullable)
+                    {
+                        builder.Append("(");
+                        Visit(node.Left);
+                        builder.Append(" IS NULL OR (");
+                        var visitedLeft = Visit(node.Left);
+                        builder.Append(" <> ");
+                        var visitedRight = Visit(node.Right);
+                        builder.Append("))");
+
+                        return node.Update(visitedLeft, node.Conversion, visitedRight);
+                    }
+                    else if (rightIsNullable)
+                    {
+                        builder.Append("(");
+                        Visit(node.Right);
+                        builder.Append(" IS NULL OR (");
+                        var visitedLeft = Visit(node.Left);
+                        builder.Append(" <> ");
+                        var visitedRight = Visit(node.Right);
+                        builder.Append("))");
+
+                        return node.Update(visitedLeft, node.Conversion, visitedRight);
                     }
 
                     return VisitSimple(" <> ");

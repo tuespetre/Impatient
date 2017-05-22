@@ -219,7 +219,7 @@ namespace Impatient.Query.ExpressionVisitors
                                 {
                                     if (e is SqlColumnExpression sce && tables.Contains(sce.Table))
                                     {
-                                        return new SqlColumnExpression(innerTable, sce.ColumnName, sce.Type);
+                                        return new SqlColumnExpression(innerTable, sce.ColumnName, sce.Type, sce.IsNullable);
                                     }
 
                                     return e;

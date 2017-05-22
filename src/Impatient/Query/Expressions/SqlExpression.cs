@@ -7,6 +7,8 @@ namespace Impatient.Query.Expressions
     /// </summary>
     public abstract class SqlExpression : Expression
     {
+        public virtual bool IsNullable { get; }
+
         public override ExpressionType NodeType => ExpressionType.Extension;
 
         protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
