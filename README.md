@@ -102,8 +102,8 @@ A number of features distinguish this project from a complete ORM solution:
 
 - Relational null semantics have not yet been addressed -- this includes
   the simplest of things like `IS NULL` and `IS NOT NULL`, and translating
-  `foo.NullableColumn != 1` into `[foo].[NullableColumn] IS NOT NULL AND
-  [foo].[NullableColumn] = 1`
+  `foo.NullableColumn != 1` into `[foo].[NullableColumn] IS NULL OR
+  [foo].[NullableColumn] <> 1`
 
 - `Enum` types are not yet dealt with.
 
