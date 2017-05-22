@@ -43,125 +43,199 @@ namespace Impatient.Query.ExpressionVisitors
 
         protected override Expression VisitBinary(BinaryExpression node)
         {
+            Expression VisitBinaryOperand(Expression operand)
+            {
+                switch (operand)
+                {
+                    case BinaryExpression binaryOperand:
+                    {
+                        builder.Append("(");
+
+                        operand = VisitBinary(binaryOperand);
+
+                        builder.Append(")");
+
+                        break;
+                    }
+
+                    default:
+                    {
+                        operand = Visit(operand);
+
+                        break;
+                    }
+                }
+
+                return operand;
+            }
+
+            Expression VisitSimple(string @operator)
+            {
+                var left = VisitBinaryOperand(node.Left);
+
+                builder.Append(@operator);
+
+                var right = VisitBinaryOperand(node.Right);
+
+                return node.Update(left, node.Conversion, right);
+            }
+
+            IEnumerable<Expression> IterateBindings(IEnumerable<MemberBinding> bindings)
+            {
+                foreach (var binding in bindings)
+                {
+                    switch (binding)
+                    {
+                        case MemberAssignment memberAssignment:
+                        {
+                            yield return memberAssignment.Expression;
+
+                            break;
+                        }
+
+                        case MemberMemberBinding memberMemberBinding:
+                        {
+                            foreach (var yielded in IterateBindings(memberMemberBinding.Bindings))
+                            {
+                                yield return yielded;
+                            }
+
+                            break;
+                        }
+
+                        default:
+                        {
+                            throw new NotSupportedException();
+                        }
+                    }
+                }
+            }
+
             switch (node.NodeType)
             {
                 case ExpressionType.Coalesce:
                 {
                     builder.Append("COALESCE(");
-                    Visit(node.Left);
+
+                    var left = Visit(node.Left);
+
                     builder.Append(", ");
-                    Visit(node.Right);
-                    builder.Append(")");
 
-                    return node;
-                }
-            }
-
-            var left = node.Left;
-            var right = node.Right;
-
-            if (left is NewExpression leftNewExpression
-                && right is NewExpression rightNewExpression)
-            {
-                return Visit(
-                    leftNewExpression.Arguments
-                        .Zip(rightNewExpression.Arguments, Expression.Equal)
-                        .Aggregate(Expression.AndAlso));
-            }
-
-            switch (left)
-            {
-                case BinaryExpression leftBinaryExpression:
-                {
-                    builder.Append("(");
-
-                    left = VisitBinary(leftBinaryExpression);
+                    var right = Visit(node.Right);
 
                     builder.Append(")");
 
-                    break;
+                    return node.Update(left, node.Conversion, right);
                 }
 
-                default:
-                {
-                    left = Visit(node.Left);
-
-                    break;
-                }
-            }
-
-            switch (node.NodeType)
-            {
                 case ExpressionType.AndAlso:
                 {
-                    builder.Append(" AND ");
-                    break;
+                    return VisitSimple(" AND ");
                 }
 
                 case ExpressionType.OrElse:
                 {
-                    builder.Append(" OR ");
-                    break;
+                    return VisitSimple(" OR ");
                 }
 
                 case ExpressionType.Equal:
                 {
-                    builder.Append(" = ");
-                    break;
+                    if (node.Left is NewExpression leftNewExpression 
+                        && node.Right is NewExpression rightNewExpression)
+                    {
+                        return Visit(
+                            leftNewExpression.Arguments
+                                .Zip(rightNewExpression.Arguments, Expression.Equal)
+                                .Aggregate(Expression.AndAlso));
+                    }
+                    else if (node.Left is MemberInitExpression leftMemberInitExpression
+                        && node.Right is MemberInitExpression rightMemberInitExpression)
+                    {
+                        var leftBindings
+                            = leftMemberInitExpression.NewExpression.Arguments.Concat(
+                                IterateBindings(leftMemberInitExpression.Bindings));
+
+                        var rightBindings
+                            = rightMemberInitExpression.NewExpression.Arguments.Concat(
+                                IterateBindings(rightMemberInitExpression.Bindings));
+
+                        return Visit(
+                            leftBindings
+                                .Zip(rightBindings, Expression.Equal)
+                                .Aggregate(Expression.AndAlso));
+                    }
+
+                    return VisitSimple(" = ");
                 }
 
                 case ExpressionType.NotEqual:
                 {
-                    builder.Append(" <> ");
-                    break;
+                    if (node.Left is NewExpression leftNewExpression
+                        && node.Right is NewExpression rightNewExpression)
+                    {
+                        return Visit(
+                            leftNewExpression.Arguments
+                                .Zip(rightNewExpression.Arguments, Expression.NotEqual)
+                                .Aggregate(Expression.OrElse));
+                    }
+                    else if (node.Left is MemberInitExpression leftMemberInitExpression
+                        && node.Right is MemberInitExpression rightMemberInitExpression)
+                    {
+                        var leftBindings
+                            = leftMemberInitExpression.NewExpression.Arguments.Concat(
+                                IterateBindings(leftMemberInitExpression.Bindings));
+
+                        var rightBindings
+                            = rightMemberInitExpression.NewExpression.Arguments.Concat(
+                                IterateBindings(rightMemberInitExpression.Bindings));
+
+                        return Visit(
+                            leftBindings
+                                .Zip(rightBindings, Expression.NotEqual)
+                                .Aggregate(Expression.OrElse));
+                    }
+
+                    return VisitSimple(" <> ");
                 }
 
                 case ExpressionType.GreaterThan:
                 {
-                    builder.Append(" > ");
-                    break;
+                    return VisitSimple(" > ");
                 }
 
                 case ExpressionType.GreaterThanOrEqual:
                 {
-                    builder.Append(" >= ");
-                    break;
+                    return VisitSimple(" >= ");
                 }
 
                 case ExpressionType.LessThan:
                 {
-                    builder.Append(" < ");
-                    break;
+                    return VisitSimple(" < ");
                 }
 
                 case ExpressionType.LessThanOrEqual:
                 {
-                    builder.Append(" <= ");
-                    break;
+                    return VisitSimple(" <= ");
                 }
 
                 case ExpressionType.Add:
                 {
-                    builder.Append(" + ");
-                    break;
+                    return VisitSimple(" + ");
                 }
 
                 case ExpressionType.Subtract:
                 {
-                    builder.Append(" - ");
-                    break;
+                    return VisitSimple(" - ");
                 }
 
                 case ExpressionType.Multiply:
                 {
-                    builder.Append(" * ");
-                    break;
+                    return VisitSimple(" * ");
                 }
 
                 case ExpressionType.Divide:
                 {
-                    builder.Append(" / ");
-                    break;
+                    return VisitSimple(" / ");
                 }
 
                 default:
@@ -169,29 +243,6 @@ namespace Impatient.Query.ExpressionVisitors
                     throw new NotSupportedException();
                 }
             }
-
-            switch (node.Right)
-            {
-                case BinaryExpression rightBinaryExpression:
-                {
-                    builder.Append("(");
-
-                    right = VisitBinary(rightBinaryExpression);
-
-                    builder.Append(")");
-
-                    break;
-                }
-
-                default:
-                {
-                    right = Visit(node.Right);
-
-                    break;
-                }
-            }
-
-            return node.Update(left, node.Conversion, right);
         }
 
         protected override Expression VisitConditional(ConditionalExpression node)

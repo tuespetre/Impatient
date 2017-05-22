@@ -213,13 +213,34 @@ INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
         }
 
         [TestMethod]
-        public void Join_with_complex_property_keys()
+        public void Join_with_complex_property_keys_NewExpression()
         {
             var query =
                 from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
                 join b in impatient.CreateQuery<MyClass2>(MyClass2QueryExpression)
                     on new { a.Prop1, a.Prop2, }
                     equals new { b.Prop1, b.Prop2, }
+                select new { a, b };
+
+            var results = query.ToList();
+
+            Assert.AreEqual(2, results.Count);
+
+            Assert.AreEqual(
+                @"SELECT [a].[Prop1] AS [a.Prop1], [a].[Prop2] AS [a.Prop2], [b].[Prop1] AS [b.Prop1], [b].[Prop2] AS [b.Prop2]
+FROM [dbo].[MyClass1] AS [a]
+INNER JOIN [dbo].[MyClass2] AS [b] ON ([a].[Prop1] = [b].[Prop1]) AND ([a].[Prop2] = [b].[Prop2])",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Join_with_complex_property_keys_MemberInitExpression()
+        {
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                join b in impatient.CreateQuery<MyClass2>(MyClass2QueryExpression)
+                    on new MyKeyObject { Prop1 = a.Prop1, Prop2 = a.Prop2, }
+                    equals new MyKeyObject { Prop1 = b.Prop1, Prop2 = b.Prop2, }
                 select new { a, b };
 
             var results = query.ToList();
@@ -2131,6 +2152,78 @@ GROUP BY (CASE WHEN [m].[Prop2] = 77 THEN 1 ELSE 0 END)",
                 sqlLog);
         }
 
+        [TestMethod]
+        public void Binary_Equal_complex_type_NewExpression()
+        {
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                join b in impatient.CreateQuery<MyClass2>(MyClass2QueryExpression)
+                    on a.Prop1 equals b.Prop1
+                select new { a, b } == new { a, b };
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT CAST((CASE WHEN (([a].[Prop1] = [a].[Prop1]) AND ([a].[Prop2] = [a].[Prop2])) AND (([b].[Prop1] = [b].[Prop1]) AND ([b].[Prop2] = [b].[Prop2])) THEN 1 ELSE 0 END) AS BIT)
+FROM [dbo].[MyClass1] AS [a]
+INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Binary_NotEqual_complex_type_NewExpression()
+        {
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                join b in impatient.CreateQuery<MyClass2>(MyClass2QueryExpression)
+                    on a.Prop1 equals b.Prop1
+                select new { a, b } != new { a, b };
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT CAST((CASE WHEN (([a].[Prop1] <> [a].[Prop1]) OR ([a].[Prop2] <> [a].[Prop2])) OR (([b].[Prop1] <> [b].[Prop1]) OR ([b].[Prop2] <> [b].[Prop2])) THEN 1 ELSE 0 END) AS BIT)
+FROM [dbo].[MyClass1] AS [a]
+INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Binary_Equal_complex_type_MemberInitExpression()
+        {
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                join b in impatient.CreateQuery<MyClass2>(MyClass2QueryExpression)
+                    on a.Prop1 equals b.Prop1
+                select new MyKeyObject { Prop1 = a.Prop1, Prop2 = b.Prop2 } == new MyKeyObject { Prop1 = a.Prop1, Prop2 = b.Prop2 };
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT CAST((CASE WHEN ([a].[Prop1] = [a].[Prop1]) AND ([b].[Prop2] = [b].[Prop2]) THEN 1 ELSE 0 END) AS BIT)
+FROM [dbo].[MyClass1] AS [a]
+INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Binary_NotEqual_complex_type_MemberInitExpression()
+        {
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                join b in impatient.CreateQuery<MyClass2>(MyClass2QueryExpression)
+                    on a.Prop1 equals b.Prop1
+                select new MyKeyObject { Prop1 = a.Prop1, Prop2 = b.Prop2 } != new MyKeyObject { Prop1 = a.Prop1, Prop2 = b.Prop2 };
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT CAST((CASE WHEN ([a].[Prop1] <> [a].[Prop1]) OR ([b].[Prop2] <> [b].[Prop2]) THEN 1 ELSE 0 END) AS BIT)
+FROM [dbo].[MyClass1] AS [a]
+INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
+                sqlLog);
+        }
+
         private static void AssertRelationalQueryWithServerProjection(IQueryable query, ImpatientQueryProvider provider)
         {
             var visitor = new ImpatientQueryProviderExpressionVisitor(provider);
@@ -2163,6 +2256,13 @@ GROUP BY (CASE WHEN [m].[Prop2] = 77 THEN 1 ELSE 0 END)",
             {
                 return new SqlConnection(@"Server=.\sqlexpress; Database=Impatient; Trusted_Connection=True");
             }
+        }
+
+        private class MyKeyObject
+        {
+            public string Prop1 { get; set; }
+
+            public int Prop2 { get; set; }
         }
 
         private class MyClass1
