@@ -21,6 +21,7 @@ namespace Impatient.Query.ExpressionVisitors
                 new OperatorSplittingExpressionVisitor(),
                 new SelectorMergingExpressionVisitor(),
                 new PartialEvaluatingExpressionVisitor(),
+                new BooleanOptimizingExpressionVisitor(),
 
                 // Specific to our purposes
                 new QueryActivatingExpressionVisitor(provider),
