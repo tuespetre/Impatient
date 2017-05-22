@@ -120,12 +120,71 @@ WHERE [a].[Prop2] = @p0",
                 sqlLog);
         }
 
+        private int instanceField = 77;
+
+        [TestMethod]
+        public void Select_parameterized_from_constant_this()
+        {
+            var query1 =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                where a.Prop2 == instanceField
+                select a;
+
+            var results1 = query1.ToList();
+
+            Assert.AreEqual(1, results1.Count);
+
+            instanceField = 9;
+
+            var query2 =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                where a.Prop2 == instanceField
+                select a;
+
+            var results2 = query1.ToList();
+
+            Assert.AreEqual(1, results2.Count);
+
+            Assert.AreEqual(
+                @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [a]
+WHERE [a].[Prop2] = @p0
+
+SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [a]
+WHERE [a].[Prop2] = @p0",
+                sqlLog);
+        }
+
         [TestMethod]
         public void SelectMany_Where()
         {
             var query =
                 from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
                 from b in impatient.CreateQuery<MyClass2>(MyClass2QueryExpression)
+                where a.Prop1 == b.Prop1
+                select a;
+
+            var results = query.ToList();
+
+            Assert.AreEqual(2, results.Count);
+
+            Assert.AreEqual(
+                @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [a]
+CROSS JOIN [dbo].[MyClass2] AS [m]
+WHERE [a].[Prop1] = [m].[Prop1]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void SelectMany_with_second_source_from_closure()
+        {
+            var set2 = impatient.CreateQuery<MyClass2>(MyClass2QueryExpression);
+
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                from b in set2
                 where a.Prop1 == b.Prop1
                 select a;
 

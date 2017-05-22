@@ -203,7 +203,7 @@ namespace Impatient.Tests
                         where s1 == localVariable
                         select s1;
 
-            var visitor = new ClosureParameterizingExpressionVisitor();
+            var visitor = new ConstantParameterizingExpressionVisitor();
 
             visitor.Visit(query.Expression);
 

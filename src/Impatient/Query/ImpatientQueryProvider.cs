@@ -84,13 +84,15 @@ namespace Impatient
                 var hashingVisitor = new HashingExpressionVisitor();
                 expression = hashingVisitor.Visit(expression);
 
-                var closureParameterizingVisitor = new ClosureParameterizingExpressionVisitor();
-                expression = closureParameterizingVisitor.Visit(expression);
+                var constantParameterizingVisitor = new ConstantParameterizingExpressionVisitor();
+                expression = constantParameterizingVisitor.Visit(expression);
 
-                var closureMapping = closureParameterizingVisitor.Mapping;
+                var parameterMapping = constantParameterizingVisitor.Mapping;
 
                 if (!QueryCache.TryGetValue(hashingVisitor.HashCode, out var compiled))
                 {
+                    expression = new QueryableExpandingExpressionVisitor(parameterMapping).Visit(expression);
+
                     expression = new ImpatientQueryProviderExpressionVisitor(this).Visit(expression);
 
                     if (expression is EnumerableRelationalQueryExpression possiblyOrdered)
@@ -99,26 +101,25 @@ namespace Impatient
                     }
 
                     var queryProviderParameter = Expression.Parameter(typeof(ImpatientQueryProvider), "queryProvider");
+                    
+                    expression = new ExecutionCompilingExpressionVisitor(queryProviderParameter).Visit(expression);
 
-                    var executionCompilingVisitor = new ExecutionCompilingExpressionVisitor(queryProviderParameter);
-                    expression = executionCompilingVisitor.Visit(expression);
-
-                    var parameters = new ParameterExpression[closureMapping.Count + 1];
+                    var parameters = new ParameterExpression[parameterMapping.Count + 1];
 
                     parameters[0] = queryProviderParameter;
 
-                    closureMapping.Values.CopyTo(parameters, 1);
+                    parameterMapping.Values.CopyTo(parameters, 1);
 
                     compiled = Expression.Lambda(expression, parameters).Compile();
 
                     QueryCache.Add(hashingVisitor.HashCode, compiled);
                 }
 
-                var arguments = new object[closureMapping.Count + 1];
+                var arguments = new object[parameterMapping.Count + 1];
 
                 arguments[0] = this;
 
-                closureMapping.Keys.CopyTo(arguments, 1);
+                parameterMapping.Keys.CopyTo(arguments, 1);
 
                 return compiled.DynamicInvoke(arguments);
             }
