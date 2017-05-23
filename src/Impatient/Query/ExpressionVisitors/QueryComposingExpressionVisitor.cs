@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace Impatient.Query.ExpressionVisitors
 {
-    public class QueryBuildingExpressionVisitor : ExpressionVisitor
+    public class QueryComposingExpressionVisitor : ExpressionVisitor
     {
         // TODO: Make this configurable
         private static bool complexNestedQueriesSupported = true;
@@ -17,7 +17,7 @@ namespace Impatient.Query.ExpressionVisitors
         private IEnumerable<ExpressionVisitor> RewritingExpressionVisitors 
             => queryProvider.ExpressionVisitorProvider.RewritingExpressionVisitors;
 
-        public QueryBuildingExpressionVisitor(ImpatientQueryProvider queryProvider)
+        public QueryComposingExpressionVisitor(ImpatientQueryProvider queryProvider)
         {
             this.queryProvider = queryProvider ?? throw new ArgumentNullException(nameof(queryProvider));
         }
@@ -61,8 +61,8 @@ namespace Impatient.Query.ExpressionVisitors
                             var selectorBody
                                 = selector
                                     .ExpandParameters(outerProjection.Flatten().Body)
-                                    .ApplyVisitors(this)
-                                    .ApplyVisitors(queryProvider.ExpressionVisitorProvider.RewritingExpressionVisitors);
+                                    .VisitWith(this)
+                                    .VisitWith(RewritingExpressionVisitors);
 
                             if (selectorBody.IsTranslatable())
                             {
@@ -106,8 +106,8 @@ namespace Impatient.Query.ExpressionVisitors
 
                             projection 
                                 = projection
-                                    .ApplyVisitors(RewritingExpressionVisitors)
-                                    .ApplyVisitors(this);
+                                    .VisitWith(this)
+                                    .VisitWith(RewritingExpressionVisitors);
 
                             if (complexNestedQueriesSupported)
                             {
@@ -223,8 +223,8 @@ namespace Impatient.Query.ExpressionVisitors
                             var selector 
                                 = resultSelector
                                     .ExpandParameters(outerProjection, innerProjection)
-                                    .ApplyVisitors(RewritingExpressionVisitors)
-                                    .ApplyVisitors(this);
+                                    .VisitWith(this)
+                                    .VisitWith(RewritingExpressionVisitors);
 
                             var outerTable = outerQuery.SelectExpression.Table;
 
@@ -303,8 +303,8 @@ namespace Impatient.Query.ExpressionVisitors
                             var outerKeySelector
                                 = outerKeyLambda
                                     .ExpandParameters(outerProjection)
-                                    .ApplyVisitors(RewritingExpressionVisitors)
-                                    .ApplyVisitors(this);
+                                    .VisitWith(this)
+                                    .VisitWith(RewritingExpressionVisitors);
 
                             if (!outerKeySelector.IsTranslatable())
                             {
@@ -331,8 +331,8 @@ namespace Impatient.Query.ExpressionVisitors
                             var innerKeySelector
                                 = innerKeyLambda
                                     .ExpandParameters(innerProjection)
-                                    .ApplyVisitors(RewritingExpressionVisitors)
-                                    .ApplyVisitors(this);
+                                    .VisitWith(this)
+                                    .VisitWith(RewritingExpressionVisitors);
 
                             if (!innerKeySelector.IsTranslatable())
                             {
@@ -347,8 +347,8 @@ namespace Impatient.Query.ExpressionVisitors
                             var resultSelector
                                 = resultLambda
                                     .ExpandParameters(outerProjection, innerProjection)
-                                    .ApplyVisitors(RewritingExpressionVisitors)
-                                    .ApplyVisitors(this);
+                                    .VisitWith(this)
+                                    .VisitWith(RewritingExpressionVisitors);
 
                             return outerQuery
                                 .UpdateSelectExpression(outerSelectExpression
@@ -362,7 +362,7 @@ namespace Impatient.Query.ExpressionVisitors
                                         resultSelector.IsTranslatable()
                                             ? new ServerProjectionExpression(Expression.Lambda(resultSelector))
                                             : outerSelectExpression.Projection.Merge(
-                                                Expression.Lambda(resultLambda.ApplyVisitors(this)))));
+                                                Expression.Lambda(resultLambda.VisitWith(this)))));
                         }
 
                         case nameof(Queryable.GroupJoin):
@@ -392,8 +392,8 @@ namespace Impatient.Query.ExpressionVisitors
                             var predicateBody
                                 = predicateLambda
                                     .ExpandParameters(outerProjection)
-                                    .ApplyVisitors(RewritingExpressionVisitors)
-                                    .ApplyVisitors(this);
+                                    .VisitWith(this)
+                                    .VisitWith(RewritingExpressionVisitors);
 
                             if (predicateBody.IsTranslatable())
                             {
@@ -479,8 +479,8 @@ namespace Impatient.Query.ExpressionVisitors
                                 = node.Arguments[1]
                                     .UnwrapLambda()
                                     .ExpandParameters(outerProjection)
-                                    .ApplyVisitors(RewritingExpressionVisitors)
-                                    .ApplyVisitors(this);
+                                    .VisitWith(this)
+                                    .VisitWith(RewritingExpressionVisitors);
 
                             if (!keySelector.IsTranslatable())
                             {
@@ -499,8 +499,8 @@ namespace Impatient.Query.ExpressionVisitors
                                     = node.Arguments[2]
                                         .UnwrapLambda()
                                         .ExpandParameters(elementSelector)
-                                        .ApplyVisitors(RewritingExpressionVisitors)
-                                        .ApplyVisitors(this);
+                                        .VisitWith(this)
+                                        .VisitWith(RewritingExpressionVisitors);
                             }
 
                             if (!elementSelector.IsTranslatable())
@@ -527,8 +527,8 @@ namespace Impatient.Query.ExpressionVisitors
                                 resultSelector
                                     = resultSelectorLambda
                                         .ExpandParameters(keySelector, resultSelector)
-                                        .ApplyVisitors(RewritingExpressionVisitors)
-                                        .ApplyVisitors(/*new RelationalGroupingExpansionRewritingExpressionVisitor(),*/ this);
+                                        .VisitWith(this)
+                                        .VisitWith(RewritingExpressionVisitors);
                             }
 
                             if (resultSelector.IsTranslatable())
@@ -621,8 +621,8 @@ namespace Impatient.Query.ExpressionVisitors
                                     = node.Arguments[1]
                                         .UnwrapLambda()
                                         .ExpandParameters(outerProjection)
-                                        .ApplyVisitors(RewritingExpressionVisitors)
-                                        .ApplyVisitors(this);
+                                        .VisitWith(this)
+                                        .VisitWith(RewritingExpressionVisitors);
 
                                 if (!predicate.IsTranslatable())
                                 {
@@ -657,8 +657,8 @@ namespace Impatient.Query.ExpressionVisitors
                                     = node.Arguments[1]
                                         .UnwrapLambda()
                                         .ExpandParameters(outerProjection)
-                                        .ApplyVisitors(RewritingExpressionVisitors)
-                                        .ApplyVisitors(this);
+                                        .VisitWith(this)
+                                        .VisitWith(RewritingExpressionVisitors);
 
                                 if (!predicate.IsTranslatable())
                                 {
@@ -720,8 +720,8 @@ namespace Impatient.Query.ExpressionVisitors
                                     = node.Arguments[1]
                                         .UnwrapLambda()
                                         .ExpandParameters(outerProjection)
-                                        .ApplyVisitors(RewritingExpressionVisitors)
-                                        .ApplyVisitors(this);
+                                        .VisitWith(this)
+                                        .VisitWith(RewritingExpressionVisitors);
 
                                 if (!predicate.IsTranslatable())
                                 {
@@ -754,8 +754,8 @@ namespace Impatient.Query.ExpressionVisitors
                                     = node.Arguments[1]
                                         .UnwrapLambda()
                                         .ExpandParameters(outerProjection)
-                                        .ApplyVisitors(RewritingExpressionVisitors)
-                                        .ApplyVisitors(this);
+                                        .VisitWith(this)
+                                        .VisitWith(RewritingExpressionVisitors);
 
                                 if (!predicate.IsTranslatable())
                                 {
@@ -813,8 +813,8 @@ namespace Impatient.Query.ExpressionVisitors
                                 = node.Arguments[1]
                                     .UnwrapLambda()
                                     .ExpandParameters(outerProjection)
-                                    .ApplyVisitors(RewritingExpressionVisitors)
-                                    .ApplyVisitors(this);
+                                    .VisitWith(this)
+                                    .VisitWith(RewritingExpressionVisitors);
 
                             if (!ordering.IsTranslatable() || !ordering.Type.IsScalarType())
                             {
@@ -1054,8 +1054,8 @@ namespace Impatient.Query.ExpressionVisitors
                                 = node.Arguments[1]
                                     .UnwrapLambda()
                                     .ExpandParameters(outerProjection)
-                                    .ApplyVisitors(RewritingExpressionVisitors)
-                                    .ApplyVisitors(this);
+                                    .VisitWith(this)
+                                    .VisitWith(RewritingExpressionVisitors);
 
                             if (!predicate.IsTranslatable())
                             {
@@ -1102,8 +1102,8 @@ namespace Impatient.Query.ExpressionVisitors
                                     = node.Arguments[1]
                                         .UnwrapLambda()
                                         .ExpandParameters(outerProjection)
-                                        .ApplyVisitors(RewritingExpressionVisitors)
-                                        .ApplyVisitors(this);
+                                        .VisitWith(this)
+                                        .VisitWith(RewritingExpressionVisitors);
 
                                 if (!predicateBody.IsTranslatable())
                                 {
@@ -1198,8 +1198,8 @@ namespace Impatient.Query.ExpressionVisitors
                                 var selectorBody
                                     = selector
                                         .ExpandParameters(outerProjection)
-                                        .ApplyVisitors(RewritingExpressionVisitors)
-                                        .ApplyVisitors(this);
+                                        .VisitWith(this)
+                                        .VisitWith(RewritingExpressionVisitors);
 
                                 if (selectorBody.IsTranslatable())
                                 {
@@ -1259,8 +1259,8 @@ namespace Impatient.Query.ExpressionVisitors
                                     = node.Arguments[1]
                                         .UnwrapLambda()
                                         .ExpandParameters(outerProjection)
-                                        .ApplyVisitors(RewritingExpressionVisitors)
-                                        .ApplyVisitors(this);
+                                        .VisitWith(this)
+                                        .VisitWith(RewritingExpressionVisitors);
 
                                 if (!predicate.IsTranslatable())
                                 {

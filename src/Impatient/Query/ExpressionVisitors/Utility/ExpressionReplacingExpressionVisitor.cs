@@ -1,24 +1,27 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.ExpressionVisitors
+namespace Impatient.Query.ExpressionVisitors.Utility
 {
     public class ExpressionReplacingExpressionVisitor : ExpressionVisitor
     {
-        private readonly Dictionary<Expression, Expression> mapping;
+        private readonly IDictionary<Expression, Expression> mapping;
 
         public ExpressionReplacingExpressionVisitor(Expression target, Expression replacement)
         {
             mapping = new Dictionary<Expression, Expression>
             {
-                { target, replacement }
+                {
+                    target ?? throw new ArgumentNullException(nameof(target)),
+                    replacement ?? throw new ArgumentNullException(nameof(replacement))
+                }
             };
         }
 
-        public ExpressionReplacingExpressionVisitor(IEnumerable<(Expression, Expression)> mapping)
+        public ExpressionReplacingExpressionVisitor(IDictionary<Expression, Expression> mapping)
         {
-            this.mapping = mapping.ToDictionary(m => m.Item1, m => m.Item2);
+            this.mapping = mapping ?? throw new ArgumentNullException(nameof(mapping));
         }
 
         public override Expression Visit(Expression node) 

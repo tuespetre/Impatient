@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Impatient.Query.ExpressionVisitors.Utility;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,28 +11,6 @@ namespace Impatient.Query.ExpressionVisitors
 {
     public class GroupingEliminatingExpressionVisitor : ExpressionVisitor
     {
-        private class EscapedReferenceCountingExpressionVisitor : ProjectionExpressionVisitor
-        {
-            private readonly Expression targetExpression;
-
-            public int EscapedReferenceCount { get; private set; }
-
-            public EscapedReferenceCountingExpressionVisitor(Expression targetExpression)
-            {
-                this.targetExpression = targetExpression;
-            }
-
-            public override Expression Visit(Expression node)
-            {
-                if (InLeaf && node == targetExpression)
-                {
-                    EscapedReferenceCount++;
-                }
-
-                return base.Visit(node);
-            }
-        }
-
         /// <summary>
         ///     Finds all GroupBy nodes without result selector lambdas
         ///     and injects result selector lambdas that project a 
@@ -215,7 +194,7 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 this.groupingReference = groupingReference;
 
-                replacingVisitor = new ExpressionReplacingExpressionVisitor(mapping.Select(t => (t.Item1, t.Item2)));
+                //replacingVisitor = new ExpressionReplacingExpressionVisitor(mapping.Select(t => (t.Item1, t.Item2)));
             }
 
             public override Expression Visit(Expression node)

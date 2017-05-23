@@ -1,6 +1,7 @@
 ﻿using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors;
 using Impatient.Query.ExpressionVisitors.Optimizing;
+using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,12 +17,12 @@ namespace Impatient
             return type == typeof(bool) || type == typeof(bool?);
         }
 
-        public static Expression ApplyVisitors(this Expression expression, params ExpressionVisitor[] visitors)
+        public static Expression VisitWith(this Expression expression, params ExpressionVisitor[] visitors)
         {
             return visitors.Aggregate(expression, (e, v) => v.Visit(e));
         }
 
-        public static Expression ApplyVisitors(this Expression expression, IEnumerable<ExpressionVisitor> visitors)
+        public static Expression VisitWith(this Expression expression, IEnumerable<ExpressionVisitor> visitors)
         {
             return visitors.Aggregate(expression, (e, v) => v.Visit(e));
         }

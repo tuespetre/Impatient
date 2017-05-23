@@ -1,6 +1,5 @@
-﻿using Impatient.Query.ExpressionVisitors;
+﻿using Impatient.Query.ExpressionVisitors.Utility;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -84,7 +83,10 @@ namespace Impatient.Query.Expressions
                 var oldTables = Table.Flatten().Cast<Expression>();
                 var newTables = table.Flatten().Cast<Expression>();
 
-                var replacingVisitor = new ExpressionReplacingExpressionVisitor(oldTables.Zip(newTables, ValueTuple.Create));
+                var replacingVisitor 
+                    = new ExpressionReplacingExpressionVisitor(
+                        oldTables.Zip(newTables, ValueTuple.Create)
+                            .ToDictionary(t => t.Item1, t => t.Item2));
 
                 projection = replacingVisitor.VisitAndConvert(projection, nameof(VisitChildren));
                 predicate = replacingVisitor.VisitAndConvert(predicate, nameof(VisitChildren));

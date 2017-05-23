@@ -1,6 +1,7 @@
 ﻿using Impatient.Query;
 using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors;
+using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -96,7 +97,7 @@ namespace Impatient
 
                     expression = new QueryActivatingExpressionVisitor(this).Visit(expression);
 
-                    expression = new QueryBuildingExpressionVisitor(this).Visit(expression);
+                    expression = new QueryComposingExpressionVisitor(this).Visit(expression);
 
                     if (expression is EnumerableRelationalQueryExpression possiblyOrdered)
                     {

@@ -1,8 +1,7 @@
-﻿using Impatient.Query.ExpressionVisitors;
-using Impatient.Query.ExpressionVisitors.Optimizing;
+﻿using Impatient.Query.ExpressionVisitors.Optimizing;
+using Impatient.Query.ExpressionVisitors.Utility;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.Tests.ExpressionVisitors

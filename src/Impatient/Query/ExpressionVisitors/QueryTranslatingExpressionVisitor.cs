@@ -1,5 +1,4 @@
 ﻿using Impatient.Query.Expressions;
-using Impatient.Query.ExpressionVisitors;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
@@ -22,24 +21,16 @@ namespace Impatient.Query.ExpressionVisitors
 
         public (Expression materializer, Expression commandBuilder) Translate(SelectExpression selectExpression)
         {
+            selectExpression 
+                = new ParameterizableExpressionAnnotatingExpressionVisitor()
+                    .VisitAndConvert(selectExpression, nameof(Translate));
+
             selectExpression = VisitAndConvert(selectExpression, nameof(Translate));
 
             return (selectExpression.Projection.Flatten(), builder.Build());
         }
 
         #region ExpressionVisitor overrides
-
-        public override Expression Visit(Expression node)
-        {
-            if (IsParameterizable(node))
-            {
-                builder.AddParameter(node, FormatParameter);
-
-                return node;
-            }
-
-            return base.Visit(node);
-        }
 
         protected override Expression VisitBinary(BinaryExpression node)
         {
@@ -868,15 +859,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                         case Expression expression:
                         {
-                            var visitor = new ParameterizabilityAnalyzingExpressionVisitor();
-                            visitor.Visit(expression);
-
-                            if (!visitor.IsParameterizable)
-                            {
-                                // TODO: Use better type modelling to avoid this instead.
-                                throw new InvalidOperationException();
-                            }
-
                             builder.AddParameterList(expression, FormatParameter);
 
                             break;
@@ -920,6 +902,13 @@ namespace Impatient.Query.ExpressionVisitors
                     builder.Append(orderBy.Descending ? "DESC" : "ASC");
 
                     return orderBy;
+                }
+
+                case ParameterizableExpression parameterizableExpression:
+                {
+                    builder.AddParameter(parameterizableExpression.Expression, FormatParameter);
+
+                    return parameterizableExpression;
                 }
 
                 default:
@@ -1036,25 +1025,10 @@ namespace Impatient.Query.ExpressionVisitors
             return alias;
         }
 
-        private static bool IsParameterizable(Expression node)
+        private class ParameterizableExpressionAnnotatingExpressionVisitor : ExpressionVisitor
         {
-            if (node == null || !node.Type.IsScalarType())
-            {
-                return false;
-            }
-
-            var visitor = new ParameterizabilityAnalyzingExpressionVisitor();
-            visitor.Visit(node);
-
-            return visitor.IsParameterizable;
-        }
-
-        private class ParameterizabilityAnalyzingExpressionVisitor : ExpressionVisitor
-        {
-            private int parameterCount = 0;
-            private int extensionCount = 0;
-
-            public bool IsParameterizable => parameterCount > 0 && extensionCount == 0;
+            private readonly ParameterAndExtensionCountingExpressionVisitor countingVisitor
+                = new ParameterAndExtensionCountingExpressionVisitor();
 
             public override Expression Visit(Expression node)
             {
@@ -1063,23 +1037,62 @@ namespace Impatient.Query.ExpressionVisitors
                     return null;
                 }
 
-                switch (node.NodeType)
+                if (node.Type.IsScalarType())
                 {
-                    case ExpressionType.Parameter:
+                    countingVisitor.Visit(node);
+
+                    if (countingVisitor.ParameterCount > 0 && countingVisitor.ExtensionCount == 0)
                     {
-                        parameterCount++;
-                        break;
+                        return new ParameterizableExpression(node);
                     }
 
-                    case ExpressionType.Extension:
-                    {
-                        extensionCount++;
-                        break;
-                    }
+                    countingVisitor.ParameterCount = 0;
+                    countingVisitor.ExtensionCount = 0;
                 }
 
                 return base.Visit(node);
             }
+
+            private class ParameterAndExtensionCountingExpressionVisitor : ExpressionVisitor
+            {
+                public int ParameterCount;
+                public int ExtensionCount;
+
+                public override Expression Visit(Expression node)
+                {
+                    if (node == null)
+                    {
+                        return null;
+                    }
+
+                    switch (node.NodeType)
+                    {
+                        case ExpressionType.Parameter:
+                        {
+                            ParameterCount++;
+                            break;
+                        }
+
+                        case ExpressionType.Extension:
+                        {
+                            ExtensionCount++;
+                            break;
+                        }
+                    }
+
+                    return base.Visit(node);
+                }
+            }
+        }
+
+        private class ParameterizableExpression : AnnotationExpression
+        {
+            public ParameterizableExpression(Expression expression) : base(expression)
+            {
+            }
+
+            protected override AnnotationExpression Recreate(Expression expression) 
+                => new ParameterizableExpression(expression);
         }
 
         private static Expression FlattenProjection(
@@ -1145,7 +1158,10 @@ namespace Impatient.Query.ExpressionVisitors
                 {
                     if (topLevelIndex == 1)
                     {
-                        GatheredExpressions = GatheredExpressions.Select(p => ("$0." + p.Key, p.Value)).ToDictionary(p => p.Item1, p => p.Item2);
+                        GatheredExpressions 
+                            = GatheredExpressions
+                                .Select(p => ("$0." + p.Key, p.Value))
+                                .ToDictionary(p => p.Item1, p => p.Item2);
                     }
 
                     CurrentPath.Push($"${topLevelIndex}");
@@ -1209,7 +1225,7 @@ namespace Impatient.Query.ExpressionVisitors
                         return Visit(metaAliasExpression.Expression);
                     }
 
-                    case Expression expression when expression.IsTranslatable() && !IsParameterizable(expression):
+                    case Expression expression when expression.IsTranslatable():
                     {
                         if (InSubLeaf)
                         {

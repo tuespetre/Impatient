@@ -100,10 +100,11 @@ A number of features distinguish this project from a complete ORM solution:
 	This may be addressable in the future but it will involve
 	some intense rewriting logic.
 
-- Relational null semantics have not yet been addressed -- this includes
+- ~~Relational null semantics have not yet been addressed -- this includes
   the simplest of things like `IS NULL` and `IS NOT NULL`, and translating
   `foo.NullableColumn != 1` into `[foo].[NullableColumn] IS NULL OR
-  [foo].[NullableColumn] <> 1`
+  [foo].[NullableColumn] <> 1`~~ Relational null semantics are partially
+  addressed but still have some work to be done.
 
 - `Enum` types are not yet dealt with.
 
@@ -120,20 +121,30 @@ A number of features distinguish this project from a complete ORM solution:
   (using `FOR JSON`, `FOR XML`, and similar) would be nice; the project 
   currently includes some rough implementation using `FOR JSON`.
 
-- Eventual support for the full gamut of standard LINQ query operators, 
-  **even `TakeWhile` and `Zip`.**
+- Currently unsupported `Queryable` operators:
 
-- Currently unsupported operators:
-
-  - Aggregate
-  - ElementAt
-  - ElementAtOrDefault
-  - SequenceEqual
-  - SkipWhile
-  - TakeWhile
-  - Zip
+  - `Aggregate`
+  - `ElementAt`
+  - `ElementAtOrDefault`
+  - `Last`
+  - `LastOrDefault`
+  - `SequenceEqual`
+  - `SkipWhile`
+  - `TakeWhile`
+  - `Zip`
   - Operators with index parameter overloads
   - Operators with `IComparer` and `IEqualityComparer` overloads
+
+  It is unclear how exactly `Aggregate` could be translated considering
+  that no relational database seems to offer a parallel (an aggregate
+  function that can be expressed as a function expression with an optional
+  seed value.) The operators with `IComparer` and `IEqualityComparer` overloads
+  are also interesting as it is unclear how they were ever intended to be
+  translatable to a remote data source of any kind -- perhaps by referencing
+  a static singleton marker implementation that translates to a directive
+  of some kind? The rest of the operators listed all have possible translations
+  to SQL that, while not difficult to conceive of, do not appear to have a good
+  return on investment.
   
 ### Examples and explanations
 

@@ -1,6 +1,8 @@
-﻿using System.Linq.Expressions;
+﻿using System;
+using System.Linq;
+using System.Linq.Expressions;
 
-namespace Impatient.Query.ExpressionVisitors
+namespace Impatient.Query.ExpressionVisitors.Utility
 {
     public class HashingExpressionVisitor : ExpressionVisitor
     {
@@ -57,8 +59,7 @@ namespace Impatient.Query.ExpressionVisitors
 
             return base.VisitCatchBlock(node);
         }
-
-        /*
+        
         // This is different than checking whether the type is scalar or not.
         // These are all of the possible literal expression types (at least in C#).
         private static Type[] constantLiteralTypes = new[]
@@ -88,7 +89,6 @@ namespace Impatient.Query.ExpressionVisitors
 
             return base.VisitConstant(node);
         }
-        */
 
         protected override Expression VisitDebugInfo(DebugInfoExpression node)
         {
