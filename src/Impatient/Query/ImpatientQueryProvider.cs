@@ -96,7 +96,7 @@ namespace Impatient
 
                     expression = new QueryActivatingExpressionVisitor(this).Visit(expression);
 
-                    expression = new QueryCompilingExpressionVisitor(this).Visit(expression);
+                    expression = new QueryBuildingExpressionVisitor(this).Visit(expression);
 
                     if (expression is EnumerableRelationalQueryExpression possiblyOrdered)
                     {

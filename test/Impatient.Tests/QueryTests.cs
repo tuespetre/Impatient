@@ -231,7 +231,7 @@ CROSS APPLY (
                 = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
                     .SelectMany(m1 => impatient.CreateQuery<MyClass2>(MyClass2QueryExpression));
 
-            var visitor = new QueryCompilingExpressionVisitor(impatient);
+            var visitor = new QueryBuildingExpressionVisitor(impatient);
 
             var expression = visitor.Visit(query.Expression);
 
@@ -245,7 +245,7 @@ CROSS APPLY (
                 = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
                     .SelectMany((m1, i) => impatient.CreateQuery<MyClass2>(MyClass2QueryExpression));
 
-            var visitor = new QueryCompilingExpressionVisitor(impatient);
+            var visitor = new QueryBuildingExpressionVisitor(impatient);
 
             var expression = visitor.Visit(query.Expression);
 
@@ -504,7 +504,7 @@ WHERE [a].[Prop1] = N'What the'",
         {
             var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select((m, i) => new { m, i });
 
-            var expression = new QueryCompilingExpressionVisitor(impatient).Visit(query.Expression);
+            var expression = new QueryBuildingExpressionVisitor(impatient).Visit(query.Expression);
 
             Assert.IsInstanceOfType(expression, typeof(MethodCallExpression));
         }
@@ -1163,7 +1163,7 @@ ORDER BY [m].[Prop1] ASC, [m].[Prop2] DESC",
             var expression = impatient.ExpressionVisitorProvider.OptimizingExpressionVisitors
                 .Aggregate(query.Expression, (e, v) => v.Visit(e));
 
-            expression = new QueryCompilingExpressionVisitor(impatient).Visit(expression);
+            expression = new QueryBuildingExpressionVisitor(impatient).Visit(expression);
 
             Assert.IsInstanceOfType(expression, typeof(EnumerableRelationalQueryExpression));
 
@@ -1200,7 +1200,7 @@ FROM [dbo].[MyClass1] AS [m0]",
                 .Aggregate(query.Expression, (e, v) => v.Visit(e));
 
             expression = new QueryActivatingExpressionVisitor(impatient).Visit(expression);
-            expression = new QueryCompilingExpressionVisitor(impatient).Visit(expression);
+            expression = new QueryBuildingExpressionVisitor(impatient).Visit(expression);
 
             Assert.IsInstanceOfType(expression, typeof(EnumerableRelationalQueryExpression));
 
@@ -1216,7 +1216,7 @@ FROM [dbo].[MyClass1] AS [m0]",
             var expression = impatient.ExpressionVisitorProvider.OptimizingExpressionVisitors
                 .Aggregate(query.Expression, (e, v) => v.Visit(e));
 
-            expression = new QueryCompilingExpressionVisitor(impatient).Visit(expression);
+            expression = new QueryBuildingExpressionVisitor(impatient).Visit(expression);
 
             Assert.IsInstanceOfType(expression, typeof(EnumerableRelationalQueryExpression));
 

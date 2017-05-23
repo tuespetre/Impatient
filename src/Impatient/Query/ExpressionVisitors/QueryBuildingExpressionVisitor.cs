@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace Impatient.Query.ExpressionVisitors
 {
-    public class QueryCompilingExpressionVisitor : ExpressionVisitor
+    public class QueryBuildingExpressionVisitor : ExpressionVisitor
     {
         // TODO: Make this configurable
         private static bool complexNestedQueriesSupported = true;
@@ -17,7 +17,7 @@ namespace Impatient.Query.ExpressionVisitors
         private IEnumerable<ExpressionVisitor> RewritingExpressionVisitors 
             => queryProvider.ExpressionVisitorProvider.RewritingExpressionVisitors;
 
-        public QueryCompilingExpressionVisitor(ImpatientQueryProvider queryProvider)
+        public QueryBuildingExpressionVisitor(ImpatientQueryProvider queryProvider)
         {
             this.queryProvider = queryProvider ?? throw new ArgumentNullException(nameof(queryProvider));
         }
