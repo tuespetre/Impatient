@@ -105,7 +105,7 @@ namespace Impatient
 
                     var queryProviderParameter = Expression.Parameter(typeof(ImpatientQueryProvider), "queryProvider");
                     
-                    expression = new ExecutionCompilingExpressionVisitor(queryProviderParameter).Visit(expression);
+                    expression = new QueryCompilingExpressionVisitor(queryProviderParameter).Visit(expression);
 
                     var parameters = new ParameterExpression[parameterMapping.Count + 1];
 

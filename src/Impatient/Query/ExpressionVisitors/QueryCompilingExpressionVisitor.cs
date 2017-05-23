@@ -9,11 +9,11 @@ using System.Reflection;
 
 namespace Impatient.Query.ExpressionVisitors
 {
-    public class ExecutionCompilingExpressionVisitor : ExpressionVisitor
+    public class QueryCompilingExpressionVisitor : ExpressionVisitor
     {
         private readonly ParameterExpression queryProviderParameter;
 
-        public ExecutionCompilingExpressionVisitor(ParameterExpression queryProviderParameter)
+        public QueryCompilingExpressionVisitor(ParameterExpression queryProviderParameter)
         {
             this.queryProviderParameter = queryProviderParameter ?? throw new ArgumentNullException(nameof(queryProviderParameter));
         }
@@ -72,13 +72,13 @@ namespace Impatient.Query.ExpressionVisitors
             = ImpatientExtensions.GetGenericMethodDefinition((IEnumerable<object> e) => e.AsQueryable());
 
         private static readonly MethodInfo executeEnumerableMethodInfo
-            = typeof(ExecutionCompilingExpressionVisitor).GetTypeInfo().GetDeclaredMethod(nameof(ExecuteEnumerable));
+            = typeof(QueryCompilingExpressionVisitor).GetTypeInfo().GetDeclaredMethod(nameof(ExecuteEnumerable));
 
         private static readonly MethodInfo executeComplexMethodInfo
-            = typeof(ExecutionCompilingExpressionVisitor).GetTypeInfo().GetDeclaredMethod(nameof(ExecuteComplex));
+            = typeof(QueryCompilingExpressionVisitor).GetTypeInfo().GetDeclaredMethod(nameof(ExecuteComplex));
 
         private static readonly MethodInfo executeScalarMethodInfo
-            = typeof(ExecutionCompilingExpressionVisitor).GetTypeInfo().GetDeclaredMethod(nameof(ExecuteScalar));
+            = typeof(QueryCompilingExpressionVisitor).GetTypeInfo().GetDeclaredMethod(nameof(ExecuteScalar));
 
         private static IEnumerable<TElement> ExecuteEnumerable<TElement>(
             ImpatientQueryProvider queryProvider,
