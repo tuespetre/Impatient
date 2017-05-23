@@ -12,17 +12,14 @@ namespace Impatient
 {
     public class ImpatientQueryProvider : IQueryProvider
     {
-        public ImpatientQueryProvider()
-        {
-            QueryCache = new DefaultImpatientQueryCache();
-        }
-
         public ImpatientQueryProvider(
             IImpatientDbConnectionFactory connectionFactory,
-            IImpatientQueryCache queryCache)
+            IImpatientQueryCache queryCache,
+            IImpatientExpressionVisitorProvider expressionVisitorProvider)
         {
             ConnectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             QueryCache = queryCache ?? throw new ArgumentNullException(nameof(queryCache));
+            ExpressionVisitorProvider = expressionVisitorProvider ?? throw new ArgumentNullException(nameof(expressionVisitorProvider));
         }
 
         public Action<DbCommand> DbCommandInterceptor { get; set; }
@@ -30,6 +27,8 @@ namespace Impatient
         public IImpatientDbConnectionFactory ConnectionFactory { get; }
 
         public IImpatientQueryCache QueryCache { get; }
+
+        public IImpatientExpressionVisitorProvider ExpressionVisitorProvider { get; }
 
         public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
         {
@@ -93,7 +92,11 @@ namespace Impatient
                 {
                     expression = new QueryableExpandingExpressionVisitor(parameterMapping).Visit(expression);
 
-                    expression = new ImpatientQueryProviderExpressionVisitor(this).Visit(expression);
+                    expression = ExpressionVisitorProvider.OptimizingExpressionVisitors.Aggregate(expression, (e, v) => v.Visit(e));
+
+                    expression = new QueryActivatingExpressionVisitor(this).Visit(expression);
+
+                    expression = new QueryCompilingExpressionVisitor(this).Visit(expression);
 
                     if (expression is EnumerableRelationalQueryExpression possiblyOrdered)
                     {

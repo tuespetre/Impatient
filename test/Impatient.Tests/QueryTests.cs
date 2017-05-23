@@ -30,7 +30,8 @@ namespace Impatient.Tests
         {
             impatient = new ImpatientQueryProvider(
                 new TestImpatientConnectionFactory(),
-                new DefaultImpatientQueryCache())
+                new DefaultImpatientQueryCache(),
+                new DefaultImpatientExpressionVisitorProvider())
             {
                 DbCommandInterceptor = command =>
                 {
@@ -230,7 +231,7 @@ CROSS APPLY (
                 = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
                     .SelectMany(m1 => impatient.CreateQuery<MyClass2>(MyClass2QueryExpression));
 
-            var visitor = new ImpatientQueryProviderExpressionVisitor(impatient);
+            var visitor = new QueryCompilingExpressionVisitor(impatient);
 
             var expression = visitor.Visit(query.Expression);
 
@@ -244,7 +245,7 @@ CROSS APPLY (
                 = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
                     .SelectMany((m1, i) => impatient.CreateQuery<MyClass2>(MyClass2QueryExpression));
 
-            var visitor = new ImpatientQueryProviderExpressionVisitor(impatient);
+            var visitor = new QueryCompilingExpressionVisitor(impatient);
 
             var expression = visitor.Visit(query.Expression);
 
@@ -503,9 +504,7 @@ WHERE [a].[Prop1] = N'What the'",
         {
             var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select((m, i) => new { m, i });
 
-            var visitor = new ImpatientQueryProviderExpressionVisitor(impatient);
-
-            var expression = visitor.Visit(query.Expression);
+            var expression = new QueryCompilingExpressionVisitor(impatient).Visit(query.Expression);
 
             Assert.IsInstanceOfType(expression, typeof(MethodCallExpression));
         }
@@ -1043,8 +1042,6 @@ FROM [dbo].[MyClass1] AS [m]",
         {
             var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => new[] { m.Prop2 }.Contains(77));
 
-            AssertRelationalQueryWithServerProjection(query, impatient);
-
             query.ToList();
 
             Assert.AreEqual(
@@ -1057,8 +1054,6 @@ FROM [dbo].[MyClass1] AS [m]",
         public void Contains_expression_in_array_literal()
         {
             var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => new[] { 77 }.Contains(m.Prop2));
-
-            AssertRelationalQueryWithServerProjection(query, impatient);
 
             query.ToList();
 
@@ -1075,8 +1070,6 @@ FROM [dbo].[MyClass1] AS [m]",
 
             var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => array.Contains(m.Prop2));
 
-            AssertRelationalQueryWithServerProjection(query, impatient);
-
             query.ToList();
 
             Assert.AreEqual(
@@ -1089,8 +1082,6 @@ FROM [dbo].[MyClass1] AS [m]",
         public void Contains_expression_in_list_literal()
         {
             var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => new List<int> { 77 }.Contains(m.Prop2));
-
-            AssertRelationalQueryWithServerProjection(query, impatient);
 
             query.ToList();
 
@@ -1106,8 +1097,6 @@ FROM [dbo].[MyClass1] AS [m]",
             var list = new List<int> { 77 };
 
             var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => list.Contains(m.Prop2));
-
-            AssertRelationalQueryWithServerProjection(query, impatient);
 
             query.ToList();
 
@@ -1171,7 +1160,14 @@ ORDER BY [m].[Prop1] ASC, [m].[Prop2] DESC",
                         let derp = int.MaxValue
                         select m;
 
-            AssertRelationalQueryWithServerProjection(query, impatient);
+            var expression = impatient.ExpressionVisitorProvider.OptimizingExpressionVisitors
+                .Aggregate(query.Expression, (e, v) => v.Visit(e));
+
+            expression = new QueryCompilingExpressionVisitor(impatient).Visit(expression);
+
+            Assert.IsInstanceOfType(expression, typeof(EnumerableRelationalQueryExpression));
+
+            Assert.IsInstanceOfType(((EnumerableRelationalQueryExpression)expression).SelectExpression.Projection, typeof(ServerProjectionExpression));
         }
 
         [TestMethod]
@@ -1179,8 +1175,6 @@ ORDER BY [m].[Prop1] ASC, [m].[Prop2] DESC",
         {
             var query = from m in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
                         select impatient.CreateQuery<MyClass2>(MyClass2QueryExpression).Count();
-
-            AssertRelationalQueryWithServerProjection(query, impatient);
 
             var results = query.ToList();
 
@@ -1202,7 +1196,15 @@ FROM [dbo].[MyClass1] AS [m0]",
             var query = from m in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
                         select impatient.CreateQuery<MyClass2>(MyClass2QueryExpression);
 
-            AssertRelationalQueryWithServerProjection(query, impatient);
+            var expression = impatient.ExpressionVisitorProvider.OptimizingExpressionVisitors
+                .Aggregate(query.Expression, (e, v) => v.Visit(e));
+
+            expression = new QueryActivatingExpressionVisitor(impatient).Visit(expression);
+            expression = new QueryCompilingExpressionVisitor(impatient).Visit(expression);
+
+            Assert.IsInstanceOfType(expression, typeof(EnumerableRelationalQueryExpression));
+
+            Assert.IsInstanceOfType(((EnumerableRelationalQueryExpression)expression).SelectExpression.Projection, typeof(ServerProjectionExpression));
         }
 
         [TestMethod]
@@ -1211,7 +1213,14 @@ FROM [dbo].[MyClass1] AS [m0]",
             var query = from m in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).OfType<MyClass1>()
                         select m;
 
-            AssertRelationalQueryWithServerProjection(query, impatient);
+            var expression = impatient.ExpressionVisitorProvider.OptimizingExpressionVisitors
+                .Aggregate(query.Expression, (e, v) => v.Visit(e));
+
+            expression = new QueryCompilingExpressionVisitor(impatient).Visit(expression);
+
+            Assert.IsInstanceOfType(expression, typeof(EnumerableRelationalQueryExpression));
+
+            Assert.IsInstanceOfType(((EnumerableRelationalQueryExpression)expression).SelectExpression.Projection, typeof(ServerProjectionExpression));
         }
 
         [TestMethod]
@@ -1228,8 +1237,6 @@ FROM [dbo].[MyClass1] AS [m0]",
                         Min = ms.Select(m => m.Prop2).Distinct().Min(),
                         Count = ms.Count(m => m.Prop2 > 7),
                     });
-
-            AssertRelationalQueryWithServerProjection(query, impatient);
 
             var results = query.ToList();
 
@@ -1302,8 +1309,6 @@ GROUP BY [m].[Prop1]",
                         //
                         select x;
 
-            AssertRelationalQueryWithServerProjection(query, impatient);
-
             var results = query.ToList();
 
             Assert.AreEqual(2, results.Count);
@@ -1326,8 +1331,6 @@ GROUP BY [m].[Prop1]",
                         from s2 in g2
                         select new { s1, s2 };
 
-            AssertRelationalQueryWithServerProjection(query, impatient);
-
             query.ToList();
 
             Assert.AreEqual(
@@ -1347,8 +1350,6 @@ INNER JOIN [dbo].[MyClass2] AS [s2] ON [s1].[Prop1] = [s2].[Prop1]",
                         join s2 in set2 on s1.Prop1 equals s2.Prop1 into g2
                         from s2 in g2.DefaultIfEmpty()
                         select new { s1, s2 };
-
-            AssertRelationalQueryWithServerProjection(query, impatient);
 
             query.ToList();
 
@@ -1373,8 +1374,6 @@ LEFT JOIN (
                         from s2 in g2.DefaultIfEmpty()
                         select new { s1, s2 };
 
-            AssertRelationalQueryWithServerProjection(query, impatient);
-
             query.ToList();
 
             Assert.AreEqual(
@@ -1398,8 +1397,6 @@ LEFT JOIN (
                         from s2 in g2.Take(1).DefaultIfEmpty()
                         select new { s1, s2 };
 
-            AssertRelationalQueryWithServerProjection(query, impatient);
-
             query.ToList();
 
             Assert.AreEqual(
@@ -1419,8 +1416,6 @@ OUTER APPLY (
             var query = from m in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Cast<MyClass1>()
                         select new { m };
 
-            AssertRelationalQueryWithServerProjection(query, impatient);
-
             query.ToList();
 
             Assert.AreEqual(
@@ -1434,8 +1429,6 @@ FROM [dbo].[MyClass1] AS [m]",
         {
             var query = from MyClass1 m in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
                         select new { m };
-
-            AssertRelationalQueryWithServerProjection(query, impatient);
 
             query.ToList();
 
@@ -1452,8 +1445,6 @@ FROM [dbo].[MyClass1] AS [m]",
             var set2 = impatient.CreateQuery<MyClass2>(MyClass2QueryExpression).Select(m => new { m.Prop1, m.Prop2 });
 
             var query = set1.Concat(set2);
-
-            AssertRelationalQueryWithServerProjection(query, impatient);
 
             var result = query.ToList();
 
@@ -1478,8 +1469,6 @@ FROM (
             var set2 = impatient.CreateQuery<MyClass2>(MyClass2QueryExpression).Where(m => m.Prop2 == 77).Select(m => new { m.Prop1, m.Prop2 });
 
             var query = set1.Except(set2);
-
-            AssertRelationalQueryWithServerProjection(query, impatient);
 
             var result = query.ToList();
 
@@ -1506,8 +1495,6 @@ FROM (
 
             var query = set1.Intersect(set2);
 
-            AssertRelationalQueryWithServerProjection(query, impatient);
-
             var result = query.ToList();
 
             Assert.AreEqual(1, result.Count);
@@ -1533,8 +1520,6 @@ FROM (
 
             var query = set1.Union(set2);
 
-            AssertRelationalQueryWithServerProjection(query, impatient);
-
             var result = query.ToList();
 
             Assert.AreEqual(2, result.Count);
@@ -1556,8 +1541,6 @@ FROM (
         {
             var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).DefaultIfEmpty();
 
-            AssertRelationalQueryWithServerProjection(query, impatient);
-
             var result = query.ToList();
 
             Assert.AreEqual(2, result.Count);
@@ -1578,8 +1561,6 @@ LEFT JOIN (
         public void DefaultIfEmpty_simple_when_none()
         {
             var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Where(m => m.Prop2 > 77).DefaultIfEmpty();
-
-            AssertRelationalQueryWithServerProjection(query, impatient);
 
             var result = query.ToList();
 
@@ -2436,32 +2417,6 @@ FROM [dbo].[MyClass1] AS [a]
 CROSS JOIN [dbo].[MyClass2] AS [m]
 WHERE (([a].[Prop1] IS NULL AND [m].[Prop1] IS NOT NULL) OR ([a].[Prop1] IS NOT NULL AND [m].[Prop1] IS NULL) OR ([a].[Prop1] <> [m].[Prop1]))",
                 sqlLog);
-        }
-
-        private static void AssertRelationalQueryWithServerProjection(IQueryable query, ImpatientQueryProvider provider)
-        {
-            var visitor = new ImpatientQueryProviderExpressionVisitor(provider);
-
-            var expression = visitor.Visit(query.Expression);
-
-            Assert.IsInstanceOfType(expression, typeof(EnumerableRelationalQueryExpression));
-
-            var relationalQuery = (EnumerableRelationalQueryExpression)expression;
-
-            Assert.IsInstanceOfType(relationalQuery.SelectExpression.Projection, typeof(ServerProjectionExpression));
-        }
-
-        private static void AssertRelationalQueryWithClientProjection(IQueryable query, ImpatientQueryProvider provider)
-        {
-            var visitor = new ImpatientQueryProviderExpressionVisitor(provider);
-
-            var expression = visitor.Visit(query.Expression);
-
-            Assert.IsInstanceOfType(expression, typeof(EnumerableRelationalQueryExpression));
-
-            var relationalQuery = (EnumerableRelationalQueryExpression)expression;
-
-            Assert.IsInstanceOfType(relationalQuery.SelectExpression.Projection, typeof(ClientProjectionExpression));
         }
 
         private class TestImpatientConnectionFactory : IImpatientDbConnectionFactory
