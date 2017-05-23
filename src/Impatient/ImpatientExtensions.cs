@@ -187,19 +187,34 @@ namespace Impatient
 
         private static readonly Type[] scalarTypes =
         {
-            typeof(long),
-            typeof(int),
-            typeof(short),
-            typeof(byte),
-            typeof(bool),
-            typeof(decimal),
-            typeof(double),
-            typeof(float),
-            typeof(DateTime),
-            typeof(DateTimeOffset),
-            typeof(string),
-            typeof(byte[]),
-            typeof(Guid),
+            // Value types
+            typeof(long), // bigint
+            typeof(int), // int
+            typeof(short), // smallint
+            typeof(byte), // tinyint
+            typeof(bool), // bit
+            typeof(decimal), // decimal, money, numeric, smallmoney
+            typeof(double), // float
+            typeof(float), // real
+            typeof(TimeSpan), // time
+            typeof(DateTime), // datetime2, datetime, date, smalldatetime
+            typeof(DateTimeOffset), // datetimeoffset
+            typeof(Guid), // uniqueidentifer
+
+            // Reference types
+            typeof(string), // nvarchar, varchar, nchar, char, ntext, text
+            typeof(byte[]), // varbinary, binary, FILESTREAM, image, rowversion, timestamp
+
+            // Unmapped types
+            // - sql_variant
+            // - xml
+
+            // Supported enum types (for future reference):
+            // - byte
+            // - short
+            // - int
+            // - long
+            // - string (explicitly)
         };
     }
 }
