@@ -348,6 +348,15 @@ namespace Impatient.Query.ExpressionVisitors
                     return VisitSimple(" / ");
                 }
 
+                case ExpressionType.Modulo:
+                {
+                    return VisitSimple(" % ");
+                }
+
+                // TODO: Support these expression types
+                case ExpressionType.And:
+                case ExpressionType.Or:
+                case ExpressionType.ExclusiveOr:
                 default:
                 {
                     throw new NotSupportedException();
@@ -942,9 +951,15 @@ namespace Impatient.Query.ExpressionVisitors
                         }
                     }
                 }
-            }
 
-            return base.VisitUnary(node);
+                // TODO: Support these expression types
+                case ExpressionType.Convert:
+                case ExpressionType.OnesComplement:
+                default:
+                {
+                    throw new NotSupportedException();
+                }
+            }
         }
 
         #endregion

@@ -43,6 +43,7 @@ namespace Impatient.Query.ExpressionVisitors
                     case ExpressionType.Subtract:
                     case ExpressionType.Multiply:
                     case ExpressionType.Divide:
+                    case ExpressionType.Modulo:
                     {
                         return new TranslatableExpression(node);
                     }
@@ -51,6 +52,14 @@ namespace Impatient.Query.ExpressionVisitors
                     case ExpressionType.Coalesce:
                     {
                         return new TranslatableExpression(node);
+                    }
+
+                    // TODO: Support these bitwise expression types
+                    case ExpressionType.And:
+                    case ExpressionType.Or:
+                    case ExpressionType.ExclusiveOr:
+                    {
+                        break;
                     }
                 }
             }
@@ -161,6 +170,30 @@ namespace Impatient.Query.ExpressionVisitors
             }
 
             return node;
+        }
+
+        protected override Expression VisitUnary(UnaryExpression node)
+        {
+            switch (node.NodeType)
+            {
+                case ExpressionType.Not:
+                {
+                    if (Visit(node.Operand) is TranslatableExpression)
+                    {
+                        return new TranslatableExpression(node);
+                    }
+
+                    goto default;
+                }
+
+                // TODO: Support these expression types
+                case ExpressionType.Convert:
+                case ExpressionType.OnesComplement:
+                default:
+                {
+                    return node;
+                }
+            }
         }
     }
 }
