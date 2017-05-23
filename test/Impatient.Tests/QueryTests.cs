@@ -2419,6 +2419,59 @@ WHERE (([a].[Prop1] IS NULL AND [m].[Prop1] IS NOT NULL) OR ([a].[Prop1] IS NOT 
                 sqlLog);
         }
 
+        [TestMethod]
+        public void Binary_Equal_nullable_left_and_right()
+        {
+            var myClass1Table = new BaseTableExpression("dbo", "MyClass1", "m", typeof(MyClass1));
+
+            var myClass1QueryExpression
+                = new EnumerableRelationalQueryExpression(
+                    new SelectExpression(
+                        new ServerProjectionExpression(
+                            Expression.MemberInit(
+                                Expression.New(typeof(MyClass1)),
+                                from property in new[]
+                                {
+                                    typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop1)),
+                                    typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop2))
+                                }
+                                let column = new SqlColumnExpression(myClass1Table, property.Name, property.PropertyType, true)
+                                select Expression.Bind(property, column))),
+                        myClass1Table));
+
+            var myClass2Table = new BaseTableExpression("dbo", "MyClass2", "m", typeof(MyClass2));
+
+            var myClass2QueryExpression
+                = new EnumerableRelationalQueryExpression(
+                    new SelectExpression(
+                        new ServerProjectionExpression(
+                            Expression.MemberInit(
+                                Expression.New(typeof(MyClass2)),
+                                from property in new[]
+                                {
+                                    typeof(MyClass2).GetRuntimeProperty(nameof(MyClass2.Prop1)),
+                                    typeof(MyClass2).GetRuntimeProperty(nameof(MyClass2.Prop2))
+                                }
+                                let column = new SqlColumnExpression(myClass2Table, property.Name, property.PropertyType, true)
+                                select Expression.Bind(property, column))),
+                        myClass2Table));
+
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(myClass1QueryExpression)
+                from b in impatient.CreateQuery<MyClass2>(myClass2QueryExpression)
+                where a.Prop1 == b.Prop1
+                select new { a, b };
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [a].[Prop1] AS [a.Prop1], [a].[Prop2] AS [a.Prop2], [m].[Prop1] AS [b.Prop1], [m].[Prop2] AS [b.Prop2]
+FROM [dbo].[MyClass1] AS [a]
+CROSS JOIN [dbo].[MyClass2] AS [m]
+WHERE (([a].[Prop1] IS NULL AND [m].[Prop1] IS NULL) OR ([a].[Prop1] = [m].[Prop1]))",
+                sqlLog);
+        }
+
         private class TestImpatientConnectionFactory : IImpatientDbConnectionFactory
         {
             public DbConnection CreateConnection()

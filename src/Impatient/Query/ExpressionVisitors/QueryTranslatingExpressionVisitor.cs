@@ -183,6 +183,29 @@ namespace Impatient.Query.ExpressionVisitors
                         return node.Update(visitedLeft, node.Conversion, node.Right);
                     }
 
+                    var leftIsNullable
+                        = node.Left is SqlExpression leftSqlExpression
+                            && leftSqlExpression.IsNullable;
+
+                    var rightIsNullable
+                        = node.Right is SqlExpression rightSqlExpression
+                            && rightSqlExpression.IsNullable;
+
+                    if (leftIsNullable && rightIsNullable)
+                    {
+                        builder.Append("((");
+                        Visit(node.Left);
+                        builder.Append(" IS NULL AND ");
+                        Visit(node.Right);
+                        builder.Append(" IS NULL) OR (");
+                        var visitedLeft = Visit(node.Left);
+                        builder.Append(" = ");
+                        var visitedRight = Visit(node.Right);
+                        builder.Append("))");
+
+                        return node.Update(visitedLeft, node.Conversion, visitedRight);
+                    }
+
                     return VisitSimple(" = ");
                 }
 
