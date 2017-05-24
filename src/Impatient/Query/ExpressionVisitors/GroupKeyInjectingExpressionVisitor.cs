@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace Impatient.Query.ExpressionVisitors
 {
-    public class GroupingKeyRewritingExpressionVisitor : ExpressionVisitor
+    public class GroupKeyInjectingExpressionVisitor : ExpressionVisitor
     {
         public override Expression Visit(Expression node)
         {
@@ -16,7 +16,7 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 case GroupByResultExpression groupByResultExpression:
                 {
-                    return CreateKeyPlaceholderGrouping(node, groupByResultExpression.ExteriorKeySelector);
+                    return CreateKeyPlaceholderGrouping(node, groupByResultExpression.OuterKeySelector);
                 }
 
                 case GroupedRelationalQueryExpression groupedRelationalQueryExpression:
@@ -33,6 +33,11 @@ namespace Impatient.Query.ExpressionVisitors
 
         private static MemberInitExpression CreateKeyPlaceholderGrouping(Expression expression, Expression keySelector)
         {
+            var typeArguments
+                = expression.Type.FindGenericType(typeof(IGrouping<,>)) != null
+                    ? expression.Type.GenericTypeArguments
+                    : new[] { keySelector.Type, typeof(object) };
+
             var groupingType
                 = typeof(KeyPlaceholderGrouping<,>)
                     .MakeGenericType(expression.Type.GenericTypeArguments);

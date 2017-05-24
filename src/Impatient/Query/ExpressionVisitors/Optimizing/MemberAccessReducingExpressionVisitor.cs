@@ -28,7 +28,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                 case GroupByResultExpression groupByResultExpression
                 when node.Member == groupByResultExpression.Type.GetRuntimeProperty("Key"):
                 {
-                    return Visit(groupByResultExpression.ExteriorKeySelector);
+                    return Visit(groupByResultExpression.OuterKeySelector);
                 }
                 
                 case GroupedRelationalQueryExpression groupedRelationalQueryExpression

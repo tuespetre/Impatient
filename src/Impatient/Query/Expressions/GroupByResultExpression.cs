@@ -9,25 +9,25 @@ namespace Impatient.Query.Expressions
     {
         public GroupByResultExpression(
             SelectExpression selectExpression,
-            Expression exteriorKeySelector,
-            Expression interiorKeySelector,
+            Expression outerKeySelector,
+            Expression innerKeySelector,
             Expression elementSelector,
             bool isDistinct)
         {
             SelectExpression = selectExpression ?? throw new ArgumentNullException(nameof(selectExpression));
-            ExteriorKeySelector = exteriorKeySelector ?? throw new ArgumentNullException(nameof(exteriorKeySelector));
-            InteriorKeySelector = interiorKeySelector ?? throw new ArgumentNullException(nameof(interiorKeySelector));
+            OuterKeySelector = outerKeySelector ?? throw new ArgumentNullException(nameof(outerKeySelector));
+            InnerKeySelector = innerKeySelector ?? throw new ArgumentNullException(nameof(innerKeySelector));
             ElementSelector = elementSelector ?? throw new ArgumentNullException(nameof(elementSelector));
             IsDistinct = isDistinct;
 
-            Type = typeof(IGrouping<,>).MakeGenericType(interiorKeySelector.Type, elementSelector.Type);
+            Type = typeof(IGrouping<,>).MakeGenericType(innerKeySelector.Type, elementSelector.Type);
         }
 
         public SelectExpression SelectExpression { get; }
 
-        public Expression ExteriorKeySelector { get; }
+        public Expression OuterKeySelector { get; }
 
-        public Expression InteriorKeySelector { get; }
+        public Expression InnerKeySelector { get; }
 
         public Expression ElementSelector { get; }
 
@@ -40,8 +40,8 @@ namespace Impatient.Query.Expressions
         protected override Expression VisitChildren(ExpressionVisitor visitor)
         {
             var selectExpression = visitor.VisitAndConvert(SelectExpression, nameof(VisitChildren));
-            var exteriorKeySelector = visitor.VisitAndConvert(ExteriorKeySelector, nameof(VisitChildren));
-            var interiorKeySelector = visitor.VisitAndConvert(InteriorKeySelector, nameof(VisitChildren));
+            var outerKeySelector = visitor.VisitAndConvert(OuterKeySelector, nameof(VisitChildren));
+            var innerKeySelector = visitor.VisitAndConvert(InnerKeySelector, nameof(VisitChildren));
             var elementSelector = visitor.VisitAndConvert(ElementSelector, nameof(VisitChildren));
 
             if (selectExpression != SelectExpression)
@@ -54,19 +54,19 @@ namespace Impatient.Query.Expressions
                         oldTables.Zip(newTables, ValueTuple.Create)
                             .ToDictionary(t => t.Item1, t => t.Item2));
 
-                interiorKeySelector = replacingVisitor.VisitAndConvert(interiorKeySelector, nameof(VisitChildren));
+                innerKeySelector = replacingVisitor.VisitAndConvert(innerKeySelector, nameof(VisitChildren));
                 elementSelector = replacingVisitor.VisitAndConvert(elementSelector, nameof(VisitChildren));
             }
 
             if (selectExpression != SelectExpression
-                || exteriorKeySelector != ExteriorKeySelector
-                || interiorKeySelector != InteriorKeySelector
+                || outerKeySelector != OuterKeySelector
+                || innerKeySelector != InnerKeySelector
                 || elementSelector != ElementSelector)
             {
                 return new GroupByResultExpression(
                     selectExpression,
-                    exteriorKeySelector,
-                    interiorKeySelector,
+                    outerKeySelector,
+                    innerKeySelector,
                     elementSelector,
                     IsDistinct);
             }

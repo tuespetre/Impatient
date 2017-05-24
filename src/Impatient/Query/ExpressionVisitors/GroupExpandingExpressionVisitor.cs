@@ -9,7 +9,7 @@ using System.Reflection;
 
 namespace Impatient.Query.ExpressionVisitors
 {
-    public class GroupedRelationalQueryExpandingExpressionVisitor : ExpressionVisitor
+    public class GroupExpandingExpressionVisitor : ExpressionVisitor
     {
         public override Expression Visit(Expression node)
         {
@@ -32,17 +32,17 @@ namespace Impatient.Query.ExpressionVisitors
                             oldTables.Zip(newTables, ValueTuple.Create<Expression, Expression>)
                                 .ToDictionary(t => t.Item1, t => t.Item2));
 
-                    var exteriorKeySelector = groupByResultExpression.InteriorKeySelector;
-                    var interiorKeySelector = replacingVisitor.Visit(groupByResultExpression.InteriorKeySelector);
+                    var outerKeySelector = groupByResultExpression.InnerKeySelector;
+                    var innerKeySelector = replacingVisitor.Visit(groupByResultExpression.InnerKeySelector);
                     var elementSelector = replacingVisitor.Visit(groupByResultExpression.ElementSelector);
 
                     var elements
                         = new EnumerableRelationalQueryExpression(
                             selectExpression
                                 .UpdateProjection(new ServerProjectionExpression(elementSelector))
-                                .AddToPredicate(Expression.Equal(exteriorKeySelector, interiorKeySelector)));
+                                .AddToPredicate(Expression.Equal(outerKeySelector, innerKeySelector)));
 
-                    return ExpandGrouping(visited, exteriorKeySelector, elements);
+                    return ExpandGroup(visited, outerKeySelector, elements);
                 }
 
                 case GroupedRelationalQueryExpression groupedRelationalQueryExpression:
@@ -54,7 +54,7 @@ namespace Impatient.Query.ExpressionVisitors
                                     groupedRelationalQueryExpression.OuterKeySelector,
                                     groupedRelationalQueryExpression.InnerKeySelector)));
 
-                    return ExpandGrouping(visited, groupedRelationalQueryExpression.OuterKeySelector, elements);
+                    return ExpandGroup(visited, groupedRelationalQueryExpression.OuterKeySelector, elements);
                 }
 
                 default:
@@ -64,7 +64,7 @@ namespace Impatient.Query.ExpressionVisitors
             }
         }
 
-        private static Expression ExpandGrouping(
+        private static Expression ExpandGroup(
             Expression expression, 
             Expression keyExpression,
             EnumerableRelationalQueryExpression elementsExpression)

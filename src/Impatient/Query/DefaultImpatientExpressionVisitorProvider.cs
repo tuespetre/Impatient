@@ -17,7 +17,6 @@ namespace Impatient.Query
 
         private static readonly ExpressionVisitor[] optimizingExpressionVisitors = new ExpressionVisitor[]
         {
-            new GroupJoinRemovingExpressionVisitor(),
             new OperatorSplittingExpressionVisitor(),
             new SelectorMergingExpressionVisitor(),
             new PartialEvaluatingExpressionVisitor(),

@@ -78,8 +78,8 @@ namespace Impatient.Query.ExpressionVisitors
 
                     memberStack.Push(node.Type.GetRuntimeProperty("Key"));
 
-                    var outerKeySelector = Visit(groupByResultExpression.InteriorKeySelector);
-                    var innerKeySelector = replacingVisitor.Visit(groupByResultExpression.InteriorKeySelector);
+                    var outerKeySelector = Visit(groupByResultExpression.InnerKeySelector);
+                    var innerKeySelector = replacingVisitor.Visit(groupByResultExpression.InnerKeySelector);
                     var elementSelector = replacingVisitor.Visit(groupByResultExpression.ElementSelector);
 
                     memberStack.Pop();

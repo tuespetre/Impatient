@@ -79,8 +79,8 @@ namespace Impatient.Query.ExpressionVisitors
                     {
                         return new GroupByResultExpression(
                             relationalGrouping.SelectExpression,
-                            relationalGrouping.ExteriorKeySelector,
-                            relationalGrouping.InteriorKeySelector,
+                            relationalGrouping.OuterKeySelector,
+                            relationalGrouping.InnerKeySelector,
                             relationalGrouping.ElementSelector,
                             true);
                     }
@@ -106,8 +106,8 @@ namespace Impatient.Query.ExpressionVisitors
 
                         return new GroupByResultExpression(
                             relationalGrouping.SelectExpression,
-                            relationalGrouping.ExteriorKeySelector,
-                            relationalGrouping.InteriorKeySelector,
+                            relationalGrouping.OuterKeySelector,
+                            relationalGrouping.InnerKeySelector,
                             selectorBody,
                             relationalGrouping.IsDistinct);
                     }

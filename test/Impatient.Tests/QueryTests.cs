@@ -1877,21 +1877,17 @@ FROM [dbo].[MyClass1] AS [m]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [m].[Prop1] AS [m.Prop1], [m].[Prop2] AS [m.Prop2], [m0].[ms.Key] AS [Key], [m0].[max] AS [max], [m0].[min] AS [min], [m0].[count] AS [count], (
-    SELECT SUM([ms].[Prop2])
-    FROM [dbo].[MyClass1] AS [ms]
-    WHERE [m0].[ms.Key] = [ms].[Prop1]
+                @"SELECT [ms].[Prop1] AS [m.Prop1], [ms].[Prop2] AS [m.Prop2], [m].[ms.Key] AS [Key], [m].[max] AS [max], [m].[min] AS [min], [m].[count] AS [count], (
+    SELECT SUM([ms0].[Prop2])
+    FROM [dbo].[MyClass1] AS [ms0]
+    WHERE [m].[ms.Key] = [ms0].[Prop1]
 ) AS [sum]
 FROM (
-    SELECT [ms0].[Prop1] AS [ms.Key], MAX([ms0].[Prop2]) AS [max], MIN(DISTINCT [ms0].[Prop2]) AS [min], COUNT((CASE WHEN [ms0].[Prop2] > 7 THEN 1 ELSE NULL END)) AS [count]
-    FROM [dbo].[MyClass1] AS [ms0]
-    GROUP BY [ms0].[Prop1]
-) AS [m0]
-CROSS APPLY (
-    SELECT [ms1].[Prop1] AS [Prop1], [ms1].[Prop2] AS [Prop2]
+    SELECT [ms1].[Prop1] AS [ms.Key], MAX([ms1].[Prop2]) AS [max], MIN(DISTINCT [ms1].[Prop2]) AS [min], COUNT((CASE WHEN [ms1].[Prop2] > 7 THEN 1 ELSE NULL END)) AS [count]
     FROM [dbo].[MyClass1] AS [ms1]
-    WHERE [m0].[ms.Key] = [ms1].[Prop1]
-) AS [m]",
+    GROUP BY [ms1].[Prop1]
+) AS [m]
+INNER JOIN [dbo].[MyClass1] AS [ms] ON [m].[ms.Key] = [ms].[Prop1]",
                 sqlLog);
         }
 
