@@ -75,7 +75,7 @@ A number of features distinguish this project from a complete ORM solution:
 	select new { x, y }
 	```
 
--  `GROUP BY` can be generated as expected with some caveats:
+-  `GROUP BY` can be generated as expected:
 
     ```
 	// Will produce a GROUP BY query at the server:
@@ -88,8 +88,9 @@ A number of features distinguish this project from a complete ORM solution:
 	join Y y in ys on x.Key equals y.z
 	select new { x, y }
 
-	// Will require a client GroupBy operation because
-	// the IGrouping is not 'cut off' from the rest of the query:
+	// Will produce a GROUP BY query at the server as well
+	// as appropriate subqueries for when an aggregation 'escapes'
+	// the GROUP BY context
 	from X x in xs
 	group x by x.z into xg
 	join Y y in ys on xg.Key equals y.z
@@ -97,14 +98,7 @@ A number of features distinguish this project from a complete ORM solution:
 	select new { maxA, y }
 	```
 
-	This may be addressable in the future but it will involve
-	some intense rewriting logic.
-
-- ~~Relational null semantics have not yet been addressed -- this includes
-  the simplest of things like `IS NULL` and `IS NOT NULL`, and translating
-  `foo.NullableColumn != 1` into `[foo].[NullableColumn] IS NULL OR
-  [foo].[NullableColumn] <> 1`~~ Relational null semantics are partially
-  addressed but still have some work to be done.
+- Relational null semantics are partially addressed but still have some work to be done.
 
 - `Enum` types are not yet dealt with.
 

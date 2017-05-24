@@ -16,16 +16,6 @@ namespace Impatient.Tests.ExpressionVisitors
         [TestMethod]
         public void Works_with_GroupBy()
         {
-            // Key
-            AssertTransformation(
-                input: set1.GroupBy(x => x).Select(g => new { Max = g.Max(), Key = g.Key }),
-                output: set1.GroupBy(x => x, (k, e) => new { Max = e.Max(), Key = k }));
-
-            // Key, Element
-            AssertTransformation(
-                input: set1.GroupBy(x => x, x => x).Select(g => new { Max = g.Max(), Key = g.Key }),
-                output: set1.GroupBy(x => x, x => x, (k, e) => new { Max = e.Max(), Key = k }));
-
             // Key, Result
             AssertTransformation(
                 input: set1.GroupBy(x => x, (k, e) => new { k, e }).Select(g => new { Max = g.e.Max(), Key = g.k }),
@@ -35,21 +25,6 @@ namespace Impatient.Tests.ExpressionVisitors
             AssertTransformation(
                 input: set1.GroupBy(x => x, x => x, (k, e) => new { k, e }).Select(g => new { Max = g.e.Max(), Key = g.k }),
                 output: set1.GroupBy(x => x, x => x, (k, e) => new { Max = e.Max(), Key = k }));
-
-            // Escaped reference to grouping
-            var query = set1.GroupBy(x => x).Select(g => g);
-            var visitor = new SelectorMergingExpressionVisitor();
-            var result = visitor.Visit(query.Expression);
-            var groupByCall = (MethodCallExpression)result;
-            var selector = ((LambdaExpression)((UnaryExpression)groupByCall.Arguments.Last()).Operand);
-
-            Assert.IsInstanceOfType(selector.Body, typeof(NewExpression));
-            Assert.AreEqual(typeof(IGrouping<,>), groupByCall.Method.GetGenericArguments().Last().GetGenericTypeDefinition());
-
-            // Escaped reference to grouping, subsequently resolved
-            AssertTransformation(
-                input: set1.GroupBy(x => x).Select(g => new { g }).Select(g => new { Max = g.g.Max(), Key = g.g.Key }),
-                output: set1.GroupBy(x => x, (k, e) => new { Max = e.Max(), Key = k }));
         }
 
         [TestMethod]

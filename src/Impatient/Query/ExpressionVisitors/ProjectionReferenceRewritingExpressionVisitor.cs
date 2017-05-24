@@ -1,4 +1,5 @@
 ﻿using Impatient.Query.Expressions;
+using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -60,6 +61,65 @@ namespace Impatient.Query.ExpressionVisitors
                     return base.Visit(annotationExpression);
                 }
 
+                case GroupByResultExpression groupByResultExpression:
+                {
+                    var selectExpression = groupByResultExpression.SelectExpression;
+                    var uniquifier = new TableUniquifyingExpressionVisitor();
+                    var oldTables = selectExpression.Table.Flatten();
+
+                    selectExpression = uniquifier.VisitAndConvert(selectExpression, nameof(Visit));
+
+                    var newTables = selectExpression.Table.Flatten();
+
+                    var replacingVisitor
+                        = new ExpressionReplacingExpressionVisitor(
+                            oldTables.Zip(newTables, ValueTuple.Create<Expression, Expression>)
+                                .ToDictionary(t => t.Item1, t => t.Item2));
+
+                    memberStack.Push(node.Type.GetRuntimeProperty("Key"));
+
+                    var outerKeySelector = Visit(groupByResultExpression.InteriorKeySelector);
+                    var innerKeySelector = replacingVisitor.Visit(groupByResultExpression.InteriorKeySelector);
+                    var elementSelector = replacingVisitor.Visit(groupByResultExpression.ElementSelector);
+
+                    memberStack.Pop();
+
+                    return new GroupedRelationalQueryExpression(
+                        selectExpression.UpdateProjection(new ServerProjectionExpression(elementSelector)),
+                        outerKeySelector,
+                        innerKeySelector,
+                        groupByResultExpression.Type);
+                }
+
+                case GroupedRelationalQueryExpression groupedRelationalQueryExpression:
+                {
+                    var selectExpression = groupedRelationalQueryExpression.SelectExpression;
+                    var uniquifier = new TableUniquifyingExpressionVisitor();
+                    var oldTables = selectExpression.Table.Flatten();
+
+                    selectExpression = uniquifier.VisitAndConvert(selectExpression, nameof(Visit));
+
+                    var newTables = selectExpression.Table.Flatten();
+
+                    var replacingVisitor
+                        = new ExpressionReplacingExpressionVisitor(
+                            oldTables.Zip(newTables, ValueTuple.Create<Expression, Expression>)
+                                .ToDictionary(t => t.Item1, t => t.Item2));
+
+                    memberStack.Push(node.Type.GetRuntimeProperty("Key"));
+
+                    var outerKeySelector = Visit(groupedRelationalQueryExpression.OuterKeySelector);
+                    var innerKeySelector = replacingVisitor.Visit(groupedRelationalQueryExpression.InnerKeySelector);
+
+                    memberStack.Pop();
+
+                    return new GroupedRelationalQueryExpression(
+                        selectExpression,
+                        innerKeySelector,
+                        outerKeySelector,
+                        groupedRelationalQueryExpression.Type);
+                }
+
                 default:
                 {
                     var type = default(Type);
@@ -79,7 +139,7 @@ namespace Impatient.Query.ExpressionVisitors
                         }
                     }
 
-                    var alias = string.Join(".", memberStack.Reverse().Select(m => m.Name));
+                    var alias = string.Join(".", memberStack.Reverse().Select(m => m.Name).Where(n => !n.StartsWith("<>")));
 
                     return new SqlColumnExpression(targetTable, alias, type);
                 }

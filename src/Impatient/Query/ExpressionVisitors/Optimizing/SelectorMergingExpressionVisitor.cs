@@ -43,87 +43,39 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
                 switch (previousMethodCall.Method.Name)
                 {
-                    case nameof(Queryable.GroupBy):
+                    case nameof(Queryable.GroupBy)
+                    when previousMethodCall.Method.MatchesGenericMethod(groupByKeyResult)
+                        || previousMethodCall.Method.MatchesGenericMethod(groupByKeyElementResult):
                     {
-                        if (previousMethodCall.Method.MatchesGenericMethod(groupByKeyResult)
-                            || previousMethodCall.Method.MatchesGenericMethod(groupByKeyElementResult))
-                        {
-                            var resultSelectorIndex 
-                                = previousMethodCall.Method.GetParameters().ToList()
-                                    .FindIndex(p => p.Name == "resultSelector");
+                        var resultSelectorIndex 
+                            = previousMethodCall.Method.GetParameters().ToList()
+                                .FindIndex(p => p.Name == "resultSelector");
 
-                            var typeArguments = previousMethodCall.Method.GetGenericArguments();
-                            var previousArguments = previousMethodCall.Arguments.ToArray();
-                            var previousSelector = previousArguments[resultSelectorIndex].UnwrapLambda();
-                            var currentSelector = arguments[1].UnwrapLambda();
+                        var typeArguments = previousMethodCall.Method.GetGenericArguments();
+                        var previousArguments = previousMethodCall.Arguments.ToArray();
+                        var previousSelector = previousArguments[resultSelectorIndex].UnwrapLambda();
+                        var currentSelector = arguments[1].UnwrapLambda();
 
-                            var resultSelectorVisitor
-                                = new GroupByResultSelectorExpandingExpressionVisitor(
-                                    groupingParameter: null,
-                                    keyParameter: previousSelector.Parameters[0],
-                                    elementsParameter: previousSelector.Parameters[1]);
+                        var resultSelectorVisitor
+                            = new GroupByResultSelectorExpandingExpressionVisitor(
+                                groupingParameter: null,
+                                keyParameter: previousSelector.Parameters[0],
+                                elementsParameter: previousSelector.Parameters[1]);
 
-                            previousArguments[resultSelectorIndex]
-                                = Expression.Quote(
-                                    Expression.Lambda(
-                                        resultSelectorVisitor.Visit(
-                                            currentSelector.ExpandParameters(previousSelector.Body)),
-                                        previousSelector.Parameters));
+                        previousArguments[resultSelectorIndex]
+                            = Expression.Quote(
+                                Expression.Lambda(
+                                    resultSelectorVisitor.Visit(
+                                        currentSelector.ExpandParameters(previousSelector.Body)),
+                                    previousSelector.Parameters));
 
-                            typeArguments[typeArguments.Length - 1] = currentSelector.ReturnType;
+                        typeArguments[typeArguments.Length - 1] = currentSelector.ReturnType;
 
-                            return Expression.Call(
-                                previousMethodCall.Method
-                                    .GetGenericMethodDefinition()
-                                    .MakeGenericMethod(typeArguments),
-                                previousArguments);
-                        }
-                        else
-                        {
-                            var genericArguments = previousMethodCall.Method.GetGenericArguments().ToList();
-                            var genericGenericArguments = previousMethodCall.Method.GetGenericMethodDefinition().GetGenericArguments().ToList();
-
-                            var keyTypeIndex = genericGenericArguments.FindLastIndex(a => a.Name == "TKey");
-                            var keyType = genericArguments[keyTypeIndex];
-                            var keyParameter = Expression.Parameter(keyType, "k");
-
-                            var elementTypeIndex = genericGenericArguments.FindLastIndex(a => a.Name == "TElement" || a.Name == "TSource");
-                            var elementType = genericArguments[elementTypeIndex];
-                            var elementsParameter = Expression.Parameter(typeof(IEnumerable<>).MakeGenericType(elementType), "e");
-
-                            var currentSelector = arguments[1].UnwrapLambda();
-                            var groupingParameter = currentSelector.Parameters[0];
-
-                            var resultSelectorVisitor 
-                                = new GroupByResultSelectorExpandingExpressionVisitor(
-                                    groupingParameter,
-                                    keyParameter,
-                                    elementsParameter);
-
-                            var newArguments = previousMethodCall.Arguments.ToList();
-
-                            var resultSelector
-                                = Expression.Quote(
-                                    Expression.Lambda(
-                                        typeof(Func<,,>).MakeGenericType(
-                                            keyParameter.Type, 
-                                            elementsParameter.Type,
-                                            currentSelector.ReturnType),
-                                        resultSelectorVisitor.Visit(currentSelector.Body),
-                                        keyParameter,
-                                        elementsParameter));
-
-                            genericArguments.Add(currentSelector.ReturnType);
-
-                            var callInfo
-                                = previousMethodCall.Method.MatchesGenericMethod(groupByKeyElement)
-                                    ? (argumentIndex: 3, methodInfo: groupByKeyElementResult)
-                                    : (argumentIndex: 2, methodInfo: groupByKeyResult);
-
-                            newArguments.Insert(callInfo.argumentIndex, resultSelector);
-
-                            return Expression.Call(callInfo.methodInfo.MakeGenericMethod(genericArguments.ToArray()), newArguments);
-                        }
+                        return Expression.Call(
+                            previousMethodCall.Method
+                                .GetGenericMethodDefinition()
+                                .MakeGenericMethod(typeArguments),
+                            previousArguments);
                     }
 
                     case nameof(Queryable.GroupJoin):
@@ -262,12 +214,6 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
         private static readonly MethodInfo selectWithoutIndex
             = GetGenericMethodDefinition((IQueryable<object> q) => q.Select(x => x));
-
-        private static readonly MethodInfo groupByKey
-            = GetGenericMethodDefinition((IQueryable<object> q) => q.GroupBy(x => x));
-
-        private static readonly MethodInfo groupByKeyElement
-            = GetGenericMethodDefinition((IQueryable<object> q) => q.GroupBy(x => x, x => x));
 
         private static readonly MethodInfo groupByKeyResult
             = GetGenericMethodDefinition((IQueryable<object> q) => q.GroupBy(x => x, (x, y) => x));

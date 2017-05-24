@@ -24,12 +24,17 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                 {
                     return Visit(foundExpression);
                 }
-
-                // TODO: Remove this to make this visitor more generalized.
-                case RelationalGroupingExpression relationalGroupingExpression
-                when node.Member == relationalGroupingExpression.Type.GetRuntimeProperty(nameof(IGrouping<object, object>.Key)):
+                
+                case GroupByResultExpression groupByResultExpression
+                when node.Member == groupByResultExpression.Type.GetRuntimeProperty("Key"):
                 {
-                    return Visit(relationalGroupingExpression.KeySelector);
+                    return Visit(groupByResultExpression.ExteriorKeySelector);
+                }
+                
+                case GroupedRelationalQueryExpression groupedRelationalQueryExpression
+                when node.Member == groupedRelationalQueryExpression.Type.GetRuntimeProperty("Key"):
+                {
+                    return Visit(groupedRelationalQueryExpression.OuterKeySelector);
                 }
 
                 default:

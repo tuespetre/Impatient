@@ -93,29 +93,19 @@ namespace Impatient.Query.ExpressionVisitors
         {
             switch (node)
             {
-                case SqlExpression sql:
-                {
-                    return new TranslatableExpression(sql);
-                }
-
-                case SingleValueRelationalQueryExpression singleValueRelationalQuery:
-                {
-                    return new TranslatableExpression(singleValueRelationalQuery);
-                }
-                
-                case ComplexNestedQueryExpression complexNestedQuery when complexNestedQueriesSupported:
+                case SqlExpression sqlExpression:
+                case GroupByResultExpression groupByResultExpression:
+                case GroupedRelationalQueryExpression groupedRelationalQueryExpression:
+                case SingleValueRelationalQueryExpression singleValueRelationalQueryExpression:
+                case ComplexNestedQueryExpression complexNestedQueryExpression when complexNestedQueriesSupported:
+                case EnumerableRelationalQueryExpression enumerableRelationalQueryExpression when complexNestedQueriesSupported:
                 {
                     return new TranslatableExpression(node);
                 }
 
-                case EnumerableRelationalQueryExpression enumerableRelationalQuery when complexNestedQueriesSupported:
+                case AnnotationExpression annotationExpression:
                 {
-                    return new TranslatableExpression(node);
-                }
-
-                case AnnotationExpression annotation:
-                {
-                    return Visit(annotation.Expression);
+                    return Visit(annotationExpression.Expression);
                 }
             }
 

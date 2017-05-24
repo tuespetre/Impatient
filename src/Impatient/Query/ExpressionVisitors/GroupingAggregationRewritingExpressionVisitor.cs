@@ -2,9 +2,9 @@
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.ExpressionVisitors.Rewriting
+namespace Impatient.Query.ExpressionVisitors
 {
-    public class RelationalGroupingAggregationRewritingExpressionVisitor : ExpressionVisitor
+    public class GroupingAggregationRewritingExpressionVisitor : ExpressionVisitor
     {
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
@@ -13,7 +13,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
             if ((node.Method.DeclaringType == typeof(Queryable)
                     || node.Method.DeclaringType == typeof(Enumerable))
-                && arguments[0] is RelationalGroupingExpression relationalGrouping)
+                && arguments[0] is GroupByResultExpression relationalGrouping)
             {
                 switch (node.Method.Name)
                 {
@@ -40,8 +40,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                                 : node.Method.Name.ToUpperInvariant(),
                             selector,
                             node.Method.ReturnType,
-                            relationalGrouping is DistinctRelationalGroupingExpression
-                                && node.Arguments.Count == 1);
+                            relationalGrouping.IsDistinct && node.Arguments.Count == 1);
                     }
 
                     case nameof(Queryable.Count):
@@ -73,23 +72,17 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                                 ? selector
                                 : new SqlFragmentExpression("*", selector.Type),
                             node.Method.ReturnType,
-                            relationalGrouping is DistinctRelationalGroupingExpression
-                                && node.Arguments.Count == 1);
+                            relationalGrouping.IsDistinct && node.Arguments.Count == 1);
                     }
 
                     case nameof(Queryable.Distinct):
                     {
-                        if (relationalGrouping is DistinctRelationalGroupingExpression)
-                        {
-                            return relationalGrouping;
-                        }
-                        else
-                        {
-                            return new DistinctRelationalGroupingExpression(
-                                relationalGrouping.UnderlyingQuery,
-                                relationalGrouping.KeySelector,
-                                relationalGrouping.ElementSelector);
-                        }
+                        return new GroupByResultExpression(
+                            relationalGrouping.SelectExpression,
+                            relationalGrouping.ExteriorKeySelector,
+                            relationalGrouping.InteriorKeySelector,
+                            relationalGrouping.ElementSelector,
+                            true);
                     }
 
                     case nameof(Queryable.Select):
@@ -111,10 +104,12 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                             break;
                         }
 
-                        return new RelationalGroupingExpression(
-                            relationalGrouping.UnderlyingQuery,
-                            relationalGrouping.KeySelector,
-                            selectorBody);
+                        return new GroupByResultExpression(
+                            relationalGrouping.SelectExpression,
+                            relationalGrouping.ExteriorKeySelector,
+                            relationalGrouping.InteriorKeySelector,
+                            selectorBody,
+                            relationalGrouping.IsDistinct);
                     }
                 }
             }

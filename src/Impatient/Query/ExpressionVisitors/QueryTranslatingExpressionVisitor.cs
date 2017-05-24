@@ -1180,6 +1180,11 @@ namespace Impatient.Query.ExpressionVisitors
                 return Visit(node);
             }
 
+            private string ComputeCurrentName()
+            {
+                return string.Join(".", CurrentPath.Reverse().Where(n => !n.StartsWith("<>")));
+            }
+
             public override Expression Visit(Expression node)
             {
                 switch (node)
@@ -1200,7 +1205,7 @@ namespace Impatient.Query.ExpressionVisitors
                     case DefaultIfEmptyExpression defaultIfEmpty:
                     {
                         CurrentPath.Push(defaultIfEmpty.AliasExpression.Alias);
-                        var name = string.Join(".", CurrentPath.Reverse());
+                        var name = ComputeCurrentName();
                         CurrentPath.Pop();
 
                         GatheredExpressions[name] = defaultIfEmpty.AliasExpression.Expression;
@@ -1217,7 +1222,7 @@ namespace Impatient.Query.ExpressionVisitors
                     case MetaAliasExpression metaAliasExpression:
                     {
                         CurrentPath.Push(metaAliasExpression.AliasExpression.Alias);
-                        var name = string.Join(".", CurrentPath.Reverse());
+                        var name = ComputeCurrentName();
                         CurrentPath.Pop();
 
                         GatheredExpressions[name] = metaAliasExpression.AliasExpression.Expression;
@@ -1230,13 +1235,13 @@ namespace Impatient.Query.ExpressionVisitors
                         if (InSubLeaf)
                         {
                             CurrentPath.Push($"${++subLeafIndex}");
-                            var name = string.Join(".", CurrentPath.Reverse());
+                            var name = ComputeCurrentName();
                             CurrentPath.Pop();
                             GatheredExpressions[name] = expression;
                         }
                         else
                         {
-                            var name = string.Join(".", CurrentPath.Reverse());
+                            var name = ComputeCurrentName();
                             GatheredExpressions[name] = expression;
                         }
 

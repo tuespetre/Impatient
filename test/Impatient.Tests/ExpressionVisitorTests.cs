@@ -104,23 +104,6 @@ namespace Impatient.Tests
             Assert.AreEqual(hashCode5, hashCode6);
         }
 
-        //[TestMethod]
-        public void Groupings()
-        {
-            var visitor = new GroupingEliminatingExpressionVisitor.GroupingReferenceAnnotatingExpressionVisitor();
-
-            var set = new List<object>().AsQueryable();
-
-            var query = from s in set
-                        group s by s.ToString() into g
-                        select new { g.Key, g } into g
-                        select new { g.Key, Max = g.g.Max() };
-
-            var result = visitor.Visit(query.Expression);
-
-            Assert.Inconclusive(result.ToString());
-        }
-
         [TestMethod]
         public void EscapedReferenceCounting()
         {

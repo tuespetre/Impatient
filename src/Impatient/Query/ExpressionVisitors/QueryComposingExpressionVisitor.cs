@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using static Impatient.ImpatientExtensions;
 
 namespace Impatient.Query.ExpressionVisitors
 {
@@ -14,12 +15,51 @@ namespace Impatient.Query.ExpressionVisitors
 
         private readonly ImpatientQueryProvider queryProvider;
 
-        private IEnumerable<ExpressionVisitor> RewritingExpressionVisitors 
-            => queryProvider.ExpressionVisitorProvider.RewritingExpressionVisitors;
+        private static readonly GroupingAggregationRewritingExpressionVisitor groupingAggregationRewriter
+            = new GroupingAggregationRewritingExpressionVisitor();
+
+        private static readonly GroupingKeyRewritingExpressionVisitor groupingKeyRewriter
+            = new GroupingKeyRewritingExpressionVisitor();
+
+        private static readonly GroupedRelationalQueryExpandingExpressionVisitor groupExpander
+            = new GroupedRelationalQueryExpandingExpressionVisitor();
+
+        private IEnumerable<ExpressionVisitor> PostExpansionVisitors
+        {
+            get
+            {
+                yield return this;
+
+                yield return groupingAggregationRewriter;
+
+                foreach (var rewritingVisitor in queryProvider.ExpressionVisitorProvider.RewritingExpressionVisitors)
+                {
+                    yield return rewritingVisitor;
+                }
+            }
+        }
+
+        private bool topLevel = true;
 
         public QueryComposingExpressionVisitor(ImpatientQueryProvider queryProvider)
         {
             this.queryProvider = queryProvider ?? throw new ArgumentNullException(nameof(queryProvider));
+        }
+
+        public override Expression Visit(Expression node)
+        {
+            if (topLevel)
+            {
+                topLevel = false;
+
+                var visited = base.Visit(node);
+
+                topLevel = true;
+
+                return groupExpander.Visit(visited);
+            }
+
+            return base.Visit(node);
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
@@ -29,7 +69,7 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 var visitedArguments = new Expression[node.Arguments.Count];
 
-                var outerSource = visitedArguments[0] = Visit(node.Arguments[0]);
+                var outerSource = visitedArguments[0] = ProcessQuerySource(Visit(node.Arguments[0]));
 
                 if (outerSource is EnumerableRelationalQueryExpression outerQuery)
                 {
@@ -61,8 +101,7 @@ namespace Impatient.Query.ExpressionVisitors
                             var selectorBody
                                 = selector
                                     .ExpandParameters(outerProjection.Flatten().Body)
-                                    .VisitWith(this)
-                                    .VisitWith(RewritingExpressionVisitors);
+                                    .VisitWith(PostExpansionVisitors);
 
                             if (selectorBody.IsTranslatable())
                             {
@@ -93,25 +132,42 @@ namespace Impatient.Query.ExpressionVisitors
                                 goto ReturnEnumerableCall;
                             }
 
-                            var outerProjection = outerQuery.SelectExpression.Projection.Flatten().Body;
+                            var resultSelector = node.Arguments[2].UnwrapLambda();
 
-                            // TODO: Inspect whether the outer query needs to be pushed down
+                            var outerSelectExpression = outerQuery.SelectExpression;
+                            var outerTable = outerSelectExpression.Table;
+                            var outerProjection = outerSelectExpression.Projection.Flatten().Body;
+                            var outerRequiresPushdown = outerSelectExpression.RequiresPushdownForLeftSideOfJoin();
 
-                            var projection = collectionSelector.ExpandParameters(outerProjection);
-                            var handleAsCorrelated = projection != collectionSelector.Body;
+                            if (outerRequiresPushdown)
+                            {
+                                outerTable
+                                    = new SubqueryTableExpression(
+                                        groupingKeyRewriter.VisitAndConvert(outerSelectExpression, nameof(VisitMethodCall)),
+                                        resultSelector.Parameters[1].Name);
+
+                                outerProjection
+                                    = new ProjectionReferenceRewritingExpressionVisitor((SubqueryTableExpression)outerTable)
+                                        .Visit(outerProjection);
+
+                                outerSelectExpression
+                                    = new SelectExpression(
+                                        new ServerProjectionExpression(outerProjection),
+                                        outerTable);
+                            }
+
+                            var innerSource = collectionSelector.ExpandParameters(outerProjection);
+                            var handleAsCorrelated = innerSource != collectionSelector.Body;
                             var defaultIfEmpty = false;
                             var handleAsJoin = false;
                             var joinPredicate = default(JoinPredicateExpression);
                             var joinExpression = default(Expression);
 
-                            projection 
-                                = projection
-                                    .VisitWith(this)
-                                    .VisitWith(RewritingExpressionVisitors);
+                            innerSource = ProcessQuerySource(innerSource).VisitWith(PostExpansionVisitors);
 
                             if (complexNestedQueriesSupported)
                             {
-                                if (projection is EnumerableRelationalQueryExpression query)
+                                if (innerSource is EnumerableRelationalQueryExpression query)
                                 {
                                     var lastMethodCall = collectionSelector.Body as MethodCallExpression;
 
@@ -140,19 +196,22 @@ namespace Impatient.Query.ExpressionVisitors
                                         handleAsCorrelated = false;
                                     }
 
-                                    projection = query;
+                                    innerSource = query;
                                 }
                             }
 
-                            if (!(projection is EnumerableRelationalQueryExpression innerQuery))
+                            if (!(ProcessQuerySource(innerSource) is EnumerableRelationalQueryExpression innerQuery))
                             {
                                 // TODO: Test coverage
                                 goto ReturnEnumerableCall;
                             }
 
-                            var resultSelector = node.Arguments[2].UnwrapLambda();
-                            var innerSelectExpression = new TableUniquifyingExpressionVisitor().VisitAndConvert(innerQuery.SelectExpression, nameof(VisitMethodCall));
+                            var innerSelectExpression 
+                                = new TableUniquifyingExpressionVisitor()
+                                    .VisitAndConvert(innerQuery.SelectExpression, nameof(VisitMethodCall));
+
                             var innerTable = innerSelectExpression.Table as AliasedTableExpression;
+
                             var innerProjection = innerSelectExpression.Projection.Flatten().Body;
 
                             if (handleAsJoin)
@@ -162,7 +221,10 @@ namespace Impatient.Query.ExpressionVisitors
                                 innerSelectExpression = innerSelectExpression.RemovePredicate();
                             }
 
-                            var innerRequiresPushdown = innerSelectExpression.RequiresPushdownForRightSideOfJoin() || handleAsCorrelated || defaultIfEmpty;
+                            var innerRequiresPushdown 
+                                = innerSelectExpression.RequiresPushdownForRightSideOfJoin() 
+                                    || handleAsCorrelated 
+                                    || defaultIfEmpty;
 
                             if (innerRequiresPushdown)
                             {
@@ -178,7 +240,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                                 innerTable
                                     = new SubqueryTableExpression(
-                                        innerSelectExpression,
+                                        groupingKeyRewriter.VisitAndConvert(innerSelectExpression, nameof(VisitMethodCall)),
                                         resultSelector.Parameters[1].Name);
 
                                 innerProjection
@@ -223,32 +285,33 @@ namespace Impatient.Query.ExpressionVisitors
                             var selector 
                                 = resultSelector
                                     .ExpandParameters(outerProjection, innerProjection)
-                                    .VisitWith(this)
-                                    .VisitWith(RewritingExpressionVisitors);
+                                    .VisitWith(PostExpansionVisitors);
 
-                            var outerTable = outerQuery.SelectExpression.Table;
+                            var projection
+                                = selector.IsTranslatable()
+                                    ? new ServerProjectionExpression(Expression.Lambda(selector))
+                                    : new CompositeProjectionExpression(
+                                        outerSelectExpression.Projection,
+                                        innerSelectExpression.Projection,
+                                        resultSelector) as ProjectionExpression;
+
+                            var table
+                                = handleAsJoin
+                                    ? defaultIfEmpty
+                                        ? new LeftJoinExpression(outerTable, innerTable, joinExpression, selector.Type)
+                                        : new InnerJoinExpression(outerTable, innerTable, joinExpression, selector.Type)
+                                            as TableExpression
+                                    : handleAsCorrelated
+                                        ? defaultIfEmpty
+                                            ? new OuterApplyExpression(outerTable, innerTable, selector.Type)
+                                            : new CrossApplyExpression(outerTable, innerTable, selector.Type)
+                                                as TableExpression
+                                        : new CrossJoinExpression(outerTable, innerTable, selector.Type);
 
                             return outerQuery
-                                .UpdateSelectExpression(outerQuery.SelectExpression
-                                    .UpdateTable(
-                                        handleAsJoin
-                                            ? defaultIfEmpty
-                                                ? new LeftJoinExpression(outerTable, innerTable, joinExpression, selector.Type)
-                                                : new InnerJoinExpression(outerTable, innerTable, joinExpression, selector.Type)
-                                                    as TableExpression
-                                            : handleAsCorrelated
-                                                ? defaultIfEmpty
-                                                    ? new OuterApplyExpression(outerTable, innerTable, selector.Type)
-                                                    : new CrossApplyExpression(outerTable, innerTable, selector.Type)
-                                                        as TableExpression
-                                                : new CrossJoinExpression(outerTable, innerTable, selector.Type))
-                                    .UpdateProjection(
-                                        selector.IsTranslatable()
-                                            ? new ServerProjectionExpression(Expression.Lambda(selector))
-                                            : new CompositeProjectionExpression(
-                                                outerQuery.SelectExpression.Projection,
-                                                innerSelectExpression.Projection,
-                                                resultSelector) as ProjectionExpression));
+                                .UpdateSelectExpression(outerSelectExpression
+                                    .UpdateProjection(projection)
+                                    .UpdateTable(table));
                         }
 
                         // Join operations
@@ -262,9 +325,9 @@ namespace Impatient.Query.ExpressionVisitors
                                 goto ReturnEnumerableCall;
                             }
 
-                            var innerQueryable = visitedArguments[1] = Visit(node.Arguments[1]);
+                            var innerSource = visitedArguments[1] = ProcessQuerySource(Visit(node.Arguments[1]));
 
-                            if (!(innerQueryable is EnumerableRelationalQueryExpression innerQuery))
+                            if (!(innerSource is EnumerableRelationalQueryExpression innerQuery))
                             {
                                 // TODO: test coverage
                                 goto ReturnEnumerableCall;
@@ -272,6 +335,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                             // TODO: Inspect whether the outer query needs to be pushed down
                             var outerSelectExpression = outerQuery.SelectExpression;
+                            var outerTable = outerSelectExpression.Table;
                             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
                             var outerKeyLambda = node.Arguments[2].UnwrapLambda();
 
@@ -284,13 +348,13 @@ namespace Impatient.Query.ExpressionVisitors
                                     goto ReturnEnumerableCall;
                                 }
 
-                                var outerTable
+                                outerTable
                                     = new SubqueryTableExpression(
-                                        outerSelectExpression,
+                                        groupingKeyRewriter.VisitAndConvert(outerSelectExpression, nameof(VisitMethodCall)),
                                         outerKeyLambda.Parameters[0].Name);
 
                                 outerProjection
-                                    = new ProjectionReferenceRewritingExpressionVisitor(outerTable)
+                                    = new ProjectionReferenceRewritingExpressionVisitor((SubqueryTableExpression)outerTable)
                                         .Visit(outerProjection);
 
                                 // TODO: What about ordering?
@@ -303,8 +367,7 @@ namespace Impatient.Query.ExpressionVisitors
                             var outerKeySelector
                                 = outerKeyLambda
                                     .ExpandParameters(outerProjection)
-                                    .VisitWith(this)
-                                    .VisitWith(RewritingExpressionVisitors);
+                                    .VisitWith(PostExpansionVisitors);
 
                             if (!outerKeySelector.IsTranslatable())
                             {
@@ -312,15 +375,16 @@ namespace Impatient.Query.ExpressionVisitors
                                 goto ReturnEnumerableCall;
                             }
 
-                            var innerTable = innerQuery.SelectExpression.Table as AliasedTableExpression;
-                            var innerProjection = innerQuery.SelectExpression.Projection.Flatten().Body;
+                            var innerSelectExpression = innerQuery.SelectExpression;
+                            var innerTable = innerSelectExpression.Table as AliasedTableExpression;
+                            var innerProjection = innerSelectExpression.Projection.Flatten().Body;
                             var innerKeyLambda = node.Arguments[3].UnwrapLambda();
 
-                            if (innerQuery.SelectExpression.RequiresPushdownForRightSideOfJoin())
+                            if (innerSelectExpression.RequiresPushdownForRightSideOfJoin())
                             {
                                 innerTable
                                     = new SubqueryTableExpression(
-                                        innerQuery.SelectExpression,
+                                        groupingKeyRewriter.VisitAndConvert(innerSelectExpression, nameof(VisitMethodCall)),
                                         innerKeyLambda.Parameters[0].Name);
 
                                 innerProjection
@@ -331,8 +395,7 @@ namespace Impatient.Query.ExpressionVisitors
                             var innerKeySelector
                                 = innerKeyLambda
                                     .ExpandParameters(innerProjection)
-                                    .VisitWith(this)
-                                    .VisitWith(RewritingExpressionVisitors);
+                                    .VisitWith(PostExpansionVisitors);
 
                             if (!innerKeySelector.IsTranslatable())
                             {
@@ -347,22 +410,25 @@ namespace Impatient.Query.ExpressionVisitors
                             var resultSelector
                                 = resultLambda
                                     .ExpandParameters(outerProjection, innerProjection)
-                                    .VisitWith(this)
-                                    .VisitWith(RewritingExpressionVisitors);
+                                    .VisitWith(PostExpansionVisitors);
+
+                            var projection
+                                = resultSelector.IsTranslatable()
+                                    ? new ServerProjectionExpression(Expression.Lambda(resultSelector))
+                                    : outerSelectExpression.Projection.Merge(
+                                        Expression.Lambda(resultLambda.VisitWith(this)));
+
+                            var table
+                                = new InnerJoinExpression(
+                                    outerTable,
+                                    innerTable,
+                                    Expression.Equal(outerKeySelector, innerKeySelector),
+                                    resultSelector.Type);
 
                             return outerQuery
                                 .UpdateSelectExpression(outerSelectExpression
-                                    .UpdateTable(
-                                        new InnerJoinExpression(
-                                            outerSelectExpression.Table,
-                                            innerTable,
-                                            Expression.Equal(outerKeySelector, innerKeySelector),
-                                            resultSelector.Type))
-                                    .UpdateProjection(
-                                        resultSelector.IsTranslatable()
-                                            ? new ServerProjectionExpression(Expression.Lambda(resultSelector))
-                                            : outerSelectExpression.Projection.Merge(
-                                                Expression.Lambda(resultLambda.VisitWith(this)))));
+                                    .UpdateProjection(projection)
+                                    .UpdateTable(table));
                         }
 
                         case nameof(Queryable.GroupJoin):
@@ -392,8 +458,7 @@ namespace Impatient.Query.ExpressionVisitors
                             var predicateBody
                                 = predicateLambda
                                     .ExpandParameters(outerProjection)
-                                    .VisitWith(this)
-                                    .VisitWith(RewritingExpressionVisitors);
+                                    .VisitWith(PostExpansionVisitors);
 
                             if (predicateBody.IsTranslatable())
                             {
@@ -479,8 +544,7 @@ namespace Impatient.Query.ExpressionVisitors
                                 = node.Arguments[1]
                                     .UnwrapLambda()
                                     .ExpandParameters(outerProjection)
-                                    .VisitWith(this)
-                                    .VisitWith(RewritingExpressionVisitors);
+                                    .VisitWith(PostExpansionVisitors);
 
                             if (!keySelector.IsTranslatable())
                             {
@@ -499,8 +563,7 @@ namespace Impatient.Query.ExpressionVisitors
                                     = node.Arguments[2]
                                         .UnwrapLambda()
                                         .ExpandParameters(elementSelector)
-                                        .VisitWith(this)
-                                        .VisitWith(RewritingExpressionVisitors);
+                                        .VisitWith(PostExpansionVisitors);
                             }
 
                             if (!elementSelector.IsTranslatable())
@@ -514,12 +577,14 @@ namespace Impatient.Query.ExpressionVisitors
                             var resultSelectorLambda
                                 = node.Arguments[node.Arguments.Count - 1]
                                     .UnwrapLambda();
-
+                            
                             var resultSelector 
-                                = (Expression)new RelationalGroupingExpression(
-                                    outerQuery,
+                                = (Expression)new GroupByResultExpression(
+                                    outerQuery.SelectExpression,
+                                    keySelector,
                                     keySelector, 
-                                    elementSelector);
+                                    elementSelector,
+                                    false);
 
                             if (nodeMethodGenericMethodDefinition == groupByKeyResult
                                 || nodeMethodGenericMethodDefinition == groupByKeyElementResult)
@@ -527,8 +592,7 @@ namespace Impatient.Query.ExpressionVisitors
                                 resultSelector
                                     = resultSelectorLambda
                                         .ExpandParameters(keySelector, resultSelector)
-                                        .VisitWith(this)
-                                        .VisitWith(RewritingExpressionVisitors);
+                                        .VisitWith(PostExpansionVisitors);
                             }
 
                             if (resultSelector.IsTranslatable())
@@ -583,9 +647,10 @@ namespace Impatient.Query.ExpressionVisitors
                                     innerSubquery,
                                     Expression.Equal(Expression.Constant(1), Expression.Constant(1)),
                                     innerSubquery.Type);
-
-                            var projectionRewriter = new ProjectionReferenceRewritingExpressionVisitor(innerSubquery);
-                            var projectionBody = projectionRewriter.Visit(innerProjectionBody);
+                            
+                            var projectionBody 
+                                = new ProjectionReferenceRewritingExpressionVisitor(innerSubquery)
+                                    .Visit(innerProjectionBody);
 
                             var selectExpression
                                 = new SelectExpression(
@@ -621,8 +686,7 @@ namespace Impatient.Query.ExpressionVisitors
                                     = node.Arguments[1]
                                         .UnwrapLambda()
                                         .ExpandParameters(outerProjection)
-                                        .VisitWith(this)
-                                        .VisitWith(RewritingExpressionVisitors);
+                                        .VisitWith(PostExpansionVisitors);
 
                                 if (!predicate.IsTranslatable())
                                 {
@@ -657,8 +721,7 @@ namespace Impatient.Query.ExpressionVisitors
                                     = node.Arguments[1]
                                         .UnwrapLambda()
                                         .ExpandParameters(outerProjection)
-                                        .VisitWith(this)
-                                        .VisitWith(RewritingExpressionVisitors);
+                                        .VisitWith(PostExpansionVisitors);
 
                                 if (!predicate.IsTranslatable())
                                 {
@@ -720,8 +783,7 @@ namespace Impatient.Query.ExpressionVisitors
                                     = node.Arguments[1]
                                         .UnwrapLambda()
                                         .ExpandParameters(outerProjection)
-                                        .VisitWith(this)
-                                        .VisitWith(RewritingExpressionVisitors);
+                                        .VisitWith(PostExpansionVisitors);
 
                                 if (!predicate.IsTranslatable())
                                 {
@@ -754,8 +816,7 @@ namespace Impatient.Query.ExpressionVisitors
                                     = node.Arguments[1]
                                         .UnwrapLambda()
                                         .ExpandParameters(outerProjection)
-                                        .VisitWith(this)
-                                        .VisitWith(RewritingExpressionVisitors);
+                                        .VisitWith(PostExpansionVisitors);
 
                                 if (!predicate.IsTranslatable())
                                 {
@@ -813,8 +874,7 @@ namespace Impatient.Query.ExpressionVisitors
                                 = node.Arguments[1]
                                     .UnwrapLambda()
                                     .ExpandParameters(outerProjection)
-                                    .VisitWith(this)
-                                    .VisitWith(RewritingExpressionVisitors);
+                                    .VisitWith(PostExpansionVisitors);
 
                             if (!ordering.IsTranslatable() || !ordering.Type.IsScalarType())
                             {
@@ -983,9 +1043,9 @@ namespace Impatient.Query.ExpressionVisitors
                         case nameof(Queryable.Intersect):
                         case nameof(Queryable.Union):
                         {
-                            var innerQueryable = Visit(node.Arguments[1]);
+                            var innerSource = visitedArguments[1] = ProcessQuerySource(Visit(node.Arguments[1]));
 
-                            if (!(innerQueryable is EnumerableRelationalQueryExpression innerQuery))
+                            if (!(innerSource is EnumerableRelationalQueryExpression innerQuery))
                             {
                                 // TODO: test coverage
                                 goto ReturnEnumerableCall;
@@ -1010,9 +1070,10 @@ namespace Impatient.Query.ExpressionVisitors
                                             : node.Method.Name == nameof(Queryable.Union)
                                                 ? new UnionExpression(outerQuery.SelectExpression, innerQuery.SelectExpression)
                                                 : default(SetOperatorExpression);
-
-                            var projectionRewriter = new ProjectionReferenceRewritingExpressionVisitor(setOperatorExpression);
-                            var projectionBody = projectionRewriter.Visit(outerQuery.SelectExpression.Projection.Flatten().Body);
+                            
+                            var projectionBody 
+                                = new ProjectionReferenceRewritingExpressionVisitor(setOperatorExpression)
+                                    .Visit(outerQuery.SelectExpression.Projection.Flatten().Body);
 
                             var selectExpression
                                 = new SelectExpression(
@@ -1054,8 +1115,7 @@ namespace Impatient.Query.ExpressionVisitors
                                 = node.Arguments[1]
                                     .UnwrapLambda()
                                     .ExpandParameters(outerProjection)
-                                    .VisitWith(this)
-                                    .VisitWith(RewritingExpressionVisitors);
+                                    .VisitWith(PostExpansionVisitors);
 
                             if (!predicate.IsTranslatable())
                             {
@@ -1102,8 +1162,7 @@ namespace Impatient.Query.ExpressionVisitors
                                     = node.Arguments[1]
                                         .UnwrapLambda()
                                         .ExpandParameters(outerProjection)
-                                        .VisitWith(this)
-                                        .VisitWith(RewritingExpressionVisitors);
+                                        .VisitWith(PostExpansionVisitors);
 
                                 if (!predicateBody.IsTranslatable())
                                 {
@@ -1192,14 +1251,13 @@ namespace Impatient.Query.ExpressionVisitors
 
                             if (node.Arguments.Count == 2)
                             {
-                                var selector = node.Arguments[1].UnwrapLambda();
                                 var outerProjection = selectExpression.Projection.Flatten().Body;
 
                                 var selectorBody
-                                    = selector
+                                    = node.Arguments[1]
+                                        .UnwrapLambda()
                                         .ExpandParameters(outerProjection)
-                                        .VisitWith(this)
-                                        .VisitWith(RewritingExpressionVisitors);
+                                        .VisitWith(PostExpansionVisitors);
 
                                 if (selectorBody.IsTranslatable())
                                 {
@@ -1259,8 +1317,7 @@ namespace Impatient.Query.ExpressionVisitors
                                     = node.Arguments[1]
                                         .UnwrapLambda()
                                         .ExpandParameters(outerProjection)
-                                        .VisitWith(this)
-                                        .VisitWith(RewritingExpressionVisitors);
+                                        .VisitWith(PostExpansionVisitors);
 
                                 if (!predicate.IsTranslatable())
                                 {
@@ -1300,6 +1357,26 @@ namespace Impatient.Query.ExpressionVisitors
             }
 
             return base.VisitMethodCall(node);
+        }
+
+        private Expression ProcessQuerySource(Expression node)
+        {
+            switch (node)
+            {
+                case GroupedRelationalQueryExpression groupedRelationalQueryExpression:
+                {
+                    return new EnumerableRelationalQueryExpression(
+                        groupedRelationalQueryExpression.SelectExpression
+                            .AddToPredicate(Expression.Equal(
+                                groupedRelationalQueryExpression.OuterKeySelector,
+                                groupedRelationalQueryExpression.InnerKeySelector)));
+                }
+
+                default:
+                {
+                    return node;
+                }
+            }
         }
 
         private static MethodInfo MatchQueryableMethod(MethodInfo method)
@@ -1377,15 +1454,14 @@ namespace Impatient.Query.ExpressionVisitors
             return matching.Single().MakeGenericMethod(method.GetGenericArguments());
         }
 
-        private static MethodInfo GetMethod<TResult>(Expression<Func<IQueryable<object>, TResult>> expression)
-        {
-            return ((MethodCallExpression)expression.Body).Method.GetGenericMethodDefinition();
-        }
+        private static readonly MethodInfo groupByKeyElement 
+            = GetGenericMethodDefinition((IQueryable<object> q) => q.GroupBy(x => x, x => x));
 
-        private static readonly MethodInfo groupByKey = GetMethod(q => q.GroupBy(x => x));
-        private static readonly MethodInfo groupByKeyElement = GetMethod(q => q.GroupBy(x => x, x => x));
-        private static readonly MethodInfo groupByKeyResult = GetMethod(q => q.GroupBy(x => x, (x, y) => x));
-        private static readonly MethodInfo groupByKeyElementResult = GetMethod(q => q.GroupBy(x => x, x => x, (x, y) => x));
+        private static readonly MethodInfo groupByKeyResult 
+            = GetGenericMethodDefinition((IQueryable<object> q) => q.GroupBy(x => x, (x, y) => x));
+
+        private static readonly MethodInfo groupByKeyElementResult 
+            = GetGenericMethodDefinition((IQueryable<object> q) => q.GroupBy(x => x, x => x, (x, y) => x));
 
         private class EmptyRecord
         {

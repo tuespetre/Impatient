@@ -1274,66 +1274,62 @@ GROUP BY [m].[Prop1]",
                         let max = ms.Max(m => m.Prop2)
                         let min = ms.Select(m => m.Prop2).Distinct().Min()
                         let count = ms.Count(m => m.Prop2 > 7)
-                        select new { ms.Key, max, min, count } into x
-                        //
-                        // Currently, a query continuation must be used
-                        // in order for the GroupBy to be translatable, even
-                        // if the grouping is only ever used to produce 
-                        // translatable aggregations. In this example, the 
-                        // continuation is not strictly necessary.
-                        //
-                        // The problem here is twofold:
-                        //
-                        // 1. We need the aggregations to be in the result selector,
-                        //    because later on it will be too late to decide that
-                        //    we can't translate the GROUP BY. We have to be able
-                        //    to take the result selector and say 'this is translatable
-                        //    in and of itself'.
-                        //
-                        // 2. Using query expression syntax, it seems natural to 
-                        //    write aggregation expressions higher up in the tree
-                        //    (for instance, to join on the maximum value of a grouping),
-                        //    but writing queries this way causes the reference to
-                        //    the grouping to 'escape' the scope of the result selector.
-                        //
-                        // In the future we should aim to rewrite
-                        // the tree by 'sinking' aggregations down the tree into
-                        // the GroupBy's result selector when we can detect
-                        // that the grouping does not 'escape', but that will be 
-                        // a complicated algorithm.
-                        //
-                        // 'Escaping' in that case would mean that the grouping
-                        // is referenced somewhere in the tree that does not meet 
-                        // the following conditions:
-                        //
-                        //  - It is a leaf node of a projection that is not top-level
-                        //
-                        //      - That is, it appears in a projection in a way that 
-                        //        can be dereferenced by a subsequent projection
-                        //
-                        //  - It is the operand of a MemberExpression that represents
-                        //    access of the Key property
-                        //
-                        //  - It is the root node of a 'sinkable aggregate', which is
-                        //    an expression meeting the following conditions:
-                        //
-                        //      - The top-level operator is an aggregation operator
-                        //        (Aggregate, Average, Count, LongCount, Max, Min, Sum)
-                        //
-                        //      - Any operators below it are 'single-sequence' operators
-                        //        not including sorting or partitioning operators:
-                        //        (AsQueryable, Select, Where, OfType, DefaultIfEmpty, Cast, Distinct)
-                        //
-                        select x;
+                        select new { ms.Key, max, min, count };
 
             var results = query.ToList();
 
             Assert.AreEqual(2, results.Count);
 
             Assert.AreEqual(
-                @"SELECT [m].[Prop1] AS [Key], MAX([m].[Prop2]) AS [max], MIN(DISTINCT [m].[Prop2]) AS [min], COUNT((CASE WHEN [m].[Prop2] > 7 THEN 1 ELSE NULL END)) AS [count]
+                @"SELECT [ms].[Prop1] AS [Key], MAX([ms].[Prop2]) AS [max], MIN(DISTINCT [ms].[Prop2]) AS [min], COUNT((CASE WHEN [ms].[Prop2] > 7 THEN 1 ELSE NULL END)) AS [count]
+FROM [dbo].[MyClass1] AS [ms]
+GROUP BY [ms].[Prop1]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void GroupBy_as_grouping_top_level()
+        {
+            var query = from m in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                        group m by m.Prop1;
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [Key], (
+    SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m0]
+    WHERE [m].[Prop1] = [m0].[Prop1]
+    FOR JSON PATH
+) AS [Elements]
 FROM [dbo].[MyClass1] AS [m]
 GROUP BY [m].[Prop1]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void GroupBy_as_grouping_subquery()
+        {
+            var query = from m in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                        from g in (from s in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                                   group s by s.Prop1)
+                        select new { m, g };
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [m.Prop1], [m].[Prop2] AS [m.Prop2], [g].[Key] AS [g.Key], (
+    SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m0]
+    WHERE [g].[Key] = [m0].[Prop1]
+    FOR JSON PATH
+) AS [g.Elements]
+FROM [dbo].[MyClass1] AS [m]
+CROSS JOIN (
+    SELECT [m1].[Prop1] AS [Key]
+    FROM [dbo].[MyClass1] AS [m1]
+    GROUP BY [m1].[Prop1]
+) AS [g]",
                 sqlLog);
         }
 
@@ -1876,13 +1872,26 @@ FROM [dbo].[MyClass1] AS [m]",
                         let min = ms.Select(m => m.Prop2).Distinct().Min()
                         let count = ms.Count(m => m.Prop2 > 7)
                         from m in ms
-                        select new { m, ms.Key, max, min, count };
+                        select new { m, ms.Key, max, min, count, sum = ms.Sum(x => x.Prop2) };
 
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
-FROM [dbo].[MyClass1] AS [m]",
+                @"SELECT [m].[Prop1] AS [m.Prop1], [m].[Prop2] AS [m.Prop2], [m0].[ms.Key] AS [Key], [m0].[max] AS [max], [m0].[min] AS [min], [m0].[count] AS [count], (
+    SELECT SUM([ms].[Prop2])
+    FROM [dbo].[MyClass1] AS [ms]
+    WHERE [m0].[ms.Key] = [ms].[Prop1]
+) AS [sum]
+FROM (
+    SELECT [ms0].[Prop1] AS [ms.Key], MAX([ms0].[Prop2]) AS [max], MIN(DISTINCT [ms0].[Prop2]) AS [min], COUNT((CASE WHEN [ms0].[Prop2] > 7 THEN 1 ELSE NULL END)) AS [count]
+    FROM [dbo].[MyClass1] AS [ms0]
+    GROUP BY [ms0].[Prop1]
+) AS [m0]
+CROSS APPLY (
+    SELECT [ms1].[Prop1] AS [Prop1], [ms1].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [ms1]
+    WHERE [m0].[ms.Key] = [ms1].[Prop1]
+) AS [m]",
                 sqlLog);
         }
 
@@ -2030,9 +2039,9 @@ INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop2] = [m2].[Prop2]",
             Assert.AreEqual(
                 @"SELECT [m1].[Key] AS [m1.Key], [m1].[Sum] AS [m1.Sum], [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2]
 FROM (
-    SELECT [m10].[Prop2] AS [Key], SUM([m10].[Prop2]) AS [Sum]
-    FROM [dbo].[MyClass1] AS [m10]
-    GROUP BY [m10].[Prop2]
+    SELECT [m1g].[Prop2] AS [Key], SUM([m1g].[Prop2]) AS [Sum]
+    FROM [dbo].[MyClass1] AS [m1g]
+    GROUP BY [m1g].[Prop2]
 ) AS [m1]
 INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Key] = [m2].[Prop2]",
                 sqlLog);
@@ -2204,8 +2213,8 @@ ORDER BY (CASE WHEN [m].[Prop2] = 77 THEN 1 ELSE 0 END) ASC",
 
             Assert.AreEqual(
                 @"SELECT COUNT(*) AS [count]
-FROM [dbo].[MyClass1] AS [m]
-GROUP BY (CASE WHEN [m].[Prop2] = 77 THEN 1 ELSE 0 END)",
+FROM [dbo].[MyClass1] AS [mg]
+GROUP BY (CASE WHEN [mg].[Prop2] = 77 THEN 1 ELSE 0 END)",
                 sqlLog);
         }
 

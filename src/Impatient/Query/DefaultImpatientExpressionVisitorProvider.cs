@@ -10,7 +10,6 @@ namespace Impatient.Query
     {
         private static readonly ExpressionVisitor[] rewritingExpressionVisitors = new ExpressionVisitor[]
         {
-            new RelationalGroupingAggregationRewritingExpressionVisitor(),
             new CollectionContainsRewritingExpressionVisitor(),
             new EnumerableContainsRewritingExpressionVisitor(),
             new ComplexNestedQueryAnnotatingExpressionVisitor(),
