@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -45,6 +46,20 @@ namespace Impatient.Query.Expressions
             var orderedType = typeof(IOrderedQueryable<>).MakeGenericType(SelectExpression.Type);
 
             return new EnumerableRelationalQueryExpression(SelectExpression, orderedType);
+        }
+
+        public virtual EnumerableRelationalQueryExpression AsArray()
+        {
+            var arrayType = SelectExpression.Type.MakeArrayType();
+
+            return new EnumerableRelationalQueryExpression(SelectExpression, arrayType);
+        }
+
+        public virtual EnumerableRelationalQueryExpression AsList()
+        {
+            var listType = typeof(List<>).MakeGenericType(SelectExpression.Type);
+
+            return new EnumerableRelationalQueryExpression(SelectExpression, listType);
         }
     }
 }

@@ -82,6 +82,16 @@ namespace Impatient.Query.ExpressionVisitors
                             return outerQuery;
                         }
 
+                        case nameof(Enumerable.ToArray):
+                        {
+                            return outerQuery.AsArray();
+                        }
+
+                        case nameof(Enumerable.ToList):
+                        {
+                            return outerQuery.AsList();
+                        }
+
                         // Projection operations
 
                         case nameof(Queryable.Select):

@@ -12,7 +12,6 @@ namespace Impatient.Query
         {
             new CollectionContainsRewritingExpressionVisitor(),
             new EnumerableContainsRewritingExpressionVisitor(),
-            new ComplexNestedQueryAnnotatingExpressionVisitor(),
         };
 
         private static readonly ExpressionVisitor[] optimizingExpressionVisitors = new ExpressionVisitor[]

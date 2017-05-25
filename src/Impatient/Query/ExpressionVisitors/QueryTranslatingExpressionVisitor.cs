@@ -21,7 +21,7 @@ namespace Impatient.Query.ExpressionVisitors
 
         public (Expression materializer, Expression commandBuilder) Translate(SelectExpression selectExpression)
         {
-            selectExpression 
+            selectExpression
                 = new ParameterizableExpressionAnnotatingExpressionVisitor()
                     .VisitAndConvert(selectExpression, nameof(Translate));
 
@@ -131,7 +131,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                 case ExpressionType.Equal:
                 {
-                    if (node.Left is NewExpression leftNewExpression 
+                    if (node.Left is NewExpression leftNewExpression
                         && node.Right is NewExpression rightNewExpression)
                     {
                         return Visit(
@@ -984,7 +984,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                 Visit(expression);
 
-                builder.Append(" THEN 1 ELSE 0 END)");                    
+                builder.Append(" THEN 1 ELSE 0 END)");
             }
             else
             {
@@ -1091,12 +1091,12 @@ namespace Impatient.Query.ExpressionVisitors
             {
             }
 
-            protected override AnnotationExpression Recreate(Expression expression) 
+            protected override AnnotationExpression Recreate(Expression expression)
                 => new ParameterizableExpression(expression);
         }
 
         private static Expression FlattenProjection(
-            ProjectionExpression projection, 
+            ProjectionExpression projection,
             ReaderParameterInjectingExpressionVisitor visitor)
         {
             switch (projection)
@@ -1164,7 +1164,7 @@ namespace Impatient.Query.ExpressionVisitors
                 {
                     if (topLevelIndex == 1)
                     {
-                        GatheredExpressions 
+                        GatheredExpressions
                             = GatheredExpressions
                                 .Select(p => ("$0." + p.Key, p.Value))
                                 .ToDictionary(p => p.Item1, p => p.Item2);
@@ -1251,15 +1251,26 @@ namespace Impatient.Query.ExpressionVisitors
                             GatheredExpressions[name] = expression;
                         }
 
-                        if (expression is ComplexNestedQueryExpression || expression is EnumerableRelationalQueryExpression)
+                        if (expression is RelationalQueryExpression && !expression.Type.IsScalarType())
                         {
                             var type = node.Type;
                             var defaultValue = Expression.Default(type) as Expression;
 
                             if (expression is EnumerableRelationalQueryExpression)
                             {
-                                type = node.Type.FindGenericType(typeof(IEnumerable<>));
-                                defaultValue = Expression.Call(enumerableEmptyMethodInfo.MakeGenericMethod(type.GetSequenceType()));
+                                if (node.Type.IsArray)
+                                {
+                                    defaultValue = Expression.NewArrayInit(node.Type.GetElementType());
+                                }
+                                else if (node.Type.FindGenericType(typeof(List<>)) != null)
+                                {
+                                    defaultValue = Expression.New(type);
+                                }
+                                else
+                                {
+                                    type = node.Type.FindGenericType(typeof(IEnumerable<>));
+                                    defaultValue = Expression.Call(enumerableEmptyMethodInfo.MakeGenericMethod(type.GetSequenceType()));
+                                }
                             }
 
                             var currentIndex = readerIndex;

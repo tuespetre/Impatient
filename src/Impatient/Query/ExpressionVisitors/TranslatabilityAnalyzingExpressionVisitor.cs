@@ -15,7 +15,7 @@ namespace Impatient.Query.ExpressionVisitors
 
         protected override Expression VisitBinary(BinaryExpression node)
         {
-            if (Visit(node.Left) is TranslatableExpression 
+            if (Visit(node.Left) is TranslatableExpression
                 && Visit(node.Right) is TranslatableExpression)
             {
                 switch (node.NodeType)
@@ -96,9 +96,18 @@ namespace Impatient.Query.ExpressionVisitors
                 case SqlExpression sqlExpression:
                 case GroupByResultExpression groupByResultExpression:
                 case GroupedRelationalQueryExpression groupedRelationalQueryExpression:
-                case SingleValueRelationalQueryExpression singleValueRelationalQueryExpression:
-                case ComplexNestedQueryExpression complexNestedQueryExpression when complexNestedQueriesSupported:
-                case EnumerableRelationalQueryExpression enumerableRelationalQueryExpression when complexNestedQueriesSupported:
+                {
+                    return new TranslatableExpression(node);
+                }
+
+                case SingleValueRelationalQueryExpression singleValueRelationalQueryExpression
+                when singleValueRelationalQueryExpression.Type.IsScalarType() || complexNestedQueriesSupported:
+                {
+                    return new TranslatableExpression(node);
+                }
+
+                case EnumerableRelationalQueryExpression enumerableRelationalQueryExpression 
+                when complexNestedQueriesSupported:
                 {
                     return new TranslatableExpression(node);
                 }

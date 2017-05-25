@@ -1864,7 +1864,7 @@ FROM [dbo].[MyClass1] AS [m]",
                                                   {
                                                       y = m1.Prop2 * m2.Prop2
                                                   }
-                                              }).ToArray()
+                                              }).ToList()
                                    }).ToArray()
                         };
 
