@@ -1140,6 +1140,12 @@ namespace Impatient.Query.ExpressionVisitors
             private static readonly MethodInfo getFieldValueMethodInfo
                 = dbDataReaderTypeInfo.GetDeclaredMethod(nameof(DbDataReader.GetFieldValue));
 
+            private static readonly MethodInfo isDBNullMethodInfo
+                = dbDataReaderTypeInfo.GetDeclaredMethod(nameof(DbDataReader.IsDBNull));
+
+            private static readonly MethodInfo enumerableEmptyMethodInfo
+                = ImpatientExtensions.GetGenericMethodDefinition((object o) => Enumerable.Empty<object>());
+
             private readonly ParameterExpression readerParameter;
             private int readerIndex;
             private int subLeafIndex;
@@ -1247,24 +1253,49 @@ namespace Impatient.Query.ExpressionVisitors
 
                         if (expression is ComplexNestedQueryExpression || expression is EnumerableRelationalQueryExpression)
                         {
-                            var type = expression is ComplexNestedQueryExpression
-                                ? node.Type
-                                : node.Type.FindGenericType(typeof(IEnumerable<>));
+                            var type = node.Type;
+                            var defaultValue = Expression.Default(type) as Expression;
 
-                            return Expression.Call(
-                                ImpatientExtensions
-                                    .GetGenericMethodDefinition((string s) => JsonConvert.DeserializeObject<object>(s))
-                                    .MakeGenericMethod(type),
+                            if (expression is EnumerableRelationalQueryExpression)
+                            {
+                                type = node.Type.FindGenericType(typeof(IEnumerable<>));
+                                defaultValue = Expression.Call(enumerableEmptyMethodInfo.MakeGenericMethod(type.GetSequenceType()));
+                            }
+
+                            var currentIndex = readerIndex;
+                            readerIndex++;
+
+                            return Expression.Condition(
                                 Expression.Call(
                                     readerParameter,
-                                    getFieldValueMethodInfo.MakeGenericMethod(typeof(string)),
-                                    Expression.Constant(readerIndex++)));
+                                    isDBNullMethodInfo,
+                                    Expression.Constant(currentIndex)),
+                                defaultValue,
+                                Expression.Call(
+                                    ImpatientExtensions
+                                        .GetGenericMethodDefinition((string s) => JsonConvert.DeserializeObject<object>(s))
+                                        .MakeGenericMethod(type),
+                                    Expression.Call(
+                                        readerParameter,
+                                        getFieldValueMethodInfo.MakeGenericMethod(typeof(string)),
+                                        Expression.Constant(currentIndex)))) as Expression;
                         }
+                        else
+                        {
+                            var currentIndex = readerIndex;
+                            readerIndex++;
 
-                        return Expression.Call(
-                            readerParameter,
-                            getFieldValueMethodInfo.MakeGenericMethod(node.Type),
-                            Expression.Constant(readerIndex++));
+                            return Expression.Condition(
+                                Expression.Call(
+                                    readerParameter,
+                                    isDBNullMethodInfo,
+                                    Expression.Constant(currentIndex)),
+                                Expression.Default(node.Type),
+                                Expression.Call(
+                                    readerParameter,
+                                    getFieldValueMethodInfo.MakeGenericMethod(node.Type),
+                                    Expression.Constant(currentIndex)));
+                        }
                     }
 
                     case Expression expression when InLeaf && !InSubLeaf:

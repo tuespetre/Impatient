@@ -4,6 +4,8 @@ using Impatient.Query.ExpressionVisitors;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
@@ -25,6 +27,32 @@ namespace Impatient.Tests
         public Expression MyClass1QueryExpression { get; }
 
         public Expression MyClass2QueryExpression { get; }
+
+        public static Expression CreateQueryExpression(Type type)
+        {
+            var annotation = type.GetTypeInfo().GetCustomAttribute<TableAttribute>();
+
+            var table = new BaseTableExpression(
+                annotation.Schema ?? "dbo",
+                annotation.Name,
+                annotation.Name.ToLower().First().ToString(),
+                type);                            
+            
+            return new EnumerableRelationalQueryExpression(
+                new SelectExpression(
+                    new ServerProjectionExpression(
+                        Expression.MemberInit(
+                            Expression.New(type),
+                            from property in type.GetTypeInfo().DeclaredProperties
+                            let nullable = 
+                                (property.PropertyType.IsConstructedGenericType 
+                                    && property.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                                || (!property.PropertyType.GetTypeInfo().IsValueType 
+                                    && property.GetCustomAttribute<RequiredAttribute>() == null)
+                            let column = new SqlColumnExpression(table, property.Name, property.PropertyType, nullable)
+                            select Expression.Bind(property, column))),
+                    table));
+        }
 
         public QueryTests()
         {
@@ -1959,6 +1987,55 @@ INNER JOIN [dbo].[MyClass2] AS [m21] ON [m1].[Prop1] = [m21].[Prop1]",
         }
 
         [TestMethod]
+        public void GroupJoin_floated_up_from_subquery()
+        {
+            var sqlLog = new StringBuilder();
+
+            var impatient = new ImpatientQueryProvider(
+                new TestImpatientConnectionFactory(@"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True"),
+                new DefaultImpatientQueryCache(),
+                new DefaultImpatientExpressionVisitorProvider())
+            {
+                DbCommandInterceptor = command =>
+                {
+                    sqlLog.Append(command.CommandText);
+                }
+            };
+
+            var customers = CreateQueryExpression(typeof(Northwind.Customer));
+            var orders = CreateQueryExpression(typeof(Northwind.Order));
+            var details = CreateQueryExpression(typeof(Northwind.OrderDetail));
+
+            var query = from c in impatient.CreateQuery<Northwind.Customer>(customers)
+                        join x in (from o in impatient.CreateQuery<Northwind.Order>(orders)
+                                   join d in impatient.CreateQuery<Northwind.OrderDetail>(details) on o.OrderID equals d.OrderID into dg
+                                   select new { o, dg }) on c.CustomerID equals x.o.CustomerID into xg
+                        select new
+                        {
+                            c,
+                            TotalOrders = xg.Count(),
+                            TotalDetails = xg.Sum(x => x.dg.Count()),
+                        };
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [c].[CustomerID] AS [$0.CustomerID], [c].[CompanyName] AS [$0.CompanyName], [c].[ContactName] AS [$0.ContactName], [c].[ContactTitle] AS [$0.ContactTitle], [c].[Address] AS [$0.Address], [c].[City] AS [$0.City], [c].[Region] AS [$0.Region], [c].[PostalCode] AS [$0.PostalCode], [c].[Country] AS [$0.Country], [c].[Phone] AS [$0.Phone], [c].[Fax] AS [$0.Fax], (
+    SELECT [o].[OrderID] AS [o.OrderID], [o].[CustomerID] AS [o.CustomerID], [o].[EmployeeID] AS [o.EmployeeID], [o].[OrderDate] AS [o.OrderDate], [o].[RequiredDate] AS [o.RequiredDate], [o].[ShippedDate] AS [o.ShippedDate], [o].[ShipVia] AS [o.ShipVia], [o].[Freight] AS [o.Freight], [o].[ShipName] AS [o.ShipName], [o].[ShipAddress] AS [o.ShipAddress], [o].[ShipCity] AS [o.ShipCity], [o].[ShipRegion] AS [o.ShipRegion], [o].[ShipPostalCode] AS [o.ShipPostalCode], [o].[ShipCountry] AS [o.ShipCountry], (
+        SELECT [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[UnitPrice] AS [UnitPrice], [d].[Quantity] AS [Quantity], [d].[Discount] AS [Discount]
+        FROM [dbo].[Order Details] AS [d]
+        WHERE [o].[OrderID] = [d].[OrderID]
+        FOR JSON PATH
+    ) AS [dg]
+    FROM [dbo].[Orders] AS [o]
+    WHERE [c].[CustomerID] = [o].[CustomerID]
+    FOR JSON PATH
+) AS [$1]
+FROM [dbo].[Customers] AS [c]",
+                sqlLog.ToString());
+        }
+
+        [TestMethod]
         public void Distinct_causes_outer_pushdown()
         {
             var query = from m1 in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Distinct()
@@ -2496,9 +2573,21 @@ WHERE (([a].[Prop1] IS NULL AND [m].[Prop1] IS NULL) OR ([a].[Prop1] = [m].[Prop
 
         private class TestImpatientConnectionFactory : IImpatientDbConnectionFactory
         {
+            private readonly string connectionString;
+
+            public TestImpatientConnectionFactory()
+            {
+                connectionString = @"Server=.\sqlexpress; Database=Impatient; Trusted_Connection=True";
+            }
+
+            public TestImpatientConnectionFactory(string connectionString)
+            {
+                this.connectionString = connectionString;
+            }
+
             public DbConnection CreateConnection()
             {
-                return new SqlConnection(@"Server=.\sqlexpress; Database=Impatient; Trusted_Connection=True");
+                return new SqlConnection(connectionString);
             }
         }
 

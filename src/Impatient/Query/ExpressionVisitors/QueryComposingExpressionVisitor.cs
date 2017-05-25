@@ -394,8 +394,10 @@ namespace Impatient.Query.ExpressionVisitors
                             var projection
                                 = resultSelector.IsTranslatable()
                                     ? new ServerProjectionExpression(Expression.Lambda(resultSelector))
-                                    : outerSelectExpression.Projection.Merge(
-                                        Expression.Lambda(resultLambda.VisitWith(this)));
+                                    : new CompositeProjectionExpression(
+                                        outerSelectExpression.Projection,
+                                        new ServerProjectionExpression(innerProjection),
+                                        resultLambda) as ProjectionExpression;
 
                             var table
                                 = new InnerJoinExpression(
@@ -454,22 +456,27 @@ namespace Impatient.Query.ExpressionVisitors
                                 = node.Arguments[4]
                                     .UnwrapLambda();
 
+                            innerProjection
+                                = new GroupedRelationalQueryExpression(
+                                    innerSelectExpression,
+                                    outerKeySelector,
+                                    innerKeySelector,
+                                    resultLambda.Parameters[1].Type);
+
                             var resultSelector
                                 = resultLambda
                                     .ExpandParameters(
                                         outerProjection,
-                                        new GroupedRelationalQueryExpression(
-                                            innerSelectExpression,
-                                            outerKeySelector,
-                                            innerKeySelector,
-                                            resultLambda.Parameters[1].Type))
+                                        innerProjection)
                                     .VisitWith(PostExpansionVisitors);
 
                             var projection
                                 = resultSelector.IsTranslatable()
                                     ? new ServerProjectionExpression(Expression.Lambda(resultSelector))
-                                    : outerSelectExpression.Projection.Merge(
-                                        Expression.Lambda(resultLambda.VisitWith(this)));
+                                    : new CompositeProjectionExpression(
+                                        outerSelectExpression.Projection,
+                                        new ServerProjectionExpression(innerProjection),
+                                        resultLambda) as ProjectionExpression;
 
                             return outerQuery
                                 .UpdateSelectExpression(outerSelectExpression
@@ -1309,9 +1316,15 @@ namespace Impatient.Query.ExpressionVisitors
                                 }
                             }
 
-                            if (!(selectExpression.Projection is ServerProjectionExpression))
+                            if (!(selectExpression.Projection is ServerProjectionExpression serverProjectionExpression))
                             {
                                 // TODO: test coverage
+                                goto ReturnEnumerableCall;
+                            }
+                            else if (serverProjectionExpression.ResultLambda.Body is SingleValueRelationalQueryExpression singleValueRelationalQueryExpression
+                                && singleValueRelationalQueryExpression.SelectExpression.Projection.Flatten().Body is SqlAggregateExpression)
+                            {
+                                // Cannot perform nested aggregate functions.
                                 goto ReturnEnumerableCall;
                             }
 
@@ -1369,8 +1382,8 @@ namespace Impatient.Query.ExpressionVisitors
                                     new ServerProjectionExpression(
                                         Expression.Lambda(
                                             node.Method.Name == nameof(Queryable.Count)
-                                                ? new SqlFragmentExpression("COUNT(*)", typeof(int))
-                                                : new SqlFragmentExpression("COUNT_BIG(*)", typeof(long))))));
+                                                ? new SqlAggregateExpression("COUNT", new SqlFragmentExpression("*", typeof(object)), typeof(int))
+                                                : new SqlAggregateExpression("COUNT_BIG", new SqlFragmentExpression("*", typeof(object)), typeof(long))))));
                         }
 
                         case nameof(Queryable.Aggregate):
