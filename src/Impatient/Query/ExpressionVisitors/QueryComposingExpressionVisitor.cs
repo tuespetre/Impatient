@@ -1353,12 +1353,13 @@ namespace Impatient.Query.ExpressionVisitors
 
                             switch (valuesExpression)
                             {
-                                case SingleValueRelationalQueryExpression singularRelationalQuery:
+                                case SingleValueRelationalQueryExpression singleValueRelationalQueryExpression:
                                 {
+                                    // TODO: Review this
                                     throw new NotImplementedException();
                                 }
 
-                                case ConstantExpression constant:
+                                case ConstantExpression constantExpression:
                                 {
                                     return new SingleValueRelationalQueryExpression(
                                         new SelectExpression(
@@ -1366,7 +1367,7 @@ namespace Impatient.Query.ExpressionVisitors
                                                 Expression.Lambda(
                                                     new SqlCastExpression(
                                                         Expression.Condition(
-                                                            new SqlInExpression(constant, selectExpression),
+                                                            new SqlInExpression(constantExpression, selectExpression),
                                                             Expression.Constant(true),
                                                             Expression.Constant(false)),
                                                         "BIT",

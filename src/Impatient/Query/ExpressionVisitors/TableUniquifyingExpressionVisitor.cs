@@ -9,22 +9,25 @@ namespace Impatient.Query.ExpressionVisitors
         {
             switch (node)
             {
-                case SqlColumnExpression sqlColumn:
+                case SqlColumnExpression sqlColumnExpression:
                 {
-                    return sqlColumn;
+                    return sqlColumnExpression;
                 }
 
-                case BaseTableExpression baseTable:
+                case BaseTableExpression baseTableExpression:
                 {
                     return new BaseTableExpression(
-                        baseTable.SchemaName,
-                        baseTable.TableName,
-                        baseTable.Alias,
-                        baseTable.Type);
+                        baseTableExpression.SchemaName,
+                        baseTableExpression.TableName,
+                        baseTableExpression.Alias,
+                        baseTableExpression.Type);
+                }
+
+                default:
+                {
+                    return base.Visit(node);
                 }
             }
-
-            return base.Visit(node);
         }
     }
 }
