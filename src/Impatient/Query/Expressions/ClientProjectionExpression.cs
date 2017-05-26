@@ -5,13 +5,13 @@ namespace Impatient.Query.Expressions
 {
     public class ClientProjectionExpression : ProjectionExpression
     {
-        public ClientProjectionExpression(LambdaExpression serverLambda, LambdaExpression resultLambda)
+        public ClientProjectionExpression(ServerProjectionExpression serverProjection, LambdaExpression resultLambda)
         {
-            ServerLambda = serverLambda ?? throw new ArgumentNullException(nameof(serverLambda));
+            ServerProjection = serverProjection ?? throw new ArgumentNullException(nameof(serverProjection));
             ResultLambda = resultLambda ?? throw new ArgumentNullException(nameof(resultLambda));
         }
 
-        public LambdaExpression ServerLambda { get; }
+        public ServerProjectionExpression ServerProjection { get; }
 
         public override LambdaExpression ResultLambda { get; }
 
@@ -19,23 +19,23 @@ namespace Impatient.Query.Expressions
 
         public override LambdaExpression Flatten()
             => Lambda(ResultLambda
-                .ExpandParameters(ServerLambda.Body));
+                .ExpandParameters(ServerProjection.Flatten().Body));
 
         public override ProjectionExpression Merge(LambdaExpression lambda)
             => new ClientProjectionExpression(
-                ServerLambda,
+                ServerProjection,
                 Lambda(
                     lambda.ExpandParameters(ResultLambda.Body),
                     ResultLambda.Parameters));
 
         protected override Expression VisitChildren(ExpressionVisitor visitor)
         {
-            var serverLambda = visitor.VisitAndConvert(ServerLambda, nameof(VisitChildren));
+            var serverProjection = visitor.VisitAndConvert(ServerProjection, nameof(VisitChildren));
             var resultLambda = visitor.VisitAndConvert(ResultLambda, nameof(VisitChildren));
 
-            if (serverLambda != ServerLambda || resultLambda != ResultLambda)
+            if (serverProjection != ServerProjection || resultLambda != ResultLambda)
             {
-                return new ClientProjectionExpression(serverLambda, resultLambda);
+                return new ClientProjectionExpression(serverProjection, resultLambda);
             }
 
             return this;

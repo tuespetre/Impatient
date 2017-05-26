@@ -11,10 +11,14 @@ namespace Impatient.Query.ExpressionVisitors
 {
     public class QueryCompilingExpressionVisitor : ExpressionVisitor
     {
+        private readonly IImpatientExpressionVisitorProvider expressionVisitorProvider;
         private readonly ParameterExpression queryProviderParameter;
 
-        public QueryCompilingExpressionVisitor(ParameterExpression queryProviderParameter)
+        public QueryCompilingExpressionVisitor(
+            IImpatientExpressionVisitorProvider expressionVisitorProvider,
+            ParameterExpression queryProviderParameter)
         {
+            this.expressionVisitorProvider = expressionVisitorProvider ?? throw new ArgumentNullException(nameof(expressionVisitorProvider));
             this.queryProviderParameter = queryProviderParameter ?? throw new ArgumentNullException(nameof(queryProviderParameter));
         }
 
@@ -24,7 +28,7 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 case EnumerableRelationalQueryExpression enumerableRelationalQueryExpression:
                 {
-                    var translator = new QueryTranslatingExpressionVisitor();
+                    var translator = expressionVisitorProvider.QueryTranslatingExpressionVisitor;
 
                     var (materializerLambda, commandBuilderLambda)
                         = translator.Translate(
@@ -33,7 +37,8 @@ namespace Impatient.Query.ExpressionVisitors
                     var sequenceType = node.Type.GetSequenceType();
 
                     return Expression.Call(
-                        asQueryableMethodInfo.MakeGenericMethod(sequenceType),
+                        (enumerableRelationalQueryExpression.TransformationMethod 
+                            ?? asQueryableMethodInfo.MakeGenericMethod(sequenceType)),
                         Expression.Call(
                             executeEnumerableMethodInfo.MakeGenericMethod(sequenceType),
                             queryProviderParameter,
@@ -43,7 +48,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                 case SingleValueRelationalQueryExpression singleValueRelationalQueryExpression:
                 {
-                    var translator = new QueryTranslatingExpressionVisitor();
+                    var translator = expressionVisitorProvider.QueryTranslatingExpressionVisitor;
 
                     var (materializerLambda, commandBuilderLambda)
                         = translator.Translate(

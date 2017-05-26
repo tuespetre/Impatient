@@ -16,8 +16,14 @@ namespace Impatient.Query.ExpressionVisitors
         private int queryDepth = -1;
         private HashSet<string> tableAliases = new HashSet<string>();
         private IDictionary<AliasedTableExpression, string> aliasLookup = new Dictionary<AliasedTableExpression, string>();
-
         private DbCommandBuilderExpressionBuilder builder = new DbCommandBuilderExpressionBuilder();
+
+        private readonly IImpatientExpressionVisitorProvider expressionVisitorProvider;
+
+        public QueryTranslatingExpressionVisitor(IImpatientExpressionVisitorProvider expressionVisitorProvider)
+        {
+            this.expressionVisitorProvider = expressionVisitorProvider ?? throw new ArgumentNullException(nameof(expressionVisitorProvider));
+        }
 
         public (Expression materializer, Expression commandBuilder) Translate(SelectExpression selectExpression)
         {
@@ -432,7 +438,10 @@ namespace Impatient.Query.ExpressionVisitors
 
                     var readerParameter = Expression.Parameter(typeof(DbDataReader));
 
-                    var projectionVisitor = new ReaderParameterInjectingExpressionVisitor(readerParameter);
+                    var projectionVisitor 
+                        = new ReaderParameterInjectingExpressionVisitor(
+                            expressionVisitorProvider,
+                            readerParameter);
 
                     var selectorBody = FlattenProjection(selectExpression.Projection, projectionVisitor);
 
@@ -567,12 +576,12 @@ namespace Impatient.Query.ExpressionVisitors
 
                 case SingleValueRelationalQueryExpression singleValueRelationalQuery:
                 {
-                    return VisitComplexTypeSubquery(singleValueRelationalQuery.SelectExpression);
+                    return VisitComplexNestedQuery(singleValueRelationalQuery.SelectExpression);
                 }
 
                 case EnumerableRelationalQueryExpression enumerableRelationalQuery:
                 {
-                    return VisitComplexTypeSubquery(enumerableRelationalQuery.SelectExpression);
+                    return VisitComplexNestedQuery(enumerableRelationalQuery.SelectExpression);
                 }
 
                 case BaseTableExpression baseTable:
@@ -953,7 +962,9 @@ namespace Impatient.Query.ExpressionVisitors
 
         #endregion
 
-        protected virtual Expression VisitComplexTypeSubquery(SelectExpression subquery)
+        #region Extensibility points
+
+        protected virtual Expression VisitComplexNestedQuery(SelectExpression subquery)
         {
             builder.IncreaseIndent();
             builder.Append("(");
@@ -1002,6 +1013,8 @@ namespace Impatient.Query.ExpressionVisitors
             return $"@{name}";
         }
 
+        #endregion
+
         private string GetTableAlias(AliasedTableExpression table)
         {
             if (!aliasLookup.TryGetValue(table, out var alias))
@@ -1034,7 +1047,7 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 if (node == null)
                 {
-                    return null;
+                    return node;
                 }
 
                 if (node.Type.IsScalarType())
@@ -1062,7 +1075,7 @@ namespace Impatient.Query.ExpressionVisitors
                 {
                     if (node == null)
                     {
-                        return null;
+                        return node;
                     }
 
                     switch (node.NodeType)
@@ -1108,10 +1121,10 @@ namespace Impatient.Query.ExpressionVisitors
 
                 case ClientProjectionExpression clientProjection:
                 {
-                    var client = clientProjection.ResultLambda;
-                    var server = clientProjection.ServerLambda;
+                    var server = clientProjection.ServerProjection;
+                    var result = clientProjection.ResultLambda;
 
-                    return client.ExpandParameters(visitor.Inject(server.Body));
+                    return Expression.Invoke(result, FlattenProjection(server, visitor));
                 }
 
                 case CompositeProjectionExpression compositeProjection:
@@ -1146,6 +1159,7 @@ namespace Impatient.Query.ExpressionVisitors
             private static readonly MethodInfo enumerableEmptyMethodInfo
                 = ImpatientExtensions.GetGenericMethodDefinition((object o) => Enumerable.Empty<object>());
 
+            private readonly IImpatientExpressionVisitorProvider expressionVisitorProvider;
             private readonly ParameterExpression readerParameter;
             private int readerIndex;
             private int subLeafIndex;
@@ -1153,8 +1167,11 @@ namespace Impatient.Query.ExpressionVisitors
 
             protected bool InSubLeaf { get; private set; }
 
-            public ReaderParameterInjectingExpressionVisitor(ParameterExpression readerParameter)
+            public ReaderParameterInjectingExpressionVisitor(
+                IImpatientExpressionVisitorProvider expressionVisitorProvider,
+                ParameterExpression readerParameter)
             {
+                this.expressionVisitorProvider = expressionVisitorProvider;
                 this.readerParameter = readerParameter;
             }
 
@@ -1193,6 +1210,11 @@ namespace Impatient.Query.ExpressionVisitors
 
             public override Expression Visit(Expression node)
             {
+                if (node == null)
+                {
+                    return node;
+                }
+
                 switch (node)
                 {
                     case NewExpression newExpression:
@@ -1236,7 +1258,10 @@ namespace Impatient.Query.ExpressionVisitors
                         return Visit(metaAliasExpression.Expression);
                     }
 
-                    case Expression expression when expression.IsTranslatable():
+                    case Expression expression
+                    when expressionVisitorProvider
+                        .TranslatabilityAnalyzingExpressionVisitor
+                        .Visit(expression) is TranslatableExpression:
                     {
                         if (InSubLeaf)
                         {

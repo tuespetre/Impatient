@@ -17,23 +17,9 @@ namespace Impatient
             return type == typeof(bool) || type == typeof(bool?);
         }
 
-        public static Expression VisitWith(this Expression expression, params ExpressionVisitor[] visitors)
-        {
-            return visitors.Aggregate(expression, (e, v) => v.Visit(e));
-        }
-
         public static Expression VisitWith(this Expression expression, IEnumerable<ExpressionVisitor> visitors)
         {
             return visitors.Aggregate(expression, (e, v) => v.Visit(e));
-        }
-
-        public static bool IsComplexNestedQuery(this MethodCallExpression expression)
-        {
-            return (expression.Method.DeclaringType == typeof(Enumerable)
-                && (expression.Method.Name == nameof(Enumerable.ToArray)
-                    || expression.Method.Name == nameof(Enumerable.ToList))
-                && expression.Arguments[0] is EnumerableRelationalQueryExpression enumerableRelationalQuery
-                && enumerableRelationalQuery.SelectExpression.Projection is ServerProjectionExpression);
         }
 
         public static bool MatchesGenericMethod(this MethodInfo method, MethodInfo other)
@@ -109,45 +95,9 @@ namespace Impatient
             }
         }
 
-        public static Expression UnwrapAnnotation(this Expression expression)
-        {
-            return expression is AnnotationExpression annotation ? annotation.Expression : expression;
-        }
-
-        public static bool IsTranslatable(this Expression expression)
-        {
-            return new TranslatabilityAnalyzingExpressionVisitor().Visit(expression) is TranslatableExpression;
-        }
-
-        public static bool IsTranslatable(this MemberBinding memberBinding)
-        {
-            switch (memberBinding)
-            {
-                case MemberAssignment memberAssignment:
-                {
-                    return memberAssignment.Expression.IsTranslatable();
-                }
-
-                case MemberMemberBinding memberMemberBinding:
-                {
-                    return memberMemberBinding.Bindings.All(IsTranslatable);
-                }
-
-                default:
-                {
-                    return false;
-                }
-            }
-        }
-
         public static Expression Replace(this Expression expression, Expression target, Expression replacement)
         {
             return new ExpressionReplacingExpressionVisitor(target, replacement).Visit(expression);
-        }
-
-        public static Expression ReduceMemberAccess(this Expression expression)
-        {
-            return new MemberAccessReducingExpressionVisitor().Visit(expression);
         }
 
         public static Expression ExpandParameters(this LambdaExpression lambdaExpression, params Expression[] expansions)

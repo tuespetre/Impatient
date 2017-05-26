@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Impatient.Query.Expressions
 {
@@ -13,11 +13,22 @@ namespace Impatient.Query.Expressions
                   typeof(IQueryable<>).MakeGenericType(selectExpression.Projection.Type))
         {
         }
+        public EnumerableRelationalQueryExpression(
+            SelectExpression selectExpression,
+            MethodInfo transformationMethod)
+            : this(
+                  selectExpression,
+                  transformationMethod.ReturnType)
+        {
+            TransformationMethod = transformationMethod ?? throw new ArgumentNullException(nameof(transformationMethod));
+        }
 
         private EnumerableRelationalQueryExpression(SelectExpression selectExpression, Type type)
             : base(selectExpression, type)
         {
         }
+
+        public MethodInfo TransformationMethod { get; }
 
         protected override Expression VisitChildren(ExpressionVisitor visitor)
         {
@@ -25,7 +36,9 @@ namespace Impatient.Query.Expressions
 
             if (selectExpression != SelectExpression)
             {
-                return UpdateSelectExpression(selectExpression);
+                return TransformationMethod != null
+                    ? UpdateSelectExpression(selectExpression).WithTransformationMethod(TransformationMethod)
+                    : UpdateSelectExpression(selectExpression);
             }
 
             return this;
@@ -36,30 +49,16 @@ namespace Impatient.Query.Expressions
             return new EnumerableRelationalQueryExpression(selectExpression);
         }
 
-        public EnumerableRelationalQueryExpression AsUnordered()
+        public EnumerableRelationalQueryExpression WithTransformationMethod(MethodInfo transformationMethod)
         {
-            return new EnumerableRelationalQueryExpression(SelectExpression);
+            return new EnumerableRelationalQueryExpression(SelectExpression, transformationMethod);
         }
 
-        public EnumerableRelationalQueryExpression AsOrdered()
+        public EnumerableRelationalQueryExpression AsOrderedQueryable()
         {
             var orderedType = typeof(IOrderedQueryable<>).MakeGenericType(SelectExpression.Type);
 
             return new EnumerableRelationalQueryExpression(SelectExpression, orderedType);
-        }
-
-        public virtual EnumerableRelationalQueryExpression AsArray()
-        {
-            var arrayType = SelectExpression.Type.MakeArrayType();
-
-            return new EnumerableRelationalQueryExpression(SelectExpression, arrayType);
-        }
-
-        public virtual EnumerableRelationalQueryExpression AsList()
-        {
-            var listType = typeof(List<>).MakeGenericType(SelectExpression.Type);
-
-            return new EnumerableRelationalQueryExpression(SelectExpression, listType);
         }
     }
 }

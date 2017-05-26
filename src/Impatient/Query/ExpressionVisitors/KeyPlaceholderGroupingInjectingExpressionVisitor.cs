@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace Impatient.Query.ExpressionVisitors
 {
-    public class GroupKeyInjectingExpressionVisitor : ExpressionVisitor
+    public class KeyPlaceholderGroupingInjectingExpressionVisitor : ExpressionVisitor
     {
         public override Expression Visit(Expression node)
         {
@@ -31,7 +31,7 @@ namespace Impatient.Query.ExpressionVisitors
             }
         }
 
-        private static MemberInitExpression CreateKeyPlaceholderGrouping(Expression expression, Expression keySelector)
+        public static MemberInitExpression CreateKeyPlaceholderGrouping(Expression expression, Expression keySelector)
         {
             var typeArguments
                 = expression.Type.FindGenericType(typeof(IGrouping<,>)) != null
@@ -40,7 +40,7 @@ namespace Impatient.Query.ExpressionVisitors
 
             var groupingType
                 = typeof(KeyPlaceholderGrouping<,>)
-                    .MakeGenericType(expression.Type.GenericTypeArguments);
+                    .MakeGenericType(typeArguments);
 
             return Expression.MemberInit(
                 Expression.New(groupingType),

@@ -259,7 +259,7 @@ CROSS APPLY (
                 = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
                     .SelectMany(m1 => impatient.CreateQuery<MyClass2>(MyClass2QueryExpression));
 
-            var visitor = new QueryComposingExpressionVisitor(impatient);
+            var visitor = new QueryComposingExpressionVisitor(impatient.ExpressionVisitorProvider);
 
             var expression = visitor.Visit(query.Expression);
 
@@ -273,7 +273,7 @@ CROSS APPLY (
                 = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
                     .SelectMany((m1, i) => impatient.CreateQuery<MyClass2>(MyClass2QueryExpression));
 
-            var visitor = new QueryComposingExpressionVisitor(impatient);
+            var visitor = new QueryComposingExpressionVisitor(impatient.ExpressionVisitorProvider);
 
             var expression = visitor.Visit(query.Expression);
 
@@ -532,7 +532,7 @@ WHERE [a].[Prop1] = N'What the'",
         {
             var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select((m, i) => new { m, i });
 
-            var expression = new QueryComposingExpressionVisitor(impatient).Visit(query.Expression);
+            var expression = new QueryComposingExpressionVisitor(impatient.ExpressionVisitorProvider).Visit(query.Expression);
 
             Assert.IsInstanceOfType(expression, typeof(MethodCallExpression));
         }
@@ -1208,7 +1208,7 @@ ORDER BY [m].[Prop1] ASC, [m].[Prop2] DESC",
             var expression = impatient.ExpressionVisitorProvider.OptimizingExpressionVisitors
                 .Aggregate(query.Expression, (e, v) => v.Visit(e));
 
-            expression = new QueryComposingExpressionVisitor(impatient).Visit(expression);
+            expression = new QueryComposingExpressionVisitor(impatient.ExpressionVisitorProvider).Visit(expression);
 
             Assert.IsInstanceOfType(expression, typeof(EnumerableRelationalQueryExpression));
 
@@ -1245,7 +1245,7 @@ FROM [dbo].[MyClass1] AS [m0]",
                 .Aggregate(query.Expression, (e, v) => v.Visit(e));
 
             expression = new QueryActivatingExpressionVisitor(impatient).Visit(expression);
-            expression = new QueryComposingExpressionVisitor(impatient).Visit(expression);
+            expression = new QueryComposingExpressionVisitor(impatient.ExpressionVisitorProvider).Visit(expression);
 
             Assert.IsInstanceOfType(expression, typeof(EnumerableRelationalQueryExpression));
 
@@ -1261,7 +1261,7 @@ FROM [dbo].[MyClass1] AS [m0]",
             var expression = impatient.ExpressionVisitorProvider.OptimizingExpressionVisitors
                 .Aggregate(query.Expression, (e, v) => v.Visit(e));
 
-            expression = new QueryComposingExpressionVisitor(impatient).Visit(expression);
+            expression = new QueryComposingExpressionVisitor(impatient.ExpressionVisitorProvider).Visit(expression);
 
             Assert.IsInstanceOfType(expression, typeof(EnumerableRelationalQueryExpression));
 
@@ -1343,7 +1343,7 @@ GROUP BY [m].[Prop1]",
                                    group s by s.Prop1)
                         select new { m, g };
 
-            query.ToList();
+            query.ToList().Select(x => x.g.ToArray()).ToArray();
 
             Assert.AreEqual(
                 @"SELECT [m].[Prop1] AS [m.Prop1], [m].[Prop2] AS [m.Prop2], [g].[Key] AS [g.Key], (
@@ -1998,6 +1998,11 @@ INNER JOIN [dbo].[MyClass2] AS [m21] ON [m1].[Prop1] = [m21].[Prop1]",
             {
                 DbCommandInterceptor = command =>
                 {
+                    if (sqlLog.Length > 0)
+                    {
+                        sqlLog.AppendLine().AppendLine();
+                    }
+
                     sqlLog.Append(command.CommandText);
                 }
             };
@@ -2019,20 +2024,22 @@ INNER JOIN [dbo].[MyClass2] AS [m21] ON [m1].[Prop1] = [m21].[Prop1]",
 
             query.ToList();
 
-            Assert.AreEqual(
-                @"SELECT [c].[CustomerID] AS [$0.CustomerID], [c].[CompanyName] AS [$0.CompanyName], [c].[ContactName] AS [$0.ContactName], [c].[ContactTitle] AS [$0.ContactTitle], [c].[Address] AS [$0.Address], [c].[City] AS [$0.City], [c].[Region] AS [$0.Region], [c].[PostalCode] AS [$0.PostalCode], [c].[Country] AS [$0.Country], [c].[Phone] AS [$0.Phone], [c].[Fax] AS [$0.Fax], (
-    SELECT [o].[OrderID] AS [o.OrderID], [o].[CustomerID] AS [o.CustomerID], [o].[EmployeeID] AS [o.EmployeeID], [o].[OrderDate] AS [o.OrderDate], [o].[RequiredDate] AS [o.RequiredDate], [o].[ShippedDate] AS [o.ShippedDate], [o].[ShipVia] AS [o.ShipVia], [o].[Freight] AS [o.Freight], [o].[ShipName] AS [o.ShipName], [o].[ShipAddress] AS [o.ShipAddress], [o].[ShipCity] AS [o.ShipCity], [o].[ShipRegion] AS [o.ShipRegion], [o].[ShipPostalCode] AS [o.ShipPostalCode], [o].[ShipCountry] AS [o.ShipCountry], (
-        SELECT [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[UnitPrice] AS [UnitPrice], [d].[Quantity] AS [Quantity], [d].[Discount] AS [Discount]
-        FROM [dbo].[Order Details] AS [d]
-        WHERE [o].[OrderID] = [d].[OrderID]
-        FOR JSON PATH
-    ) AS [dg]
-    FROM [dbo].[Orders] AS [o]
-    WHERE [c].[CustomerID] = [o].[CustomerID]
-    FOR JSON PATH
-) AS [$1]
-FROM [dbo].[Customers] AS [c]",
-                sqlLog.ToString());
+            Assert.IsTrue(
+                sqlLog.ToString().StartsWith(
+                    @"SELECT [c].[CustomerID] AS [CustomerID], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Address] AS [Address], [c].[City] AS [City], [c].[Region] AS [Region], [c].[PostalCode] AS [PostalCode], [c].[Country] AS [Country], [c].[Phone] AS [Phone], [c].[Fax] AS [Fax]
+FROM [dbo].[Customers] AS [c]
+
+SELECT COUNT(*)
+FROM [dbo].[Orders] AS [o]
+WHERE @p0 = [o].[CustomerID]
+
+SELECT (
+    SELECT COUNT(*)
+    FROM [dbo].[Order Details] AS [d]
+    WHERE [o].[OrderID] = [d].[OrderID]
+)
+FROM [dbo].[Orders] AS [o]
+WHERE @p0 = [o].[CustomerID]"));
         }
 
         [TestMethod]

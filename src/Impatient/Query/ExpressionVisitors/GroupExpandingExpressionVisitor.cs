@@ -32,7 +32,7 @@ namespace Impatient.Query.ExpressionVisitors
                             oldTables.Zip(newTables, ValueTuple.Create<Expression, Expression>)
                                 .ToDictionary(t => t.Item1, t => t.Item2));
 
-                    var outerKeySelector = groupByResultExpression.InnerKeySelector;
+                    var outerKeySelector = groupByResultExpression.OuterKeySelector;
                     var innerKeySelector = replacingVisitor.Visit(groupByResultExpression.InnerKeySelector);
                     var elementSelector = replacingVisitor.Visit(groupByResultExpression.ElementSelector);
 

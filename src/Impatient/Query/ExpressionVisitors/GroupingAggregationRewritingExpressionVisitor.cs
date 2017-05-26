@@ -1,4 +1,5 @@
 ﻿using Impatient.Query.Expressions;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -6,6 +7,16 @@ namespace Impatient.Query.ExpressionVisitors
 {
     public class GroupingAggregationRewritingExpressionVisitor : ExpressionVisitor
     {
+        private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
+
+        public GroupingAggregationRewritingExpressionVisitor(
+            TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor)
+        {
+            this.translatabilityAnalyzingExpressionVisitor
+                = translatabilityAnalyzingExpressionVisitor
+                    ?? throw new ArgumentNullException(nameof(translatabilityAnalyzingExpressionVisitor));
+        }
+
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
             var @object = Visit(node.Object);
@@ -29,7 +40,7 @@ namespace Impatient.Query.ExpressionVisitors
                             selector = node.Arguments[1].UnwrapLambda().ExpandParameters(selector);
                         }
 
-                        if (!selector.IsTranslatable())
+                        if (!(translatabilityAnalyzingExpressionVisitor.Visit(selector) is TranslatableExpression))
                         {
                             break;
                         }
@@ -52,7 +63,7 @@ namespace Impatient.Query.ExpressionVisitors
                         {
                             var predicate = node.Arguments[1].UnwrapLambda().ExpandParameters(selector);
 
-                            if (!predicate.IsTranslatable())
+                            if (!(translatabilityAnalyzingExpressionVisitor.Visit(predicate) is TranslatableExpression))
                             {
                                 break;
                             }
@@ -99,7 +110,7 @@ namespace Impatient.Query.ExpressionVisitors
                             = selectorLambda
                                 .ExpandParameters(relationalGrouping.ElementSelector);
 
-                        if (!selectorBody.IsTranslatable())
+                        if (!(translatabilityAnalyzingExpressionVisitor.Visit(selectorBody) is TranslatableExpression))
                         {
                             break;
                         }

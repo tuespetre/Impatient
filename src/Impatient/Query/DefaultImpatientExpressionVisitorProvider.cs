@@ -8,13 +8,16 @@ namespace Impatient.Query
 {
     public class DefaultImpatientExpressionVisitorProvider : IImpatientExpressionVisitorProvider
     {
-        private static readonly ExpressionVisitor[] rewritingExpressionVisitors = new ExpressionVisitor[]
+        private static readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor
+            = new TranslatabilityAnalyzingExpressionVisitor();
+
+        public IEnumerable<ExpressionVisitor> RewritingExpressionVisitors { get; } = new ExpressionVisitor[]
         {
-            new CollectionContainsRewritingExpressionVisitor(),
-            new EnumerableContainsRewritingExpressionVisitor(),
+            new CollectionContainsRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor),
+            new EnumerableContainsRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor),
         };
 
-        private static readonly ExpressionVisitor[] optimizingExpressionVisitors = new ExpressionVisitor[]
+        public IEnumerable<ExpressionVisitor> OptimizingExpressionVisitors { get; } = new ExpressionVisitor[]
         {
             new OperatorSplittingExpressionVisitor(),
             new SelectorMergingExpressionVisitor(),
@@ -22,8 +25,10 @@ namespace Impatient.Query
             new BooleanOptimizingExpressionVisitor(),
         };
 
-        public IEnumerable<ExpressionVisitor> RewritingExpressionVisitors => rewritingExpressionVisitors;
+        public QueryTranslatingExpressionVisitor QueryTranslatingExpressionVisitor 
+            => new QueryTranslatingExpressionVisitor(this);
 
-        public IEnumerable<ExpressionVisitor> OptimizingExpressionVisitors => optimizingExpressionVisitors;
+        public TranslatabilityAnalyzingExpressionVisitor TranslatabilityAnalyzingExpressionVisitor
+            => translatabilityAnalyzingExpressionVisitor;
     }
 }

@@ -6,12 +6,11 @@ namespace Impatient.Query.ExpressionVisitors
 {
     public class TranslatabilityAnalyzingExpressionVisitor : ExpressionVisitor
     {
-        // TODO: Make this configurable
-        private const bool complexNestedQueriesSupported = true;
-
         public TranslatabilityAnalyzingExpressionVisitor()
         {
         }
+
+        public virtual bool ComplexNestedQueriesSupported => true;
 
         protected override Expression VisitBinary(BinaryExpression node)
         {
@@ -94,20 +93,30 @@ namespace Impatient.Query.ExpressionVisitors
             switch (node)
             {
                 case SqlExpression sqlExpression:
-                case GroupByResultExpression groupByResultExpression:
-                case GroupedRelationalQueryExpression groupedRelationalQueryExpression:
+                {
+                    return new TranslatableExpression(node);
+                }
+
+                case GroupByResultExpression groupByResultExpression
+                when ComplexNestedQueriesSupported:
+                {
+                    return new TranslatableExpression(node);
+                }
+
+                case GroupedRelationalQueryExpression groupedRelationalQueryExpression
+                when ComplexNestedQueriesSupported:
                 {
                     return new TranslatableExpression(node);
                 }
 
                 case SingleValueRelationalQueryExpression singleValueRelationalQueryExpression
-                when singleValueRelationalQueryExpression.Type.IsScalarType() || complexNestedQueriesSupported:
+                when singleValueRelationalQueryExpression.Type.IsScalarType() || ComplexNestedQueriesSupported:
                 {
                     return new TranslatableExpression(node);
                 }
 
-                case EnumerableRelationalQueryExpression enumerableRelationalQueryExpression 
-                when complexNestedQueriesSupported:
+                case EnumerableRelationalQueryExpression enumerableRelationalQueryExpression
+                when ComplexNestedQueriesSupported:
                 {
                     return new TranslatableExpression(node);
                 }
@@ -163,12 +172,33 @@ namespace Impatient.Query.ExpressionVisitors
         protected override Expression VisitMemberInit(MemberInitExpression node)
         {
             if (Visit(node.NewExpression) is TranslatableExpression translatable
-                && node.Bindings.All(b => b.IsTranslatable()))
+                && node.Bindings.All(IsTranslatable))
             {
                 return new TranslatableExpression(node);
             }
 
             return node;
+        }
+
+        private bool IsTranslatable(MemberBinding memberBinding)
+        {
+            switch (memberBinding)
+            {
+                case MemberAssignment memberAssignment:
+                {
+                    return Visit(memberAssignment.Expression) is TranslatableExpression;
+                }
+
+                case MemberMemberBinding memberMemberBinding:
+                {
+                    return memberMemberBinding.Bindings.All(IsTranslatable);
+                }
+
+                default:
+                {
+                    return false;
+                }
+            }
         }
 
         protected override Expression VisitUnary(UnaryExpression node)

@@ -97,16 +97,11 @@ namespace Impatient
 
                     expression = new QueryActivatingExpressionVisitor(this).Visit(expression);
 
-                    expression = new QueryComposingExpressionVisitor(this).Visit(expression);
-
-                    if (expression is EnumerableRelationalQueryExpression possiblyOrdered)
-                    {
-                        expression = possiblyOrdered.AsUnordered();
-                    }
+                    expression = new QueryComposingExpressionVisitor(ExpressionVisitorProvider).Visit(expression);
 
                     var queryProviderParameter = Expression.Parameter(typeof(ImpatientQueryProvider), "queryProvider");
                     
-                    expression = new QueryCompilingExpressionVisitor(queryProviderParameter).Visit(expression);
+                    expression = new QueryCompilingExpressionVisitor(ExpressionVisitorProvider, queryProviderParameter).Visit(expression);
 
                     var parameters = new ParameterExpression[parameterMapping.Count + 1];
 

@@ -27,7 +27,7 @@ namespace Impatient.Query.Expressions
         public override LambdaExpression Flatten() => ResultLambda;
 
         public override ProjectionExpression Merge(LambdaExpression lambda)
-            => new ClientProjectionExpression(ResultLambda, lambda);
+            => new ClientProjectionExpression(this, lambda);
 
         protected override Expression VisitChildren(ExpressionVisitor visitor)
         {
