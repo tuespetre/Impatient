@@ -9,9 +9,7 @@ namespace Impatient.Query.ExpressionVisitors
 {
     public class ConstantParameterizingExpressionVisitor : ExpressionVisitor
     {
-        private bool foundConstantThis;
-        private int discoveredClosures = -1;
-        private int other = -1;
+        private int discoveredConstants = -1;
 
         public IDictionary<object, ParameterExpression> Mapping { get; }
             = new Dictionary<object, ParameterExpression>();
@@ -34,8 +32,8 @@ namespace Impatient.Query.ExpressionVisitors
         {
             var type = node.Value?.GetType();
 
-            if (type != null 
-                && !constantLiteralTypes.Contains(type) 
+            if (type != null
+                && !constantLiteralTypes.Contains(type)
                 && !(node.Value is IQueryable))
             {
                 if (Mapping.TryGetValue(node.Value, out var parameter))
@@ -43,39 +41,13 @@ namespace Impatient.Query.ExpressionVisitors
                     return parameter;
                 }
 
-                var typeInfo = type.GetTypeInfo();
+                discoveredConstants++;
 
-                if (typeInfo.GetCustomAttribute<CompilerGeneratedAttribute>() != null
-                    && typeInfo.Attributes.HasFlag(TypeAttributes.NestedPrivate))
-                {
-                    discoveredClosures++;
+                parameter = Expression.Parameter(type, $"scope{discoveredConstants}");
 
-                    parameter = Expression.Parameter(type, $"closure{discoveredClosures}");
+                Mapping.Add(node.Value, parameter);
 
-                    Mapping.Add(node.Value, parameter);
-
-                    return parameter;
-                }
-                else if (!foundConstantThis)
-                {
-                    foundConstantThis = true;
-
-                    parameter = Expression.Parameter(type, "this");
-
-                    Mapping.Add(node.Value, parameter);
-
-                    return parameter;
-                }
-                else
-                {
-                    other++;
-
-                    parameter = Expression.Parameter(type, $"other{other}");
-
-                    Mapping.Add(node.Value, parameter);
-
-                    return parameter;
-                }
+                return parameter;
             }
 
             return base.VisitConstant(node);
