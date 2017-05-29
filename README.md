@@ -10,40 +10,8 @@ The (current) objective of this project is to provide a reusable, composable, an
 performant implementation of `System.Linq.IQueryProvider` that targets 
 relational database providers. The aim, then, is not to provide a complete
 ORM solution but rather a robust component that can be used to build data
-access layers and ORM solutions.
-
-### Distinguishing features
-
-A number of features distinguish this project from a complete ORM solution:
-
-- **Object-relational mapping**
-
-  An ORM solution will offer some kind of `context` or `session` object which
-  can be used to generate a query against a table or set of tables based on
-  a configured object-relational mapping (or 'model'.)
-  
-  Impatient does not expose any kind of mapping or modelling API, because 
-  (simply put) Impatient does not care about such details. Instead, Impatient
-  expects all relevant metadata to exist within the expression tree itself.
-  
-  Because of this, the following types of translations are not provided by
-  Impatient:
-  
-  - Object equality translation: rewriting equality expressions
-    between mapped types into equality expressions between the keys of said
-    mapped types
-    
-  - Navigation property translation: rewriting member access expressions
-    into appropriate `join` operators or subqueries (such as `order.Customer`
-    being rewritten into a join between `orders` and `customers`)
-    
-  - `Include/ThenInclude`-style operators: see above
-  
-- **Change tracking and `INSERT`/`UPDATE`/`DELETE` operations**
-
-  Impatient is here for querying and only querying; however, a third party
-  that wanted to implement change tracking on top of Impatient should be able
-  to do so.
+access layers and ORM solutions. Accordingly, there are no plans for a high-level
+modelling API, a change tracker, migrations, or other similar ORM features.
 
 ### Principles
 
@@ -97,6 +65,16 @@ A number of features distinguish this project from a complete ORM solution:
 	let maxA = xg.Max(x => x.a)
 	select new { maxA, y }
 	```
+
+- Object equality translation will be supported in the future via an API that
+  allows consumers to define the key comparisons and null checks that the equality
+  expressions should be rewritten into.
+
+- Navigation property translation will be supported in the future via an API that
+  allows consumers to define the corresponding key selectors and query expressions
+  to use in order to rewrite navigations into join and subqueries. This will be done
+  in such a way that the rewriting component does not depend on any particular high-level
+  mapping API.
 
 - Relational null semantics are partially addressed but still have some work to be done.
 
