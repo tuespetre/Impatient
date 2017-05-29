@@ -1005,8 +1005,9 @@ namespace Impatient.Query.ExpressionVisitors
 
         protected virtual Expression VisitComplexNestedQuery(SelectExpression subquery)
         {
-            builder.IncreaseIndent();
             builder.Append("(");
+
+            builder.IncreaseIndent();
             builder.AppendLine();
 
             Visit(subquery);
@@ -1016,6 +1017,7 @@ namespace Impatient.Query.ExpressionVisitors
 
             builder.DecreaseIndent();
             builder.AppendLine();
+
             builder.Append(")");
 
             return subquery;
@@ -1247,7 +1249,12 @@ namespace Impatient.Query.ExpressionVisitors
 
             private string ComputeCurrentName()
             {
-                return string.Join(".", CurrentPath.Reverse().Where(n => !n.StartsWith("<>")));
+                var parts
+                    = CurrentPath
+                        .Reverse()
+                        .Where(n => !n.StartsWith("<>"));
+
+                return string.Join(".", parts);
             }
 
             public override Expression Visit(Expression node)

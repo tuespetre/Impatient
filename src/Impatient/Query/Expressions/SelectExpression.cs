@@ -123,7 +123,8 @@ namespace Impatient.Query.Expressions
         {
             return RequiresPushdownForLeftSideOfJoin()
                 || !(Table is AliasedTableExpression)
-                || Predicate != null;
+                || Predicate != null
+                || OrderBy != null;
         }
 
         public SelectExpression UpdateProjection(ProjectionExpression projection)

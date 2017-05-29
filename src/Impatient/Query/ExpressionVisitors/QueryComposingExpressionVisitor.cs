@@ -98,6 +98,22 @@ namespace Impatient.Query.ExpressionVisitors
                             var outerSelectExpression = outerQuery.SelectExpression;
                             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
 
+                            if (outerSelectExpression.IsDistinct
+                                || outerSelectExpression.Limit != null
+                                || outerSelectExpression.Offset != null)
+                            {
+                                if (!IsTranslatable(outerProjection))
+                                {
+                                    goto ReturnEnumerableCall;
+                                }
+
+                                Pushdown(
+                                    selectorLambda.Parameters[0].Name,
+                                    ref outerSelectExpression,
+                                    ref outerProjection,
+                                    out _);
+                            }
+
                             var selectorBody
                                 = selectorLambda
                                     .ExpandParameters(outerProjection)
@@ -144,25 +160,16 @@ namespace Impatient.Query.ExpressionVisitors
 
                             if (outerRequiresPushdown)
                             {
-                                outerTable
-                                    = new SubqueryTableExpression(
-                                        keyPlaceholderGroupingInjector.VisitAndConvert(outerSelectExpression, nameof(VisitMethodCall)),
-                                        resultSelector.Parameters[1].Name);
-
-                                outerProjection
-                                    = new ProjectionReferenceRewritingExpressionVisitor((SubqueryTableExpression)outerTable)
-                                        .Visit(outerProjection)
-                                        .VisitWith(PostExpansionVisitors);
-
-                                outerSelectExpression
-                                    = new SelectExpression(
-                                        new ServerProjectionExpression(outerProjection),
-                                        outerTable);
-
                                 if (!(IsTranslatable(outerProjection)))
                                 {
                                     goto ReturnEnumerableCall;
                                 }
+
+                                Pushdown(
+                                    resultSelector.Parameters[0].Name,
+                                    ref outerSelectExpression,
+                                    ref outerProjection,
+                                    out outerTable);
                             }
 
                             var innerSource = collectionSelector.ExpandParameters(outerProjection);
@@ -200,7 +207,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                             if (!(innerSource is EnumerableRelationalQueryExpression innerQuery))
                             {
-                                // TODO: Test coverage
                                 goto ReturnEnumerableCall;
                             }
 
@@ -219,14 +225,19 @@ namespace Impatient.Query.ExpressionVisitors
 
                             if (innerRequiresPushdown)
                             {
+                                if (!(IsTranslatable(innerProjection)))
+                                {
+                                    goto ReturnEnumerableCall;
+                                }
+
                                 if (defaultIfEmpty)
                                 {
                                     innerSelectExpression
                                         = innerSelectExpression.UpdateProjection(
-                                            new ServerProjectionExpression(Expression.Lambda(
+                                            new ServerProjectionExpression(
                                                 new MetaAliasExpression(
                                                     innerProjection,
-                                                    new SqlAliasExpression(Expression.Constant(false), "$empty")))));
+                                                    new SqlAliasExpression(Expression.Constant(false), "$empty"))));
                                 }
 
                                 innerTable
@@ -258,11 +269,6 @@ namespace Impatient.Query.ExpressionVisitors
                                     = new SelectExpression(
                                         new ServerProjectionExpression(innerProjection),
                                         innerTable);
-
-                                if (!(IsTranslatable(innerProjection)))
-                                {
-                                    goto ReturnEnumerableCall;
-                                }
                             }
 
                             if (handleAsJoin)
@@ -317,7 +323,6 @@ namespace Impatient.Query.ExpressionVisitors
                             if (node.Arguments.Count != 5)
                             {
                                 // TODO: Investigate possibility of supporting IEqualityComparer overloads
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
@@ -325,7 +330,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                             if (!(innerSource is EnumerableRelationalQueryExpression innerQuery))
                             {
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
@@ -337,26 +341,17 @@ namespace Impatient.Query.ExpressionVisitors
 
                             if (outerSelectExpression.RequiresPushdownForLeftSideOfJoin())
                             {
-                                outerTable
-                                    = new SubqueryTableExpression(
-                                        keyPlaceholderGroupingInjector.VisitAndConvert(outerSelectExpression, nameof(VisitMethodCall)),
-                                        outerKeyLambda.Parameters[0].Name);
-
-                                outerProjection
-                                    = new ProjectionReferenceRewritingExpressionVisitor((SubqueryTableExpression)outerTable)
-                                        .Visit(outerProjection)
-                                        .VisitWith(PostExpansionVisitors);
-
-                                // TODO: What about ordering?
-                                outerSelectExpression
-                                    = new SelectExpression(
-                                        new ServerProjectionExpression(outerProjection),
-                                        outerTable);
-
                                 if (!IsTranslatable(outerProjection))
                                 {
                                     goto ReturnEnumerableCall;
                                 }
+
+                                // TODO: What about ordering?
+                                Pushdown(
+                                    outerKeyLambda.Parameters[0].Name,
+                                    ref outerSelectExpression,
+                                    ref outerProjection,
+                                    out outerTable);
                             }
 
                             var outerKeySelector
@@ -366,31 +361,26 @@ namespace Impatient.Query.ExpressionVisitors
 
                             if (!IsTranslatable(outerKeySelector))
                             {
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
                             var innerSelectExpression = innerQuery.SelectExpression;
-                            var innerTable = innerSelectExpression.Table as AliasedTableExpression;
+                            var innerTable = innerSelectExpression.Table;
                             var innerProjection = innerSelectExpression.Projection.Flatten().Body;
                             var innerKeyLambda = node.Arguments[3].UnwrapLambda();
 
                             if (innerSelectExpression.RequiresPushdownForRightSideOfJoin())
                             {
-                                innerTable
-                                    = new SubqueryTableExpression(
-                                        keyPlaceholderGroupingInjector.VisitAndConvert(innerSelectExpression, nameof(VisitMethodCall)),
-                                        innerKeyLambda.Parameters[0].Name);
-
-                                innerProjection
-                                    = new ProjectionReferenceRewritingExpressionVisitor((SubqueryTableExpression)innerTable)
-                                        .Visit(innerProjection)
-                                        .VisitWith(PostExpansionVisitors);
-
                                 if (!IsTranslatable(innerProjection))
                                 {
                                     goto ReturnEnumerableCall;
                                 }
+
+                                Pushdown(
+                                    innerKeyLambda.Parameters[0].Name,
+                                    ref innerSelectExpression,
+                                    ref innerProjection,
+                                    out innerTable);
                             }
 
                             var innerKeySelector
@@ -400,7 +390,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                             if (!IsTranslatable(innerKeySelector))
                             {
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
@@ -415,7 +404,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                             var projection
                                 = IsTranslatable(resultSelector)
-                                    ? new ServerProjectionExpression(Expression.Lambda(resultSelector))
+                                    ? new ServerProjectionExpression(resultSelector)
                                     : new CompositeProjectionExpression(
                                         outerSelectExpression.Projection,
                                         new ServerProjectionExpression(innerProjection),
@@ -424,7 +413,7 @@ namespace Impatient.Query.ExpressionVisitors
                             var table
                                 = new InnerJoinExpression(
                                     outerTable,
-                                    innerTable,
+                                    innerTable as AliasedTableExpression,
                                     Expression.Equal(outerKeySelector, innerKeySelector),
                                     resultSelector.Type);
 
@@ -440,7 +429,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                             if (!(innerSource is EnumerableRelationalQueryExpression innerQuery))
                             {
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
@@ -455,7 +443,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                             if (!IsTranslatable(outerKeySelector))
                             {
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
@@ -470,7 +457,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                             if (!IsTranslatable(innerKeySelector))
                             {
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
@@ -531,11 +517,27 @@ namespace Impatient.Query.ExpressionVisitors
                             if (predicateLambda.Parameters.Count != 1)
                             {
                                 // TODO: add support for index parameter overload
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
-                            var outerProjection = outerQuery.SelectExpression.Projection.Flatten().Body;
+                            var outerSelectExpression = outerQuery.SelectExpression;
+                            var outerProjection = outerSelectExpression.Projection.Flatten().Body;
+
+                            if (outerSelectExpression.IsDistinct
+                                || outerSelectExpression.Limit != null
+                                || outerSelectExpression.Offset != null)
+                            {
+                                if (!IsTranslatable(outerProjection))
+                                {
+                                    goto ReturnEnumerableCall;
+                                }
+
+                                Pushdown(
+                                    predicateLambda.Parameters[0].Name,
+                                    ref outerSelectExpression,
+                                    ref outerProjection,
+                                    out _);
+                            }
 
                             var predicateBody
                                 = predicateLambda
@@ -545,7 +547,7 @@ namespace Impatient.Query.ExpressionVisitors
                             if (IsTranslatable(predicateBody))
                             {
                                 return outerQuery
-                                    .UpdateSelectExpression(outerQuery.SelectExpression
+                                    .UpdateSelectExpression(outerSelectExpression
                                         .AddToPredicate(predicateBody));
                             }
 
@@ -557,7 +559,7 @@ namespace Impatient.Query.ExpressionVisitors
                                 {
                                     visitedArguments[0]
                                         = outerQuery
-                                            .UpdateSelectExpression(outerQuery.SelectExpression
+                                            .UpdateSelectExpression(outerSelectExpression
                                                 .AddToPredicate(resolvedBinaryPredicate.Left));
 
                                     visitedArguments[1]
@@ -572,7 +574,7 @@ namespace Impatient.Query.ExpressionVisitors
                                 {
                                     visitedArguments[0]
                                         = outerQuery
-                                            .UpdateSelectExpression(outerQuery.SelectExpression
+                                            .UpdateSelectExpression(outerSelectExpression
                                                 .AddToPredicate(resolvedBinaryPredicate.Right));
 
                                     visitedArguments[1]
@@ -584,7 +586,6 @@ namespace Impatient.Query.ExpressionVisitors
                                 }
                             }
 
-                            // TODO: test coverage
                             goto ReturnEnumerableCall;
                         }
 
@@ -600,7 +601,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                             // TODO: Handle downcasting within type hierarchies?
                             // TODO: Inspect whether the outer query needs to be pushed down
-                            // TODO: test coverage
                             goto ReturnEnumerableCall;
                         }
 
@@ -611,7 +611,6 @@ namespace Impatient.Query.ExpressionVisitors
                             if (typeof(IEqualityComparer<>) == node.Method.GetParameters().Last().ParameterType.GetGenericTypeDefinition())
                             {
                                 // TODO: Investigate possibility of supporting IEqualityComparer overloads
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
@@ -632,7 +631,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                             if (!IsTranslatable(keySelector))
                             {
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
@@ -652,7 +650,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                             if (!IsTranslatable(elementSelector))
                             {
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
@@ -759,7 +756,6 @@ namespace Impatient.Query.ExpressionVisitors
                             if (!(outerQuery.SelectExpression.Projection is ServerProjectionExpression))
                             {
                                 // TODO: See if we can work around this condition
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
@@ -768,7 +764,7 @@ namespace Impatient.Query.ExpressionVisitors
                                     alias: "t",
                                     subquery: new SelectExpression(
                                         new ServerProjectionExpression(
-                                            Expression.Lambda(EmptyRecord.NewExpression))));
+                                            EmptyRecord.NewExpression)));
 
                             var innerProjectionBody = outerQuery.SelectExpression.Projection.Flatten().Body;
 
@@ -776,10 +772,10 @@ namespace Impatient.Query.ExpressionVisitors
                                 = new SubqueryTableExpression(
                                     alias: "t",
                                     subquery: outerQuery.SelectExpression.UpdateProjection(
-                                        new ServerProjectionExpression(Expression.Lambda(
+                                        new ServerProjectionExpression(
                                             new MetaAliasExpression(
                                                 innerProjectionBody,
-                                                new SqlAliasExpression(Expression.Constant(false), "$empty"))))));
+                                                new SqlAliasExpression(Expression.Constant(false), "$empty")))));
 
                             var joinExpression
                                 = new LeftJoinExpression(
@@ -830,7 +826,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                                 if (!IsTranslatable(predicate))
                                 {
-                                    // TODO: test coverage
                                     goto ReturnEnumerableCall;
                                 }
 
@@ -865,7 +860,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                                 if (!IsTranslatable(predicate))
                                 {
-                                    // TODO: test coverage
                                     goto ReturnEnumerableCall;
                                 }
 
@@ -883,29 +877,11 @@ namespace Impatient.Query.ExpressionVisitors
 
                         case nameof(Queryable.Last):
                         {
-                            if (outerQuery.SelectExpression.OrderBy == null)
-                            {
-                                // TODO: test coverage
-                                goto ReturnEnumerableCall;
-                            }
-
-                            // TODO: reverse the OrderBy then apply the same operations as First/FirstOrDefault
-                            // TODO: Inspect whether the outer query needs to be pushed down
-                            // TODO: test coverage
                             goto ReturnEnumerableCall;
                         }
 
                         case nameof(Queryable.LastOrDefault):
                         {
-                            if (outerQuery.SelectExpression.OrderBy == null)
-                            {
-                                // TODO: test coverage
-                                goto ReturnEnumerableCall;
-                            }
-
-                            // TODO: reverse the OrderBy then apply the same operations as First/FirstOrDefault
-                            // TODO: Inspect whether the outer query needs to be pushed down
-                            // TODO: test coverage
                             goto ReturnEnumerableCall;
                         }
 
@@ -927,7 +903,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                                 if (!IsTranslatable(predicate))
                                 {
-                                    // TODO: test coverage
                                     goto ReturnEnumerableCall;
                                 }
 
@@ -960,7 +935,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                                 if (!IsTranslatable(predicate))
                                 {
-                                    // TODO: test coverage
                                     goto ReturnEnumerableCall;
                                 }
 
@@ -980,7 +954,6 @@ namespace Impatient.Query.ExpressionVisitors
                         {
                             // May not ever be supported
 
-                            // TODO: test coverage
                             goto ReturnEnumerableCall;
                         }
 
@@ -988,7 +961,6 @@ namespace Impatient.Query.ExpressionVisitors
                         {
                             // May not ever be supported
 
-                            // TODO: test coverage
                             goto ReturnEnumerableCall;
                         }
 
@@ -1002,7 +974,6 @@ namespace Impatient.Query.ExpressionVisitors
                             if (node.Arguments.Count == 3)
                             {
                                 // TODO: Investigate possibility of supporting IComparer overloads
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
@@ -1022,7 +993,6 @@ namespace Impatient.Query.ExpressionVisitors
                                 // into a client method call tree, and replace
                                 // arguments[1] with it.
 
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
@@ -1040,7 +1010,6 @@ namespace Impatient.Query.ExpressionVisitors
                         {
                             if (outerQuery.SelectExpression.OrderBy == null)
                             {
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
@@ -1055,25 +1024,22 @@ namespace Impatient.Query.ExpressionVisitors
 
                         case nameof(Queryable.Take):
                         {
-                            if (outerQuery.SelectExpression.IsDistinct
-                                || outerQuery.SelectExpression.Limit != null)
+                            var outerSelectExpression = outerQuery.SelectExpression;
+                            var outerProjection = outerSelectExpression.Projection.Flatten().Body;
+
+                            if (outerSelectExpression.IsDistinct
+                                || outerSelectExpression.Limit != null)
                             {
-                                if (!(outerQuery.SelectExpression.Projection is ServerProjectionExpression))
+                                if (!IsTranslatable(outerProjection))
                                 {
                                     goto ReturnEnumerableCall;
                                 }
 
-                                var subquery = new SubqueryTableExpression(outerQuery.SelectExpression, "take");
-
-                                var projection
-                                    = new ProjectionReferenceRewritingExpressionVisitor(subquery)
-                                        .Visit(outerQuery.SelectExpression.Projection.ResultLambda.Body);
-
-                                outerQuery
-                                    = outerQuery.UpdateSelectExpression(
-                                        new SelectExpression(
-                                            new ServerProjectionExpression(projection),
-                                            subquery));
+                                Pushdown(
+                                    "t",
+                                    ref outerSelectExpression,
+                                    ref outerProjection,
+                                    out _);
                             }
 
                             var count = Visit(node.Arguments[1]);
@@ -1081,36 +1047,32 @@ namespace Impatient.Query.ExpressionVisitors
                             if (count is ConstantExpression)
                             {
                                 return outerQuery
-                                    .UpdateSelectExpression(outerQuery.SelectExpression
+                                    .UpdateSelectExpression(outerSelectExpression
                                         .UpdateLimit(count));
                             }
 
-                            // TODO: test coverage
                             goto ReturnEnumerableCall;
                         }
 
                         case nameof(Queryable.Skip):
                         {
-                            if (outerQuery.SelectExpression.IsDistinct
-                                || outerQuery.SelectExpression.Offset != null
-                                || outerQuery.SelectExpression.Limit != null)
+                            var outerSelectExpression = outerQuery.SelectExpression;
+                            var outerProjection = outerSelectExpression.Projection.Flatten().Body;
+
+                            if (outerSelectExpression.IsDistinct
+                                || outerSelectExpression.Offset != null
+                                || outerSelectExpression.Limit != null)
                             {
-                                if (!(outerQuery.SelectExpression.Projection is ServerProjectionExpression))
+                                if (!IsTranslatable(outerProjection))
                                 {
                                     goto ReturnEnumerableCall;
                                 }
 
-                                var subquery = new SubqueryTableExpression(outerQuery.SelectExpression, "skip");
-
-                                var projection
-                                    = new ProjectionReferenceRewritingExpressionVisitor(subquery)
-                                        .Visit(outerQuery.SelectExpression.Projection.ResultLambda.Body);
-
-                                outerQuery
-                                    = outerQuery.UpdateSelectExpression(
-                                        new SelectExpression(
-                                            new ServerProjectionExpression(projection),
-                                            subquery));
+                                Pushdown(
+                                    "t",
+                                    ref outerSelectExpression,
+                                    ref outerProjection,
+                                    out _);
                             }
 
                             var count = Visit(node.Arguments[1]);
@@ -1118,11 +1080,10 @@ namespace Impatient.Query.ExpressionVisitors
                             if (count is ConstantExpression)
                             {
                                 return outerQuery
-                                    .UpdateSelectExpression(outerQuery.SelectExpression
+                                    .UpdateSelectExpression(outerSelectExpression
                                         .UpdateOffset(count));
                             }
 
-                            // TODO: test coverage
                             goto ReturnEnumerableCall;
                         }
 
@@ -1130,7 +1091,6 @@ namespace Impatient.Query.ExpressionVisitors
                         {
                             // May not ever be supported
 
-                            // TODO: test coverage
                             goto ReturnEnumerableCall;
                         }
 
@@ -1138,7 +1098,6 @@ namespace Impatient.Query.ExpressionVisitors
                         {
                             // May not ever be supported
 
-                            // TODO: test coverage
                             goto ReturnEnumerableCall;
                         }
 
@@ -1156,7 +1115,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                             // TODO: Any other casting scenarios?
 
-                            // TODO: test coverage
                             goto ReturnEnumerableCall;
                         }
 
@@ -1167,14 +1125,30 @@ namespace Impatient.Query.ExpressionVisitors
                             if (node.Arguments.Count != 1)
                             {
                                 // TODO: Investigate possibility of supporting IEqualityComparer overloads
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
+                            
+                            var outerSelectExpression = outerQuery.SelectExpression;
+                            var outerProjection = outerSelectExpression.Projection.Flatten().Body;
 
-                            // TODO: Inspect whether the outer query needs to be pushed down
+                            if (outerSelectExpression.IsDistinct
+                                || outerSelectExpression.Limit != null
+                                || outerSelectExpression.Offset != null)
+                            {
+                                if (!IsTranslatable(outerProjection))
+                                {
+                                    goto ReturnEnumerableCall;
+                                }
+
+                                Pushdown(
+                                    "t",
+                                    ref outerSelectExpression,
+                                    ref outerProjection,
+                                    out _);
+                            }
 
                             return outerQuery
-                                .UpdateSelectExpression(outerQuery.SelectExpression
+                                .UpdateSelectExpression(outerSelectExpression
                                     .AsDistinct());
                         }
 
@@ -1187,47 +1161,62 @@ namespace Impatient.Query.ExpressionVisitors
 
                             if (!(innerSource is EnumerableRelationalQueryExpression innerQuery))
                             {
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
-                            if (!(outerQuery.SelectExpression.Projection is ServerProjectionExpression
-                                && innerQuery.SelectExpression.Projection is ServerProjectionExpression))
+                            var outerProjection = outerQuery.SelectExpression.Projection.Flatten().Body;
+                            var innerProjection = innerQuery.SelectExpression.Projection.Flatten().Body;
+
+                            if (!IsTranslatable(outerProjection) || !IsTranslatable(innerProjection))
                             {
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
                             // TODO: Constraints on ordering
 
-                            var setOperatorExpression
-                                = node.Method.Name == nameof(Queryable.Concat)
-                                    ? new UnionAllExpression(outerQuery.SelectExpression, innerQuery.SelectExpression)
-                                    : node.Method.Name == nameof(Queryable.Except)
-                                        ? new ExceptExpression(outerQuery.SelectExpression, innerQuery.SelectExpression)
-                                        : node.Method.Name == nameof(Queryable.Intersect)
-                                            ? new IntersectExpression(outerQuery.SelectExpression, innerQuery.SelectExpression)
-                                            : node.Method.Name == nameof(Queryable.Union)
-                                                ? new UnionExpression(outerQuery.SelectExpression, innerQuery.SelectExpression)
-                                                : default(SetOperatorExpression);
+                            var setOperatorExpression = default(SetOperatorExpression);
+
+                            switch (node.Method.Name)
+                            {
+                                case nameof(Queryable.Concat):
+                                {
+                                    setOperatorExpression = new UnionAllExpression(outerQuery.SelectExpression, innerQuery.SelectExpression);
+                                    break;
+                                }
+
+                                case nameof(Queryable.Except):
+                                {
+                                    setOperatorExpression = new ExceptExpression(outerQuery.SelectExpression, innerQuery.SelectExpression);
+                                    break;
+                                }
+
+                                case nameof(Queryable.Intersect):
+                                {
+                                    setOperatorExpression = new IntersectExpression(outerQuery.SelectExpression, innerQuery.SelectExpression);
+                                    break;
+                                }
+
+                                case nameof(Queryable.Union):
+                                {
+                                    setOperatorExpression = new UnionExpression(outerQuery.SelectExpression, innerQuery.SelectExpression);
+                                    break;
+                                }
+                            }
 
                             var projectionBody
                                 = new ProjectionReferenceRewritingExpressionVisitor(setOperatorExpression)
-                                    .Visit(outerQuery.SelectExpression.Projection.Flatten().Body);
+                                    .Visit(outerProjection);
 
-                            var selectExpression
-                                = new SelectExpression(
-                                    new ServerProjectionExpression(Expression.Lambda(projectionBody)),
-                                    setOperatorExpression);
-
-                            return new EnumerableRelationalQueryExpression(selectExpression);
+                            return new EnumerableRelationalQueryExpression(
+                                new SelectExpression(
+                                    new ServerProjectionExpression(projectionBody),
+                                    setOperatorExpression));
                         }
 
                         case nameof(Queryable.Zip):
                         {
                             // May not ever be supported
 
-                            // TODO: test coverage
                             goto ReturnEnumerableCall;
                         }
 
@@ -1237,7 +1226,6 @@ namespace Impatient.Query.ExpressionVisitors
                         {
                             // May not ever be supported
 
-                            // TODO: test coverage
                             goto ReturnEnumerableCall;
                         }
 
@@ -1245,11 +1233,10 @@ namespace Impatient.Query.ExpressionVisitors
 
                         case nameof(Queryable.All):
                         {
-                            var selectExpression = outerQuery.SelectExpression;
+                            var outerSelectExpression = outerQuery.SelectExpression;
+                            var outerProjection = outerSelectExpression.Projection.Flatten().Body;
 
                             // TODO: Inspect whether the outer query needs to be pushed down
-
-                            var outerProjection = selectExpression.Projection.Flatten().Body;
 
                             var predicate
                                 = node.Arguments[1]
@@ -1259,7 +1246,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                             if (!IsTranslatable(predicate))
                             {
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
@@ -1283,21 +1269,20 @@ namespace Impatient.Query.ExpressionVisitors
                                     typeof(bool));
 
                             return new SingleValueRelationalQueryExpression(
-                                selectExpression.UpdateProjection(
+                                outerSelectExpression.UpdateProjection(
                                     new ServerProjectionExpression(
-                                        Expression.Lambda(conditional))));
+                                        conditional)));
                         }
 
                         case nameof(Queryable.Any):
                         {
                             // TODO: Inspect whether the outer query needs to be pushed down
 
-                            var selectExpression = outerQuery.SelectExpression;
+                            var outerSelectExpression = outerQuery.SelectExpression;
+                            var outerProjection = outerSelectExpression.Projection.Flatten().Body;
 
                             if (node.Arguments.Count == 2)
                             {
-                                var outerProjection = selectExpression.Projection.Flatten().Body;
-
                                 var predicateBody
                                     = node.Arguments[1]
                                         .UnwrapLambda()
@@ -1306,23 +1291,21 @@ namespace Impatient.Query.ExpressionVisitors
 
                                 if (!IsTranslatable(predicateBody))
                                 {
-                                    // TODO: test coverage
                                     goto ReturnEnumerableCall;
                                 }
 
-                                selectExpression = selectExpression.AddToPredicate(predicateBody);
+                                outerSelectExpression = outerSelectExpression.AddToPredicate(predicateBody);
                             }
 
-                            if (!(selectExpression.Projection is ServerProjectionExpression))
+                            if (!IsTranslatable(outerProjection))
                             {
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
                             var subquery
-                                = selectExpression.UpdateProjection(
+                                = outerSelectExpression.UpdateProjection(
                                     new ServerProjectionExpression(
-                                        Expression.Lambda(Expression.Constant(1))));
+                                        Expression.Constant(1)));
 
                             var existsQueryBody
                                 = new SqlCastExpression(
@@ -1336,16 +1319,16 @@ namespace Impatient.Query.ExpressionVisitors
                             return new SingleValueRelationalQueryExpression(
                                 new SelectExpression(
                                     new ServerProjectionExpression(
-                                        Expression.Lambda(existsQueryBody))));
+                                        existsQueryBody)));
                         }
 
                         case nameof(Queryable.Contains):
                         {
-                            var selectExpression = outerQuery.SelectExpression;
+                            var outerSelectExpression = outerQuery.SelectExpression;
+                            var outerProjection = outerSelectExpression.Projection.Flatten().Body;
 
-                            if (!(selectExpression.Projection is ServerProjectionExpression))
+                            if (!IsTranslatable(outerProjection))
                             {
-                                // TODO: test coverage
                                 goto ReturnEnumerableCall;
                             }
 
@@ -1364,18 +1347,16 @@ namespace Impatient.Query.ExpressionVisitors
                                     return new SingleValueRelationalQueryExpression(
                                         new SelectExpression(
                                             new ServerProjectionExpression(
-                                                Expression.Lambda(
-                                                    new SqlCastExpression(
-                                                        Expression.Condition(
-                                                            new SqlInExpression(constantExpression, selectExpression),
-                                                            Expression.Constant(true),
-                                                            Expression.Constant(false)),
-                                                        "BIT",
-                                                        typeof(bool))))));
+                                                new SqlCastExpression(
+                                                    Expression.Condition(
+                                                        new SqlInExpression(constantExpression, outerSelectExpression),
+                                                        Expression.Constant(true),
+                                                        Expression.Constant(false)),
+                                                    "BIT",
+                                                    typeof(bool)))));
                                 }
                             }
 
-                            // TODO: test coverage
                             goto ReturnEnumerableCall;
                         }
 
@@ -1386,10 +1367,24 @@ namespace Impatient.Query.ExpressionVisitors
                         case nameof(Queryable.Min):
                         case nameof(Queryable.Sum):
                         {
-                            // TODO: Inspect whether the outer query needs to be pushed down
-
                             var outerSelectExpression = outerQuery.SelectExpression;
                             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
+
+                            if (outerSelectExpression.IsDistinct
+                                || outerSelectExpression.Limit != null
+                                || outerSelectExpression.Offset != null)
+                            {
+                                if (!IsTranslatable(outerProjection))
+                                {
+                                    goto ReturnEnumerableCall;
+                                }
+
+                                Pushdown(
+                                    "t",
+                                    ref outerSelectExpression,
+                                    ref outerProjection,
+                                    out _);
+                            }
 
                             if (node.Arguments.Count == 2)
                             {
@@ -1459,21 +1454,30 @@ namespace Impatient.Query.ExpressionVisitors
                                         outerProjection);
 
                             return new SingleValueRelationalQueryExpression(
-                                outerSelectExpression.UpdateProjection(new ServerProjectionExpression(
-                                    sqlFunctionExpression)));
+                                outerSelectExpression
+                                    .UpdateProjection(new ServerProjectionExpression(
+                                        sqlFunctionExpression)));
                         }
 
                         case nameof(Queryable.Count):
                         case nameof(Queryable.LongCount):
                         {
-                            // TODO: Inspect whether the outer query needs to be pushed down
-
                             var outerSelectExpression = outerQuery.SelectExpression;
+                            var outerProjection = outerSelectExpression.Projection.Flatten().Body;
+
+                            if (outerSelectExpression.IsDistinct
+                                || outerSelectExpression.Limit != null
+                                || outerSelectExpression.Offset != null)
+                            {
+                                Pushdown(
+                                    "t",
+                                    ref outerSelectExpression,
+                                    ref outerProjection,
+                                    out _);
+                            }
 
                             if (node.Arguments.Count == 2)
                             {
-                                var outerProjection = outerSelectExpression.Projection.Flatten().Body;
-
                                 var predicate
                                     = node.Arguments[1]
                                         .UnwrapLambda()
@@ -1482,7 +1486,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                                 if (!IsTranslatable(predicate))
                                 {
-                                    // TODO: test coverage
                                     goto ReturnEnumerableCall;
                                 }
 
@@ -1503,7 +1506,6 @@ namespace Impatient.Query.ExpressionVisitors
                         {
                             // May not ever be supported
 
-                            // TODO: test coverage
                             goto ReturnEnumerableCall;
                         }
                     }
@@ -1525,7 +1527,29 @@ namespace Impatient.Query.ExpressionVisitors
             => expressionVisitorProvider.TranslatabilityAnalyzingExpressionVisitor
                 .Visit(node) is TranslatableExpression;
 
-        private Expression ProcessQuerySource(Expression node)
+        private void Pushdown(
+            string alias,
+            ref SelectExpression selectExpression,
+            ref Expression projection,
+            out TableExpression table)
+        {
+            table
+                = new SubqueryTableExpression(
+                    keyPlaceholderGroupingInjector.VisitAndConvert(selectExpression, nameof(VisitMethodCall)),
+                    alias.StartsWith("<>") ? "t" : alias);
+
+            projection
+                = new ProjectionReferenceRewritingExpressionVisitor((SubqueryTableExpression)table)
+                    .Visit(projection)
+                    .VisitWith(PostExpansionVisitors);
+
+            selectExpression
+                = new SelectExpression(
+                    new ServerProjectionExpression(projection),
+                    table);
+        }
+
+        private static Expression ProcessQuerySource(Expression node)
         {
             switch (node)
             {

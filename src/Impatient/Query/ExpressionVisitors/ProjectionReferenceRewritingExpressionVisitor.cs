@@ -124,7 +124,7 @@ namespace Impatient.Query.ExpressionVisitors
                 {
                     var type = default(Type);
 
-                    switch (memberStack.First())
+                    switch (memberStack.FirstOrDefault())
                     {
                         case PropertyInfo propertyInfo:
                         {
@@ -137,9 +137,30 @@ namespace Impatient.Query.ExpressionVisitors
                             type = fieldInfo.FieldType;
                             break;
                         }
+
+                        case null:
+                        {
+                            type = node.Type;
+                            break;
+                        }
                     }
 
-                    var alias = string.Join(".", memberStack.Reverse().Select(m => m.Name).Where(n => !n.StartsWith("<>")));
+                    var parts
+                        = memberStack
+                            .Reverse()
+                            .Select(m => m.Name)
+                            .Where(n => !n.StartsWith("<>"));
+
+                    switch (node)
+                    {
+                        case SqlColumnExpression sqlColumnExpression:
+                        {
+                            parts = parts.DefaultIfEmpty(sqlColumnExpression.ColumnName);
+                            break;
+                        }
+                    }
+
+                    var alias = string.Join(".", parts);
 
                     return new SqlColumnExpression(targetTable, alias, type);
                 }
