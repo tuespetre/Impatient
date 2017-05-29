@@ -1279,32 +1279,42 @@ namespace Impatient.Query.ExpressionVisitors
                         return visited;
                     }
 
-                    case DefaultIfEmptyExpression defaultIfEmptyExpression:
+                    case DefaultIfEmptyTestExpression defaultIfEmptyTestExpression:
                     {
-                        CurrentPath.Push(defaultIfEmptyExpression.AliasExpression.Alias);
+                        CurrentPath.Push("$empty");
                         var name = ComputeCurrentName();
                         CurrentPath.Pop();
 
-                        GatheredExpressions[name] = defaultIfEmptyExpression.AliasExpression.Expression;
+                        GatheredExpressions[name]
+                            = new SqlCastExpression(
+                                Expression.Coalesce(
+                                    new SqlColumnExpression(
+                                        defaultIfEmptyTestExpression.Table,
+                                        "$empty",
+                                        typeof(bool?),
+                                        true),
+                                    Expression.Constant(true)),
+                                "BIT",
+                                typeof(bool));
 
                         return Expression.Condition(
                             test: Expression.Call(
                                 readerParameter,
                                 getFieldValueMethodInfo.MakeGenericMethod(typeof(bool)),
                                 Expression.Constant(readerIndex++)),
-                            ifTrue: Expression.Default(defaultIfEmptyExpression.Type),
-                            ifFalse: Visit(defaultIfEmptyExpression.Expression));
+                            ifTrue: Expression.Default(defaultIfEmptyTestExpression.Type),
+                            ifFalse: Visit(defaultIfEmptyTestExpression.Expression));
                     }
 
-                    case MetaAliasExpression metaAliasExpression:
+                    case DefaultIfEmptyFlagExpression defaultIfEmptyFlagExpression:
                     {
-                        CurrentPath.Push(metaAliasExpression.AliasExpression.Alias);
+                        CurrentPath.Push("$empty");
                         var name = ComputeCurrentName();
                         CurrentPath.Pop();
 
-                        GatheredExpressions[name] = metaAliasExpression.AliasExpression.Expression;
+                        GatheredExpressions[name] = Expression.Constant(false);
 
-                        return Visit(metaAliasExpression.Expression);
+                        return Visit(defaultIfEmptyFlagExpression.Expression);
                     }
 
                     case Expression expression

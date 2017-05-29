@@ -235,9 +235,8 @@ namespace Impatient.Query.ExpressionVisitors
                                     innerSelectExpression
                                         = innerSelectExpression.UpdateProjection(
                                             new ServerProjectionExpression(
-                                                new MetaAliasExpression(
-                                                    innerProjection,
-                                                    new SqlAliasExpression(Expression.Constant(false), "$empty"))));
+                                                new DefaultIfEmptyFlagExpression(
+                                                    innerProjection)));
                                 }
 
                                 innerTable
@@ -253,16 +252,9 @@ namespace Impatient.Query.ExpressionVisitors
                                 if (defaultIfEmpty)
                                 {
                                     innerProjection
-                                        = new DefaultIfEmptyExpression(
+                                        = new DefaultIfEmptyTestExpression(
                                             innerProjection,
-                                            new SqlAliasExpression(
-                                                new SqlCastExpression(
-                                                    Expression.Coalesce(
-                                                        new SqlColumnExpression(innerTable, "$empty", typeof(bool?)),
-                                                        Expression.Constant(true)),
-                                                    "BIT",
-                                                    typeof(bool)),
-                                                "$empty"));
+                                            innerTable);
                                 }
 
                                 innerSelectExpression
@@ -773,9 +765,8 @@ namespace Impatient.Query.ExpressionVisitors
                                     alias: "t",
                                     subquery: outerQuery.SelectExpression.UpdateProjection(
                                         new ServerProjectionExpression(
-                                            new MetaAliasExpression(
-                                                innerProjectionBody,
-                                                new SqlAliasExpression(Expression.Constant(false), "$empty")))));
+                                            new DefaultIfEmptyFlagExpression(
+                                                innerProjectionBody))));
 
                             var joinExpression
                                 = new LeftJoinExpression(
@@ -791,16 +782,9 @@ namespace Impatient.Query.ExpressionVisitors
                             var selectExpression
                                 = new SelectExpression(
                                     new ServerProjectionExpression(Expression.Lambda(
-                                        new DefaultIfEmptyExpression(
+                                        new DefaultIfEmptyTestExpression(
                                             projectionBody,
-                                            new SqlAliasExpression(
-                                                new SqlCastExpression(
-                                                    Expression.Coalesce(
-                                                        new SqlColumnExpression(innerSubquery, "$empty", typeof(bool?)),
-                                                        Expression.Constant(true)),
-                                                    "BIT",
-                                                    typeof(bool)),
-                                                "$empty")))),
+                                            innerSubquery))),
                                     joinExpression);
 
                             return new EnumerableRelationalQueryExpression(selectExpression);
