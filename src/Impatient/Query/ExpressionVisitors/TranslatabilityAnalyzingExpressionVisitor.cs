@@ -53,12 +53,12 @@ namespace Impatient.Query.ExpressionVisitors
                         return new TranslatableExpression(node);
                     }
 
-                    // TODO: Support these expression types
+                    // Bitwise
                     case ExpressionType.And:
                     case ExpressionType.Or:
                     case ExpressionType.ExclusiveOr:
                     {
-                        break;
+                        return new TranslatableExpression(node);
                     }
                 }
             }
@@ -214,10 +214,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                     goto default;
                 }
-
-                // TODO: Support these expression types
-                case ExpressionType.Convert:
-                case ExpressionType.OnesComplement:
+                
                 default:
                 {
                     return node;

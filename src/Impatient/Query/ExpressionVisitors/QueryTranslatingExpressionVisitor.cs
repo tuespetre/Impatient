@@ -349,11 +349,22 @@ namespace Impatient.Query.ExpressionVisitors
                 {
                     return VisitSimple(" % ");
                 }
-
-                // TODO: Support these expression types
+                
                 case ExpressionType.And:
+                {
+                    return VisitSimple(" & ");
+                }
+
                 case ExpressionType.Or:
+                {
+                    return VisitSimple(" | ");
+                }
+
                 case ExpressionType.ExclusiveOr:
+                {
+                    return VisitSimple(" ^ ");
+                }
+
                 default:
                 {
                     throw new NotSupportedException();
@@ -970,7 +981,8 @@ namespace Impatient.Query.ExpressionVisitors
         {
             switch (node.NodeType)
             {
-                case ExpressionType.Not:
+                case ExpressionType.Not
+                when node.Type == typeof(bool):
                 {
                     switch (node.Operand)
                     {
@@ -989,9 +1001,13 @@ namespace Impatient.Query.ExpressionVisitors
                     }
                 }
 
-                // TODO: Support these expression types
-                case ExpressionType.Convert:
-                case ExpressionType.OnesComplement:
+                case ExpressionType.Not:
+                {
+                    builder.Append("~ ");
+
+                    return base.VisitUnary(node);
+                }
+
                 default:
                 {
                     throw new NotSupportedException();

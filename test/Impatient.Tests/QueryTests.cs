@@ -623,6 +623,74 @@ FROM [dbo].[MyClass1] AS [a]",
         }
 
         [TestMethod]
+        public void Select_Binary_And()
+        {
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                select new { x = a.Prop2 & a.Prop2 };
+
+            var results = query.ToList();
+
+            Assert.AreEqual(2, results.Count);
+
+            Assert.AreEqual(
+                @"SELECT [a].[Prop2] & [a].[Prop2] AS [x]
+FROM [dbo].[MyClass1] AS [a]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Select_Binary_Or()
+        {
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                select new { x = a.Prop2 | a.Prop2 };
+
+            var results = query.ToList();
+
+            Assert.AreEqual(2, results.Count);
+
+            Assert.AreEqual(
+                @"SELECT [a].[Prop2] | [a].[Prop2] AS [x]
+FROM [dbo].[MyClass1] AS [a]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Select_Binary_ExclusiveOr()
+        {
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                select new { x = a.Prop2 ^ a.Prop2 };
+
+            var results = query.ToList();
+
+            Assert.AreEqual(2, results.Count);
+
+            Assert.AreEqual(
+                @"SELECT [a].[Prop2] ^ [a].[Prop2] AS [x]
+FROM [dbo].[MyClass1] AS [a]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Select_Unary_OnesComplement()
+        {
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                select new { x = ~ a.Prop2 };
+
+            var results = query.ToList();
+
+            Assert.AreEqual(2, results.Count);
+
+            Assert.AreEqual(
+                @"SELECT ~ [a].[Prop2] AS [x]
+FROM [dbo].[MyClass1] AS [a]",
+                sqlLog);
+        }
+
+        [TestMethod]
         public void Where_Equal()
         {
             var query =
