@@ -53,7 +53,7 @@ namespace Impatient.Query.ExpressionVisitors
                         return new TranslatableExpression(node);
                     }
 
-                    // TODO: Support these bitwise expression types
+                    // TODO: Support these expression types
                     case ExpressionType.And:
                     case ExpressionType.Or:
                     case ExpressionType.ExclusiveOr:

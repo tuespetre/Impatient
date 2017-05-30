@@ -2623,6 +2623,21 @@ FROM (
         }
 
         [TestMethod]
+        public void Average_after_GroupBy_causes_pushdown()
+        {
+            var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).Select(g => g.Key).Average();
+
+            Assert.AreEqual(
+                @"SELECT AVG(CAST([t].[Prop2] AS float))
+FROM (
+    SELECT [g].[Prop2]
+    FROM [dbo].[MyClass1] AS [g]
+    GROUP BY [g].[Prop2]
+) AS [t]",
+                sqlLog);
+        }
+
+        [TestMethod]
         public void Average_with_selector_after_Distinct_causes_pushdown()
         {
             var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Distinct().Average(m => m.Prop2);
@@ -2667,6 +2682,21 @@ FROM (
         }
 
         [TestMethod]
+        public void Average_with_selector_after_GroupBy_causes_pushdown()
+        {
+            var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).Average(g => g.Key);
+
+            Assert.AreEqual(
+                @"SELECT AVG(CAST([t].[Prop2] AS float))
+FROM (
+    SELECT [g].[Prop2]
+    FROM [dbo].[MyClass1] AS [g]
+    GROUP BY [g].[Prop2]
+) AS [t]",
+                sqlLog);
+        }
+
+        [TestMethod]
         public void Count_after_Distinct_causes_pushdown()
         {
             var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => m.Prop2).Distinct().Count();
@@ -2706,6 +2736,21 @@ FROM (
 FROM (
     SELECT TOP (2) [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
+) AS [t]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Count_after_GroupBy_causes_pushdown()
+        {
+            var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).Select(g => g.Key).Count();
+
+            Assert.AreEqual(
+                @"SELECT COUNT(*)
+FROM (
+    SELECT [g].[Prop2]
+    FROM [dbo].[MyClass1] AS [g]
+    GROUP BY [g].[Prop2]
 ) AS [t]",
                 sqlLog);
         }
@@ -2758,6 +2803,22 @@ WHERE [m0].[Prop2] = 77",
         }
 
         [TestMethod]
+        public void Count_with_predicate_after_GroupBy_causes_pushdown()
+        {
+            var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).Count(g => g.Key == 77);
+
+            Assert.AreEqual(
+                @"SELECT COUNT(*)
+FROM (
+    SELECT [g].[Prop2] AS [Key]
+    FROM [dbo].[MyClass1] AS [g]
+    GROUP BY [g].[Prop2]
+) AS [g0]
+WHERE [g0].[Key] = 77",
+                sqlLog);
+        }
+
+        [TestMethod]
         public void LongCount_after_Distinct_causes_pushdown()
         {
             var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => m.Prop2).Distinct().LongCount();
@@ -2797,6 +2858,21 @@ FROM (
 FROM (
     SELECT TOP (2) [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
+) AS [t]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void LongCount_after_GroupBy_causes_pushdown()
+        {
+            var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).Select(g => g.Key).LongCount();
+
+            Assert.AreEqual(
+                @"SELECT COUNT_BIG(*)
+FROM (
+    SELECT [g].[Prop2]
+    FROM [dbo].[MyClass1] AS [g]
+    GROUP BY [g].[Prop2]
 ) AS [t]",
                 sqlLog);
         }
@@ -2849,6 +2925,22 @@ WHERE [m0].[Prop2] = 77",
         }
 
         [TestMethod]
+        public void LongCount_with_predicate_after_GroupBy_causes_pushdown()
+        {
+            var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).LongCount(g => g.Key == 77);
+
+            Assert.AreEqual(
+                @"SELECT COUNT_BIG(*)
+FROM (
+    SELECT [g].[Prop2] AS [Key]
+    FROM [dbo].[MyClass1] AS [g]
+    GROUP BY [g].[Prop2]
+) AS [g0]
+WHERE [g0].[Key] = 77",
+                sqlLog);
+        }
+
+        [TestMethod]
         public void Max_after_Distinct_causes_pushdown()
         {
             var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => m.Prop2).Distinct().Max();
@@ -2888,6 +2980,21 @@ FROM (
 FROM (
     SELECT TOP (2) [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
+) AS [t]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Max_after_GroupBy_causes_pushdown()
+        {
+            var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).Select(g => g.Key).Max();
+
+            Assert.AreEqual(
+                @"SELECT MAX([t].[Prop2])
+FROM (
+    SELECT [g].[Prop2]
+    FROM [dbo].[MyClass1] AS [g]
+    GROUP BY [g].[Prop2]
 ) AS [t]",
                 sqlLog);
         }
@@ -2937,6 +3044,21 @@ FROM (
         }
 
         [TestMethod]
+        public void Max_with_selector_after_GroupBy_causes_pushdown()
+        {
+            var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).Max(g => g.Key);
+
+            Assert.AreEqual(
+                @"SELECT MAX([t].[Prop2])
+FROM (
+    SELECT [g].[Prop2]
+    FROM [dbo].[MyClass1] AS [g]
+    GROUP BY [g].[Prop2]
+) AS [t]",
+                sqlLog);
+        }
+
+        [TestMethod]
         public void Min_after_Distinct_causes_pushdown()
         {
             var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => m.Prop2).Distinct().Min();
@@ -2976,6 +3098,21 @@ FROM (
 FROM (
     SELECT TOP (2) [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
+) AS [t]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Min_after_GroupBy_causes_pushdown()
+        {
+            var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).Select(g => g.Key).Min();
+
+            Assert.AreEqual(
+                @"SELECT MIN([t].[Prop2])
+FROM (
+    SELECT [g].[Prop2]
+    FROM [dbo].[MyClass1] AS [g]
+    GROUP BY [g].[Prop2]
 ) AS [t]",
                 sqlLog);
         }
@@ -3025,6 +3162,21 @@ FROM (
         }
 
         [TestMethod]
+        public void Min_with_selector_after_GroupBy_causes_pushdown()
+        {
+            var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).Min(g => g.Key);
+
+            Assert.AreEqual(
+                @"SELECT MIN([t].[Prop2])
+FROM (
+    SELECT [g].[Prop2]
+    FROM [dbo].[MyClass1] AS [g]
+    GROUP BY [g].[Prop2]
+) AS [t]",
+                sqlLog);
+        }
+
+        [TestMethod]
         public void Sum_after_Distinct_causes_pushdown()
         {
             var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => m.Prop2).Distinct().Sum();
@@ -3064,6 +3216,21 @@ FROM (
 FROM (
     SELECT TOP (2) [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
+) AS [t]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Sum_after_GroupBy_causes_pushdown()
+        {
+            var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).Select(g => g.Key).Sum();
+
+            Assert.AreEqual(
+                @"SELECT SUM([t].[Prop2])
+FROM (
+    SELECT [g].[Prop2]
+    FROM [dbo].[MyClass1] AS [g]
+    GROUP BY [g].[Prop2]
 ) AS [t]",
                 sqlLog);
         }
@@ -3109,6 +3276,21 @@ FROM (
     SELECT TOP (2) [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m0]
 ) AS [m]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Sum_with_selector_after_GroupBy_causes_pushdown()
+        {
+            var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).Sum(g => g.Key);
+
+            Assert.AreEqual(
+                @"SELECT SUM([t].[Prop2])
+FROM (
+    SELECT [g].[Prop2]
+    FROM [dbo].[MyClass1] AS [g]
+    GROUP BY [g].[Prop2]
+) AS [t]",
                 sqlLog);
         }
 
@@ -3160,6 +3342,27 @@ WHERE [m].[Prop2] = 77",
         }
 
         [TestMethod]
+        public void Where_after_GroupBy_causes_pushdown()
+        {
+            var result
+                = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .GroupBy(m => m.Prop2)
+                    .Where(g => g.Key == 77)
+                    .Select(g => g.Key)
+                    .ToList();
+
+            Assert.AreEqual(
+                @"SELECT [g].[Key]
+FROM (
+    SELECT [g0].[Prop2] AS [Key]
+    FROM [dbo].[MyClass1] AS [g0]
+    GROUP BY [g0].[Prop2]
+) AS [g]
+WHERE [g].[Key] = 77",
+                sqlLog);
+        }
+
+        [TestMethod]
         public void Select_after_Distinct_causes_pushdown()
         {
             var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Distinct().Select(m => m.Prop2).ToList();
@@ -3200,6 +3403,65 @@ FROM (
     SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Distinct_after_OrderBy_causes_client_evaluation()
+        {
+            var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).OrderBy(m => m.Prop2 + m.Prop2).Distinct().ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+ORDER BY [m].[Prop2] + [m].[Prop2] ASC",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void OrderBy_after_Distinct_causes_pushdown()
+        {
+            var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Distinct().OrderBy(m => m.Prop2).ToList();
+
+            Assert.AreEqual(
+                @"SELECT [t].[Prop1] AS [Prop1], [t].[Prop2] AS [Prop2]
+FROM (
+    SELECT DISTINCT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m]
+) AS [t]
+ORDER BY [t].[Prop2] ASC",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void OrderBy_after_Skip_causes_pushdown()
+        {
+            var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Skip(1).OrderBy(m => m.Prop2).ToList();
+
+            Assert.AreEqual(
+                @"SELECT [t].[Prop1] AS [Prop1], [t].[Prop2] AS [Prop2]
+FROM (
+    SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m]
+    ORDER BY (SELECT 1)
+    OFFSET 1 ROWS
+) AS [t]
+ORDER BY [t].[Prop2] ASC",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void OrderBy_after_Take_causes_pushdown()
+        {
+            var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Take(2).OrderBy(m => m.Prop2).ToList();
+
+            Assert.AreEqual(
+                @"SELECT [t].[Prop1] AS [Prop1], [t].[Prop2] AS [Prop2]
+FROM (
+    SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m]
+) AS [t]
+ORDER BY [t].[Prop2] ASC",
                 sqlLog);
         }
 

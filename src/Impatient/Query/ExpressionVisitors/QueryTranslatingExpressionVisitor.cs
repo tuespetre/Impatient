@@ -1181,7 +1181,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                 default:
                 {
-                    // TODO: Review the error that is thrown
                     throw new InvalidOperationException();
                 }
             }
