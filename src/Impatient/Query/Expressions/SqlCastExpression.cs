@@ -17,5 +17,17 @@ namespace Impatient.Query.Expressions
         public string SqlType { get; }
 
         public override Type Type { get; }
+
+        protected override Expression VisitChildren(ExpressionVisitor visitor)
+        {
+            var expression = visitor.Visit(Expression);
+
+            if (expression != Expression)
+            {
+                return new SqlCastExpression(expression, SqlType, Type);
+            }
+
+            return this;
+        }
     }
 }

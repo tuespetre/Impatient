@@ -24,17 +24,27 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                 {
                     return Visit(foundExpression);
                 }
-                
+
                 case GroupByResultExpression groupByResultExpression
                 when node.Member == groupByResultExpression.Type.GetRuntimeProperty("Key"):
                 {
                     return Visit(groupByResultExpression.OuterKeySelector);
                 }
-                
+
                 case GroupedRelationalQueryExpression groupedRelationalQueryExpression
                 when node.Member == groupedRelationalQueryExpression.Type.GetRuntimeProperty("Key"):
                 {
                     return Visit(groupedRelationalQueryExpression.OuterKeySelector);
+                }
+
+                case DefaultIfEmptyExpression defaultIfEmptyExpression:
+                {
+                    return Visit(node.Update(defaultIfEmptyExpression.Expression));
+                }
+
+                case PolymorphicExpression polymorphicExpression:
+                {
+                    return Visit(node.Update(polymorphicExpression.Unwrap(node.Member.DeclaringType)));
                 }
 
                 default:
@@ -44,12 +54,48 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             }
         }
 
+        protected override Expression VisitUnary(UnaryExpression node)
+        {
+            var operand = Visit(node.Operand);
+
+            switch (node.NodeType)
+            {
+                case ExpressionType.TypeAs
+                when operand is PolymorphicExpression polymorphicExpression:
+                {
+                    if (polymorphicExpression.Type.IsAssignableFrom(node.Type))
+                    {
+                        return polymorphicExpression.Filter(node.Type);
+                    }
+                    else
+                    {
+                        return polymorphicExpression.Upcast(node.Type);
+                    }
+                }
+
+                case ExpressionType.Convert
+                when operand is UnaryExpression unaryExpression
+                    && unaryExpression.NodeType == ExpressionType.Convert
+                    && node.Type.IsAssignableFrom(unaryExpression.Operand.Type):
+                {
+                    return unaryExpression.Operand;
+                }
+
+                default:
+                {
+                    return node.Update(operand);
+                }
+            }
+        }
+
         private static bool FindExpressionForMember(MemberInitExpression memberInitExpression, MemberInfo memberInfo, out Expression expression)
         {
             var memberBinding
                 = memberInitExpression.Bindings
                     .OfType<MemberAssignment>()
-                    .SingleOrDefault(b => b.Member == memberInfo);
+                    .SingleOrDefault(b =>
+                        b.Member.DeclaringType == memberInfo.DeclaringType
+                            && b.Member.Name == memberInfo.Name);
 
             if (memberBinding != null)
             {
@@ -65,13 +111,17 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
         {
             if (newExpression.Members != null)
             {
-                var memberIndex = newExpression.Members.IndexOf(memberInfo);
-
-                if (memberIndex != -1)
+                for (var i = 0; i < newExpression.Members.Count; i++)
                 {
-                    expression = newExpression.Arguments[memberIndex];
+                    var member = newExpression.Members[i];
 
-                    return true;
+                    if (member.DeclaringType == memberInfo.DeclaringType
+                        && member.Name == memberInfo.Name)
+                    {
+                        expression = newExpression.Arguments[i];
+
+                        return true;
+                    }
                 }
             }
 

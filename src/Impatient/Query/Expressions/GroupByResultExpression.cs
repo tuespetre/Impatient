@@ -11,12 +11,14 @@ namespace Impatient.Query.Expressions
             SelectExpression selectExpression,
             Expression outerKeySelector,
             Expression innerKeySelector,
+            LambdaExpression innerKeyLambda,
             Expression elementSelector,
             bool isDistinct)
         {
             SelectExpression = selectExpression ?? throw new ArgumentNullException(nameof(selectExpression));
             OuterKeySelector = outerKeySelector ?? throw new ArgumentNullException(nameof(outerKeySelector));
             InnerKeySelector = innerKeySelector ?? throw new ArgumentNullException(nameof(innerKeySelector));
+            InnerKeyLambda = innerKeyLambda ?? throw new ArgumentNullException(nameof(innerKeyLambda));
             ElementSelector = elementSelector ?? throw new ArgumentNullException(nameof(elementSelector));
             IsDistinct = isDistinct;
 
@@ -28,6 +30,8 @@ namespace Impatient.Query.Expressions
         public Expression OuterKeySelector { get; }
 
         public Expression InnerKeySelector { get; }
+
+        public LambdaExpression InnerKeyLambda { get; }
 
         public Expression ElementSelector { get; }
 
@@ -42,6 +46,7 @@ namespace Impatient.Query.Expressions
             var selectExpression = visitor.VisitAndConvert(SelectExpression, nameof(VisitChildren));
             var outerKeySelector = visitor.VisitAndConvert(OuterKeySelector, nameof(VisitChildren));
             var innerKeySelector = visitor.VisitAndConvert(InnerKeySelector, nameof(VisitChildren));
+            var innerKeyLambda = visitor.VisitAndConvert(InnerKeyLambda, nameof(VisitChildren));
             var elementSelector = visitor.VisitAndConvert(ElementSelector, nameof(VisitChildren));
 
             if (selectExpression != SelectExpression)
@@ -61,12 +66,14 @@ namespace Impatient.Query.Expressions
             if (selectExpression != SelectExpression
                 || outerKeySelector != OuterKeySelector
                 || innerKeySelector != InnerKeySelector
+                || innerKeyLambda != InnerKeyLambda
                 || elementSelector != ElementSelector)
             {
                 return new GroupByResultExpression(
                     selectExpression,
                     outerKeySelector,
                     innerKeySelector,
+                    innerKeyLambda,
                     elementSelector,
                     IsDistinct);
             }

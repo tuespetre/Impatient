@@ -30,5 +30,17 @@ namespace Impatient.Query.Expressions
         {
             return new SqlAggregateExpression(FunctionName, Expression, Type, true);
         }
+
+        protected override Expression VisitChildren(ExpressionVisitor visitor)
+        {
+            var expression = visitor.Visit(Expression);
+
+            if (expression != Expression)
+            {
+                return new SqlAggregateExpression(FunctionName, expression, Type, IsDistinct);
+            }
+
+            return this;
+        }
     }
 }

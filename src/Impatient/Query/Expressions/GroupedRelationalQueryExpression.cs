@@ -11,17 +11,21 @@ namespace Impatient.Query.Expressions
             SelectExpression selectExpression,
             Expression outerKeySelector,
             Expression innerKeySelector,
+            LambdaExpression innerKeyLambda,
             Type type) 
             : base(selectExpression)
         {
             OuterKeySelector = outerKeySelector ?? throw new ArgumentNullException(nameof(outerKeySelector));
             InnerKeySelector = innerKeySelector ?? throw new ArgumentNullException(nameof(innerKeySelector));
+            InnerKeyLambda = innerKeyLambda ?? throw new ArgumentNullException(nameof(innerKeyLambda));
             Type = type ?? throw new ArgumentNullException(nameof(type));
         }
 
         public Expression OuterKeySelector { get; }
 
         public Expression InnerKeySelector { get; }
+
+        public LambdaExpression InnerKeyLambda { get; }
 
         public override Type Type { get; }
 
@@ -30,8 +34,9 @@ namespace Impatient.Query.Expressions
         protected override Expression VisitChildren(ExpressionVisitor visitor)
         {
             var selectExpression = visitor.VisitAndConvert(SelectExpression, nameof(VisitChildren));
-            var innerKeySelector = visitor.VisitAndConvert(InnerKeySelector, nameof(VisitChildren));
             var outerKeySelector = visitor.VisitAndConvert(OuterKeySelector, nameof(VisitChildren));
+            var innerKeySelector = visitor.VisitAndConvert(InnerKeySelector, nameof(VisitChildren));
+            var innerKeyLambda = visitor.VisitAndConvert(InnerKeyLambda, nameof(VisitChildren));
 
             if (selectExpression != SelectExpression)
             {
@@ -43,18 +48,20 @@ namespace Impatient.Query.Expressions
                         oldTables.Zip(newTables, ValueTuple.Create)
                             .ToDictionary(t => t.Item1, t => t.Item2));
 
-                innerKeySelector = replacingVisitor.VisitAndConvert(innerKeySelector, nameof(VisitChildren));
                 outerKeySelector = replacingVisitor.VisitAndConvert(outerKeySelector, nameof(VisitChildren));
+                innerKeySelector = replacingVisitor.VisitAndConvert(innerKeySelector, nameof(VisitChildren));
             }
 
             if (selectExpression != SelectExpression
                 || outerKeySelector != OuterKeySelector
-                || innerKeySelector != InnerKeySelector)
+                || innerKeySelector != InnerKeySelector
+                || innerKeyLambda != InnerKeyLambda)
             {
                 return new GroupedRelationalQueryExpression(
                     selectExpression,
                     outerKeySelector,
                     innerKeySelector,
+                    innerKeyLambda,
                     Type);
             }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
@@ -13,5 +14,17 @@ namespace Impatient.Query.Expressions
         public SelectExpression SelectExpression { get; }
 
         public override Type Type { get; }
+
+        protected override Expression VisitChildren(ExpressionVisitor visitor)
+        {
+            var selectExpression = visitor.VisitAndConvert(SelectExpression, nameof(VisitChildren));
+
+            if (selectExpression != SelectExpression)
+            {
+                return new SqlExistsExpression(selectExpression);
+            }
+
+            return this;
+        }
     }
 }

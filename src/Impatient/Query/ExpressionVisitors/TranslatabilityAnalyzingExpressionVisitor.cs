@@ -14,51 +14,45 @@ namespace Impatient.Query.ExpressionVisitors
 
         protected override Expression VisitBinary(BinaryExpression node)
         {
-            if (Visit(node.Left) is TranslatableExpression
-                && Visit(node.Right) is TranslatableExpression)
+            if (Visit(node.Left) is TranslatableExpression t1
+                && Visit(node.Right) is TranslatableExpression t2)
             {
                 switch (node.NodeType)
                 {
-                    // Logical
-                    case ExpressionType.AndAlso:
-                    case ExpressionType.OrElse:
+                    // Equality
+                    case ExpressionType.Equal:
+                    case ExpressionType.NotEqual:
                     {
                         return new TranslatableExpression(node);
                     }
 
                     // Comparison
-                    case ExpressionType.Equal:
-                    case ExpressionType.NotEqual:
                     case ExpressionType.GreaterThan:
                     case ExpressionType.GreaterThanOrEqual:
                     case ExpressionType.LessThan:
                     case ExpressionType.LessThanOrEqual:
-                    {
-                        return new TranslatableExpression(node);
-                    }
-
+                    // Logical
+                    case ExpressionType.AndAlso:
+                    case ExpressionType.OrElse:
                     // Math
                     case ExpressionType.Add:
                     case ExpressionType.Subtract:
                     case ExpressionType.Multiply:
                     case ExpressionType.Divide:
                     case ExpressionType.Modulo:
-                    {
-                        return new TranslatableExpression(node);
-                    }
-
-                    // Other
-                    case ExpressionType.Coalesce:
-                    {
-                        return new TranslatableExpression(node);
-                    }
-
                     // Bitwise
                     case ExpressionType.And:
                     case ExpressionType.Or:
                     case ExpressionType.ExclusiveOr:
+                    // Other
+                    case ExpressionType.Coalesce:
                     {
-                        return new TranslatableExpression(node);
+                        if (t1.Type.IsScalarType() && t2.Type.IsScalarType())
+                        {
+                            return new TranslatableExpression(node);
+                        }
+
+                        break;
                     }
                 }
             }
@@ -69,8 +63,10 @@ namespace Impatient.Query.ExpressionVisitors
         protected override Expression VisitConditional(ConditionalExpression node)
         {
             if (Visit(node.Test) is TranslatableExpression
-                && Visit(node.IfTrue) is TranslatableExpression
-                && Visit(node.IfFalse) is TranslatableExpression)
+                && Visit(node.IfTrue) is TranslatableExpression t1
+                && Visit(node.IfFalse) is TranslatableExpression t2
+                && t1.Type.IsScalarType()
+                && t2.Type.IsScalarType())
             {
                 return new TranslatableExpression(node);
             }
@@ -93,6 +89,11 @@ namespace Impatient.Query.ExpressionVisitors
             switch (node)
             {
                 case SqlExpression sqlExpression:
+                {
+                    return new TranslatableExpression(node);
+                }
+
+                case PolymorphicExpression polymorphicExpression:
                 {
                     return new TranslatableExpression(node);
                 }
@@ -171,7 +172,7 @@ namespace Impatient.Query.ExpressionVisitors
 
         protected override Expression VisitMemberInit(MemberInitExpression node)
         {
-            if (Visit(node.NewExpression) is TranslatableExpression translatable
+            if (Visit(node.NewExpression) is TranslatableExpression
                 && node.Bindings.All(IsTranslatable))
             {
                 return new TranslatableExpression(node);
@@ -201,11 +202,35 @@ namespace Impatient.Query.ExpressionVisitors
             }
         }
 
+        protected override Expression VisitTypeBinary(TypeBinaryExpression node)
+        {
+            switch (node.NodeType)
+            {
+                case ExpressionType.TypeEqual:
+                case ExpressionType.TypeIs:
+                {
+                    if (Visit(node.Expression) is TranslatableExpression
+                        && node.Expression is PolymorphicExpression)
+                    {
+                        return new TranslatableExpression(node);
+                    }
+
+                    goto default;
+                }
+
+                default:
+                {
+                    return node;
+                }
+            }
+        }
+
         protected override Expression VisitUnary(UnaryExpression node)
         {
             switch (node.NodeType)
             {
                 case ExpressionType.Not:
+                case ExpressionType.Convert:
                 {
                     if (Visit(node.Operand) is TranslatableExpression)
                     {
@@ -214,7 +239,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                     goto default;
                 }
-                
+
                 default:
                 {
                     return node;

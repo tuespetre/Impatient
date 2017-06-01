@@ -13,6 +13,7 @@ namespace Impatient.Query.ExpressionVisitors
 {
     public class QueryTranslatingExpressionVisitor : ExpressionVisitor
     {
+        private readonly Stack<object> selectExpressionSourceStack = new Stack<object>();
         private int queryDepth = -1;
         private HashSet<string> tableAliases = new HashSet<string>();
         private IDictionary<AliasedTableExpression, string> aliasLookup = new Dictionary<AliasedTableExpression, string>();
@@ -31,7 +32,11 @@ namespace Impatient.Query.ExpressionVisitors
                 = new SqlParameterRewritingExpressionVisitor()
                     .VisitAndConvert(selectExpression, nameof(Translate));
 
+            selectExpressionSourceStack.Push(selectExpression);
+
             selectExpression = VisitAndConvert(selectExpression, nameof(Translate));
+
+            selectExpressionSourceStack.Pop();
 
             return (selectExpression.Projection.Flatten(), builder.Build());
         }
@@ -442,7 +447,7 @@ namespace Impatient.Query.ExpressionVisitors
                     {
                         builder.Append("TOP (");
 
-                        selectExpression = selectExpression.UpdateLimit(Visit(selectExpression.Limit));
+                        Visit(selectExpression.Limit);
 
                         builder.Append(") ");
                     }
@@ -489,6 +494,14 @@ namespace Impatient.Query.ExpressionVisitors
                         {
                             builder.Append(" AS ");
                             builder.Append(FormatIdentifier(alias));
+                        }
+                        else if (selectExpressionSourceStack.Peek() is SubqueryTableExpression
+                            && !(expression is SqlColumnExpression
+                                || expression is SqlAliasExpression))
+                        {
+                            // TODO: Something OTHER THAN this
+                            builder.Append(" AS ");
+                            builder.Append(FormatIdentifier("$c"));
                         }
                     }
 
@@ -569,31 +582,41 @@ namespace Impatient.Query.ExpressionVisitors
 
                 case SingleValueRelationalQueryExpression singleValueRelationalQueryExpression:
                 {
+                    selectExpressionSourceStack.Push(singleValueRelationalQueryExpression);
+
                     if (!singleValueRelationalQueryExpression.Type.IsScalarType())
                     {
-                        return VisitComplexNestedQuery(singleValueRelationalQueryExpression.SelectExpression);
+                        VisitComplexNestedQuery(singleValueRelationalQueryExpression.SelectExpression);
                     }
                     else
                     {
-                        builder.IncreaseIndent();
-
                         builder.Append("(");
+
+                        builder.IncreaseIndent();
                         builder.AppendLine();
 
                         Visit(singleValueRelationalQueryExpression.SelectExpression);
 
                         builder.DecreaseIndent();
-
                         builder.AppendLine();
-                        builder.Append(")");
 
-                        return singleValueRelationalQueryExpression;
+                        builder.Append(")");
                     }
+
+                    selectExpressionSourceStack.Pop();
+
+                    return singleValueRelationalQueryExpression;
                 }
 
                 case EnumerableRelationalQueryExpression enumerableRelationalQueryExpression:
                 {
-                    return VisitComplexNestedQuery(enumerableRelationalQueryExpression.SelectExpression);
+                    selectExpressionSourceStack.Push(enumerableRelationalQueryExpression);
+
+                    VisitComplexNestedQuery(enumerableRelationalQueryExpression.SelectExpression);
+
+                    selectExpressionSourceStack.Pop();
+
+                    return enumerableRelationalQueryExpression;
                 }
 
                 case TableExpression tableExpression:
@@ -618,7 +641,11 @@ namespace Impatient.Query.ExpressionVisitors
                             builder.IncreaseIndent();
                             builder.AppendLine();
 
+                            selectExpressionSourceStack.Push(subqueryTableExpression);
+
                             Visit(subqueryTableExpression.Subquery);
+
+                            selectExpressionSourceStack.Pop();
 
                             builder.DecreaseIndent();
                             builder.AppendLine();
@@ -977,6 +1004,35 @@ namespace Impatient.Query.ExpressionVisitors
             }
         }
 
+        protected override Expression VisitTypeBinary(TypeBinaryExpression node)
+        {
+            switch (node.NodeType)
+            {
+                case ExpressionType.TypeEqual:
+                case ExpressionType.TypeIs:
+                {
+                    if (node.Expression is PolymorphicExpression polymorphicExpression)
+                    {
+                        return Visit(
+                            polymorphicExpression
+                                .Filter(node.TypeOperand)
+                                .Descriptors
+                                .Select(d => d.Test.ExpandParameters(
+                                    d.Materializer.ExpandParameters(
+                                        polymorphicExpression.Row)))
+                                .Aggregate(Expression.OrElse));
+                    }
+
+                    goto default;
+                }
+
+                default:
+                {
+                    throw new NotSupportedException();
+                }
+            }
+        }
+
         protected override Expression VisitUnary(UnaryExpression node)
         {
             switch (node.NodeType)
@@ -1005,6 +1061,11 @@ namespace Impatient.Query.ExpressionVisitors
                 {
                     builder.Append("~ ");
 
+                    return base.VisitUnary(node);
+                }
+
+                case ExpressionType.Convert:
+                {
                     return base.VisitUnary(node);
                 }
 
@@ -1044,7 +1105,6 @@ namespace Impatient.Query.ExpressionVisitors
             if (expression.Type.IsBoolean()
                 && !(expression is ConditionalExpression
                     || expression is ConstantExpression
-                    || expression is SqlAliasExpression
                     || expression is SqlColumnExpression
                     || expression is SqlCastExpression))
             {
@@ -1102,7 +1162,7 @@ namespace Impatient.Query.ExpressionVisitors
 
             public override Expression Visit(Expression node)
             {
-                if (node == null)
+                if (node == null || node is LambdaExpression)
                 {
                     return node;
                 }
@@ -1294,42 +1354,49 @@ namespace Impatient.Query.ExpressionVisitors
                         return visited;
                     }
 
-                    case DefaultIfEmptyTestExpression defaultIfEmptyTestExpression:
+                    case DefaultIfEmptyExpression defaultIfEmptyExpression:
                     {
                         CurrentPath.Push("$empty");
                         var name = ComputeCurrentName();
                         CurrentPath.Pop();
 
-                        GatheredExpressions[name]
-                            = new SqlCastExpression(
-                                Expression.Coalesce(
-                                    new SqlColumnExpression(
-                                        defaultIfEmptyTestExpression.Table,
-                                        "$empty",
-                                        typeof(bool?),
-                                        true),
-                                    Expression.Constant(true)),
-                                "BIT",
-                                typeof(bool));
+                        GatheredExpressions[name] = defaultIfEmptyExpression.Flag;
 
                         return Expression.Condition(
                             test: Expression.Call(
                                 readerParameter,
-                                getFieldValueMethodInfo.MakeGenericMethod(typeof(bool)),
+                                isDBNullMethodInfo,
                                 Expression.Constant(readerIndex++)),
-                            ifTrue: Expression.Default(defaultIfEmptyTestExpression.Type),
-                            ifFalse: Visit(defaultIfEmptyTestExpression.Expression));
+                            ifTrue: Expression.Default(defaultIfEmptyExpression.Type),
+                            ifFalse: Visit(defaultIfEmptyExpression.Expression));
                     }
 
-                    case DefaultIfEmptyFlagExpression defaultIfEmptyFlagExpression:
+                    case PolymorphicExpression polymorphicExpression:
                     {
-                        CurrentPath.Push("$empty");
-                        var name = ComputeCurrentName();
-                        CurrentPath.Pop();
+                        var row = Visit(polymorphicExpression.Row);
+                        var descriptors = polymorphicExpression.Descriptors.ToArray();
+                        var result = (Expression)Expression.Default(polymorphicExpression.Type);
 
-                        GatheredExpressions[name] = Expression.Constant(false);
+                        for (var i = 0; i < descriptors.Length; i++)
+                        {
+                            var descriptor = descriptors[i];
+                            var materializer = descriptor.Materializer.ExpandParameters(row);
+                            var test = descriptor.Test.ExpandParameters(materializer);
 
-                        return Visit(defaultIfEmptyFlagExpression.Expression);
+                            result = Expression.Condition(
+                                test: test,
+                                ifTrue: materializer,
+                                ifFalse: result,
+                                type: polymorphicExpression.Type);
+                        }
+
+                        return result;
+                    }
+
+                    case UnaryExpression unaryExpression
+                    when unaryExpression.NodeType == ExpressionType.Convert:
+                    {
+                        return unaryExpression.Update(Visit(unaryExpression.Operand));
                     }
 
                     case Expression expression
@@ -1337,6 +1404,7 @@ namespace Impatient.Query.ExpressionVisitors
                         .TranslatabilityAnalyzingExpressionVisitor
                         .Visit(expression) is TranslatableExpression:
                     {
+                        // TODO: SubLeaf may not apply anymore.
                         if (InSubLeaf)
                         {
                             CurrentPath.Push($"${++subLeafIndex}");
@@ -1350,12 +1418,12 @@ namespace Impatient.Query.ExpressionVisitors
                             GatheredExpressions[name] = expression;
                         }
 
-                        if (expression is RelationalQueryExpression && !expression.Type.IsScalarType())
+                        if (!expression.Type.IsScalarType())
                         {
                             var type = node.Type;
                             var defaultValue = Expression.Default(type) as Expression;
 
-                            if (expression is EnumerableRelationalQueryExpression)
+                            if (node.Type.FindGenericType(typeof(IEnumerable<>)) != null)
                             {
                                 if (node.Type.IsArray)
                                 {
@@ -1375,20 +1443,33 @@ namespace Impatient.Query.ExpressionVisitors
                             var currentIndex = readerIndex;
                             readerIndex++;
 
-                            return Expression.Condition(
-                                Expression.Call(
-                                    readerParameter,
-                                    isDBNullMethodInfo,
-                                    Expression.Constant(currentIndex)),
-                                defaultValue,
-                                Expression.Call(
-                                    ImpatientExtensions
-                                        .GetGenericMethodDefinition((string s) => JsonConvert.DeserializeObject<object>(s))
-                                        .MakeGenericMethod(type),
+                            var result
+                                = Expression.Condition(
                                     Expression.Call(
                                         readerParameter,
-                                        getFieldValueMethodInfo.MakeGenericMethod(typeof(string)),
-                                        Expression.Constant(currentIndex)))) as Expression;
+                                        isDBNullMethodInfo,
+                                        Expression.Constant(currentIndex)),
+                                    defaultValue,
+                                    Expression.Call(
+                                        ImpatientExtensions
+                                            .GetGenericMethodDefinition((string s) => JsonConvert.DeserializeObject<object>(s))
+                                            .MakeGenericMethod(type),
+                                        Expression.Call(
+                                            readerParameter,
+                                            getFieldValueMethodInfo.MakeGenericMethod(typeof(string)),
+                                            Expression.Constant(currentIndex)))) as Expression;
+
+                            if (node.Type.FindGenericType(typeof(IQueryable<>)) != null)
+                            {
+                                result
+                                    = Expression.Call(
+                                        ImpatientExtensions
+                                            .GetGenericMethodDefinition((IEnumerable<object> e) => e.AsQueryable())
+                                            .MakeGenericMethod(type.GetSequenceType()),
+                                        result);
+                            }
+
+                            return result;
                         }
                         else
                         {

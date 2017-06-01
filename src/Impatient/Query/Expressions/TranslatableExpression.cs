@@ -8,6 +8,16 @@ namespace Impatient.Query.Expressions
         {
         }
 
-        protected override AnnotationExpression Recreate(Expression expression) => new TranslatableExpression(expression);
+        protected override Expression VisitChildren(ExpressionVisitor visitor)
+        {
+            var expression = visitor.Visit(Expression);
+
+            if (expression != Expression)
+            {
+                return new TranslatableExpression(expression);
+            }
+
+            return this;
+        }
     }
 }

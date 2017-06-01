@@ -1463,7 +1463,7 @@ INNER JOIN [dbo].[MyClass2] AS [s2] ON [s1].[Prop1] = [s2].[Prop1]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [s1].[Prop1] AS [s1.Prop1], [s1].[Prop2] AS [s1.Prop2], CAST(COALESCE([s2].[$empty], 1) AS BIT) AS [s2.$empty], [s2].[Prop1] AS [s2.Prop1], [s2].[Prop2] AS [s2.Prop2]
+                @"SELECT [s1].[Prop1] AS [s1.Prop1], [s1].[Prop2] AS [s1.Prop2], [s2].[$empty] AS [s2.$empty], [s2].[Prop1] AS [s2.Prop1], [s2].[Prop2] AS [s2.Prop2]
 FROM [dbo].[MyClass1] AS [s1]
 LEFT JOIN (
     SELECT 0 AS [$empty], [s20].[Prop1] AS [Prop1], [s20].[Prop2] AS [Prop2]
@@ -1486,7 +1486,7 @@ LEFT JOIN (
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [s1].[Prop1] AS [s1.Prop1], [s1].[Prop2] AS [s1.Prop2], CAST(COALESCE([s2].[$empty], 1) AS BIT) AS [s2.$empty], [s2].[Prop1] AS [s2.Prop1], [s2].[Prop2] AS [s2.Prop2]
+                @"SELECT [s1].[Prop1] AS [s1.Prop1], [s1].[Prop2] AS [s1.Prop2], [s2].[$empty] AS [s2.$empty], [s2].[Prop1] AS [s2.Prop1], [s2].[Prop2] AS [s2.Prop2]
 FROM [dbo].[MyClass1] AS [s1]
 LEFT JOIN (
     SELECT 0 AS [$empty], [s20].[Prop1] AS [Prop1], [s20].[Prop2] AS [Prop2]
@@ -1509,7 +1509,7 @@ LEFT JOIN (
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [s1].[Prop1] AS [s1.Prop1], [s1].[Prop2] AS [s1.Prop2], CAST(COALESCE([s2].[$empty], 1) AS BIT) AS [s2.$empty], [s2].[Prop1] AS [s2.Prop1], [s2].[Prop2] AS [s2.Prop2]
+                @"SELECT [s1].[Prop1] AS [s1.Prop1], [s1].[Prop2] AS [s1.Prop2], [s2].[$empty] AS [s2.$empty], [s2].[Prop1] AS [s2.Prop1], [s2].[Prop2] AS [s2.Prop2]
 FROM [dbo].[MyClass1] AS [s1]
 OUTER APPLY (
     SELECT TOP (1) 0 AS [$empty], [s20].[Prop1] AS [Prop1], [s20].[Prop2] AS [Prop2]
@@ -1655,7 +1655,7 @@ FROM (
             Assert.AreEqual(2, result.Count);
 
             Assert.AreEqual(
-                @"SELECT CAST(COALESCE([t].[$empty], 1) AS BIT) AS [$empty], [t].[Prop1] AS [Prop1], [t].[Prop2] AS [Prop2]
+                @"SELECT [t].[$empty] AS [$empty], [t].[Prop1] AS [Prop1], [t].[Prop2] AS [Prop2]
 FROM (
     SELECT NULL AS [Empty]
 ) AS [t0]
@@ -1677,7 +1677,7 @@ LEFT JOIN (
             Assert.AreEqual(null, result[0]);
 
             Assert.AreEqual(
-                @"SELECT CAST(COALESCE([t].[$empty], 1) AS BIT) AS [$empty], [t].[Prop1] AS [Prop1], [t].[Prop2] AS [Prop2]
+                @"SELECT [t].[$empty] AS [$empty], [t].[Prop1] AS [Prop1], [t].[Prop2] AS [Prop2]
 FROM (
     SELECT NULL AS [Empty]
 ) AS [t0]
@@ -3530,6 +3530,90 @@ FROM (
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]
 ORDER BY [t].[Prop2] ASC",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void LeftJoin_nested_right_side()
+        {
+            var query = from m1a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                        join x in (from m1b in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                                   join m2 in impatient.CreateQuery<MyClass2>(MyClass2QueryExpression)
+                                   on m1b.Prop2 equals m2.Prop2 into m2g
+                                   from m2 in m2g.DefaultIfEmpty()
+                                   select new { m1b, m2 })
+                                   on m1a.Prop2 equals x.m1b.Prop2 into xg
+                        from x in xg.DefaultIfEmpty()
+                        select new { m1a, x };
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m1a].[Prop1] AS [m1a.Prop1], [m1a].[Prop2] AS [m1a.Prop2], [x].[$empty] AS [x.$empty], [x].[m1b.Prop1] AS [x.m1b.Prop1], [x].[m1b.Prop2] AS [x.m1b.Prop2], [x].[m2.$empty] AS [x.m2.$empty], [x].[m2.Prop1] AS [x.m2.Prop1], [x].[m2.Prop2] AS [x.m2.Prop2]
+FROM [dbo].[MyClass1] AS [m1a]
+LEFT JOIN (
+    SELECT 0 AS [$empty], [m1b].[Prop1] AS [m1b.Prop1], [m1b].[Prop2] AS [m1b.Prop2], [m2].[$empty] AS [m2.$empty], [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2]
+    FROM [dbo].[MyClass1] AS [m1b]
+    LEFT JOIN (
+        SELECT 0 AS [$empty], [m20].[Prop1] AS [Prop1], [m20].[Prop2] AS [Prop2]
+        FROM [dbo].[MyClass2] AS [m20]
+    ) AS [m2] ON [m1b].[Prop2] = [m2].[Prop2]
+) AS [x] ON [m1a].[Prop2] = [x].[m1b.Prop2]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void LeftJoin_nested_left_side()
+        {
+            var query = from x in (from m1b in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                                   join m2 in impatient.CreateQuery<MyClass2>(MyClass2QueryExpression)
+                                   on m1b.Prop2 equals m2.Prop2 into m2g
+                                   from m2 in m2g.DefaultIfEmpty()
+                                   select new { m1b, m2 }).Take(10)
+                        join m1a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                            on x.m1b.Prop2 equals m1a.Prop2
+                        select new { m1a, x };
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m1a].[Prop1] AS [m1a.Prop1], [m1a].[Prop2] AS [m1a.Prop2], [x].[m1b.Prop1] AS [x.m1b.Prop1], [x].[m1b.Prop2] AS [x.m1b.Prop2], [x].[m2.$empty] AS [x.m2.$empty], [x].[m2.Prop1] AS [x.m2.Prop1], [x].[m2.Prop2] AS [x.m2.Prop2]
+FROM (
+    SELECT TOP (10) [m1b].[Prop1] AS [m1b.Prop1], [m1b].[Prop2] AS [m1b.Prop2], [m2].[$empty] AS [m2.$empty], [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2]
+    FROM [dbo].[MyClass1] AS [m1b]
+    LEFT JOIN (
+        SELECT 0 AS [$empty], [m20].[Prop1] AS [Prop1], [m20].[Prop2] AS [Prop2]
+        FROM [dbo].[MyClass2] AS [m20]
+    ) AS [m2] ON [m1b].[Prop2] = [m2].[Prop2]
+) AS [x]
+INNER JOIN [dbo].[MyClass1] AS [m1a] ON [x].[m1b.Prop2] = [m1a].[Prop2]",
+                sqlLog);
+        }
+
+        [TestMethod]
+        public void Weird_Query()
+        {
+            var query = from q in (from x in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                                   from zs in (from y in impatient.CreateQuery<MyClass2>(MyClass2QueryExpression)
+                                               select impatient.CreateQuery<MyClass2>(MyClass2QueryExpression).Where(z => z.Prop2 == x.Prop2))
+                                   select new { x, zs }).Take(10)
+                        from z in q.zs
+                        select new { q.x, z };
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT TOP (10) [x].[Prop1] AS [x.Prop1], [x].[Prop2] AS [x.Prop2], [zs].[$c] AS [zs]
+FROM [dbo].[MyClass1] AS [x]
+CROSS APPLY (
+    SELECT (
+        SELECT [z].[Prop1] AS [Prop1], [z].[Prop2] AS [Prop2]
+        FROM [dbo].[MyClass2] AS [z]
+        WHERE [z].[Prop2] = [x].[Prop2]
+        FOR JSON PATH
+    ) AS [$c]
+    FROM [dbo].[MyClass2] AS [y]
+) AS [zs]",
                 sqlLog);
         }
 

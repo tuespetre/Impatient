@@ -92,6 +92,7 @@ namespace Impatient.Query.ExpressionVisitors
                             relationalGrouping.SelectExpression,
                             relationalGrouping.OuterKeySelector,
                             relationalGrouping.InnerKeySelector,
+                            relationalGrouping.InnerKeyLambda,
                             relationalGrouping.ElementSelector,
                             true);
                     }
@@ -119,6 +120,7 @@ namespace Impatient.Query.ExpressionVisitors
                             relationalGrouping.SelectExpression,
                             relationalGrouping.OuterKeySelector,
                             relationalGrouping.InnerKeySelector,
+                            relationalGrouping.InnerKeyLambda,
                             selectorBody,
                             relationalGrouping.IsDistinct);
                     }

@@ -19,5 +19,17 @@ namespace Impatient.Query.Expressions
         public IEnumerable<Expression> Arguments { get; }
 
         public override Type Type { get; }
+
+        protected override Expression VisitChildren(ExpressionVisitor visitor)
+        {
+            var arguments = Arguments.Select(visitor.Visit).ToArray();
+
+            if (!arguments.SequenceEqual(Arguments))
+            {
+                return new SqlFunctionExpression(FunctionName, Type, arguments);
+            }
+
+            return this;
+        }
     }
 }

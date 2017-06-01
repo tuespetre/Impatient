@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Impatient.Query.ExpressionVisitors.Utility;
+using System;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
@@ -21,6 +23,33 @@ namespace Impatient.Query.Expressions
 
             if (outerTable != OuterTable || innerTable != InnerTable || predicate != Predicate)
             {
+                if (outerTable != OuterTable)
+                {
+                    var oldTables = OuterTable.Flatten().Cast<Expression>();
+                    var newTables = outerTable.Flatten().Cast<Expression>();
+
+                    var replacingVisitor
+                        = new ExpressionReplacingExpressionVisitor(
+                            oldTables.Zip(newTables, ValueTuple.Create)
+                                .ToDictionary(t => t.Item1, t => t.Item2));
+
+                    innerTable = replacingVisitor.VisitAndConvert(innerTable, nameof(VisitChildren));
+                    predicate = replacingVisitor.Visit(predicate);
+                }
+
+                if (innerTable != InnerTable)
+                {
+                    var oldTables = InnerTable.Flatten().Cast<Expression>();
+                    var newTables = innerTable.Flatten().Cast<Expression>();
+
+                    var replacingVisitor
+                        = new ExpressionReplacingExpressionVisitor(
+                            oldTables.Zip(newTables, ValueTuple.Create)
+                                .ToDictionary(t => t.Item1, t => t.Item2));
+
+                    predicate = replacingVisitor.Visit(predicate);
+                }
+
                 return new InnerJoinExpression(outerTable, innerTable, predicate, Type);
             }
 
