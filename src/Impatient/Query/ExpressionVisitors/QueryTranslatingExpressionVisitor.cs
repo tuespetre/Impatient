@@ -1017,9 +1017,7 @@ namespace Impatient.Query.ExpressionVisitors
                             polymorphicExpression
                                 .Filter(node.TypeOperand)
                                 .Descriptors
-                                .Select(d => d.Test.ExpandParameters(
-                                    d.Materializer.ExpandParameters(
-                                        polymorphicExpression.Row)))
+                                .Select(d => d.Test.ExpandParameters(polymorphicExpression.Row))
                                 .Aggregate(Expression.OrElse));
                     }
 
@@ -1379,13 +1377,9 @@ namespace Impatient.Query.ExpressionVisitors
 
                         for (var i = 0; i < descriptors.Length; i++)
                         {
-                            var descriptor = descriptors[i];
-                            var materializer = descriptor.Materializer.ExpandParameters(row);
-                            var test = descriptor.Test.ExpandParameters(materializer);
-
                             result = Expression.Condition(
-                                test: test,
-                                ifTrue: materializer,
+                                test: descriptors[i].Test.ExpandParameters(row),
+                                ifTrue: descriptors[i].Materializer.ExpandParameters(row),
                                 ifFalse: result,
                                 type: polymorphicExpression.Type);
                         }

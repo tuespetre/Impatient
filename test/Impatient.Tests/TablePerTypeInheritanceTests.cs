@@ -1,15 +1,10 @@
 ﻿using Dapper;
 using Impatient.Query;
 using Impatient.Query.Expressions;
-using Impatient.Query.ExpressionVisitors;
 using Impatient.Tests.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Data.Common;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -25,7 +20,270 @@ namespace Impatient.Tests
 
         private string SqlLog => commandLog.ToString();
 
-        private readonly Expression BaseTypeQueryExpression;
+        private static readonly Expression BaseTypeQueryExpression;
+
+        public struct TreeNode<TValue>
+        {
+            public TValue Value;
+            public IEnumerable<TreeNode<TValue>> Children;
+
+            public IEnumerable<TResult> Flatten<TResult>(Func<TreeNode<TValue>, TResult> selector)
+            {
+                yield return selector(this);
+
+                foreach (var value in Children.SelectMany(c => c.Flatten(selector)))
+                {
+                    yield return value;
+                }
+            }
+
+            public TreeNode<TResult> Transform<TResult>(Func<TreeNode<TValue>, TResult> selector)
+            {
+                return new TreeNode<TResult>
+                {
+                    Value = selector(this),
+                    Children = Children.Select(c => c.Transform(selector)),
+                };
+            }
+
+            public TAccumulate Aggregate<TAccumulate>(
+                TAccumulate seed,
+                Func<TAccumulate, TreeNode<TValue>, TreeNode<TValue>, TAccumulate> accumulator)
+            {
+                var me = this;
+
+                return Children.Aggregate(
+                    seed,
+                    (result, next) => next.Aggregate(
+                        accumulator(result, me, next),
+                        accumulator));
+            }
+        }
+
+        public static class ValueTupleHelper
+        {
+            public static Type CreateTupleType(IEnumerable<Type> types)
+            {
+                var result = default(Type);
+                var remainder = types.Count() % 7;
+
+                types = types.Reverse().ToArray().AsEnumerable();
+
+                if (remainder > 0)
+                {
+                    var genericTupleType
+                        = remainder == 1 ? typeof(ValueTuple<>)
+                        : remainder == 2 ? typeof(ValueTuple<,>)
+                        : remainder == 3 ? typeof(ValueTuple<,,>)
+                        : remainder == 4 ? typeof(ValueTuple<,,,>)
+                        : remainder == 5 ? typeof(ValueTuple<,,,,>)
+                        : typeof(ValueTuple<,,,,,>);
+
+                    result
+                        = genericTupleType.MakeGenericType(
+                            types
+                                .Take(remainder)
+                                .Reverse()
+                                .ToArray());
+
+                    types = types.Skip(remainder);
+                }
+                else
+                {
+                    result
+                        = typeof(ValueTuple<,,,,,,>).MakeGenericType(
+                            types
+                                .Take(7)
+                                .Reverse()
+                                .ToArray());
+
+                    types = types.Skip(7);
+                }
+
+                while (types.Any())
+                {
+                    result
+                        = typeof(ValueTuple<,,,,,,,>).MakeGenericType(
+                            types
+                                .Take(7)
+                                .Reverse()
+                                .Concat(Enumerable.Repeat(result, 1))
+                                .ToArray());
+
+                    types = types.Skip(7);
+                }
+
+                return result;
+            }
+
+            public static NewExpression CreateNewExpression(Type type, IEnumerable<Expression> arguments)
+            {
+                var typeInfo = type.GetTypeInfo();
+                var constructor = typeInfo.DeclaredConstructors.Single();
+                var fields = typeInfo.DeclaredFields.ToArray();
+                var newArguments = new List<Expression>(fields.Length);
+
+                foreach (var argument in arguments.TakeWhile((b, i) => i < 7 && i < fields.Length))
+                {
+                    newArguments.Add(argument);
+                }
+
+                if (fields.Length == 8)
+                {
+                    newArguments.Add(
+                        CreateNewExpression(
+                            fields[7].FieldType,
+                            arguments.Skip(7)));
+                }
+
+                return Expression.New(constructor, newArguments, fields);
+            }
+
+            public static Expression CreateMemberExpression(Type type, Expression expression, int index)
+            {
+                for (var i = 0; i < index / 7; i++)
+                {
+                    var restField = type.GetRuntimeField("Rest");
+                    expression = Expression.MakeMemberAccess(expression, restField);
+                    type = restField.FieldType;
+                }
+
+                var itemField = type.GetTypeInfo().DeclaredFields.ElementAt(index % 7);
+
+                return Expression.MakeMemberAccess(expression, itemField);
+            }
+        }
+
+        static TablePerTypeInheritanceTests()
+        {
+            #region helper functions
+
+            IEnumerable<Type> MakeChain(Type type)
+            {
+                do
+                {
+                    yield return type;
+
+                    type = type.GetTypeInfo().BaseType;
+                }
+                while (type != typeof(object));
+            }
+
+            IEnumerable<TreeNode<TValue>> MakeTree<TValue>(IEnumerable<IEnumerable<TValue>> chains)
+            {
+                return from c in chains
+                       where c.Any()
+                       group c.Skip(1) by c.First() into cg
+                       select new TreeNode<TValue>
+                       {
+                           Value = cg.Key,
+                           Children = MakeTree(cg),
+                       };
+            }
+
+            #endregion
+
+            var concreteTypes = new[]
+            {
+                typeof(DerivedConcreteType1),
+                typeof(DerivedConcreteType2),
+                typeof(DerivedConcreteType3),
+            };
+
+            var hierarchyRoot = MakeTree(concreteTypes.Select(t => MakeChain(t).Reverse()).OrderBy(c => c.Count())).Single();
+            var keyPropertyNames = new[] { "Id" };
+
+            // TODO: propertyType needs to be dynamic
+            var bindings = (from type in hierarchyRoot.Flatten(n => n.Value)
+                            let table = new BaseTableExpression("dbo", type.Name, type.Name.ToLower().Substring(0, 1), type)
+                            let k = (from n in keyPropertyNames select type.GetRuntimeProperty(n))
+                            from property in k.Union(type.GetTypeInfo().DeclaredProperties)
+                            let propertyType = property.PropertyType == typeof(int) ? typeof(int?) : property.PropertyType
+                            let column = new SqlColumnExpression(table, property.Name, propertyType, isNullable: true)
+                            select (type: type, table: table, property: property, column: column)).ToArray();
+
+            var tupleType = ValueTupleHelper.CreateTupleType(bindings.Select(b => b.column.Type));
+            var tupleNewExpression = ValueTupleHelper.CreateNewExpression(tupleType, bindings.Select(b => b.column));
+            var tupleParameter = Expression.Parameter(tupleType);
+
+            var descriptors = new List<PolymorphicExpression.TypeDescriptor>();
+
+            foreach (var concreteType in concreteTypes)
+            {
+                var currentChain = MakeChain(concreteType).ToArray();
+                var memberBindings = new List<MemberBinding>();
+                var boundPropertyTokens = new HashSet<int>();
+
+                for (var i = 0; i < bindings.Length; i++)
+                {
+                    var binding = bindings[i];
+
+                    if (!currentChain.Contains(binding.type)
+                        || !boundPropertyTokens.Add(binding.property.MetadataToken))
+                    {
+                        continue;
+                    }
+
+                    memberBindings.Add(
+                        Expression.Bind(
+                            binding.property,
+                            Expression.Convert(
+                                ValueTupleHelper.CreateMemberExpression(tupleType, tupleParameter, i),
+                                binding.property.PropertyType)));
+                }
+
+                var keyProperty = concreteType.GetRuntimeProperty(keyPropertyNames.First());
+                var keyIndex = bindings.ToList().FindIndex(b => b.property == keyProperty);
+
+                // TODO: typeof(int?) needs to be dynamic
+                var test
+                    = Expression.Lambda(
+                        Expression.NotEqual(
+                            ValueTupleHelper.CreateMemberExpression(tupleType, tupleParameter, keyIndex),
+                            Expression.Constant(null, typeof(int?))),
+                        tupleParameter);
+
+                var materializer
+                    = Expression.Lambda(
+                        Expression.MemberInit(
+                            Expression.New(concreteType),
+                            memberBindings),
+                        tupleParameter);
+
+                descriptors.Add(new PolymorphicExpression.TypeDescriptor(concreteType, test, materializer));
+            }
+
+            // TODO: The Equal expression needs to be dynamic
+            var tableExpression
+                = hierarchyRoot
+                    .Transform(
+                        (node) =>
+                        {
+                            return bindings.First(b => b.type == node.Value).table;
+                        })
+                    .Aggregate(
+                        bindings.First().column.Table as TableExpression,
+                        (accumulate, parent, child) =>
+                        {
+                            return new LeftJoinExpression(
+                                accumulate,
+                                child.Value,
+                                Expression.Equal(
+                                    new SqlColumnExpression(parent.Value, keyPropertyNames.First(), typeof(int), false),
+                                    new SqlColumnExpression(child.Value, keyPropertyNames.First(), typeof(int), false)),
+                                hierarchyRoot.Value);
+                        });
+
+            BaseTypeQueryExpression
+                = new EnumerableRelationalQueryExpression(
+                    new SelectExpression(
+                        new ServerProjectionExpression(
+                            new PolymorphicExpression(
+                                typeof(BaseAbstractType1),
+                                tupleNewExpression,
+                                descriptors)),
+                        tableExpression));
+        }
 
         public TablePerTypeInheritanceTests()
         {
@@ -45,175 +303,6 @@ namespace Impatient.Tests
                 }
             };
 
-            var baseAbstractType1 = typeof(BaseAbstractType1);
-            var baseAbstractType1Table = new BaseTableExpression("dbo", "BaseAbstractType1", "ba1", typeof(BaseAbstractType1));
-
-            var derivedConcreteType1 = typeof(DerivedConcreteType1);
-            var derivedConcreteType1Table = new BaseTableExpression("dbo", "DerivedConcreteType1", "dc1", typeof(DerivedConcreteType1));
-
-            var derivedAbstractType1 = typeof(DerivedAbstractType1);
-            var derivedAbstractType1Table = new BaseTableExpression("dbo", "DerivedAbstractType1", "da1", typeof(DerivedAbstractType1));
-
-            var derivedConcreteType2 = typeof(DerivedConcreteType2);
-            var derivedConcreteType2Table = new BaseTableExpression("dbo", "DerivedConcreteType2", "dc2", typeof(DerivedConcreteType2));
-            
-            var derivedConcreteType3 = typeof(DerivedConcreteType3);
-            var derivedConcreteType3Table = new BaseTableExpression("dbo", "DerivedConcreteType3", "dc3", typeof(DerivedConcreteType3));
-            
-            Expression<Func<T>> GetExpression<T>(Expression<Func<T>> expression) => expression;
-
-            var rowExpression
-                = (GetExpression(() => new
-                {
-                    Id0 = default(int),
-                    Property_BaseAbstractType1 = default(string),
-                    Id1 = default(int?),
-                    Property_DerivedConcreteType1 = default(string),
-                    Id2 = default(int?),
-                    Property_DerivedAbstractType1 = default(string),
-                    Id3 = default(int?),
-                    Property_DerivedConcreteType2 = default(string),
-                    Id4 = default(int?),
-                    Property_DerivedConcreteType3 = default(string),
-                })
-                    .Body as NewExpression)
-                .Update(new[]
-                {
-                    new SqlColumnExpression(baseAbstractType1Table, "Id", typeof(int), false),
-                    new SqlColumnExpression(baseAbstractType1Table, "Property_BaseAbstractType1", typeof(string), true),
-
-                    new SqlColumnExpression(derivedConcreteType1Table, "Id", typeof(int?), true),
-                    new SqlColumnExpression(derivedConcreteType1Table, "Property_DerivedConcreteType1", typeof(string), true),
-
-                    new SqlColumnExpression(derivedAbstractType1Table, "Id", typeof(int?), true),
-                    new SqlColumnExpression(derivedAbstractType1Table, "Property_DerivedAbstractType1", typeof(string), true),
-
-                    new SqlColumnExpression(derivedConcreteType2Table, "Id", typeof(int?), true),
-                    new SqlColumnExpression(derivedConcreteType2Table, "Property_DerivedConcreteType2", typeof(string), true),
-
-                    new SqlColumnExpression(derivedConcreteType3Table, "Id", typeof(int?), true),
-                    new SqlColumnExpression(derivedConcreteType3Table, "Property_DerivedConcreteType3", typeof(string), true),
-                });
-
-            var rowParam = Expression.Parameter(rowExpression.Type);
-
-            var dct1expr
-                = Expression.Lambda(
-                    Expression.MemberInit(
-                        Expression.New(derivedConcreteType1),
-                        from t in new[]
-                        {
-                            (nameof(DerivedConcreteType1.Id), "Id1"),
-                            (nameof(DerivedConcreteType1.Property_BaseAbstractType1), "Property_BaseAbstractType1"),
-                            (nameof(DerivedConcreteType1.Property_DerivedConcreteType1), "Property_DerivedConcreteType1"),
-                        }
-                        let p = derivedConcreteType1.GetProperty(t.Item1)
-                        select Expression.Bind(
-                            p,
-                            Expression.Convert(
-                                Expression.MakeMemberAccess(rowParam, rowParam.Type.GetProperty(t.Item2)),
-                                p.PropertyType))),
-                    rowParam);
-
-            var dct2expr
-                = Expression.Lambda(
-                    Expression.MemberInit(
-                        Expression.New(derivedConcreteType2),
-                        from t in new[]
-                        {
-                            (nameof(DerivedConcreteType2.Id), "Id3"),
-                            (nameof(DerivedConcreteType2.Property_BaseAbstractType1), "Property_BaseAbstractType1"),
-                            (nameof(DerivedConcreteType2.Property_DerivedAbstractType1), "Property_DerivedAbstractType1"),
-                            (nameof(DerivedConcreteType2.Property_DerivedConcreteType2), "Property_DerivedConcreteType1"),
-                        }
-                        let p = derivedConcreteType2.GetProperty(t.Item1)
-                        select Expression.Bind(
-                            p,
-                            Expression.Convert(
-                                Expression.MakeMemberAccess(rowParam, rowParam.Type.GetProperty(t.Item2)),
-                                p.PropertyType))),
-                    rowParam);
-
-            var dct3expr
-                = Expression.Lambda(
-                    Expression.MemberInit(
-                        Expression.New(derivedConcreteType3),
-                        from t in new[]
-                        {
-                            (nameof(DerivedConcreteType3.Id), "Id4"),
-                            (nameof(DerivedConcreteType3.Property_BaseAbstractType1), "Property_BaseAbstractType1"),
-                            (nameof(DerivedConcreteType3.Property_DerivedAbstractType1), "Property_DerivedAbstractType1"),
-                            (nameof(DerivedConcreteType3.Property_DerivedConcreteType3), "Property_DerivedConcreteType3"),
-                        }
-                        let p = derivedConcreteType3.GetProperty(t.Item1)
-                        select Expression.Bind(
-                            p,
-                            Expression.Convert(
-                                Expression.MakeMemberAccess(rowParam, rowParam.Type.GetProperty(t.Item2)),
-                                p.PropertyType))),
-                    rowParam);
-
-            var testParameter = Expression.Parameter(typeof(BaseAbstractType1), "x");
-
-            var testExpression
-                = Expression.Lambda(
-                    Expression.NotEqual(
-                        Expression.Convert(
-                            Expression.MakeMemberAccess(
-                                testParameter,
-                                baseAbstractType1.GetProperty(nameof(BaseAbstractType1.Id))),
-                            typeof(int?)),
-                        Expression.Constant(null, typeof(int?))),
-                    testParameter);
-
-            BaseTypeQueryExpression
-                = new EnumerableRelationalQueryExpression(
-                    new SelectExpression(
-                        new ServerProjectionExpression(
-                            new PolymorphicExpression(
-                                baseAbstractType1,
-                                rowExpression,
-                                new[]
-                                {
-                                    new PolymorphicExpression.TypeDescriptor(
-                                        derivedConcreteType1,
-                                        testExpression,
-                                        dct1expr),
-                                    new PolymorphicExpression.TypeDescriptor(
-                                        derivedConcreteType2,
-                                        testExpression,
-                                        dct2expr),
-                                    new PolymorphicExpression.TypeDescriptor(
-                                        derivedConcreteType3,
-                                        testExpression,
-                                        dct3expr),
-                                })),
-                        new LeftJoinExpression(
-                            new LeftJoinExpression(
-                                new LeftJoinExpression(
-                                    new LeftJoinExpression(
-                                        baseAbstractType1Table,
-                                        derivedConcreteType1Table,
-                                        Expression.Equal(
-                                            new SqlColumnExpression(baseAbstractType1Table, "Id", typeof(int), false),
-                                            new SqlColumnExpression(derivedConcreteType1Table, "Id", typeof(int), false)),
-                                        baseAbstractType1),
-                                    derivedAbstractType1Table,
-                                    Expression.Equal(
-                                        new SqlColumnExpression(baseAbstractType1Table, "Id", typeof(int), false),
-                                        new SqlColumnExpression(derivedAbstractType1Table, "Id", typeof(int), false)),
-                                    baseAbstractType1),
-                                derivedConcreteType2Table,
-                                Expression.Equal(
-                                    new SqlColumnExpression(derivedAbstractType1Table, "Id", typeof(int), false),
-                                    new SqlColumnExpression(derivedConcreteType2Table, "Id", typeof(int), false)),
-                                baseAbstractType1),
-                            derivedConcreteType3Table,
-                            Expression.Equal(
-                                new SqlColumnExpression(derivedAbstractType1Table, "Id", typeof(int), false),
-                                new SqlColumnExpression(derivedConcreteType3Table, "Id", typeof(int), false)),
-                            baseAbstractType1)));
-
             using (var connection = impatient.ConnectionFactory.CreateConnection())
             {
                 connection.Execute(@"
@@ -226,7 +315,6 @@ DROP TABLE IF EXISTS BaseAbstractType1;
 CREATE TABLE BaseAbstractType1
 (
     [Id] int not null primary key,
-    [Discriminator] int not null,
     [Property_BaseAbstractType1] nvarchar(max) null
 );
 
@@ -262,17 +350,17 @@ CREATE TABLE DerivedConcreteType3
         FOREIGN KEY (Id) REFERENCES DerivedAbstractType1 (Id)
 );
 
-INSERT INTO BaseAbstractType1 (Id, Discriminator, Property_BaseAbstractType1)
+INSERT INTO BaseAbstractType1 (Id, Property_BaseAbstractType1)
 VALUES
-(1, 1, 'a'),
-(2, 1, 'b'),
-(3, 1, 'c'),
-(4, 2, 'a'),
-(5, 2, 'b'),
-(6, 2, 'c'),
-(7, 3, 'a'),
-(8, 3, 'b'),
-(9, 3, 'c');
+(1, 'a'),
+(2, 'b'),
+(3, 'c'),
+(4, 'a'),
+(5, 'b'),
+(6, 'c'),
+(7, 'a'),
+(8, 'b'),
+(9, 'c');
 
 INSERT INTO DerivedAbstractType1 (Id, Property_DerivedAbstractType1)
 VALUES
@@ -319,12 +407,12 @@ VALUES
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [ba1].[Id] AS [Id0], [ba1].[Property_BaseAbstractType1] AS [Property_BaseAbstractType1], [dc1].[Id] AS [Id1], [dc1].[Property_DerivedConcreteType1] AS [Property_DerivedConcreteType1], [da1].[Id] AS [Id2], [da1].[Property_DerivedAbstractType1] AS [Property_DerivedAbstractType1], [dc2].[Id] AS [Id3], [dc2].[Property_DerivedConcreteType2] AS [Property_DerivedConcreteType2], [dc3].[Id] AS [Id4], [dc3].[Property_DerivedConcreteType3] AS [Property_DerivedConcreteType3]
-FROM [dbo].[BaseAbstractType1] AS [ba1]
-LEFT JOIN [dbo].[DerivedConcreteType1] AS [dc1] ON [ba1].[Id] = [dc1].[Id]
-LEFT JOIN [dbo].[DerivedAbstractType1] AS [da1] ON [ba1].[Id] = [da1].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType2] AS [dc2] ON [da1].[Id] = [dc2].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType3] AS [dc3] ON [da1].[Id] = [dc3].[Id]",
+                @"SELECT [b].[Id] AS [Item1], [b].[Property_BaseAbstractType1] AS [Item2], [d].[Id] AS [Item3], [d].[Property_DerivedConcreteType1] AS [Item4], [d0].[Id] AS [Item5], [d0].[Property_DerivedAbstractType1] AS [Item6], [d1].[Id] AS [Item7], [d1].[Property_DerivedConcreteType2] AS [Rest.Item1], [d2].[Id] AS [Rest.Item2], [d2].[Property_DerivedConcreteType3] AS [Rest.Item3]
+FROM [dbo].[BaseAbstractType1] AS [b]
+LEFT JOIN [dbo].[DerivedConcreteType1] AS [d] ON [b].[Id] = [d].[Id]
+LEFT JOIN [dbo].[DerivedAbstractType1] AS [d0] ON [b].[Id] = [d0].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType2] AS [d1] ON [d0].[Id] = [d1].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType3] AS [d2] ON [d0].[Id] = [d2].[Id]",
                 SqlLog);
         }
 
@@ -336,13 +424,13 @@ LEFT JOIN [dbo].[DerivedConcreteType3] AS [dc3] ON [da1].[Id] = [dc3].[Id]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [ba1].[Id] AS [Id0], [ba1].[Property_BaseAbstractType1] AS [Property_BaseAbstractType1], [dc1].[Id] AS [Id1], [dc1].[Property_DerivedConcreteType1] AS [Property_DerivedConcreteType1], [da1].[Id] AS [Id2], [da1].[Property_DerivedAbstractType1] AS [Property_DerivedAbstractType1], [dc2].[Id] AS [Id3], [dc2].[Property_DerivedConcreteType2] AS [Property_DerivedConcreteType2], [dc3].[Id] AS [Id4], [dc3].[Property_DerivedConcreteType3] AS [Property_DerivedConcreteType3]
-FROM [dbo].[BaseAbstractType1] AS [ba1]
-LEFT JOIN [dbo].[DerivedConcreteType1] AS [dc1] ON [ba1].[Id] = [dc1].[Id]
-LEFT JOIN [dbo].[DerivedAbstractType1] AS [da1] ON [ba1].[Id] = [da1].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType2] AS [dc2] ON [da1].[Id] = [dc2].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType3] AS [dc3] ON [da1].[Id] = [dc3].[Id]
-WHERE ([dc2].[Id] IS NOT NULL) OR ([dc3].[Id] IS NOT NULL)",
+                @"SELECT [b].[Id] AS [Item1], [b].[Property_BaseAbstractType1] AS [Item2], [d].[Id] AS [Item3], [d].[Property_DerivedConcreteType1] AS [Item4], [d0].[Id] AS [Item5], [d0].[Property_DerivedAbstractType1] AS [Item6], [d1].[Id] AS [Item7], [d1].[Property_DerivedConcreteType2] AS [Rest.Item1], [d2].[Id] AS [Rest.Item2], [d2].[Property_DerivedConcreteType3] AS [Rest.Item3]
+FROM [dbo].[BaseAbstractType1] AS [b]
+LEFT JOIN [dbo].[DerivedConcreteType1] AS [d] ON [b].[Id] = [d].[Id]
+LEFT JOIN [dbo].[DerivedAbstractType1] AS [d0] ON [b].[Id] = [d0].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType2] AS [d1] ON [d0].[Id] = [d1].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType3] AS [d2] ON [d0].[Id] = [d2].[Id]
+WHERE ([d1].[Id] IS NOT NULL) OR ([d2].[Id] IS NOT NULL)",
                 SqlLog);
         }
 
@@ -357,13 +445,13 @@ WHERE ([dc2].[Id] IS NOT NULL) OR ([dc3].[Id] IS NOT NULL)",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN [dc3].[Id] IS NOT NULL THEN 1 ELSE 0 END) AS BIT)
-FROM [dbo].[BaseAbstractType1] AS [ba1]
-LEFT JOIN [dbo].[DerivedConcreteType1] AS [dc1] ON [ba1].[Id] = [dc1].[Id]
-LEFT JOIN [dbo].[DerivedAbstractType1] AS [da1] ON [ba1].[Id] = [da1].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType2] AS [dc2] ON [da1].[Id] = [dc2].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType3] AS [dc3] ON [da1].[Id] = [dc3].[Id]
-WHERE ([dc2].[Id] IS NOT NULL) OR ([dc3].[Id] IS NOT NULL)",
+                @"SELECT CAST((CASE WHEN [d].[Id] IS NOT NULL THEN 1 ELSE 0 END) AS BIT)
+FROM [dbo].[BaseAbstractType1] AS [b]
+LEFT JOIN [dbo].[DerivedConcreteType1] AS [d0] ON [b].[Id] = [d0].[Id]
+LEFT JOIN [dbo].[DerivedAbstractType1] AS [d1] ON [b].[Id] = [d1].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType2] AS [d2] ON [d1].[Id] = [d2].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType3] AS [d] ON [d1].[Id] = [d].[Id]
+WHERE ([d2].[Id] IS NOT NULL) OR ([d].[Id] IS NOT NULL)",
                 SqlLog);
         }
 
@@ -383,13 +471,13 @@ WHERE ([dc2].[Id] IS NOT NULL) OR ([dc3].[Id] IS NOT NULL)",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN [dc3].[Id] IS NOT NULL THEN 1 ELSE 0 END) AS BIT)
-FROM [dbo].[BaseAbstractType1] AS [ba1]
-LEFT JOIN [dbo].[DerivedConcreteType1] AS [dc1] ON [ba1].[Id] = [dc1].[Id]
-LEFT JOIN [dbo].[DerivedAbstractType1] AS [da1] ON [ba1].[Id] = [da1].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType2] AS [dc2] ON [da1].[Id] = [dc2].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType3] AS [dc3] ON [da1].[Id] = [dc3].[Id]
-WHERE ([dc2].[Id] IS NOT NULL) OR ([dc3].[Id] IS NOT NULL)",
+                @"SELECT CAST((CASE WHEN [d].[Id] IS NOT NULL THEN 1 ELSE 0 END) AS BIT)
+FROM [dbo].[BaseAbstractType1] AS [b]
+LEFT JOIN [dbo].[DerivedConcreteType1] AS [d0] ON [b].[Id] = [d0].[Id]
+LEFT JOIN [dbo].[DerivedAbstractType1] AS [d1] ON [b].[Id] = [d1].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType2] AS [d2] ON [d1].[Id] = [d2].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType3] AS [d] ON [d1].[Id] = [d].[Id]
+WHERE ([d2].[Id] IS NOT NULL) OR ([d].[Id] IS NOT NULL)",
                 SqlLog);
         }
 
@@ -413,13 +501,13 @@ WHERE ([dc2].[Id] IS NOT NULL) OR ([dc3].[Id] IS NOT NULL)",
             Assert.IsNotNull(results[5]);
 
             Assert.AreEqual(
-                @"SELECT [ba1].[Id] AS [Id0], [ba1].[Property_BaseAbstractType1] AS [Property_BaseAbstractType1], [dc1].[Id] AS [Id1], [dc1].[Property_DerivedConcreteType1] AS [Property_DerivedConcreteType1], [da1].[Id] AS [Id2], [da1].[Property_DerivedAbstractType1] AS [Property_DerivedAbstractType1], [dc2].[Id] AS [Id3], [dc2].[Property_DerivedConcreteType2] AS [Property_DerivedConcreteType2], [dc3].[Id] AS [Id4], [dc3].[Property_DerivedConcreteType3] AS [Property_DerivedConcreteType3]
-FROM [dbo].[BaseAbstractType1] AS [ba1]
-LEFT JOIN [dbo].[DerivedConcreteType1] AS [dc1] ON [ba1].[Id] = [dc1].[Id]
-LEFT JOIN [dbo].[DerivedAbstractType1] AS [da1] ON [ba1].[Id] = [da1].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType2] AS [dc2] ON [da1].[Id] = [dc2].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType3] AS [dc3] ON [da1].[Id] = [dc3].[Id]
-WHERE ([dc2].[Id] IS NOT NULL) OR ([dc3].[Id] IS NOT NULL)",
+                @"SELECT [b].[Id] AS [Item1], [b].[Property_BaseAbstractType1] AS [Item2], [d].[Id] AS [Item3], [d].[Property_DerivedConcreteType1] AS [Item4], [d0].[Id] AS [Item5], [d0].[Property_DerivedAbstractType1] AS [Item6], [d1].[Id] AS [Item7], [d1].[Property_DerivedConcreteType2] AS [Rest.Item1], [d2].[Id] AS [Rest.Item2], [d2].[Property_DerivedConcreteType3] AS [Rest.Item3]
+FROM [dbo].[BaseAbstractType1] AS [b]
+LEFT JOIN [dbo].[DerivedConcreteType1] AS [d] ON [b].[Id] = [d].[Id]
+LEFT JOIN [dbo].[DerivedAbstractType1] AS [d0] ON [b].[Id] = [d0].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType2] AS [d1] ON [d0].[Id] = [d1].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType3] AS [d2] ON [d0].[Id] = [d2].[Id]
+WHERE ([d1].[Id] IS NOT NULL) OR ([d2].[Id] IS NOT NULL)",
                 SqlLog);
         }
 
@@ -433,12 +521,12 @@ WHERE ([dc2].[Id] IS NOT NULL) OR ([dc3].[Id] IS NOT NULL)",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [ba1].[Property_BaseAbstractType1]
-FROM [dbo].[BaseAbstractType1] AS [ba1]
-LEFT JOIN [dbo].[DerivedConcreteType1] AS [dc1] ON [ba1].[Id] = [dc1].[Id]
-LEFT JOIN [dbo].[DerivedAbstractType1] AS [da1] ON [ba1].[Id] = [da1].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType2] AS [dc2] ON [da1].[Id] = [dc2].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType3] AS [dc3] ON [da1].[Id] = [dc3].[Id]",
+                @"SELECT [b].[Property_BaseAbstractType1]
+FROM [dbo].[BaseAbstractType1] AS [b]
+LEFT JOIN [dbo].[DerivedConcreteType1] AS [d] ON [b].[Id] = [d].[Id]
+LEFT JOIN [dbo].[DerivedAbstractType1] AS [d0] ON [b].[Id] = [d0].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType2] AS [d1] ON [d0].[Id] = [d1].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType3] AS [d2] ON [d0].[Id] = [d2].[Id]",
                 SqlLog);
         }
 
@@ -454,13 +542,13 @@ LEFT JOIN [dbo].[DerivedConcreteType3] AS [dc3] ON [da1].[Id] = [dc3].[Id]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [ba1].[Property_BaseAbstractType1]
-FROM [dbo].[BaseAbstractType1] AS [ba1]
-LEFT JOIN [dbo].[DerivedConcreteType1] AS [dc1] ON [ba1].[Id] = [dc1].[Id]
-LEFT JOIN [dbo].[DerivedAbstractType1] AS [da1] ON [ba1].[Id] = [da1].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType2] AS [dc2] ON [da1].[Id] = [dc2].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType3] AS [dc3] ON [da1].[Id] = [dc3].[Id]
-WHERE [dc1].[Id] IS NOT NULL",
+                @"SELECT [b].[Property_BaseAbstractType1]
+FROM [dbo].[BaseAbstractType1] AS [b]
+LEFT JOIN [dbo].[DerivedConcreteType1] AS [d] ON [b].[Id] = [d].[Id]
+LEFT JOIN [dbo].[DerivedAbstractType1] AS [d0] ON [b].[Id] = [d0].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType2] AS [d1] ON [d0].[Id] = [d1].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType3] AS [d2] ON [d0].[Id] = [d2].[Id]
+WHERE [d].[Id] IS NOT NULL",
                 SqlLog);
         }
 
@@ -475,24 +563,22 @@ WHERE [dc1].[Id] IS NOT NULL",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [b].[Id0] AS [Id0], [b].[Property_BaseAbstractType1] AS [Property_BaseAbstractType1], [b].[Id1] AS [Id1], [b].[Property_DerivedConcreteType1] AS [Property_DerivedConcreteType1], [b].[Id2] AS [Id2], [b].[Property_DerivedAbstractType1] AS [Property_DerivedAbstractType1], [b].[Id3] AS [Id3], [b].[Property_DerivedConcreteType2] AS [Property_DerivedConcreteType2], [b].[Id4] AS [Id4], [b].[Property_DerivedConcreteType3] AS [Property_DerivedConcreteType3]
+                @"SELECT [b].[Item1] AS [Item1], [b].[Item2] AS [Item2], [b].[Item3] AS [Item3], [b].[Item4] AS [Item4], [b].[Item5] AS [Item5], [b].[Item6] AS [Item6], [b].[Item7] AS [Item7], [b].[Rest.Item1] AS [Rest.Item1], [b].[Rest.Item2] AS [Rest.Item2], [b].[Rest.Item3] AS [Rest.Item3]
 FROM (
-    SELECT TOP (10) [ba1].[Id] AS [Id0], [ba1].[Property_BaseAbstractType1] AS [Property_BaseAbstractType1], [dc1].[Id] AS [Id1], [dc1].[Property_DerivedConcreteType1] AS [Property_DerivedConcreteType1], [da1].[Id] AS [Id2], [da1].[Property_DerivedAbstractType1] AS [Property_DerivedAbstractType1], [dc2].[Id] AS [Id3], [dc2].[Property_DerivedConcreteType2] AS [Property_DerivedConcreteType2], [dc3].[Id] AS [Id4], [dc3].[Property_DerivedConcreteType3] AS [Property_DerivedConcreteType3]
-    FROM [dbo].[BaseAbstractType1] AS [ba1]
-    LEFT JOIN [dbo].[DerivedConcreteType1] AS [dc1] ON [ba1].[Id] = [dc1].[Id]
-    LEFT JOIN [dbo].[DerivedAbstractType1] AS [da1] ON [ba1].[Id] = [da1].[Id]
-    LEFT JOIN [dbo].[DerivedConcreteType2] AS [dc2] ON [da1].[Id] = [dc2].[Id]
-    LEFT JOIN [dbo].[DerivedConcreteType3] AS [dc3] ON [da1].[Id] = [dc3].[Id]
+    SELECT TOP (10) [b0].[Id] AS [Item1], [b0].[Property_BaseAbstractType1] AS [Item2], [d].[Id] AS [Item3], [d].[Property_DerivedConcreteType1] AS [Item4], [d0].[Id] AS [Item5], [d0].[Property_DerivedAbstractType1] AS [Item6], [d1].[Id] AS [Item7], [d1].[Property_DerivedConcreteType2] AS [Rest.Item1], [d2].[Id] AS [Rest.Item2], [d2].[Property_DerivedConcreteType3] AS [Rest.Item3]
+    FROM [dbo].[BaseAbstractType1] AS [b0]
+    LEFT JOIN [dbo].[DerivedConcreteType1] AS [d] ON [b0].[Id] = [d].[Id]
+    LEFT JOIN [dbo].[DerivedAbstractType1] AS [d0] ON [b0].[Id] = [d0].[Id]
+    LEFT JOIN [dbo].[DerivedConcreteType2] AS [d1] ON [d0].[Id] = [d1].[Id]
+    LEFT JOIN [dbo].[DerivedConcreteType3] AS [d2] ON [d0].[Id] = [d2].[Id]
 ) AS [b]
-WHERE [b].[Property_BaseAbstractType1] IS NOT NULL",
+WHERE [b].[Item2] IS NOT NULL",
                 SqlLog);
         }
 
         private abstract class BaseAbstractType1
         {
             public int Id { get; set; }
-
-            public int Discriminator { get; set; }
 
             public string Property_BaseAbstractType1 { get; set; }
         }

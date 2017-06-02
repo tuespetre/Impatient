@@ -10,6 +10,7 @@
     <PackageReference Include="MSTest.TestAdapter" Version="1.1.11" />
     <PackageReference Include="MSTest.TestFramework" Version="1.1.11" />
     <PackageReference Include="System.Data.SqlClient" Version="4.3.0" />
+    <PackageReference Include="System.Reflection" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>

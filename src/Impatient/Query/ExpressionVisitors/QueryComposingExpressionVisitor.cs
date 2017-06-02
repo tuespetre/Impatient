@@ -549,9 +549,7 @@ namespace Impatient.Query.ExpressionVisitors
                                 var predicate 
                                     = polymorphicExpression
                                         .Descriptors
-                                        .Select(d => d.Test.ExpandParameters(
-                                            d.Materializer.ExpandParameters(
-                                                polymorphicExpression.Row)))
+                                        .Select(d => d.Test.ExpandParameters(polymorphicExpression.Row))
                                         .Aggregate(Expression.OrElse);
 
                                 return outerQuery
