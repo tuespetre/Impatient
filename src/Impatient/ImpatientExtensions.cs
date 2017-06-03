@@ -1,6 +1,4 @@
-﻿using Impatient.Query.Expressions;
-using Impatient.Query.ExpressionVisitors;
-using Impatient.Query.ExpressionVisitors.Optimizing;
+﻿using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
@@ -35,11 +33,6 @@ namespace Impatient
         public static MethodInfo GetGenericMethodDefinition<TArg, TResult>(Expression<Func<TArg, TResult>> expression)
         {
             return GetMethodDefinition(expression).GetGenericMethodDefinition();
-        }
-
-        public static bool IsAssignableFrom(this Type type, Type otherType)
-        {
-            return type.GetTypeInfo().IsAssignableFrom(otherType.GetTypeInfo());
         }
 
         public static Type GetSequenceType(this Type type)

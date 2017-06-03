@@ -18,7 +18,7 @@ namespace Impatient.Tests
     [TestClass]
     public class QueryTests
     {
-        private string sqlLog => commandLog.ToString();
+        private string SqlLog => commandLog.ToString();
 
         private readonly StringBuilder commandLog = new StringBuilder();
 
@@ -146,7 +146,7 @@ WHERE [a].[Prop2] = @p0
 SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [a]
 WHERE [a].[Prop2] = @p0",
-                sqlLog);
+                SqlLog);
         }
 
         private int instanceField = 77;
@@ -182,7 +182,7 @@ WHERE [a].[Prop2] = @p0
 SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [a]
 WHERE [a].[Prop2] = @p0",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -203,7 +203,7 @@ WHERE [a].[Prop2] = @p0",
 FROM [dbo].[MyClass1] AS [a]
 CROSS JOIN [dbo].[MyClass2] AS [m]
 WHERE [a].[Prop1] = [m].[Prop1]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -226,7 +226,7 @@ WHERE [a].[Prop1] = [m].[Prop1]",
 FROM [dbo].[MyClass1] AS [a]
 CROSS JOIN [dbo].[MyClass2] AS [m]
 WHERE [a].[Prop1] = [m].[Prop1]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -249,7 +249,7 @@ CROSS APPLY (
     FROM [dbo].[MyClass2] AS [b]
     WHERE [a].[Prop1] = [b].[Prop1]
 ) AS [b0]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -297,7 +297,7 @@ CROSS APPLY (
                 @"SELECT [a].[Prop1] AS [a.Prop1], [a].[Prop2] AS [a.Prop2], [b].[Prop1] AS [b.Prop1], [b].[Prop2] AS [b.Prop2]
 FROM [dbo].[MyClass1] AS [a]
 INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -318,7 +318,7 @@ INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
                 @"SELECT [a].[Prop1] AS [a.Prop1], [a].[Prop2] AS [a.Prop2], [b].[Prop1] AS [b.Prop1], [b].[Prop2] AS [b.Prop2]
 FROM [dbo].[MyClass1] AS [a]
 INNER JOIN [dbo].[MyClass2] AS [b] ON ([a].[Prop1] = [b].[Prop1]) AND ([a].[Prop2] = [b].[Prop2])",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -339,7 +339,7 @@ INNER JOIN [dbo].[MyClass2] AS [b] ON ([a].[Prop1] = [b].[Prop1]) AND ([a].[Prop
                 @"SELECT [a].[Prop1] AS [a.Prop1], [a].[Prop2] AS [a.Prop2], [b].[Prop1] AS [b.Prop1], [b].[Prop2] AS [b.Prop2]
 FROM [dbo].[MyClass1] AS [a]
 INNER JOIN [dbo].[MyClass2] AS [b] ON ([a].[Prop1] = [b].[Prop1]) AND ([a].[Prop2] = [b].[Prop2])",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -360,7 +360,7 @@ INNER JOIN [dbo].[MyClass2] AS [b] ON ([a].[Prop1] = [b].[Prop1]) AND ([a].[Prop
                 @"SELECT [a].[Prop1] AS [a.Prop1], [a].[Prop2] AS [a.Prop2], [b].[Prop1] AS [b.Prop1], [b].[Prop2] AS [b.Prop2]
 FROM [dbo].[MyClass1] AS [a]
 INNER JOIN [dbo].[MyClass2] AS [b] ON ([a].[Prop2] + [a].[Prop2]) = ([b].[Prop2] + [b].[Prop2])",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -383,7 +383,7 @@ INNER JOIN (
     SELECT TOP (1) [b0].[Prop1] AS [Prop1], [b0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass2] AS [b0]
 ) AS [b] ON [a].[Prop1] = [b].[Prop1]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -406,7 +406,7 @@ INNER JOIN (
     SELECT DISTINCT [b0].[Prop1] AS [Prop1], [b0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass2] AS [b0]
 ) AS [b] ON [a].[Prop1] = [b].[Prop1]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -428,7 +428,7 @@ INNER JOIN (
 FROM [dbo].[MyClass1] AS [a]
 INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]
 WHERE ([a].[Prop2] < 10) OR ([b].[Prop2] > 76)",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -453,7 +453,7 @@ INNER JOIN (
     WHERE [x0].[Prop2] < 10
 ) AS [b] ON [x].[Prop1] = [b].[Prop1]
 WHERE [x].[Prop2] < 10",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -478,7 +478,7 @@ INNER JOIN (
     FROM [dbo].[MyClass1] AS [a0]
     INNER JOIN [dbo].[MyClass2] AS [b0] ON [a0].[Prop1] = [b0].[Prop1]
 ) AS [b] ON [a].[Prop1] = [b].[l1.l2.l3]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -504,7 +504,7 @@ INNER JOIN (
     FROM [dbo].[MyClass1] AS [c]
     INNER JOIN [dbo].[MyClass2] AS [d] ON [c].[Prop1] = [d].[Prop1]
 ) AS [b] ON [a].[Prop1] = [b].[l1.l2.l3]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -524,7 +524,7 @@ INNER JOIN (
                 @"SELECT [a].[Prop2]
 FROM [dbo].[MyClass1] AS [a]
 WHERE [a].[Prop1] = N'What the'",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -551,7 +551,7 @@ WHERE [a].[Prop1] = N'What the'",
             Assert.AreEqual(
                 @"SELECT [a].[Prop2] + [a].[Prop2] AS [x]
 FROM [dbo].[MyClass1] AS [a]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -568,7 +568,7 @@ FROM [dbo].[MyClass1] AS [a]",
             Assert.AreEqual(
                 @"SELECT [a].[Prop2] - [a].[Prop2] AS [x]
 FROM [dbo].[MyClass1] AS [a]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -585,7 +585,7 @@ FROM [dbo].[MyClass1] AS [a]",
             Assert.AreEqual(
                 @"SELECT [a].[Prop2] * [a].[Prop2] AS [x]
 FROM [dbo].[MyClass1] AS [a]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -602,7 +602,7 @@ FROM [dbo].[MyClass1] AS [a]",
             Assert.AreEqual(
                 @"SELECT [a].[Prop2] / [a].[Prop2] AS [x]
 FROM [dbo].[MyClass1] AS [a]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -619,7 +619,7 @@ FROM [dbo].[MyClass1] AS [a]",
             Assert.AreEqual(
                 @"SELECT [a].[Prop2] % [a].[Prop2] AS [x]
 FROM [dbo].[MyClass1] AS [a]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -636,7 +636,7 @@ FROM [dbo].[MyClass1] AS [a]",
             Assert.AreEqual(
                 @"SELECT [a].[Prop2] & [a].[Prop2] AS [x]
 FROM [dbo].[MyClass1] AS [a]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -653,7 +653,7 @@ FROM [dbo].[MyClass1] AS [a]",
             Assert.AreEqual(
                 @"SELECT [a].[Prop2] | [a].[Prop2] AS [x]
 FROM [dbo].[MyClass1] AS [a]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -670,7 +670,7 @@ FROM [dbo].[MyClass1] AS [a]",
             Assert.AreEqual(
                 @"SELECT [a].[Prop2] ^ [a].[Prop2] AS [x]
 FROM [dbo].[MyClass1] AS [a]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -687,7 +687,7 @@ FROM [dbo].[MyClass1] AS [a]",
             Assert.AreEqual(
                 @"SELECT ~ [a].[Prop2] AS [x]
 FROM [dbo].[MyClass1] AS [a]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -706,7 +706,7 @@ FROM [dbo].[MyClass1] AS [a]",
                 @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [a]
 WHERE [a].[Prop1] = N'What the'",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -725,7 +725,7 @@ WHERE [a].[Prop1] = N'What the'",
                 @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [a]
 WHERE [a].[Prop1] <> N'What the'",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -744,7 +744,7 @@ WHERE [a].[Prop1] <> N'What the'",
                 @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [a]
 WHERE [a].[Prop2] > 76",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -763,7 +763,7 @@ WHERE [a].[Prop2] > 76",
                 @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [a]
 WHERE [a].[Prop2] >= 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -782,7 +782,7 @@ WHERE [a].[Prop2] >= 77",
                 @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [a]
 WHERE [a].[Prop2] < 10",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -801,7 +801,7 @@ WHERE [a].[Prop2] < 10",
                 @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [a]
 WHERE [a].[Prop2] <= 9",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -820,7 +820,7 @@ WHERE [a].[Prop2] <= 9",
                 @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [a]
 WHERE ([a].[Prop1] = N'What the') AND ([a].[Prop2] = 9)",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -839,7 +839,7 @@ WHERE ([a].[Prop1] = N'What the') AND ([a].[Prop2] = 9)",
                 @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [a]
 WHERE ([a].[Prop1] = N'What the') OR ([a].[Prop2] = 77)",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -859,7 +859,7 @@ WHERE ([a].[Prop1] = N'What the') OR ([a].[Prop2] = 77)",
                 @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [a]
 WHERE ([a].[Prop1] = N'What the') AND ([a].[Prop2] = 9)",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -878,7 +878,7 @@ WHERE ([a].[Prop1] = N'What the') AND ([a].[Prop2] = 9)",
                 @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [a]
 WHERE [a].[Prop1] = N'What the'",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -897,7 +897,7 @@ WHERE [a].[Prop1] = N'What the'",
                 @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [a]
 WHERE [a].[Prop1] = N'What the'",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -910,7 +910,7 @@ WHERE [a].[Prop1] = N'What the'",
             Assert.AreEqual(
                 @"SELECT COUNT(*)
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -924,7 +924,7 @@ FROM [dbo].[MyClass1] AS [m]",
                 @"SELECT COUNT(*)
 FROM [dbo].[MyClass1] AS [m]
 WHERE [m].[Prop1] = N'What the'",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -937,7 +937,7 @@ WHERE [m].[Prop1] = N'What the'",
             Assert.AreEqual(
                 @"SELECT COUNT_BIG(*)
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -951,7 +951,7 @@ FROM [dbo].[MyClass1] AS [m]",
                 @"SELECT COUNT_BIG(*)
 FROM [dbo].[MyClass1] AS [m]
 WHERE [m].[Prop1] = N'What the'",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -964,7 +964,7 @@ WHERE [m].[Prop1] = N'What the'",
             Assert.AreEqual(
                 @"SELECT AVG(CAST([m].[Prop2] AS float))
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -977,7 +977,7 @@ FROM [dbo].[MyClass1] AS [m]",
             Assert.AreEqual(
                 @"SELECT AVG(CAST([m].[Prop2] AS float))
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -990,7 +990,7 @@ FROM [dbo].[MyClass1] AS [m]",
             Assert.AreEqual(
                 @"SELECT MAX([m].[Prop2])
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1003,7 +1003,7 @@ FROM [dbo].[MyClass1] AS [m]",
             Assert.AreEqual(
                 @"SELECT MAX([m].[Prop2])
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1016,7 +1016,7 @@ FROM [dbo].[MyClass1] AS [m]",
             Assert.AreEqual(
                 @"SELECT MIN([m].[Prop2])
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1029,7 +1029,7 @@ FROM [dbo].[MyClass1] AS [m]",
             Assert.AreEqual(
                 @"SELECT MIN([m].[Prop2])
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1042,7 +1042,7 @@ FROM [dbo].[MyClass1] AS [m]",
             Assert.AreEqual(
                 @"SELECT SUM([m].[Prop2])
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1055,7 +1055,7 @@ FROM [dbo].[MyClass1] AS [m]",
             Assert.AreEqual(
                 @"SELECT SUM([m].[Prop2])
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1070,7 +1070,7 @@ FROM [dbo].[MyClass1] AS [m]",
             Assert.AreEqual(
                 @"SELECT TOP (1) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1087,7 +1087,7 @@ FROM [dbo].[MyClass1] AS [m]",
 FROM [dbo].[MyClass1] AS [m]
 ORDER BY (SELECT 1)
 OFFSET 1 ROWS",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1103,7 +1103,7 @@ OFFSET 1 ROWS",
     FROM [dbo].[MyClass1] AS [m]
     WHERE [m].[Prop2] > 88
 ) THEN 1 ELSE 0 END) AS BIT)",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1119,7 +1119,7 @@ OFFSET 1 ROWS",
     FROM [dbo].[MyClass1] AS [m]
     WHERE [m].[Prop2] > 88
 ) THEN 1 ELSE 0 END) AS BIT)",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1132,7 +1132,7 @@ OFFSET 1 ROWS",
             Assert.AreEqual(
                 @"SELECT CAST((CASE WHEN COUNT_BIG(*) = SUM((CASE WHEN [m].[Prop2] = 77 THEN 1 ELSE 0 END)) THEN 1 ELSE 0 END) AS BIT)
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1147,7 +1147,7 @@ FROM [dbo].[MyClass1] AS [m]",
     SELECT [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) THEN 1 ELSE 0 END) AS BIT)",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1160,7 +1160,7 @@ FROM [dbo].[MyClass1] AS [m]",
             Assert.AreEqual(
                 @"SELECT CAST((CASE WHEN 77 IN ([m].[Prop2]) THEN 1 ELSE 0 END) AS BIT)
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1173,7 +1173,7 @@ FROM [dbo].[MyClass1] AS [m]",
             Assert.AreEqual(
                 @"SELECT CAST((CASE WHEN [m].[Prop2] IN (77) THEN 1 ELSE 0 END) AS BIT)
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1188,7 +1188,7 @@ FROM [dbo].[MyClass1] AS [m]",
             Assert.AreEqual(
                 @"SELECT CAST((CASE WHEN [m].[Prop2] IN (@p0_0) THEN 1 ELSE 0 END) AS BIT)
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1201,7 +1201,7 @@ FROM [dbo].[MyClass1] AS [m]",
             Assert.AreEqual(
                 @"SELECT CAST((CASE WHEN [m].[Prop2] IN (77) THEN 1 ELSE 0 END) AS BIT)
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1216,7 +1216,7 @@ FROM [dbo].[MyClass1] AS [m]",
             Assert.AreEqual(
                 @"SELECT CAST((CASE WHEN [m].[Prop2] IN (@p0_0) THEN 1 ELSE 0 END) AS BIT)
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1231,7 +1231,7 @@ FROM [dbo].[MyClass1] AS [m]",
             Assert.AreEqual(
                 @"SELECT DISTINCT 1
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1247,7 +1247,7 @@ FROM [dbo].[MyClass1] AS [m]",
                 @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 ORDER BY [m].[Prop1] ASC",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1263,7 +1263,7 @@ ORDER BY [m].[Prop1] ASC",
                 @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 ORDER BY [m].[Prop1] ASC, [m].[Prop2] DESC",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1300,7 +1300,7 @@ ORDER BY [m].[Prop1] ASC, [m].[Prop2] DESC",
     FROM [dbo].[MyClass2] AS [m]
 )
 FROM [dbo].[MyClass1] AS [m0]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1359,7 +1359,7 @@ FROM [dbo].[MyClass1] AS [m0]",
                 @"SELECT [m].[Prop1] AS [Key], MAX([m].[Prop2]) AS [Max], MIN(DISTINCT [m].[Prop2]) AS [Min], COUNT((CASE WHEN [m].[Prop2] > 7 THEN 1 ELSE NULL END)) AS [Count]
 FROM [dbo].[MyClass1] AS [m]
 GROUP BY [m].[Prop1]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1380,7 +1380,7 @@ GROUP BY [m].[Prop1]",
                 @"SELECT [ms].[Prop1] AS [Key], MAX([ms].[Prop2]) AS [max], MIN(DISTINCT [ms].[Prop2]) AS [min], COUNT((CASE WHEN [ms].[Prop2] > 7 THEN 1 ELSE NULL END)) AS [count]
 FROM [dbo].[MyClass1] AS [ms]
 GROUP BY [ms].[Prop1]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1400,7 +1400,7 @@ GROUP BY [ms].[Prop1]",
 ) AS [Elements]
 FROM [dbo].[MyClass1] AS [m]
 GROUP BY [m].[Prop1]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1426,7 +1426,7 @@ CROSS JOIN (
     FROM [dbo].[MyClass1] AS [m1]
     GROUP BY [m1].[Prop1]
 ) AS [g]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1446,7 +1446,7 @@ CROSS JOIN (
                 @"SELECT [s1].[Prop1] AS [s1.Prop1], [s1].[Prop2] AS [s1.Prop2], [s2].[Prop1] AS [s2.Prop1], [s2].[Prop2] AS [s2.Prop2]
 FROM [dbo].[MyClass1] AS [s1]
 INNER JOIN [dbo].[MyClass2] AS [s2] ON [s1].[Prop1] = [s2].[Prop1]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1469,7 +1469,7 @@ LEFT JOIN (
     SELECT 0 AS [$empty], [s20].[Prop1] AS [Prop1], [s20].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass2] AS [s20]
 ) AS [s2] ON [s1].[Prop1] = [s2].[Prop1]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1492,7 +1492,7 @@ LEFT JOIN (
     SELECT 0 AS [$empty], [s20].[Prop1] AS [Prop1], [s20].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass2] AS [s20]
 ) AS [s2] ON [s1].[Prop2] = ([s2].[Prop2] + 1)",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1516,7 +1516,7 @@ OUTER APPLY (
     FROM [dbo].[MyClass2] AS [s20]
     WHERE [s1].[Prop1] = [s20].[Prop1]
 ) AS [s2]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1530,7 +1530,7 @@ OUTER APPLY (
             Assert.AreEqual(
                 @"SELECT [m].[Prop1] AS [m.Prop1], [m].[Prop2] AS [m.Prop2]
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1544,7 +1544,7 @@ FROM [dbo].[MyClass1] AS [m]",
             Assert.AreEqual(
                 @"SELECT [m].[Prop1] AS [m.Prop1], [m].[Prop2] AS [m.Prop2]
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1568,7 +1568,7 @@ FROM (
     SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass2] AS [m0]
 ) AS [set]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1593,7 +1593,7 @@ FROM (
     FROM [dbo].[MyClass2] AS [m0]
     WHERE [m0].[Prop2] = 77
 ) AS [set]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1618,7 +1618,7 @@ FROM (
     FROM [dbo].[MyClass2] AS [m0]
     WHERE [m0].[Prop2] = 77
 ) AS [set]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1642,7 +1642,7 @@ FROM (
     SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass2] AS [m0]
 ) AS [set]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1663,7 +1663,7 @@ LEFT JOIN (
     SELECT 0 AS [$empty], [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t] ON 1 = 1",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1686,7 +1686,7 @@ LEFT JOIN (
     FROM [dbo].[MyClass1] AS [m]
     WHERE [m].[Prop2] > 77
 ) AS [t] ON 1 = 1",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1706,7 +1706,7 @@ LEFT JOIN (
                 @"SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 WHERE [m].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1718,7 +1718,7 @@ WHERE [m].[Prop2] = 77",
                 @"SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 WHERE [m].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1730,7 +1730,7 @@ WHERE [m].[Prop2] = 77",
                 @"SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 WHERE [m].[Prop2] > 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1741,7 +1741,7 @@ WHERE [m].[Prop2] > 77",
             Assert.AreEqual(
                 @"SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1753,7 +1753,7 @@ FROM [dbo].[MyClass1] AS [m]",
                 @"SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 WHERE [m].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1765,7 +1765,7 @@ WHERE [m].[Prop2] = 77",
                 @"SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 WHERE [m].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1777,7 +1777,7 @@ WHERE [m].[Prop2] = 77",
                 @"SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 WHERE [m].[Prop2] > 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1788,7 +1788,7 @@ WHERE [m].[Prop2] > 77",
             Assert.AreEqual(
                 @"SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1800,7 +1800,7 @@ FROM [dbo].[MyClass1] AS [m]",
                 @"SELECT TOP (1) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 WHERE [m].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1812,7 +1812,7 @@ WHERE [m].[Prop2] = 77",
                 @"SELECT TOP (1) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 WHERE [m].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1824,7 +1824,7 @@ WHERE [m].[Prop2] = 77",
                 @"SELECT TOP (1) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 WHERE [m].[Prop2] > 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1835,7 +1835,7 @@ WHERE [m].[Prop2] > 77",
             Assert.AreEqual(
                 @"SELECT TOP (1) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1847,7 +1847,7 @@ FROM [dbo].[MyClass1] AS [m]",
                 @"SELECT TOP (1) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 WHERE [m].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1859,7 +1859,7 @@ WHERE [m].[Prop2] = 77",
                 @"SELECT TOP (1) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 WHERE [m].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1871,7 +1871,7 @@ WHERE [m].[Prop2] = 77",
                 @"SELECT TOP (1) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 WHERE [m].[Prop2] > 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1882,7 +1882,7 @@ WHERE [m].[Prop2] > 77",
             Assert.AreEqual(
                 @"SELECT TOP (1) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1908,7 +1908,7 @@ FROM [dbo].[MyClass1] AS [m]",
     FOR JSON PATH
 ) AS [m2s]
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1956,7 +1956,7 @@ FROM [dbo].[MyClass1] AS [m]",
     FOR JSON PATH
 ) AS [m2s]
 FROM [dbo].[MyClass1] AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -1984,7 +1984,7 @@ FROM (
     GROUP BY [ms1].[Prop1]
 ) AS [t]
 INNER JOIN [dbo].[MyClass1] AS [ms] ON [t].[ms.Key] = [ms].[Prop1]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2011,7 +2011,7 @@ INNER JOIN [dbo].[MyClass1] AS [ms] ON [t].[ms.Key] = [ms].[Prop1]",
 ) AS [sum]
 FROM [dbo].[MyClass1] AS [m1]
 INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop1] = [m2].[Prop1]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2051,7 +2051,7 @@ INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop1] = [m2].[Prop1]",
 FROM [dbo].[MyClass1] AS [m1]
 INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop1] = [m2].[Prop1]
 INNER JOIN [dbo].[MyClass2] AS [m21] ON [m1].[Prop1] = [m21].[Prop1]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2127,7 +2127,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [m10]
 ) AS [m1]
 INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop2] = [m2].[Prop2]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2147,7 +2147,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [m10]
 ) AS [m1]
 INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop2] = [m2].[Prop2]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2169,7 +2169,7 @@ FROM (
     OFFSET 1 ROWS
 ) AS [m1]
 INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop2] = [m2].[Prop2]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2192,7 +2192,7 @@ FROM (
     GROUP BY [m1g].[Prop2]
 ) AS [m1]
 INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Key] = [m2].[Prop2]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2228,7 +2228,7 @@ INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Key] = [m2].[Prop2]",
                 @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 WHERE [m].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2244,7 +2244,7 @@ FROM (
     SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2259,7 +2259,7 @@ FROM (
 FROM [dbo].[MyClass1] AS [m]
 ORDER BY (SELECT 1)
 OFFSET 2 ROWS FETCH NEXT 1 ROWS ONLY",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2275,7 +2275,7 @@ FROM (
     SELECT DISTINCT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2293,7 +2293,7 @@ FROM (
 ) AS [t]
 ORDER BY (SELECT 1)
 OFFSET 1 ROWS",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2313,7 +2313,7 @@ FROM (
 ) AS [t]
 ORDER BY (SELECT 1)
 OFFSET 1 ROWS",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2331,7 +2331,7 @@ FROM (
 ) AS [t]
 ORDER BY (SELECT 1)
 OFFSET 1 ROWS",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2347,7 +2347,7 @@ OFFSET 1 ROWS",
                 @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 ORDER BY (CASE WHEN [m].[Prop2] = 77 THEN 1 ELSE 0 END) ASC",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2363,7 +2363,7 @@ ORDER BY (CASE WHEN [m].[Prop2] = 77 THEN 1 ELSE 0 END) ASC",
                 @"SELECT COUNT(*) AS [count]
 FROM [dbo].[MyClass1] AS [mg]
 GROUP BY (CASE WHEN [mg].[Prop2] = 77 THEN 1 ELSE 0 END)",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2381,7 +2381,7 @@ GROUP BY (CASE WHEN [mg].[Prop2] = 77 THEN 1 ELSE 0 END)",
                 @"SELECT CAST((CASE WHEN (([a].[Prop1] = [a].[Prop1]) AND ([a].[Prop2] = [a].[Prop2])) AND (([b].[Prop1] = [b].[Prop1]) AND ([b].[Prop2] = [b].[Prop2])) THEN 1 ELSE 0 END) AS BIT)
 FROM [dbo].[MyClass1] AS [a]
 INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2399,7 +2399,7 @@ INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
                 @"SELECT CAST((CASE WHEN (([a].[Prop1] <> [a].[Prop1]) OR ([a].[Prop2] <> [a].[Prop2])) OR (([b].[Prop1] <> [b].[Prop1]) OR ([b].[Prop2] <> [b].[Prop2])) THEN 1 ELSE 0 END) AS BIT)
 FROM [dbo].[MyClass1] AS [a]
 INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2417,7 +2417,7 @@ INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
                 @"SELECT CAST((CASE WHEN ([a].[Prop1] = [a].[Prop1]) AND ([b].[Prop2] = [b].[Prop2]) THEN 1 ELSE 0 END) AS BIT)
 FROM [dbo].[MyClass1] AS [a]
 INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2435,7 +2435,7 @@ INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
                 @"SELECT CAST((CASE WHEN ([a].[Prop1] <> [a].[Prop1]) OR ([b].[Prop2] <> [b].[Prop2]) THEN 1 ELSE 0 END) AS BIT)
 FROM [dbo].[MyClass1] AS [a]
 INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2452,7 +2452,7 @@ INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
                 @"SELECT CAST((CASE WHEN [a].[Prop1] IS NULL THEN 1 ELSE 0 END) AS BIT)
 FROM [dbo].[MyClass1] AS [a]
 WHERE [a].[Prop1] IS NULL",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2469,7 +2469,7 @@ WHERE [a].[Prop1] IS NULL",
                 @"SELECT CAST((CASE WHEN [a].[Prop1] IS NOT NULL THEN 1 ELSE 0 END) AS BIT)
 FROM [dbo].[MyClass1] AS [a]
 WHERE [a].[Prop1] IS NOT NULL",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2503,7 +2503,7 @@ WHERE [a].[Prop1] IS NOT NULL",
                 @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [a]
 WHERE ([a].[Prop1] IS NULL OR ([a].[Prop1] <> N'hello'))",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2537,7 +2537,7 @@ WHERE ([a].[Prop1] IS NULL OR ([a].[Prop1] <> N'hello'))",
                 @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [a]
 WHERE ([a].[Prop1] IS NULL OR (N'hello' <> [a].[Prop1]))",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2590,7 +2590,7 @@ WHERE ([a].[Prop1] IS NULL OR (N'hello' <> [a].[Prop1]))",
 FROM [dbo].[MyClass1] AS [a]
 CROSS JOIN [dbo].[MyClass2] AS [m]
 WHERE (([a].[Prop1] IS NULL AND [m].[Prop1] IS NOT NULL) OR ([a].[Prop1] IS NOT NULL AND [m].[Prop1] IS NULL) OR ([a].[Prop1] <> [m].[Prop1]))",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2643,7 +2643,7 @@ WHERE (([a].[Prop1] IS NULL AND [m].[Prop1] IS NOT NULL) OR ([a].[Prop1] IS NOT 
 FROM [dbo].[MyClass1] AS [a]
 CROSS JOIN [dbo].[MyClass2] AS [m]
 WHERE (([a].[Prop1] IS NULL AND [m].[Prop1] IS NULL) OR ([a].[Prop1] = [m].[Prop1]))",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2657,7 +2657,7 @@ FROM (
     SELECT DISTINCT [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2673,7 +2673,7 @@ FROM (
     ORDER BY (SELECT 1)
     OFFSET 1 ROWS
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2687,7 +2687,7 @@ FROM (
     SELECT TOP (2) [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2702,7 +2702,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [g]
     GROUP BY [g].[Prop2]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2716,7 +2716,7 @@ FROM (
     SELECT DISTINCT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m0]
 ) AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2732,7 +2732,7 @@ FROM (
     ORDER BY (SELECT 1)
     OFFSET 1 ROWS
 ) AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2746,7 +2746,7 @@ FROM (
     SELECT TOP (2) [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m0]
 ) AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2761,7 +2761,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [g]
     GROUP BY [g].[Prop2]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2775,7 +2775,7 @@ FROM (
     SELECT DISTINCT [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2791,7 +2791,7 @@ FROM (
     ORDER BY (SELECT 1)
     OFFSET 1 ROWS
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2805,7 +2805,7 @@ FROM (
     SELECT TOP (2) [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2820,7 +2820,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [g]
     GROUP BY [g].[Prop2]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2835,7 +2835,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [m]
 ) AS [m0]
 WHERE [m0].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2852,7 +2852,7 @@ FROM (
     OFFSET 1 ROWS
 ) AS [m0]
 WHERE [m0].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2867,7 +2867,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [m]
 ) AS [m0]
 WHERE [m0].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2883,7 +2883,7 @@ FROM (
     GROUP BY [g].[Prop2]
 ) AS [g0]
 WHERE [g0].[Key] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2897,7 +2897,7 @@ FROM (
     SELECT DISTINCT [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2913,7 +2913,7 @@ FROM (
     ORDER BY (SELECT 1)
     OFFSET 1 ROWS
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2927,7 +2927,7 @@ FROM (
     SELECT TOP (2) [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2942,7 +2942,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [g]
     GROUP BY [g].[Prop2]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2957,7 +2957,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [m]
 ) AS [m0]
 WHERE [m0].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2974,7 +2974,7 @@ FROM (
     OFFSET 1 ROWS
 ) AS [m0]
 WHERE [m0].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -2989,7 +2989,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [m]
 ) AS [m0]
 WHERE [m0].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3005,7 +3005,7 @@ FROM (
     GROUP BY [g].[Prop2]
 ) AS [g0]
 WHERE [g0].[Key] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3019,7 +3019,7 @@ FROM (
     SELECT DISTINCT [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3035,7 +3035,7 @@ FROM (
     ORDER BY (SELECT 1)
     OFFSET 1 ROWS
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3049,7 +3049,7 @@ FROM (
     SELECT TOP (2) [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3064,7 +3064,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [g]
     GROUP BY [g].[Prop2]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3078,7 +3078,7 @@ FROM (
     SELECT DISTINCT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m0]
 ) AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3094,7 +3094,7 @@ FROM (
     ORDER BY (SELECT 1)
     OFFSET 1 ROWS
 ) AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3108,7 +3108,7 @@ FROM (
     SELECT TOP (2) [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m0]
 ) AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3123,7 +3123,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [g]
     GROUP BY [g].[Prop2]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3137,7 +3137,7 @@ FROM (
     SELECT DISTINCT [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3153,7 +3153,7 @@ FROM (
     ORDER BY (SELECT 1)
     OFFSET 1 ROWS
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3167,7 +3167,7 @@ FROM (
     SELECT TOP (2) [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3182,7 +3182,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [g]
     GROUP BY [g].[Prop2]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3196,7 +3196,7 @@ FROM (
     SELECT DISTINCT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m0]
 ) AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3212,7 +3212,7 @@ FROM (
     ORDER BY (SELECT 1)
     OFFSET 1 ROWS
 ) AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3226,7 +3226,7 @@ FROM (
     SELECT TOP (2) [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m0]
 ) AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3241,7 +3241,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [g]
     GROUP BY [g].[Prop2]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3255,7 +3255,7 @@ FROM (
     SELECT DISTINCT [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3271,7 +3271,7 @@ FROM (
     ORDER BY (SELECT 1)
     OFFSET 1 ROWS
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3285,7 +3285,7 @@ FROM (
     SELECT TOP (2) [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3300,7 +3300,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [g]
     GROUP BY [g].[Prop2]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3314,7 +3314,7 @@ FROM (
     SELECT DISTINCT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m0]
 ) AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3330,7 +3330,7 @@ FROM (
     ORDER BY (SELECT 1)
     OFFSET 1 ROWS
 ) AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3344,7 +3344,7 @@ FROM (
     SELECT TOP (2) [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m0]
 ) AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3359,7 +3359,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [g]
     GROUP BY [g].[Prop2]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3374,7 +3374,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [m0]
 ) AS [m]
 WHERE [m].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3391,7 +3391,7 @@ FROM (
     OFFSET 1 ROWS
 ) AS [m]
 WHERE [m].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3406,7 +3406,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [m0]
 ) AS [m]
 WHERE [m].[Prop2] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3427,7 +3427,7 @@ FROM (
     GROUP BY [g0].[Prop2]
 ) AS [g]
 WHERE [g].[Key] = 77",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3441,7 +3441,7 @@ FROM (
     SELECT DISTINCT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m0]
 ) AS [m]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3457,7 +3457,7 @@ FROM (
     ORDER BY (SELECT 1)
     OFFSET 1 ROWS
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3471,7 +3471,7 @@ FROM (
     SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3483,7 +3483,7 @@ FROM (
                 @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 ORDER BY [m].[Prop2] + [m].[Prop2] ASC",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3498,7 +3498,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]
 ORDER BY [t].[Prop2] ASC",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3515,7 +3515,7 @@ FROM (
     OFFSET 1 ROWS
 ) AS [t]
 ORDER BY [t].[Prop2] ASC",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3530,7 +3530,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]
 ORDER BY [t].[Prop2] ASC",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3559,7 +3559,7 @@ LEFT JOIN (
         FROM [dbo].[MyClass2] AS [m20]
     ) AS [m2] ON [m1b].[Prop2] = [m2].[Prop2]
 ) AS [x] ON [m1a].[Prop2] = [x].[m1b.Prop2]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3587,7 +3587,7 @@ FROM (
     ) AS [m2] ON [m1b].[Prop2] = [m2].[Prop2]
 ) AS [x]
 INNER JOIN [dbo].[MyClass1] AS [m1a] ON [x].[m1b.Prop2] = [m1a].[Prop2]",
-                sqlLog);
+                SqlLog);
         }
 
         [TestMethod]
@@ -3614,7 +3614,7 @@ CROSS APPLY (
     ) AS [$c]
     FROM [dbo].[MyClass2] AS [y]
 ) AS [zs]",
-                sqlLog);
+                SqlLog);
         }
 
         private class TestImpatientConnectionFactory : IImpatientDbConnectionFactory

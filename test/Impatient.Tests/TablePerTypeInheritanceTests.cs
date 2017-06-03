@@ -9,6 +9,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using static System.Linq.Enumerable;
+using static System.Math;
 
 namespace Impatient.Tests
 {
@@ -20,43 +22,103 @@ namespace Impatient.Tests
 
         private string SqlLog => commandLog.ToString();
 
-        private static readonly Expression BaseTypeQueryExpression;
+        private static readonly IDictionary<Type, Expression> QueryExpressions;
+
+        private static Expression BaseTypeQueryExpression => QueryExpressions[typeof(BaseAbstractType1)];
+
+        private IQueryable<TSource> Query<TSource>()
+        {
+            return impatient.CreateQuery<TSource>(QueryExpressions[typeof(TSource)]);
+        }
+
+        #region helper types and functions
+
+        public enum ImpatientInheritanceMode
+        {
+            Default,
+            TablePerType,
+        }
+
+        public struct ImpatientTableDescriptor
+        {
+            public Type SourceType;
+            public ImpatientInheritanceMode InheritanceMode;
+            public string SchemaName;
+            public string TableName;
+            public IEnumerable<MemberInfo> PrimaryKeyMembers;
+            public IEnumerable<ImpatientColumnDescriptor> ColumnDescriptors;
+        }
+
+        public struct ImpatientColumnDescriptor
+        {
+            public Type SourceType;
+            public MemberInfo SourceMember;
+            public string ColumnName;
+            public bool IsNullable;
+
+            public Type Type => GetMemberType(SourceMember);
+        }
 
         public struct TreeNode<TValue>
         {
-            public TValue Value;
-            public IEnumerable<TreeNode<TValue>> Children;
+            private IEnumerable<TreeNode<TValue>> children;
 
-            public IEnumerable<TResult> Flatten<TResult>(Func<TreeNode<TValue>, TResult> selector)
+            public TValue Value { get; }
+
+            public IEnumerable<TreeNode<TValue>> Children => children ?? Empty<TreeNode<TValue>>();
+
+            public TreeNode(TValue value, IEnumerable<TreeNode<TValue>> children)
             {
-                yield return selector(this);
+                Value = value;
 
-                foreach (var value in Children.SelectMany(c => c.Flatten(selector)))
+                this.children = children ?? throw new ArgumentNullException(nameof(children));
+            }
+
+            public IEnumerable<TValue> Flatten()
+            {
+                yield return Value;
+
+                foreach (var child in Children)
                 {
-                    yield return value;
+                    foreach (var value in child.Flatten())
+                    {
+                        yield return value;
+                    }
                 }
             }
 
             public TreeNode<TResult> Transform<TResult>(Func<TreeNode<TValue>, TResult> selector)
             {
-                return new TreeNode<TResult>
-                {
-                    Value = selector(this),
-                    Children = Children.Select(c => c.Transform(selector)),
-                };
+                return new TreeNode<TResult>(
+                    value: selector(this),
+                    children: Children.Select(c => c.Transform(selector)).ToArray());
             }
 
             public TAccumulate Aggregate<TAccumulate>(
                 TAccumulate seed,
-                Func<TAccumulate, TreeNode<TValue>, TreeNode<TValue>, TAccumulate> accumulator)
+                Func<TAccumulate, TValue, TValue, TAccumulate> accumulator)
             {
-                var me = this;
+                var result = seed;
 
-                return Children.Aggregate(
-                    seed,
-                    (result, next) => next.Aggregate(
-                        accumulator(result, me, next),
-                        accumulator));
+                foreach (var child in Children)
+                {
+                    result = child.Aggregate(accumulator(result, Value, child.Value), accumulator);
+                }
+
+                return result;
+            }
+        }
+
+        public static class TreeNode
+        {
+            public static IEnumerable<TreeNode<TValue>> Treeify<TValue>(IEnumerable<IEnumerable<TValue>> sequences)
+            {
+                return from s in sequences
+                       where s.Any()
+                       group s.Skip(1) by s.First() into sg
+                       select new TreeNode<TValue>(
+                           value: sg.Key,
+                           children: Treeify(sg));
             }
         }
 
@@ -64,56 +126,40 @@ namespace Impatient.Tests
         {
             public static Type CreateTupleType(IEnumerable<Type> types)
             {
-                var result = default(Type);
-                var remainder = types.Count() % 7;
+                var lastSize = types.Count() % 7;
+
+                if (lastSize == 0)
+                {
+                    lastSize = 7;
+                }
+
+                var initialType
+                    = lastSize == 1 ? typeof(ValueTuple<>)
+                    : lastSize == 2 ? typeof(ValueTuple<,>)
+                    : lastSize == 3 ? typeof(ValueTuple<,,>)
+                    : lastSize == 4 ? typeof(ValueTuple<,,,>)
+                    : lastSize == 5 ? typeof(ValueTuple<,,,,>)
+                    : lastSize == 6 ? typeof(ValueTuple<,,,,,>)
+                    : typeof(ValueTuple<,,,,,,>);
 
                 types = types.Reverse().ToArray().AsEnumerable();
 
-                if (remainder > 0)
-                {
-                    var genericTupleType
-                        = remainder == 1 ? typeof(ValueTuple<>)
-                        : remainder == 2 ? typeof(ValueTuple<,>)
-                        : remainder == 3 ? typeof(ValueTuple<,,>)
-                        : remainder == 4 ? typeof(ValueTuple<,,,>)
-                        : remainder == 5 ? typeof(ValueTuple<,,,,>)
-                        : typeof(ValueTuple<,,,,,>);
+                var resultType
+                    = initialType.MakeGenericType(
+                        types.Take(lastSize).Reverse().ToArray());
 
-                    result
-                        = genericTupleType.MakeGenericType(
-                            types
-                                .Take(remainder)
-                                .Reverse()
-                                .ToArray());
-
-                    types = types.Skip(remainder);
-                }
-                else
-                {
-                    result
-                        = typeof(ValueTuple<,,,,,,>).MakeGenericType(
-                            types
-                                .Take(7)
-                                .Reverse()
-                                .ToArray());
-
-                    types = types.Skip(7);
-                }
+                types = types.Skip(lastSize);
 
                 while (types.Any())
                 {
-                    result
+                    resultType
                         = typeof(ValueTuple<,,,,,,,>).MakeGenericType(
-                            types
-                                .Take(7)
-                                .Reverse()
-                                .Concat(Enumerable.Repeat(result, 1))
-                                .ToArray());
+                            types.Take(7).Reverse().Concat(Repeat(resultType, 1)).ToArray());
 
                     types = types.Skip(7);
                 }
 
-                return result;
+                return resultType;
             }
 
             public static NewExpression CreateNewExpression(Type type, IEnumerable<Expression> arguments)
@@ -123,17 +169,14 @@ namespace Impatient.Tests
                 var fields = typeInfo.DeclaredFields.ToArray();
                 var newArguments = new List<Expression>(fields.Length);
 
-                foreach (var argument in arguments.TakeWhile((b, i) => i < 7 && i < fields.Length))
+                foreach (var argument in arguments.Take(Min(7, fields.Length)))
                 {
                     newArguments.Add(argument);
                 }
 
                 if (fields.Length == 8)
                 {
-                    newArguments.Add(
-                        CreateNewExpression(
-                            fields[7].FieldType,
-                            arguments.Skip(7)));
+                    newArguments.Add(CreateNewExpression(fields[7].FieldType, arguments.Skip(7)));
                 }
 
                 return Expression.New(constructor, newArguments, fields);
@@ -154,135 +197,283 @@ namespace Impatient.Tests
             }
         }
 
+        private static bool IsNullableType(Type type)
+        {
+            return !type.GetTypeInfo().IsValueType;
+        }
+
+        private static Type MakeNullableType(Type type)
+        {
+            if (type.GetTypeInfo().IsValueType)
+            {
+                return typeof(Nullable<>).MakeGenericType(type);
+            }
+
+            return type;
+        }
+
+        private static Type GetMemberType(MemberInfo memberInfo)
+        {
+            switch (memberInfo)
+            {
+                case PropertyInfo propertyInfo:
+                {
+                    return propertyInfo.PropertyType;
+                }
+
+                case FieldInfo fieldInfo:
+                {
+                    return fieldInfo.FieldType;
+                }
+
+                default:
+                {
+                    return typeof(void);
+                }
+            }
+        }
+
+        private static IEnumerable<Type> GetInheritancePath(Type from, Type to)
+        {
+            do
+            {
+                yield return from;
+
+                from = from.GetTypeInfo().BaseType;
+            }
+            while (from != null && to.IsAssignableFrom(from));
+        }
+
+        private static IEnumerable<Expression> CreateQueryExpressions(
+            IEnumerable<ImpatientTableDescriptor> tableDescriptors)
+        {
+            var polymorphicRoots = tableDescriptors.Where(t => t.InheritanceMode != ImpatientInheritanceMode.Default);
+
+            var polymorphicRootTypes = polymorphicRoots.Select(t => t.SourceType).ToArray();
+
+            var invalidHierarchy
+                = polymorphicRootTypes.Any(t1 =>
+                    polymorphicRootTypes.Any(t2 =>
+                        t1 != t2 && t1.IsAssignableFrom(t2)));
+
+            if (invalidHierarchy)
+            {
+                throw new ArgumentException("Invalid hierarchy model", nameof(tableDescriptors));
+            }
+
+            var polymorphicTableDescriptorGroups
+                = from r in polymorphicRoots
+                  from d in tableDescriptors
+                  where r.SourceType.IsAssignableFrom(d.SourceType)
+                  group d by r;
+
+            foreach (var tableDescriptorGroup in polymorphicTableDescriptorGroups)
+            {
+                switch (tableDescriptorGroup.Key.InheritanceMode)
+                {
+                    case ImpatientInheritanceMode.TablePerType:
+                    {
+                        var queryExpressions
+                            = CreateTablePerTypeQueryExpressions(
+                                tableDescriptorGroup.Key.SourceType,
+                                tableDescriptorGroup);
+
+                        foreach (var queryExpression in queryExpressions)
+                        {
+                            yield return queryExpression;
+                        }
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        private struct TablePerTypeInfo
+        {
+            public Type Type;
+            public IEnumerable<Type> Path;
+            public ImpatientTableDescriptor TableDescriptor;
+            public BaseTableExpression Table;
+            public IEnumerable<SqlColumnExpression> Columns;
+        }
+
+        private static IEnumerable<Expression> CreateTablePerTypeQueryExpressions(
+            Type rootType,
+            IEnumerable<ImpatientTableDescriptor> tableDescriptors)
+        {
+            var inheritancePaths
+                = (from t in tableDescriptors
+                   select GetInheritancePath(t.SourceType, rootType) into p
+                   where !p.First().GetTypeInfo().IsAbstract
+                   orderby p.Count()
+                   select p.Reverse()).ToArray();
+
+            return from t in tableDescriptors
+                   let p = (from p in inheritancePaths where p.Contains(t.SourceType) select p)
+                   from r in TreeNode.Treeify(p)
+                   select CreateTablePerTypeQueryExpression(t.SourceType, r.Transform(node =>
+                   {
+                       var descriptor = tableDescriptors.Single(d => d.SourceType == node.Value);
+
+                       var table
+                           = new BaseTableExpression(
+                               descriptor.SchemaName,
+                               descriptor.TableName,
+                               descriptor.TableName.ToLower().Substring(0, 1),
+                               descriptor.SourceType);
+
+                       var columns
+                           = from cd in descriptor.ColumnDescriptors
+                             let nullable = cd.SourceType != rootType
+                             let type = nullable ? MakeNullableType(cd.Type) : cd.Type
+                             select new SqlColumnExpression(
+                                 table,
+                                 cd.ColumnName,
+                                 type,
+                                 nullable || cd.IsNullable);
+
+                       return new TablePerTypeInfo
+                       {
+                           Type = node.Value,
+                           Path = GetInheritancePath(node.Value, rootType),
+                           TableDescriptor = descriptor,
+                           Table = table,
+                           Columns = columns.ToArray(),
+                       };
+                   }));
+        }
+
+        private static Expression CreateTablePerTypeQueryExpression(
+            Type targetType,
+            TreeNode<TablePerTypeInfo> hierarchyRoot)
+        {
+            var columnDescriptors
+                = hierarchyRoot
+                    .Flatten()
+                    .SelectMany(x => x.TableDescriptor.ColumnDescriptors)
+                    .Select((c, i) => new { c, i });
+
+            var columnExpressions
+                = hierarchyRoot
+                    .Flatten()
+                    .SelectMany(x => x.Columns);
+
+            var tupleType = ValueTupleHelper.CreateTupleType(columnExpressions.Select(c => c.Type));
+            var tupleNewExpression = ValueTupleHelper.CreateNewExpression(tupleType, columnExpressions);
+            var tupleParameter = Expression.Parameter(tupleType);
+
+            // TODO: Use ExpandParameters instead
+            // Use ExpandParameters on a LambdaExpression representing
+            // the materializer for the concrete type. Expand it the
+            // LambdaExpression so that all of the bindings are bound
+            // to the tuple's field accessors.
+
+            var polymorphicTypeDescriptors
+                = (from node in hierarchyRoot.Flatten()
+                   where !node.Type.GetTypeInfo().IsAbstract
+                   let testMember = node.TableDescriptor.PrimaryKeyMembers.First()
+                   select new PolymorphicExpression.TypeDescriptor(
+                       node.Type,
+                       Expression.Lambda(
+                         Expression.NotEqual(
+                             ValueTupleHelper.CreateMemberExpression(
+                                 tupleType,
+                                 tupleParameter,
+                                 (from x in columnDescriptors
+                                  where x.c.SourceMember == testMember
+                                  select x.i).Single()),
+                             Expression.Constant(null, MakeNullableType(GetMemberType(testMember)))),
+                         tupleParameter),
+                       Expression.Lambda(
+                         Expression.MemberInit(
+                             Expression.New(node.Type),
+                             (from x in columnDescriptors
+                              where node.Path.Contains(x.c.SourceType)
+                              group x by x.c.SourceMember.MetadataToken into xg
+                              select xg.Last() into x
+                              select Expression.Bind(
+                                 x.c.SourceMember,
+                                 Expression.Convert(
+                                     ValueTupleHelper.CreateMemberExpression(tupleType, tupleParameter, x.i),
+                                     GetMemberType(x.c.SourceMember))))),
+                         tupleParameter))).ToArray();
+
+            // TODO: Use ExpandParameters instead
+            // Use ExpandParameters on a LambdaExpression representing
+            // the primary key accessor for the root type. Expand it
+            // once for the parent table and once for the child table
+            // and use an Equal expression to compare the two.
+
+            var tableExpression
+                = hierarchyRoot
+                    .Aggregate<TableExpression>(
+                        hierarchyRoot.Value.Table,
+                        (accumulate, parent, child) =>
+                        {
+                            var keyComparisons
+                                = from k in hierarchyRoot.Value.TableDescriptor.PrimaryKeyMembers
+                                  join l in parent.TableDescriptor.ColumnDescriptors
+                                  on k.MetadataToken equals l.SourceMember.MetadataToken
+                                  join r in child.TableDescriptor.ColumnDescriptors
+                                  on k.MetadataToken equals r.SourceMember.MetadataToken
+                                  select Expression.Equal(
+                                      new SqlColumnExpression(parent.Table, l.ColumnName, l.Type, l.IsNullable),
+                                      new SqlColumnExpression(child.Table, r.ColumnName, r.Type, r.IsNullable));
+
+                            return new LeftJoinExpression(
+                                accumulate,
+                                child.Table,
+                                keyComparisons.Aggregate(Expression.AndAlso),
+                                hierarchyRoot.Value.Type);
+                        });
+
+            return new EnumerableRelationalQueryExpression(
+                new SelectExpression(
+                    new ServerProjectionExpression(
+                        new PolymorphicExpression(
+                            targetType,
+                            tupleNewExpression,
+                            polymorphicTypeDescriptors)),
+                    tableExpression));
+        }
+
+        #endregion
+
         static TablePerTypeInheritanceTests()
         {
-            #region helper functions
-
-            IEnumerable<Type> MakeChain(Type type)
+            var allTypes = new[]
             {
-                do
-                {
-                    yield return type;
-
-                    type = type.GetTypeInfo().BaseType;
-                }
-                while (type != typeof(object));
-            }
-
-            IEnumerable<TreeNode<TValue>> MakeTree<TValue>(IEnumerable<IEnumerable<TValue>> chains)
-            {
-                return from c in chains
-                       where c.Any()
-                       group c.Skip(1) by c.First() into cg
-                       select new TreeNode<TValue>
-                       {
-                           Value = cg.Key,
-                           Children = MakeTree(cg),
-                       };
-            }
-
-            #endregion
-
-            var concreteTypes = new[]
-            {
+                typeof(BaseAbstractType1),
                 typeof(DerivedConcreteType1),
+                typeof(DerivedAbstractType1),
                 typeof(DerivedConcreteType2),
                 typeof(DerivedConcreteType3),
             };
 
-            var hierarchyRoot = MakeTree(concreteTypes.Select(t => MakeChain(t).Reverse()).OrderBy(c => c.Count())).Single();
-            var keyPropertyNames = new[] { "Id" };
+            var tableDescriptors
+                = (from type in allTypes
+                   let keyProperties = (from n in new[] { "Id" }
+                                        join p in type.GetRuntimeProperties() on n equals p.Name
+                                        select p).ToArray()
+                   select new ImpatientTableDescriptor
+                   {
+                       SourceType = type,
+                       InheritanceMode = type == typeof(BaseAbstractType1) ? ImpatientInheritanceMode.TablePerType : ImpatientInheritanceMode.Default,
+                       SchemaName = "dbo",
+                       TableName = type.Name,
+                       PrimaryKeyMembers = keyProperties,
+                       ColumnDescriptors = (from member in keyProperties.Union(type.GetTypeInfo().DeclaredProperties)
+                                            select new ImpatientColumnDescriptor
+                                            {
+                                                SourceType = type,
+                                                SourceMember = member,
+                                                ColumnName = member.Name,
+                                                IsNullable = IsNullableType(GetMemberType(member))
+                                            }).ToArray()
+                   }).ToArray();
 
-            // TODO: propertyType needs to be dynamic
-            var bindings = (from type in hierarchyRoot.Flatten(n => n.Value)
-                            let table = new BaseTableExpression("dbo", type.Name, type.Name.ToLower().Substring(0, 1), type)
-                            let k = (from n in keyPropertyNames select type.GetRuntimeProperty(n))
-                            from property in k.Union(type.GetTypeInfo().DeclaredProperties)
-                            let propertyType = property.PropertyType == typeof(int) ? typeof(int?) : property.PropertyType
-                            let column = new SqlColumnExpression(table, property.Name, propertyType, isNullable: true)
-                            select (type: type, table: table, property: property, column: column)).ToArray();
-
-            var tupleType = ValueTupleHelper.CreateTupleType(bindings.Select(b => b.column.Type));
-            var tupleNewExpression = ValueTupleHelper.CreateNewExpression(tupleType, bindings.Select(b => b.column));
-            var tupleParameter = Expression.Parameter(tupleType);
-
-            var descriptors = new List<PolymorphicExpression.TypeDescriptor>();
-
-            foreach (var concreteType in concreteTypes)
-            {
-                var currentChain = MakeChain(concreteType).ToArray();
-                var memberBindings = new List<MemberBinding>();
-                var boundPropertyTokens = new HashSet<int>();
-
-                for (var i = 0; i < bindings.Length; i++)
-                {
-                    var binding = bindings[i];
-
-                    if (!currentChain.Contains(binding.type)
-                        || !boundPropertyTokens.Add(binding.property.MetadataToken))
-                    {
-                        continue;
-                    }
-
-                    memberBindings.Add(
-                        Expression.Bind(
-                            binding.property,
-                            Expression.Convert(
-                                ValueTupleHelper.CreateMemberExpression(tupleType, tupleParameter, i),
-                                binding.property.PropertyType)));
-                }
-
-                var keyProperty = concreteType.GetRuntimeProperty(keyPropertyNames.First());
-                var keyIndex = bindings.ToList().FindIndex(b => b.property == keyProperty);
-
-                // TODO: typeof(int?) needs to be dynamic
-                var test
-                    = Expression.Lambda(
-                        Expression.NotEqual(
-                            ValueTupleHelper.CreateMemberExpression(tupleType, tupleParameter, keyIndex),
-                            Expression.Constant(null, typeof(int?))),
-                        tupleParameter);
-
-                var materializer
-                    = Expression.Lambda(
-                        Expression.MemberInit(
-                            Expression.New(concreteType),
-                            memberBindings),
-                        tupleParameter);
-
-                descriptors.Add(new PolymorphicExpression.TypeDescriptor(concreteType, test, materializer));
-            }
-
-            // TODO: The Equal expression needs to be dynamic
-            var tableExpression
-                = hierarchyRoot
-                    .Transform(
-                        (node) =>
-                        {
-                            return bindings.First(b => b.type == node.Value).table;
-                        })
-                    .Aggregate(
-                        bindings.First().column.Table as TableExpression,
-                        (accumulate, parent, child) =>
-                        {
-                            return new LeftJoinExpression(
-                                accumulate,
-                                child.Value,
-                                Expression.Equal(
-                                    new SqlColumnExpression(parent.Value, keyPropertyNames.First(), typeof(int), false),
-                                    new SqlColumnExpression(child.Value, keyPropertyNames.First(), typeof(int), false)),
-                                hierarchyRoot.Value);
-                        });
-
-            BaseTypeQueryExpression
-                = new EnumerableRelationalQueryExpression(
-                    new SelectExpression(
-                        new ServerProjectionExpression(
-                            new PolymorphicExpression(
-                                typeof(BaseAbstractType1),
-                                tupleNewExpression,
-                                descriptors)),
-                        tableExpression));
+            QueryExpressions = CreateQueryExpressions(tableDescriptors).ToDictionary(e => e.Type.GenericTypeArguments[0]);
         }
 
         public TablePerTypeInheritanceTests()
@@ -413,6 +604,23 @@ LEFT JOIN [dbo].[DerivedConcreteType1] AS [d] ON [b].[Id] = [d].[Id]
 LEFT JOIN [dbo].[DerivedAbstractType1] AS [d0] ON [b].[Id] = [d0].[Id]
 LEFT JOIN [dbo].[DerivedConcreteType2] AS [d1] ON [d0].[Id] = [d1].[Id]
 LEFT JOIN [dbo].[DerivedConcreteType3] AS [d2] ON [d0].[Id] = [d2].[Id]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Select_subtype_simple()
+        {
+            var query = from d in Query<DerivedAbstractType1>()
+                        select d;
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [b].[Id] AS [Item1], [b].[Property_BaseAbstractType1] AS [Item2], [d].[Id] AS [Item3], [d].[Property_DerivedAbstractType1] AS [Item4], [d0].[Id] AS [Item5], [d0].[Property_DerivedConcreteType2] AS [Item6], [d1].[Id] AS [Item7], [d1].[Property_DerivedConcreteType3] AS [Rest.Item1]
+FROM [dbo].[BaseAbstractType1] AS [b]
+LEFT JOIN [dbo].[DerivedAbstractType1] AS [d] ON [b].[Id] = [d].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType2] AS [d0] ON [d].[Id] = [d0].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType3] AS [d1] ON [d].[Id] = [d1].[Id]",
                 SqlLog);
         }
 
