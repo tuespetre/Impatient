@@ -2436,20 +2436,5 @@ namespace Impatient.Query.ExpressionVisitors
             [PathSegmentName("$rownumber")]
             public readonly int RowNumber;
         }
-
-        /*private struct OrderingTuple<TProjection, TOrdering>
-        {
-            public OrderingTuple(TProjection projection, TOrdering ordering)
-            {
-                Projection = projection;
-                Ordering = ordering;
-            }
-
-            [PathSegmentName(null)]
-            public TProjection Projection;
-
-            [PathSegmentName("$orderby")]
-            public TOrdering Ordering;
-        }*/
     }
 }
