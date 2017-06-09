@@ -1,5 +1,6 @@
 ﻿using Impatient.Query.Expressions;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors
@@ -12,6 +13,11 @@ namespace Impatient.Query.ExpressionVisitors
 
         protected virtual Expression VisitLeaf(Expression node) => base.Visit(node);
 
+        protected virtual IEnumerable<string> GetNameParts()
+        {
+            return CurrentPath.Reverse().Where(n => n != null && !n.StartsWith("<>"));
+        }
+
         public override Expression Visit(Expression node)
         {
             switch (node)
@@ -23,7 +29,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                     for (var i = 0; i < newExpression.Arguments.Count; i++)
                     {
-                        CurrentPath.Push(newExpression.Members[i].Name);
+                        CurrentPath.Push(newExpression.Members[i].GetPathSegmentName());
 
                         arguments[i] = Visit(newExpression.Arguments[i]);
 
@@ -39,7 +45,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                     for (var i = 0; i < memberInitExpression.Bindings.Count; i++)
                     {
-                        CurrentPath.Push(memberInitExpression.Bindings[i].Member.Name);
+                        CurrentPath.Push(memberInitExpression.Bindings[i].Member.GetPathSegmentName());
 
                         bindings[i] = VisitMemberBinding(memberInitExpression.Bindings[i]);
 

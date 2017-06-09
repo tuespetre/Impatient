@@ -10,7 +10,7 @@ namespace Impatient.Query.ExpressionVisitors
 
         protected override Expression VisitLeaf(Expression node)
         {
-            var name = string.Join(".", CurrentPath.Reverse());
+            var name = string.Join(".", GetNameParts());
 
             GatheredExpressions[name] = node;
 

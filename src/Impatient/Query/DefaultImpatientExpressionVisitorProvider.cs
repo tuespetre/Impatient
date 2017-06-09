@@ -19,8 +19,6 @@ namespace Impatient.Query
 
         public IEnumerable<ExpressionVisitor> OptimizingExpressionVisitors { get; } = new ExpressionVisitor[]
         {
-            new OperatorSplittingExpressionVisitor(),
-            new SelectorMergingExpressionVisitor(),
             new PartialEvaluatingExpressionVisitor(),
             new BooleanOptimizingExpressionVisitor(),
         };

@@ -22,7 +22,8 @@ namespace Impatient.Query.Expressions
                   offset: null,
                   limit: null,
                   isDistinct: false,
-                  grouping: null)
+                  grouping: null,
+                  isWindowed: false)
         {
         }
 
@@ -34,7 +35,8 @@ namespace Impatient.Query.Expressions
             Expression offset,
             Expression limit,
             bool isDistinct,
-            Expression grouping)
+            Expression grouping,
+            bool isWindowed)
         {
             Projection = projection ?? throw new ArgumentNullException(nameof(projection));
             Table = table;
@@ -44,6 +46,7 @@ namespace Impatient.Query.Expressions
             Limit = limit;
             IsDistinct = isDistinct;
             Grouping = grouping;
+            IsWindowed = isWindowed;
         }
         
         public ProjectionExpression Projection { get; }
@@ -61,6 +64,8 @@ namespace Impatient.Query.Expressions
         public bool IsDistinct { get; }
 
         public Expression Grouping { get; }
+
+        public bool IsWindowed { get; }
 
         #region Expression overrides
 
@@ -104,7 +109,7 @@ namespace Impatient.Query.Expressions
                 || limit != Limit
                 || grouping != Grouping)
             {
-                return new SelectExpression(projection, table, predicate, orderBy, offset, limit, IsDistinct, grouping);
+                return new SelectExpression(projection, table, predicate, orderBy, offset, limit, IsDistinct, grouping, IsWindowed);
             }
 
             return this;
@@ -116,7 +121,8 @@ namespace Impatient.Query.Expressions
             return Offset != null
                 || Limit != null
                 || IsDistinct
-                || Grouping != null;
+                || Grouping != null
+                || IsWindowed;
         }
 
         public bool RequiresPushdownForRightSideOfJoin()
@@ -127,14 +133,38 @@ namespace Impatient.Query.Expressions
                 || OrderBy != null;
         }
 
+        public bool RequiresPushdownForPredicate()
+        {
+            return IsWindowed
+                || IsDistinct
+                || Limit != null
+                || Offset != null
+                || Grouping != null;
+        }
+
+        public bool RequiresPushdownForLimit()
+        {
+            return IsWindowed
+                || IsDistinct
+                || Limit != null;
+        }
+
+        public bool RequiresPushdownForOffset()
+        {
+            return IsWindowed
+                || IsDistinct
+                || Limit != null
+                || Offset != null;
+        }
+
         public SelectExpression UpdateProjection(ProjectionExpression projection)
         {
-            return new SelectExpression(projection, Table, Predicate, OrderBy, Offset, Limit, IsDistinct, Grouping);
+            return new SelectExpression(projection, Table, Predicate, OrderBy, Offset, Limit, IsDistinct, Grouping, IsWindowed);
         }
 
         public SelectExpression UpdateTable(TableExpression table)
         {
-            return new SelectExpression(Projection, table, Predicate, OrderBy, Offset, Limit, IsDistinct, Grouping);
+            return new SelectExpression(Projection, table, Predicate, OrderBy, Offset, Limit, IsDistinct, Grouping, IsWindowed);
         }
 
         public SelectExpression AddToPredicate(Expression predicate)
@@ -143,12 +173,12 @@ namespace Impatient.Query.Expressions
                 ? predicate
                 : AndAlso(Predicate, predicate);
 
-            return new SelectExpression(Projection, Table, predicate, OrderBy, Offset, Limit, IsDistinct, Grouping);
+            return new SelectExpression(Projection, Table, predicate, OrderBy, Offset, Limit, IsDistinct, Grouping, IsWindowed);
         }
 
         public SelectExpression RemovePredicate()
         {
-            return new SelectExpression(Projection, Table, null, OrderBy, Offset, Limit, IsDistinct, Grouping);
+            return new SelectExpression(Projection, Table, null, OrderBy, Offset, Limit, IsDistinct, Grouping, IsWindowed);
         }
 
         public SelectExpression AddToOrderBy(Expression expression, bool descending)
@@ -163,27 +193,32 @@ namespace Impatient.Query.Expressions
 
         public SelectExpression UpdateOrderBy(OrderByExpression orderBy)
         {
-            return new SelectExpression(Projection, Table, Predicate, orderBy, Offset, Limit, IsDistinct, Grouping);
+            return new SelectExpression(Projection, Table, Predicate, orderBy, Offset, Limit, IsDistinct, Grouping, IsWindowed);
         }
 
         public SelectExpression UpdateLimit(Expression limit)
         {
-            return new SelectExpression(Projection, Table, Predicate, OrderBy, Offset, limit, IsDistinct, Grouping);
+            return new SelectExpression(Projection, Table, Predicate, OrderBy, Offset, limit, IsDistinct, Grouping, IsWindowed);
         }
 
         public SelectExpression UpdateOffset(Expression offset)
         {
-            return new SelectExpression(Projection, Table, Predicate, OrderBy, offset, Limit, IsDistinct, Grouping);
+            return new SelectExpression(Projection, Table, Predicate, OrderBy, offset, Limit, IsDistinct, Grouping, IsWindowed);
         }
 
         public SelectExpression AsDistinct()
         {
-            return new SelectExpression(Projection, Table, Predicate, OrderBy, Offset, Limit, true, Grouping);
+            return new SelectExpression(Projection, Table, Predicate, OrderBy, Offset, Limit, true, Grouping, IsWindowed);
         }
 
         public SelectExpression UpdateGrouping(Expression grouping)
         {
-            return new SelectExpression(Projection, Table, Predicate, OrderBy, Offset, Limit, IsDistinct, grouping);
+            return new SelectExpression(Projection, Table, Predicate, OrderBy, Offset, Limit, IsDistinct, grouping, IsWindowed);
+        }
+
+        public SelectExpression AsWindowed()
+        {
+            return new SelectExpression(Projection, Table, Predicate, OrderBy, Offset, Limit, IsDistinct, Grouping, true);
         }
     }
 }

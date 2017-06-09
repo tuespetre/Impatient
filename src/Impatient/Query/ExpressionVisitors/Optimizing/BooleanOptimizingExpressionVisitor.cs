@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using Impatient.Query.ExpressionVisitors.Utility;
+using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Optimizing
 {
@@ -8,7 +9,6 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
         private static readonly RedundantNotEliminatingExpressionVisitor redundantNotEliminatingExpressionVisitor = new RedundantNotEliminatingExpressionVisitor();
         private static readonly BinaryExpressionReducingExpressionVisitor binaryExpressionReducingExpressionVisitor = new BinaryExpressionReducingExpressionVisitor();
         private static readonly NotDistributingExpressionVisitor notDistributingExpressionVisitor = new NotDistributingExpressionVisitor();
-        private static readonly BinaryFlippingExpressionVisitor binaryFlippingExpressionVisitor = new BinaryFlippingExpressionVisitor();
 
         public override Expression Visit(Expression node)
         {
@@ -241,7 +241,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                     {
                         case BinaryExpression binaryExpression:
                         {
-                            return binaryFlippingExpressionVisitor.Visit(binaryExpression);
+                            return BinaryInvertingExpressionVisitor.Instance.Visit(binaryExpression);
                         }
 
                         case ConstantExpression constantExpression:
@@ -260,97 +260,6 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                 }
 
                 return node.Update(operand);
-            }
-        }
-
-        private class BinaryFlippingExpressionVisitor : ExpressionVisitor
-        {
-            public override Expression Visit(Expression node)
-            {
-                switch (node)
-                {
-                    case BinaryExpression binaryExpression:
-                    {
-                        switch (binaryExpression.NodeType)
-                        {
-                            case ExpressionType.AndAlso:
-                            {
-                                return Expression.MakeBinary(
-                                    ExpressionType.OrElse,
-                                    Visit(binaryExpression.Left),
-                                    Visit(binaryExpression.Right));
-                            }
-
-                            case ExpressionType.OrElse:
-                            {
-                                return Expression.MakeBinary(
-                                    ExpressionType.AndAlso,
-                                    Visit(binaryExpression.Left),
-                                    Visit(binaryExpression.Right));
-                            }
-
-                            case ExpressionType.LessThan:
-                            {
-                                return Expression.MakeBinary(
-                                    ExpressionType.GreaterThanOrEqual,
-                                    binaryExpression.Left,
-                                    binaryExpression.Right);
-                            }
-
-                            case ExpressionType.LessThanOrEqual:
-                            {
-                                return Expression.MakeBinary(
-                                    ExpressionType.GreaterThan,
-                                    binaryExpression.Left,
-                                    binaryExpression.Right);
-                            }
-
-                            case ExpressionType.GreaterThan:
-                            {
-                                return Expression.MakeBinary(
-                                    ExpressionType.LessThanOrEqual,
-                                    binaryExpression.Left,
-                                    binaryExpression.Right);
-                            }
-
-                            case ExpressionType.GreaterThanOrEqual:
-                            {
-                                return Expression.MakeBinary(
-                                    ExpressionType.LessThan,
-                                    binaryExpression.Left,
-                                    binaryExpression.Right);
-                            }
-
-                            case ExpressionType.Equal:
-                            {
-                                return Expression.MakeBinary(
-                                    ExpressionType.NotEqual,
-                                    binaryExpression.Left,
-                                    binaryExpression.Right);
-                            }
-
-                            case ExpressionType.NotEqual:
-                            {
-                                return Expression.MakeBinary(
-                                    ExpressionType.Equal,
-                                    binaryExpression.Left,
-                                    binaryExpression.Right);
-                            }
-                        }
-
-                        return binaryExpression;
-                    }
-
-                    default:
-                    {
-                        if (node.Type == typeof(bool))
-                        {
-                            return Expression.Not(node);
-                        }
-
-                        return node;
-                    }
-                }
             }
         }
     }

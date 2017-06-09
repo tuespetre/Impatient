@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
@@ -16,6 +17,20 @@ namespace Impatient.Query.Expressions
         public override OrderByExpression Reverse()
         {
             return new ThenOrderByExpression(Previous.Reverse(), Expression, !Descending);
+        }
+
+        public override IEnumerable<OrderByExpression> Iterate()
+        {
+            var current = this as OrderByExpression;
+
+            while (current is ThenOrderByExpression thenOrderByExpression)
+            {
+                yield return thenOrderByExpression;
+
+                current = thenOrderByExpression.Previous;
+            }
+
+            yield return current;
         }
     }
 }

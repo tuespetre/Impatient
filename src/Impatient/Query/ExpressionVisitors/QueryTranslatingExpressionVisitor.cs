@@ -26,6 +26,7 @@ namespace Impatient.Query.ExpressionVisitors
             this.expressionVisitorProvider = expressionVisitorProvider ?? throw new ArgumentNullException(nameof(expressionVisitorProvider));
         }
 
+        // TODO: Separate command builder production from materializer production
         public (Expression materializer, Expression commandBuilder) Translate(SelectExpression selectExpression)
         {
             selectExpression
@@ -496,12 +497,12 @@ namespace Impatient.Query.ExpressionVisitors
                             builder.Append(FormatIdentifier(alias));
                         }
                         else if (selectExpressionSourceStack.Peek() is SubqueryTableExpression
-                            && !(expression is SqlColumnExpression
+                            && !(expression is SqlColumnExpression 
                                 || expression is SqlAliasExpression))
                         {
                             // TODO: Something OTHER THAN this
-                            builder.Append(" AS ");
-                            builder.Append(FormatIdentifier("$c"));
+                            //builder.Append(" AS ");
+                            //builder.Append(FormatIdentifier("$c"));
                         }
                     }
 
@@ -550,12 +551,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                     if (selectExpression.Offset != null)
                     {
-                        if (selectExpression.OrderBy == null)
-                        {
-                            builder.AppendLine();
-                            builder.Append("ORDER BY (SELECT 1)");
-                        }
-
                         builder.AppendLine();
                         builder.Append("OFFSET ");
 
@@ -587,6 +582,10 @@ namespace Impatient.Query.ExpressionVisitors
                     if (!singleValueRelationalQueryExpression.Type.IsScalarType())
                     {
                         VisitComplexNestedQuery(singleValueRelationalQueryExpression.SelectExpression);
+                    }
+                    else if (singleValueRelationalQueryExpression == SingleValueRelationalQueryExpression.SelectOne)
+                    {
+                        builder.Append("(SELECT 1)");
                     }
                     else
                     {
@@ -686,6 +685,22 @@ namespace Impatient.Query.ExpressionVisitors
                             Visit(leftJoinExpression.Predicate);
 
                             return leftJoinExpression;
+                        }
+
+                        case FullJoinExpression fullJoinExpression:
+                        {
+                            Visit(fullJoinExpression.OuterTable);
+
+                            builder.AppendLine();
+                            builder.Append("FULL JOIN ");
+
+                            Visit(fullJoinExpression.InnerTable);
+
+                            builder.Append(" ON ");
+
+                            Visit(fullJoinExpression.Predicate);
+
+                            return fullJoinExpression;
                         }
 
                         case CrossJoinExpression crossJoinExpression:
@@ -973,6 +988,22 @@ namespace Impatient.Query.ExpressionVisitors
                             return sqlParameterExpression;
                         }
 
+                        case SqlWindowFunctionExpression sqlWindowFunctionExpression:
+                        {
+                            Visit(sqlWindowFunctionExpression.Function);
+
+                            if (sqlWindowFunctionExpression.Ordering != null)
+                            {
+                                builder.Append(" OVER(ORDER BY ");
+
+                                Visit(sqlWindowFunctionExpression.Ordering);
+
+                                builder.Append(")");
+                            }
+
+                            return sqlWindowFunctionExpression;
+                        }
+
                         default:
                         {
                             throw new NotSupportedException();
@@ -1142,6 +1173,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                     do
                     {
+                        // TODO: Insert an underscore for readability
                         alias = $"{table.Alias}{++i}";
                     }
                     while (!tableAliases.Add(alias));
@@ -1279,10 +1311,7 @@ namespace Impatient.Query.ExpressionVisitors
             private readonly IImpatientExpressionVisitorProvider expressionVisitorProvider;
             private readonly ParameterExpression readerParameter;
             private int readerIndex;
-            private int subLeafIndex;
             private int topLevelIndex;
-
-            protected bool InSubLeaf { get; private set; }
 
             public ReaderParameterInjectingExpressionVisitor(
                 IImpatientExpressionVisitorProvider expressionVisitorProvider,
@@ -1320,36 +1349,17 @@ namespace Impatient.Query.ExpressionVisitors
                 return Visit(node);
             }
 
-            private string ComputeCurrentName()
-            {
-                var parts
-                    = CurrentPath
-                        .Reverse()
-                        .Where(n => !n.StartsWith("<>"));
-
-                return string.Join(".", parts);
-            }
+            private string ComputeCurrentName() => string.Join(".", GetNameParts());
 
             public override Expression Visit(Expression node)
             {
-                if (node == null)
-                {
-                    return node;
-                }
-
                 switch (node)
                 {
-                    case NewExpression newExpression:
-                    case MemberInitExpression memberInitExpression:
+                    case null:
+                    case NewExpression _:
+                    case MemberInitExpression _:
                     {
-                        var subLeafIndex = this.subLeafIndex;
-                        this.subLeafIndex = 0;
-
-                        var visited = base.Visit(node);
-
-                        this.subLeafIndex = subLeafIndex;
-
-                        return visited;
+                        return base.Visit(node);
                     }
 
                     case DefaultIfEmptyExpression defaultIfEmptyExpression:
@@ -1398,19 +1408,7 @@ namespace Impatient.Query.ExpressionVisitors
                         .TranslatabilityAnalyzingExpressionVisitor
                         .Visit(expression) is TranslatableExpression:
                     {
-                        // TODO: SubLeaf may not apply anymore.
-                        if (InSubLeaf)
-                        {
-                            CurrentPath.Push($"${++subLeafIndex}");
-                            var name = ComputeCurrentName();
-                            CurrentPath.Pop();
-                            GatheredExpressions[name] = expression;
-                        }
-                        else
-                        {
-                            var name = ComputeCurrentName();
-                            GatheredExpressions[name] = expression;
-                        }
+                        GatheredExpressions[ComputeCurrentName()] = expression;
 
                         if (!expression.Type.IsScalarType())
                         {
@@ -1481,19 +1479,6 @@ namespace Impatient.Query.ExpressionVisitors
                                     getFieldValueMethodInfo.MakeGenericMethod(node.Type),
                                     Expression.Constant(currentIndex)));
                         }
-                    }
-
-                    case Expression expression when InLeaf && !InSubLeaf:
-                    {
-                        InSubLeaf = true;
-                        subLeafIndex = 0;
-
-                        var visited = base.Visit(expression);
-
-                        InSubLeaf = false;
-                        subLeafIndex = 0;
-
-                        return visited;
                     }
 
                     default:
@@ -1632,6 +1617,7 @@ namespace Impatient.Query.ExpressionVisitors
                 var parameterNameVariable = Expression.Parameter(typeof(string), "parameterName");
                 var breakLabel = Expression.Label();
 
+                // TODO: Dispose of the enumerator
                 var parameterListBlock
                     = Expression.Block(
                         new[]

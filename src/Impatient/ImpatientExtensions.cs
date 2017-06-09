@@ -1,4 +1,5 @@
-﻿using Impatient.Query.ExpressionVisitors.Optimizing;
+﻿using Impatient.Query;
+using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
@@ -74,7 +75,7 @@ namespace Impatient
 
         public static LambdaExpression UnwrapLambda(this Expression expression)
         {
-            switch (expression.NodeType)
+            switch (expression?.NodeType)
             {
                 case ExpressionType.Quote:
                 {
@@ -103,6 +104,22 @@ namespace Impatient
             }
 
             return new MemberAccessReducingExpressionVisitor().Visit(lambdaBody);
+        }
+
+        public static bool References(this Expression expression, Expression targetExpression)
+        {
+            var referenceCountingVisitor = new ReferenceCountingExpressionVisitor(targetExpression);
+
+            referenceCountingVisitor.Visit(expression);
+
+            return referenceCountingVisitor.ReferenceCount > 0;
+        }
+
+        public static string GetPathSegmentName(this MemberInfo memberInfo)
+        {
+            return memberInfo.IsDefined(typeof(PathSegmentNameAttribute))
+                ? memberInfo.GetCustomAttribute<PathSegmentNameAttribute>().Name
+                : memberInfo.Name;
         }
 
         public static bool IsScalarType(this Type type)

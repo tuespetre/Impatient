@@ -15,25 +15,60 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
             if (expression is MethodCallExpression methodCallExpression
                 && (methodCallExpression.Method.DeclaringType == typeof(Queryable)
-                    || methodCallExpression.Method.DeclaringType == typeof(Enumerable))
-                && eligibleMethodNames.Contains(methodCallExpression.Method.Name)
-                && methodCallExpression.Arguments.Count == 1)
+                    || methodCallExpression.Method.DeclaringType == typeof(Enumerable)))
             {
-                var sequenceType = methodCallExpression.Arguments[0].Type.GetSequenceType();
+                switch (methodCallExpression.Method.Name)
+                {
+                    case nameof(Queryable.First):
+                    case nameof(Queryable.FirstOrDefault):
+                    case nameof(Queryable.Last):
+                    case nameof(Queryable.LastOrDefault):
+                    case nameof(Queryable.Single):
+                    case nameof(Queryable.SingleOrDefault):
+                    {
+                        if (methodCallExpression.Arguments.Count != 1)
+                        {
+                            break;
+                        }
 
-                var parameter = Expression.Parameter(sequenceType, "x");
+                        var sequenceType = methodCallExpression.Arguments[0].Type.GetSequenceType();
 
-                return Expression.Call(
-                    methodCallExpression.Method.GetGenericMethodDefinition().MakeGenericMethod(node.Type),
-                    Expression.Call(
-                        methodCallExpression.Method.DeclaringType == typeof(Queryable)
-                            ? queryableSelect.MakeGenericMethod(sequenceType, node.Type)
-                            : enumerableSelect.MakeGenericMethod(sequenceType, node.Type),
-                        methodCallExpression.Arguments[0],
-                        Expression.Quote(
-                            Expression.Lambda(
-                                Expression.MakeMemberAccess(parameter, node.Member),
-                                parameter))));
+                        var parameter = Expression.Parameter(sequenceType, "x");
+
+                        return Expression.Call(
+                            methodCallExpression.Method.GetGenericMethodDefinition().MakeGenericMethod(node.Type),
+                            Expression.Call(
+                                methodCallExpression.Method.DeclaringType == typeof(Queryable)
+                                    ? queryableSelect.MakeGenericMethod(sequenceType, node.Type)
+                                    : enumerableSelect.MakeGenericMethod(sequenceType, node.Type),
+                                methodCallExpression.Arguments[0],
+                                Expression.Quote(
+                                    Expression.Lambda(
+                                        Expression.MakeMemberAccess(parameter, node.Member),
+                                        parameter))));
+                    }
+
+                    case nameof(Queryable.ElementAt):
+                    case nameof(Queryable.ElementAtOrDefault):
+                    {
+                        var sequenceType = methodCallExpression.Arguments[0].Type.GetSequenceType();
+
+                        var parameter = Expression.Parameter(sequenceType, "x");
+
+                        return Expression.Call(
+                            methodCallExpression.Method.GetGenericMethodDefinition().MakeGenericMethod(node.Type),
+                            Expression.Call(
+                                methodCallExpression.Method.DeclaringType == typeof(Queryable)
+                                    ? queryableSelect.MakeGenericMethod(sequenceType, node.Type)
+                                    : enumerableSelect.MakeGenericMethod(sequenceType, node.Type),
+                                methodCallExpression.Arguments[0],
+                                Expression.Quote(
+                                    Expression.Lambda(
+                                        Expression.MakeMemberAccess(parameter, node.Member),
+                                        parameter))),
+                            methodCallExpression.Arguments[1]);
+                    }
+                }
             }
 
             return base.VisitMember(node);
@@ -44,17 +79,5 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
         private static readonly MethodInfo queryableSelect
             = GetGenericMethodDefinition((IQueryable<object> e) => e.Select(x => x));
-
-        private static readonly string[] eligibleMethodNames = new[]
-        {
-            //nameof(Queryable.ElementAt),
-            //nameof(Queryable.ElementAtOrDefault),
-            nameof(Queryable.First),
-            nameof(Queryable.FirstOrDefault),
-            nameof(Queryable.Last),
-            nameof(Queryable.LastOrDefault),
-            nameof(Queryable.Single),
-            nameof(Queryable.SingleOrDefault),
-        };
     }
 }

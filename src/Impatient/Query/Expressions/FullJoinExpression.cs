@@ -3,24 +3,24 @@ using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public class InnerJoinExpression : PredicateJoinExpression
+    public class FullJoinExpression : PredicateJoinExpression
     {
-        public InnerJoinExpression(
-            TableExpression outerTable, 
+        public FullJoinExpression(
+            TableExpression outerTable,
             AliasedTableExpression innerTable,
-            Expression predicate, 
-            Type type) 
+            Expression predicate,
+            Type type)
             : base(outerTable, innerTable, predicate, type)
         {
         }
 
         protected override PredicateJoinExpression Recreate(
-            TableExpression outerTable, 
-            AliasedTableExpression innerTable, 
-            Expression predicate, 
+            TableExpression outerTable,
+            AliasedTableExpression innerTable,
+            Expression predicate,
             Type type)
         {
-            return new InnerJoinExpression(
+            return new FullJoinExpression(
                 outerTable,
                 innerTable,
                 predicate,

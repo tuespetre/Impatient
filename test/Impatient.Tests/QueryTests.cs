@@ -253,31 +253,167 @@ CROSS APPLY (
         }
 
         [TestMethod]
+        public void SelectMany_collectionSelector_resultSelector()
+        {
+            var query
+                = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .SelectMany(
+                        m1 => impatient.CreateQuery<MyClass2>(MyClass2QueryExpression),
+                        (m1, m2) => new { m1, m2 });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m1].[Prop1] AS [m1.Prop1], [m1].[Prop2] AS [m1.Prop2], [m].[Prop1] AS [m2.Prop1], [m].[Prop2] AS [m2.Prop2]
+FROM [dbo].[MyClass1] AS [m1]
+CROSS JOIN [dbo].[MyClass2] AS [m]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void SelectMany_collectionSelector_resultSelector_with_index_referenced()
+        {
+            var query
+                = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .OrderBy(m1 => m1.Prop2)
+                    .SelectMany(
+                        (m1, i) => impatient.CreateQuery<MyClass2>(MyClass2QueryExpression).Select(m2 => new { m2, i }),
+                        (m1, x) => new { m1, x.m2, x.i });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m1].[Prop1] AS [m1.Prop1], [m1].[Prop2] AS [m1.Prop2], [x].[m2.Prop1] AS [m2.Prop1], [x].[m2.Prop2] AS [m2.Prop2], [x].[i] AS [i]
+FROM (
+    SELECT [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2], CAST(ROW_NUMBER() OVER(ORDER BY [m10].[Prop2] ASC) - 1 AS int) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [m10]
+) AS [m1]
+CROSS APPLY (
+    SELECT [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2], [m1].[$rownumber] AS [i]
+    FROM [dbo].[MyClass2] AS [m2]
+) AS [x]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void SelectMany_collectionSelector_resultSelector_with_index_referenced_no_ordering()
+        {
+            var query
+                = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .SelectMany(
+                        (m1, i) => impatient.CreateQuery<MyClass2>(MyClass2QueryExpression).Select(m2 => new { m2, i }),
+                        (m1, x) => new { m1, x.m2, x.i });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m1].[Prop1] AS [m1.Prop1], [m1].[Prop2] AS [m1.Prop2], [x].[m2.Prop1] AS [m2.Prop1], [x].[m2.Prop2] AS [m2.Prop2], [x].[i] AS [i]
+FROM (
+    SELECT [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2], CAST(ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) - 1 AS int) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [m10]
+) AS [m1]
+CROSS APPLY (
+    SELECT [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2], [m1].[$rownumber] AS [i]
+    FROM [dbo].[MyClass2] AS [m2]
+) AS [x]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void SelectMany_collectionSelector_resultSelector_with_index_unreferenced()
+        {
+            var query
+                = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .OrderBy(m1 => m1.Prop2)
+                    .SelectMany(
+                        (m1, i) => impatient.CreateQuery<MyClass2>(MyClass2QueryExpression),
+                        (m1, m2) => new { m1, m2 });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m1].[Prop1] AS [m1.Prop1], [m1].[Prop2] AS [m1.Prop2], [m].[Prop1] AS [m2.Prop1], [m].[Prop2] AS [m2.Prop2]
+FROM [dbo].[MyClass1] AS [m1]
+CROSS JOIN [dbo].[MyClass2] AS [m]
+ORDER BY [m1].[Prop2] ASC",
+                SqlLog);
+        }
+
+        [TestMethod]
         public void SelectMany_selector()
         {
             var query
                 = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
                     .SelectMany(m1 => impatient.CreateQuery<MyClass2>(MyClass2QueryExpression));
 
-            var visitor = new QueryComposingExpressionVisitor(impatient.ExpressionVisitorProvider);
+            query.ToList();
 
-            var expression = visitor.Visit(query.Expression);
-
-            Assert.IsInstanceOfType(expression, typeof(MethodCallExpression));
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m1]
+CROSS JOIN [dbo].[MyClass2] AS [m]",
+                SqlLog);
         }
 
         [TestMethod]
-        public void SelectMany_selector_index()
+        public void SelectMany_selector_with_index_referenced()
         {
             var query
                 = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
-                    .SelectMany((m1, i) => impatient.CreateQuery<MyClass2>(MyClass2QueryExpression));
+                    .OrderBy(m1 => m1.Prop2)
+                    .SelectMany((m1, i) => impatient.CreateQuery<MyClass2>(MyClass2QueryExpression).Select(m2 => new { m2, i }));
 
-            var visitor = new QueryComposingExpressionVisitor(impatient.ExpressionVisitorProvider);
+            query.ToList();
 
-            var expression = visitor.Visit(query.Expression);
+            Assert.AreEqual(
+                @"SELECT [t].[m2.Prop1] AS [m2.Prop1], [t].[m2.Prop2] AS [m2.Prop2], [t].[i] AS [i]
+FROM (
+    SELECT [m1].[Prop1] AS [Prop1], [m1].[Prop2] AS [Prop2], CAST(ROW_NUMBER() OVER(ORDER BY [m1].[Prop2] ASC) - 1 AS int) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [m1]
+) AS [m10]
+CROSS APPLY (
+    SELECT [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2], [m10].[$rownumber] AS [i]
+    FROM [dbo].[MyClass2] AS [m2]
+) AS [t]",
+                SqlLog);
+        }
 
-            Assert.IsInstanceOfType(expression, typeof(MethodCallExpression));
+        [TestMethod]
+        public void SelectMany_selector_with_index_referenced_no_ordering()
+        {
+            var query
+                = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .SelectMany((m1, i) => impatient.CreateQuery<MyClass2>(MyClass2QueryExpression).Select(m2 => new { m2, i }));
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [t].[m2.Prop1] AS [m2.Prop1], [t].[m2.Prop2] AS [m2.Prop2], [t].[i] AS [i]
+FROM (
+    SELECT [m1].[Prop1] AS [Prop1], [m1].[Prop2] AS [Prop2], CAST(ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) - 1 AS int) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [m1]
+) AS [m10]
+CROSS APPLY (
+    SELECT [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2], [m10].[$rownumber] AS [i]
+    FROM [dbo].[MyClass2] AS [m2]
+) AS [t]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void SelectMany_selector_with_index_unreferenced()
+        {
+            var query
+                = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .SelectMany(m1 => impatient.CreateQuery<MyClass2>(MyClass2QueryExpression));
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m1]
+CROSS JOIN [dbo].[MyClass2] AS [m]",
+                SqlLog);
         }
 
         [TestMethod]
@@ -530,11 +666,39 @@ WHERE [a].[Prop1] = N'What the'",
         [TestMethod]
         public void Select_with_index()
         {
-            var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select((m, i) => new { m, i });
+            var query
+                = impatient
+                    .CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .OrderBy(m => m.Prop2)
+                    .Select((m, i) => new { m, i });
 
-            var expression = new QueryComposingExpressionVisitor(impatient.ExpressionVisitorProvider).Visit(query.Expression);
+            var results = query.ToList();
 
-            Assert.IsInstanceOfType(expression, typeof(MethodCallExpression));
+            Assert.AreEqual(0, results.First().i);
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [m.Prop1], [m].[Prop2] AS [m.Prop2], CAST(ROW_NUMBER() OVER(ORDER BY [m].[Prop2] ASC) - 1 AS int) AS [i]
+FROM [dbo].[MyClass1] AS [m]
+ORDER BY [m].[Prop2] ASC",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Select_with_index_no_ordering()
+        {
+            var query
+                = impatient
+                    .CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .Select((m, i) => new { m, i });
+
+            var results = query.ToList();
+
+            Assert.AreEqual(0, results.First().i);
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [m.Prop1], [m].[Prop2] AS [m.Prop2], CAST(ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) - 1 AS int) AS [i]
+FROM [dbo].[MyClass1] AS [m]",
+                SqlLog);
         }
 
         [TestMethod]
@@ -678,7 +842,7 @@ FROM [dbo].[MyClass1] AS [a]",
         {
             var query =
                 from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
-                select new { x = ~ a.Prop2 };
+                select new { x = ~a.Prop2 };
 
             var results = query.ToList();
 
@@ -901,6 +1065,86 @@ WHERE [a].[Prop1] = N'What the'",
         }
 
         [TestMethod]
+        public void Where_PartialClientEval_Multipart()
+        {
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                where (a.Unmapped == 0 && a.Prop1 == "What the") && (a.Prop2 == 9 && a.Unmapped > -1)
+                select a;
+
+            var results = query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [a]
+WHERE ([a].[Prop1] = N'What the') AND ([a].[Prop2] = 9)",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Where_with_index()
+        {
+            var query
+                = impatient
+                    .CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .OrderBy(m => m.Prop2)
+                    .Where((x, i) => i + x.Prop2 < 99);
+
+            var results = query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [x].[Prop1] AS [Prop1], [x].[Prop2] AS [Prop2]
+FROM (
+    SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2], CAST(ROW_NUMBER() OVER(ORDER BY [m].[Prop2] ASC) - 1 AS int) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [m]
+) AS [x]
+WHERE ([x].[$rownumber] + [x].[Prop2]) < 99",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Where_with_index_no_ordering()
+        {
+            var query
+                = impatient
+                    .CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .Where((x, i) => i + x.Prop2 < 99);
+
+            var results = query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [x].[Prop1] AS [Prop1], [x].[Prop2] AS [Prop2]
+FROM (
+    SELECT [x0].[Prop1] AS [Prop1], [x0].[Prop2] AS [Prop2], CAST(ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) - 1 AS int) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [x0]
+) AS [x]
+WHERE ([x].[$rownumber] + [x].[Prop2]) < 99",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Where_after_Select_with_index_causes_pushdown()
+        {
+            var query
+                = impatient
+                    .CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .OrderBy(m => m.Prop2)
+                    .Select((x, i) => new { x, i })
+                    .Where(x => x.i + x.x.Prop2 < 99);
+
+            var results = query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [x].[x.Prop1] AS [x.Prop1], [x].[x.Prop2] AS [x.Prop2], [x].[i] AS [i]
+FROM (
+    SELECT [m].[Prop1] AS [x.Prop1], [m].[Prop2] AS [x.Prop2], CAST(ROW_NUMBER() OVER(ORDER BY [m].[Prop2] ASC) - 1 AS int) AS [i]
+    FROM [dbo].[MyClass1] AS [m]
+) AS [x]
+WHERE ([x].[i] + [x].[x.Prop2]) < 99",
+                SqlLog);
+        }
+
+        [TestMethod]
         public void Count_simple()
         {
             var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Count();
@@ -1085,7 +1329,7 @@ FROM [dbo].[MyClass1] AS [m]",
             Assert.AreEqual(
                 @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
-ORDER BY (SELECT 1)
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
 OFFSET 1 ROWS",
                 SqlLog);
         }
@@ -1130,8 +1374,11 @@ OFFSET 1 ROWS",
             Assert.IsFalse(result);
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN COUNT_BIG(*) = SUM((CASE WHEN [m].[Prop2] = 77 THEN 1 ELSE 0 END)) THEN 1 ELSE 0 END) AS BIT)
-FROM [dbo].[MyClass1] AS [m]",
+                @"SELECT CAST((CASE WHEN NOT EXISTS (
+    SELECT 1
+    FROM [dbo].[MyClass1] AS [m]
+    WHERE [m].[Prop2] <> 77
+) THEN 1 ELSE 0 END) AS BIT)",
                 SqlLog);
         }
 
@@ -1263,6 +1510,81 @@ ORDER BY [m].[Prop1] ASC",
                 @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
 ORDER BY [m].[Prop1] ASC, [m].[Prop2] DESC",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void OrderBy_ThenBy_with_untranslatable_selector()
+        {
+            var query 
+                = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .OrderBy(m => m.Prop1)
+                    .ThenBy(m => m.Unmapped);
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Reverse_with_previous_ordering()
+        {
+            var query
+                = impatient
+                    .CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .OrderBy(m => m.Prop1)
+                    .ThenByDescending(m => m.Prop2)
+                    .Reverse();
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+ORDER BY [m].[Prop1] DESC, [m].[Prop2] ASC",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Reverse_without_previous_ordering()
+        {
+            var query
+                = impatient
+                    .CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .Reverse();
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Reverse_without_ordering_after_Skip_without_ordering()
+        {
+            var query
+                = impatient
+                    .CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .Skip(1)
+                    .Reverse();
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [t].[Prop1] AS [Prop1], [t].[Prop2] AS [Prop2]
+FROM (
+    SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m]
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
+    OFFSET 1 ROWS
+) AS [t]
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
                 SqlLog);
         }
 
@@ -1886,6 +2208,190 @@ FROM [dbo].[MyClass1] AS [m]",
         }
 
         [TestMethod]
+        public void Last_simple_no_predicate()
+        {
+            impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Where(m => m.Prop2 == 77).Last();
+
+            Assert.AreEqual(
+                @"SELECT TOP (1) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+WHERE [m].[Prop2] = 77
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Last_simple_predicate()
+        {
+            impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Last(m => m.Prop2 == 77);
+
+            Assert.AreEqual(
+                @"SELECT TOP (1) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+WHERE [m].[Prop2] = 77
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Last_simple_when_none()
+        {
+            Assert.ThrowsException<InvalidOperationException>(() => impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Where(m => m.Prop2 > 77).Last());
+
+            Assert.AreEqual(
+                @"SELECT TOP (1) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+WHERE [m].[Prop2] > 77
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Last_simple_when_many()
+        {
+            impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Last();
+
+            Assert.AreEqual(
+                @"SELECT TOP (1) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void LastOrDefault_simple_no_predicate()
+        {
+            impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Where(m => m.Prop2 == 77).LastOrDefault();
+
+            Assert.AreEqual(
+                @"SELECT TOP (1) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+WHERE [m].[Prop2] = 77
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void LastOrDefault_simple_predicate()
+        {
+            impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).LastOrDefault(m => m.Prop2 == 77);
+
+            Assert.AreEqual(
+                @"SELECT TOP (1) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+WHERE [m].[Prop2] = 77
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void LastOrDefault_simple_when_none()
+        {
+            impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).LastOrDefault(m => m.Prop2 > 77);
+
+            Assert.AreEqual(
+                @"SELECT TOP (1) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+WHERE [m].[Prop2] > 77
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void LastOrDefault_simple_when_many()
+        {
+            impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).LastOrDefault();
+
+            Assert.AreEqual(
+                @"SELECT TOP (1) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void ElementAt_simple()
+        {
+            impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Where(m => m.Prop2 == 77).ElementAt(0);
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+WHERE [m].[Prop2] = 77
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
+OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void ElementAt_simple_when_none()
+        {
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Where(m => m.Prop2 > 77).ElementAt(0));
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+WHERE [m].[Prop2] > 77
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
+OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void ElementAt_simple_when_many()
+        {
+            impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).ElementAt(0);
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
+OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void ElementAtOrDefault_simple()
+        {
+            impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Where(m => m.Prop2 == 77).ElementAtOrDefault(0);
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+WHERE [m].[Prop2] = 77
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
+OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void ElementAtOrDefault_simple_when_none()
+        {
+            impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Where(m => m.Prop2 > 77).ElementAtOrDefault(0);
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+WHERE [m].[Prop2] > 77
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
+OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void ElementAtOrDefault_simple_when_many()
+        {
+            impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).ElementAtOrDefault(0);
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
+OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
+                SqlLog);
+        }
+
+        [TestMethod]
         public void Nested_collection_1_level_simple()
         {
             var query = from m in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
@@ -2165,7 +2671,7 @@ INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop2] = [m2].[Prop2]",
 FROM (
     SELECT [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m10]
-    ORDER BY (SELECT 1)
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [m1]
 INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop2] = [m2].[Prop2]",
@@ -2257,7 +2763,7 @@ FROM (
             Assert.AreEqual(
                 @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [m]
-ORDER BY (SELECT 1)
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
 OFFSET 2 ROWS FETCH NEXT 1 ROWS ONLY",
                 SqlLog);
         }
@@ -2291,7 +2797,7 @@ FROM (
     SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]
-ORDER BY (SELECT 1)
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
 OFFSET 1 ROWS",
                 SqlLog);
         }
@@ -2308,10 +2814,10 @@ OFFSET 1 ROWS",
 FROM (
     SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
-    ORDER BY (SELECT 1)
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 2 ROWS
 ) AS [t]
-ORDER BY (SELECT 1)
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
 OFFSET 1 ROWS",
                 SqlLog);
         }
@@ -2329,7 +2835,7 @@ FROM (
     SELECT DISTINCT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
 ) AS [t]
-ORDER BY (SELECT 1)
+ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
 OFFSET 1 ROWS",
                 SqlLog);
         }
@@ -2670,7 +3176,7 @@ FROM (
 FROM (
     SELECT [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
-    ORDER BY (SELECT 1)
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [t]",
                 SqlLog);
@@ -2727,9 +3233,9 @@ FROM (
             Assert.AreEqual(
                 @"SELECT AVG(CAST([m].[Prop2] AS float))
 FROM (
-    SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
+    SELECT [m0].[Prop2]
     FROM [dbo].[MyClass1] AS [m0]
-    ORDER BY (SELECT 1)
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [m]",
                 SqlLog);
@@ -2743,7 +3249,7 @@ FROM (
             Assert.AreEqual(
                 @"SELECT AVG(CAST([m].[Prop2] AS float))
 FROM (
-    SELECT TOP (2) [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
+    SELECT TOP (2) [m0].[Prop2]
     FROM [dbo].[MyClass1] AS [m0]
 ) AS [m]",
                 SqlLog);
@@ -2755,12 +3261,12 @@ FROM (
             var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).Average(g => g.Key);
 
             Assert.AreEqual(
-                @"SELECT AVG(CAST([t].[Prop2] AS float))
+                @"SELECT AVG(CAST([g].[Prop2] AS float))
 FROM (
-    SELECT [g].[Prop2]
-    FROM [dbo].[MyClass1] AS [g]
-    GROUP BY [g].[Prop2]
-) AS [t]",
+    SELECT [g0].[Prop2]
+    FROM [dbo].[MyClass1] AS [g0]
+    GROUP BY [g0].[Prop2]
+) AS [g]",
                 SqlLog);
         }
 
@@ -2788,7 +3294,7 @@ FROM (
 FROM (
     SELECT [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
-    ORDER BY (SELECT 1)
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [t]",
                 SqlLog);
@@ -2848,7 +3354,7 @@ WHERE [m0].[Prop2] = 77",
 FROM (
     SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
-    ORDER BY (SELECT 1)
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [m0]
 WHERE [m0].[Prop2] = 77",
@@ -2910,7 +3416,7 @@ FROM (
 FROM (
     SELECT [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
-    ORDER BY (SELECT 1)
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [t]",
                 SqlLog);
@@ -2970,7 +3476,7 @@ WHERE [m0].[Prop2] = 77",
 FROM (
     SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
-    ORDER BY (SELECT 1)
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [m0]
 WHERE [m0].[Prop2] = 77",
@@ -3032,7 +3538,7 @@ FROM (
 FROM (
     SELECT [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
-    ORDER BY (SELECT 1)
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [t]",
                 SqlLog);
@@ -3089,9 +3595,9 @@ FROM (
             Assert.AreEqual(
                 @"SELECT MAX([m].[Prop2])
 FROM (
-    SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
+    SELECT [m0].[Prop2]
     FROM [dbo].[MyClass1] AS [m0]
-    ORDER BY (SELECT 1)
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [m]",
                 SqlLog);
@@ -3105,7 +3611,7 @@ FROM (
             Assert.AreEqual(
                 @"SELECT MAX([m].[Prop2])
 FROM (
-    SELECT TOP (2) [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
+    SELECT TOP (2) [m0].[Prop2]
     FROM [dbo].[MyClass1] AS [m0]
 ) AS [m]",
                 SqlLog);
@@ -3117,12 +3623,12 @@ FROM (
             var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).Max(g => g.Key);
 
             Assert.AreEqual(
-                @"SELECT MAX([t].[Prop2])
+                @"SELECT MAX([g].[Prop2])
 FROM (
-    SELECT [g].[Prop2]
-    FROM [dbo].[MyClass1] AS [g]
-    GROUP BY [g].[Prop2]
-) AS [t]",
+    SELECT [g0].[Prop2]
+    FROM [dbo].[MyClass1] AS [g0]
+    GROUP BY [g0].[Prop2]
+) AS [g]",
                 SqlLog);
         }
 
@@ -3150,7 +3656,7 @@ FROM (
 FROM (
     SELECT [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
-    ORDER BY (SELECT 1)
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [t]",
                 SqlLog);
@@ -3207,9 +3713,9 @@ FROM (
             Assert.AreEqual(
                 @"SELECT MIN([m].[Prop2])
 FROM (
-    SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
+    SELECT [m0].[Prop2]
     FROM [dbo].[MyClass1] AS [m0]
-    ORDER BY (SELECT 1)
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [m]",
                 SqlLog);
@@ -3223,7 +3729,7 @@ FROM (
             Assert.AreEqual(
                 @"SELECT MIN([m].[Prop2])
 FROM (
-    SELECT TOP (2) [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
+    SELECT TOP (2) [m0].[Prop2]
     FROM [dbo].[MyClass1] AS [m0]
 ) AS [m]",
                 SqlLog);
@@ -3235,12 +3741,12 @@ FROM (
             var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).Min(g => g.Key);
 
             Assert.AreEqual(
-                @"SELECT MIN([t].[Prop2])
+                @"SELECT MIN([g].[Prop2])
 FROM (
-    SELECT [g].[Prop2]
-    FROM [dbo].[MyClass1] AS [g]
-    GROUP BY [g].[Prop2]
-) AS [t]",
+    SELECT [g0].[Prop2]
+    FROM [dbo].[MyClass1] AS [g0]
+    GROUP BY [g0].[Prop2]
+) AS [g]",
                 SqlLog);
         }
 
@@ -3268,7 +3774,7 @@ FROM (
 FROM (
     SELECT [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
-    ORDER BY (SELECT 1)
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [t]",
                 SqlLog);
@@ -3325,9 +3831,9 @@ FROM (
             Assert.AreEqual(
                 @"SELECT SUM([m].[Prop2])
 FROM (
-    SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
+    SELECT [m0].[Prop2]
     FROM [dbo].[MyClass1] AS [m0]
-    ORDER BY (SELECT 1)
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [m]",
                 SqlLog);
@@ -3341,7 +3847,7 @@ FROM (
             Assert.AreEqual(
                 @"SELECT SUM([m].[Prop2])
 FROM (
-    SELECT TOP (2) [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
+    SELECT TOP (2) [m0].[Prop2]
     FROM [dbo].[MyClass1] AS [m0]
 ) AS [m]",
                 SqlLog);
@@ -3353,12 +3859,12 @@ FROM (
             var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).Sum(g => g.Key);
 
             Assert.AreEqual(
-                @"SELECT SUM([t].[Prop2])
+                @"SELECT SUM([g].[Prop2])
 FROM (
-    SELECT [g].[Prop2]
-    FROM [dbo].[MyClass1] AS [g]
-    GROUP BY [g].[Prop2]
-) AS [t]",
+    SELECT [g0].[Prop2]
+    FROM [dbo].[MyClass1] AS [g0]
+    GROUP BY [g0].[Prop2]
+) AS [g]",
                 SqlLog);
         }
 
@@ -3387,7 +3893,7 @@ WHERE [m].[Prop2] = 77",
 FROM (
     SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m0]
-    ORDER BY (SELECT 1)
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [m]
 WHERE [m].[Prop2] = 77",
@@ -3454,7 +3960,7 @@ FROM (
 FROM (
     SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
-    ORDER BY (SELECT 1)
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [t]",
                 SqlLog);
@@ -3475,14 +3981,13 @@ FROM (
         }
 
         [TestMethod]
-        public void Distinct_after_OrderBy_causes_client_evaluation()
+        public void Distinct_after_OrderBy_drops_ordering()
         {
             var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).OrderBy(m => m.Prop2 + m.Prop2).Distinct().ToList();
 
             Assert.AreEqual(
-                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
-FROM [dbo].[MyClass1] AS [m]
-ORDER BY [m].[Prop2] + [m].[Prop2] ASC",
+                @"SELECT DISTINCT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]",
                 SqlLog);
         }
 
@@ -3492,12 +3997,12 @@ ORDER BY [m].[Prop2] + [m].[Prop2] ASC",
             var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Distinct().OrderBy(m => m.Prop2).ToList();
 
             Assert.AreEqual(
-                @"SELECT [t].[Prop1] AS [Prop1], [t].[Prop2] AS [Prop2]
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM (
-    SELECT DISTINCT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m]
-) AS [t]
-ORDER BY [t].[Prop2] ASC",
+    SELECT DISTINCT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m0]
+) AS [m]
+ORDER BY [m].[Prop2] ASC",
                 SqlLog);
         }
 
@@ -3507,14 +4012,14 @@ ORDER BY [t].[Prop2] ASC",
             var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Skip(1).OrderBy(m => m.Prop2).ToList();
 
             Assert.AreEqual(
-                @"SELECT [t].[Prop1] AS [Prop1], [t].[Prop2] AS [Prop2]
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM (
-    SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m]
-    ORDER BY (SELECT 1)
+    SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m0]
+    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
-) AS [t]
-ORDER BY [t].[Prop2] ASC",
+) AS [m]
+ORDER BY [m].[Prop2] ASC",
                 SqlLog);
         }
 
@@ -3524,12 +4029,12 @@ ORDER BY [t].[Prop2] ASC",
             var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Take(2).OrderBy(m => m.Prop2).ToList();
 
             Assert.AreEqual(
-                @"SELECT [t].[Prop1] AS [Prop1], [t].[Prop2] AS [Prop2]
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM (
-    SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m]
-) AS [t]
-ORDER BY [t].[Prop2] ASC",
+    SELECT TOP (2) [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m0]
+) AS [m]
+ORDER BY [m].[Prop2] ASC",
                 SqlLog);
         }
 
@@ -3600,6 +4105,9 @@ INNER JOIN [dbo].[MyClass1] AS [m1a] ON [x].[m1b.Prop2] = [m1a].[Prop2]",
                         from z in q.zs
                         select new { q.x, z };
 
+            // Drop is not a LambdaExpression or a quoted LambdaExpression so it needs to be skipped.
+            // Every place that calls UnwrapLambda() is going to need checks for this.
+            //query.Select(x => new { x, y = query.Where(Drop).ToList() }).ToList();
             query.ToList();
 
             Assert.AreEqual(
@@ -3615,6 +4123,193 @@ CROSS APPLY (
     FROM [dbo].[MyClass2] AS [y]
 ) AS [zs]",
                 SqlLog);
+        }
+
+        private static bool Drop<T>(T arg)
+        {
+            return false;
+        }
+
+        [TestMethod]
+        public void Zip_simple()
+        {
+            var m1s = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression);
+            var m2s = impatient.CreateQuery<MyClass2>(MyClass2QueryExpression);
+
+            var query = m1s.Zip(m2s, (m1, m2) => new { m1, m2 });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m1].[Prop1] AS [m1.Prop1], [m1].[Prop2] AS [m1.Prop2], [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2]
+FROM (
+    SELECT [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [m10]
+) AS [m1]
+INNER JOIN (
+    SELECT [m20].[Prop1] AS [Prop1], [m20].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    FROM [dbo].[MyClass2] AS [m20]
+) AS [m2] ON [m1].[$rownumber] = [m2].[$rownumber]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void SequenceEqual_simple()
+        {
+            var m1s = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m1 => new { m1.Prop1, m1.Prop2 });
+            var m2s = impatient.CreateQuery<MyClass2>(MyClass2QueryExpression).Select(m2 => new { m2.Prop1, m2.Prop2 });
+
+            var result = m1s.SequenceEqual(m2s);
+
+            Assert.IsTrue(result);
+
+            Assert.AreEqual(
+                @"SELECT CAST((CASE WHEN NOT EXISTS (
+    SELECT 1
+    FROM (
+        SELECT [m1].[Prop1] AS [Prop1], [m1].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+        FROM [dbo].[MyClass1] AS [m1]
+    ) AS [t]
+    FULL JOIN (
+        SELECT [m2].[Prop1] AS [Prop1], [m2].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+        FROM [dbo].[MyClass2] AS [m2]
+    ) AS [t0] ON [t].[$rownumber] = [t0].[$rownumber]
+    WHERE (([t].[$rownumber] IS NULL) OR ([t0].[$rownumber] IS NULL)) OR (([t].[Prop1] <> [t0].[Prop1]) OR ([t].[Prop2] <> [t0].[Prop2]))
+) THEN 1 ELSE 0 END) AS BIT)",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void SkipWhile_without_index()
+        {
+            var query
+                = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .SkipWhile(m1 => m1.Prop2 < 8);
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m1].[Prop1] AS [Prop1], [m1].[Prop2] AS [Prop2]
+FROM (
+    SELECT [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [m10]
+) AS [m1]
+WHERE [m1].[$rownumber] >= (
+    SELECT COALESCE(MIN([m11].[$rownumber]), 0)
+    FROM (
+        SELECT [m12].[Prop1] AS [Prop1], [m12].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+        FROM [dbo].[MyClass1] AS [m12]
+    ) AS [m11]
+    WHERE [m11].[Prop2] >= 8
+)",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void SkipWhile_with_index()
+        {
+            var query
+                = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .SkipWhile((m1, i) => i <= 1 || m1.Prop2 < 8);
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m1].[Prop1] AS [Prop1], [m1].[Prop2] AS [Prop2]
+FROM (
+    SELECT [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [m10]
+) AS [m1]
+WHERE [m1].[$rownumber] >= (
+    SELECT COALESCE(MIN([m11].[$rownumber]), 0)
+    FROM (
+        SELECT [m12].[Prop1] AS [Prop1], [m12].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+        FROM [dbo].[MyClass1] AS [m12]
+    ) AS [m11]
+    WHERE ([m11].[$rownumber] > 1) AND ([m11].[Prop2] >= 8)
+)",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void TakeWhile_without_index()
+        {
+            var query
+                = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .TakeWhile(m1 => m1.Prop2 > 8);
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m1].[Prop1] AS [Prop1], [m1].[Prop2] AS [Prop2]
+FROM (
+    SELECT [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [m10]
+) AS [m1]
+WHERE [m1].[$rownumber] < (
+    SELECT COALESCE(MIN([m11].[$rownumber]), 2147483647)
+    FROM (
+        SELECT [m12].[Prop1] AS [Prop1], [m12].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+        FROM [dbo].[MyClass1] AS [m12]
+    ) AS [m11]
+    WHERE [m11].[Prop2] <= 8
+)",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void TakeWhile_with_index()
+        {
+            var query
+                = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                    .TakeWhile((m1, i) => i <= 8 || m1.Prop2 > 8);
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m1].[Prop1] AS [Prop1], [m1].[Prop2] AS [Prop2]
+FROM (
+    SELECT [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [m10]
+) AS [m1]
+WHERE [m1].[$rownumber] < (
+    SELECT COALESCE(MIN([m11].[$rownumber]), 2147483647)
+    FROM (
+        SELECT [m12].[Prop1] AS [Prop1], [m12].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+        FROM [dbo].[MyClass1] AS [m12]
+    ) AS [m11]
+    WHERE ([m11].[$rownumber] > 8) AND ([m11].[Prop2] <= 8)
+)",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void TakeWhile_idea()
+        {
+            var leads = new[] { "Bertholdt", "Eren", "Annie", "Christa", "Ymir", "Reiner", "Mikasa", "Jean" };
+
+            var scoutLogs = from i in Enumerable.Range(0, leads.Length)
+                            select new
+                            {
+                                Date = new DateTime(781, 10, 01).AddDays(i),
+                                Lead = leads[i]
+                            };
+
+            var takeWhileOriginal
+                = scoutLogs
+                    .OrderBy(l => l.Date)
+                    .TakeWhile(l => l.Lead != "Reiner");
+
+            var takeWhileTranslated
+                = scoutLogs
+                    .OrderBy(l => l.Date)
+                    .Where((l, i) => i < scoutLogs
+                        .OrderBy(l2 => l2.Date)
+                        .Select((l2, i2) => (l: l2, i: i2))
+                        .Where(t => t.l.Lead == "Reiner")
+                        .Min(t => t.i));
+
+            Assert.IsTrue(takeWhileOriginal.SequenceEqual(takeWhileTranslated));
         }
 
         private class TestImpatientConnectionFactory : IImpatientDbConnectionFactory

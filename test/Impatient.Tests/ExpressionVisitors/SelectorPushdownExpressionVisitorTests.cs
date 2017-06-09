@@ -16,6 +16,22 @@ namespace Impatient.Tests.ExpressionVisitors
         }
 
         [TestMethod]
+        public void Works_with_ElementAt()
+        {
+            AssertTransformation(
+                input: q => q.ElementAt(0).Prop1,
+                output: q => q.Select(x => x.Prop1).ElementAt(0));
+        }
+
+        [TestMethod]
+        public void Works_with_ElementAtOrDefault()
+        {
+            AssertTransformation(
+                input: q => q.ElementAtOrDefault(0).Prop1,
+                output: q => q.Select(x => x.Prop1).ElementAtOrDefault(0));
+        }
+
+        [TestMethod]
         public void Works_with_First()
         {
             AssertTransformation(
