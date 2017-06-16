@@ -248,7 +248,7 @@ CROSS APPLY (
     SELECT [b].[Prop1] AS [Prop1], [b].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass2] AS [b]
     WHERE [a].[Prop1] = [b].[Prop1]
-) AS [b0]",
+) AS [b_0]",
                 SqlLog);
         }
 
@@ -285,8 +285,8 @@ CROSS JOIN [dbo].[MyClass2] AS [m]",
             Assert.AreEqual(
                 @"SELECT [m1].[Prop1] AS [m1.Prop1], [m1].[Prop2] AS [m1.Prop2], [x].[m2.Prop1] AS [m2.Prop1], [x].[m2.Prop2] AS [m2.Prop2], [x].[i] AS [i]
 FROM (
-    SELECT [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2], CAST(ROW_NUMBER() OVER(ORDER BY [m10].[Prop2] ASC) - 1 AS int) AS [$rownumber]
-    FROM [dbo].[MyClass1] AS [m10]
+    SELECT [m1_0].[Prop1] AS [Prop1], [m1_0].[Prop2] AS [Prop2], CAST(ROW_NUMBER() OVER(ORDER BY [m1_0].[Prop2] ASC) - 1 AS int) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [m1_0]
 ) AS [m1]
 CROSS APPLY (
     SELECT [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2], [m1].[$rownumber] AS [i]
@@ -309,8 +309,8 @@ CROSS APPLY (
             Assert.AreEqual(
                 @"SELECT [m1].[Prop1] AS [m1.Prop1], [m1].[Prop2] AS [m1.Prop2], [x].[m2.Prop1] AS [m2.Prop1], [x].[m2.Prop2] AS [m2.Prop2], [x].[i] AS [i]
 FROM (
-    SELECT [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2], CAST(ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) - 1 AS int) AS [$rownumber]
-    FROM [dbo].[MyClass1] AS [m10]
+    SELECT [m1_0].[Prop1] AS [Prop1], [m1_0].[Prop2] AS [Prop2], CAST(ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) - 1 AS int) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [m1_0]
 ) AS [m1]
 CROSS APPLY (
     SELECT [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2], [m1].[$rownumber] AS [i]
@@ -370,9 +370,9 @@ CROSS JOIN [dbo].[MyClass2] AS [m]",
 FROM (
     SELECT [m1].[Prop1] AS [Prop1], [m1].[Prop2] AS [Prop2], CAST(ROW_NUMBER() OVER(ORDER BY [m1].[Prop2] ASC) - 1 AS int) AS [$rownumber]
     FROM [dbo].[MyClass1] AS [m1]
-) AS [m10]
+) AS [m1_0]
 CROSS APPLY (
-    SELECT [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2], [m10].[$rownumber] AS [i]
+    SELECT [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2], [m1_0].[$rownumber] AS [i]
     FROM [dbo].[MyClass2] AS [m2]
 ) AS [t]",
                 SqlLog);
@@ -392,9 +392,9 @@ CROSS APPLY (
 FROM (
     SELECT [m1].[Prop1] AS [Prop1], [m1].[Prop2] AS [Prop2], CAST(ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) - 1 AS int) AS [$rownumber]
     FROM [dbo].[MyClass1] AS [m1]
-) AS [m10]
+) AS [m1_0]
 CROSS APPLY (
-    SELECT [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2], [m10].[$rownumber] AS [i]
+    SELECT [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2], [m1_0].[$rownumber] AS [i]
     FROM [dbo].[MyClass2] AS [m2]
 ) AS [t]",
                 SqlLog);
@@ -516,8 +516,8 @@ INNER JOIN [dbo].[MyClass2] AS [b] ON ([a].[Prop2] + [a].[Prop2]) = ([b].[Prop2]
                 @"SELECT [a].[Prop1] AS [a.Prop1], [a].[Prop2] AS [a.Prop2], [b].[Prop1] AS [b.Prop1], [b].[Prop2] AS [b.Prop2]
 FROM [dbo].[MyClass1] AS [a]
 INNER JOIN (
-    SELECT TOP (1) [b0].[Prop1] AS [Prop1], [b0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass2] AS [b0]
+    SELECT TOP (1) [b_0].[Prop1] AS [Prop1], [b_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass2] AS [b_0]
 ) AS [b] ON [a].[Prop1] = [b].[Prop1]",
                 SqlLog);
         }
@@ -539,8 +539,8 @@ INNER JOIN (
                 @"SELECT [a].[Prop1] AS [a.Prop1], [a].[Prop2] AS [a.Prop2], [b].[Prop1] AS [b.Prop1], [b].[Prop2] AS [b.Prop2]
 FROM [dbo].[MyClass1] AS [a]
 INNER JOIN (
-    SELECT DISTINCT [b0].[Prop1] AS [Prop1], [b0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass2] AS [b0]
+    SELECT DISTINCT [b_0].[Prop1] AS [Prop1], [b_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass2] AS [b_0]
 ) AS [b] ON [a].[Prop1] = [b].[Prop1]",
                 SqlLog);
         }
@@ -584,9 +584,9 @@ WHERE ([a].[Prop2] < 10) OR ([b].[Prop2] > 76)",
                 @"SELECT [x].[Prop1] AS [a1], [b].[Prop1] AS [b1]
 FROM [dbo].[MyClass1] AS [x]
 INNER JOIN (
-    SELECT [x0].[Prop1] AS [Prop1], [x0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass2] AS [x0]
-    WHERE [x0].[Prop2] < 10
+    SELECT [x_0].[Prop1] AS [Prop1], [x_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass2] AS [x_0]
+    WHERE [x_0].[Prop2] < 10
 ) AS [b] ON [x].[Prop1] = [b].[Prop1]
 WHERE [x].[Prop2] < 10",
                 SqlLog);
@@ -610,9 +610,9 @@ WHERE [x].[Prop2] < 10",
                 @"SELECT [a].[Prop1] AS [a1], [b].[l1.l2.l3] AS [b1]
 FROM [dbo].[MyClass1] AS [a]
 INNER JOIN (
-    SELECT [b0].[Prop1] AS [l1.l2.l3]
-    FROM [dbo].[MyClass1] AS [a0]
-    INNER JOIN [dbo].[MyClass2] AS [b0] ON [a0].[Prop1] = [b0].[Prop1]
+    SELECT [b_0].[Prop1] AS [l1.l2.l3]
+    FROM [dbo].[MyClass1] AS [a_0]
+    INNER JOIN [dbo].[MyClass2] AS [b_0] ON [a_0].[Prop1] = [b_0].[Prop1]
 ) AS [b] ON [a].[Prop1] = [b].[l1.l2.l3]",
                 SqlLog);
         }
@@ -1115,8 +1115,8 @@ WHERE ([x].[$rownumber] + [x].[Prop2]) < 99",
             Assert.AreEqual(
                 @"SELECT [x].[Prop1] AS [Prop1], [x].[Prop2] AS [Prop2]
 FROM (
-    SELECT [x0].[Prop1] AS [Prop1], [x0].[Prop2] AS [Prop2], CAST(ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) - 1 AS int) AS [$rownumber]
-    FROM [dbo].[MyClass1] AS [x0]
+    SELECT [x_0].[Prop1] AS [Prop1], [x_0].[Prop2] AS [Prop2], CAST(ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) - 1 AS int) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [x_0]
 ) AS [x]
 WHERE ([x].[$rownumber] + [x].[Prop2]) < 99",
                 SqlLog);
@@ -1621,7 +1621,7 @@ ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
     SELECT COUNT(*)
     FROM [dbo].[MyClass2] AS [m]
 )
-FROM [dbo].[MyClass1] AS [m0]",
+FROM [dbo].[MyClass1] AS [m_0]",
                 SqlLog);
         }
 
@@ -1715,9 +1715,9 @@ GROUP BY [ms].[Prop1]",
 
             Assert.AreEqual(
                 @"SELECT [m].[Prop1] AS [Key], (
-    SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
-    WHERE [m].[Prop1] = [m0].[Prop1]
+    SELECT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
+    WHERE [m].[Prop1] = [m_0].[Prop1]
     FOR JSON PATH
 ) AS [Elements]
 FROM [dbo].[MyClass1] AS [m]
@@ -1737,16 +1737,16 @@ GROUP BY [m].[Prop1]",
 
             Assert.AreEqual(
                 @"SELECT [m].[Prop1] AS [m.Prop1], [m].[Prop2] AS [m.Prop2], [g].[Key] AS [g.Key], (
-    SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
-    WHERE [g].[Key] = [m0].[Prop1]
+    SELECT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
+    WHERE [g].[Key] = [m_0].[Prop1]
     FOR JSON PATH
 ) AS [g.Elements]
 FROM [dbo].[MyClass1] AS [m]
 CROSS JOIN (
-    SELECT [m1].[Prop1] AS [Key]
-    FROM [dbo].[MyClass1] AS [m1]
-    GROUP BY [m1].[Prop1]
+    SELECT [m_1].[Prop1] AS [Key]
+    FROM [dbo].[MyClass1] AS [m_1]
+    GROUP BY [m_1].[Prop1]
 ) AS [g]",
                 SqlLog);
         }
@@ -1788,8 +1788,8 @@ INNER JOIN [dbo].[MyClass2] AS [s2] ON [s1].[Prop1] = [s2].[Prop1]",
                 @"SELECT [s1].[Prop1] AS [s1.Prop1], [s1].[Prop2] AS [s1.Prop2], [s2].[$empty] AS [s2.$empty], [s2].[Prop1] AS [s2.Prop1], [s2].[Prop2] AS [s2.Prop2]
 FROM [dbo].[MyClass1] AS [s1]
 LEFT JOIN (
-    SELECT 0 AS [$empty], [s20].[Prop1] AS [Prop1], [s20].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass2] AS [s20]
+    SELECT 0 AS [$empty], [s2_0].[Prop1] AS [Prop1], [s2_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass2] AS [s2_0]
 ) AS [s2] ON [s1].[Prop1] = [s2].[Prop1]",
                 SqlLog);
         }
@@ -1811,8 +1811,8 @@ LEFT JOIN (
                 @"SELECT [s1].[Prop1] AS [s1.Prop1], [s1].[Prop2] AS [s1.Prop2], [s2].[$empty] AS [s2.$empty], [s2].[Prop1] AS [s2.Prop1], [s2].[Prop2] AS [s2.Prop2]
 FROM [dbo].[MyClass1] AS [s1]
 LEFT JOIN (
-    SELECT 0 AS [$empty], [s20].[Prop1] AS [Prop1], [s20].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass2] AS [s20]
+    SELECT 0 AS [$empty], [s2_0].[Prop1] AS [Prop1], [s2_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass2] AS [s2_0]
 ) AS [s2] ON [s1].[Prop2] = ([s2].[Prop2] + 1)",
                 SqlLog);
         }
@@ -1834,9 +1834,9 @@ LEFT JOIN (
                 @"SELECT [s1].[Prop1] AS [s1.Prop1], [s1].[Prop2] AS [s1.Prop2], [s2].[$empty] AS [s2.$empty], [s2].[Prop1] AS [s2.Prop1], [s2].[Prop2] AS [s2.Prop2]
 FROM [dbo].[MyClass1] AS [s1]
 OUTER APPLY (
-    SELECT TOP (1) 0 AS [$empty], [s20].[Prop1] AS [Prop1], [s20].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass2] AS [s20]
-    WHERE [s1].[Prop1] = [s20].[Prop1]
+    SELECT TOP (1) 0 AS [$empty], [s2_0].[Prop1] AS [Prop1], [s2_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass2] AS [s2_0]
+    WHERE [s1].[Prop1] = [s2_0].[Prop1]
 ) AS [s2]",
                 SqlLog);
         }
@@ -1887,8 +1887,8 @@ FROM (
     SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
     UNION ALL
-    SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass2] AS [m0]
+    SELECT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass2] AS [m_0]
 ) AS [set]",
                 SqlLog);
         }
@@ -1911,9 +1911,9 @@ FROM (
     SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
     EXCEPT
-    SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass2] AS [m0]
-    WHERE [m0].[Prop2] = 77
+    SELECT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass2] AS [m_0]
+    WHERE [m_0].[Prop2] = 77
 ) AS [set]",
                 SqlLog);
         }
@@ -1936,9 +1936,9 @@ FROM (
     SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
     INTERSECT
-    SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass2] AS [m0]
-    WHERE [m0].[Prop2] = 77
+    SELECT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass2] AS [m_0]
+    WHERE [m_0].[Prop2] = 77
 ) AS [set]",
                 SqlLog);
         }
@@ -1961,8 +1961,8 @@ FROM (
     SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
     UNION
-    SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass2] AS [m0]
+    SELECT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass2] AS [m_0]
 ) AS [set]",
                 SqlLog);
         }
@@ -1980,7 +1980,7 @@ FROM (
                 @"SELECT [t].[$empty] AS [$empty], [t].[Prop1] AS [Prop1], [t].[Prop2] AS [Prop2]
 FROM (
     SELECT NULL AS [Empty]
-) AS [t0]
+) AS [t_0]
 LEFT JOIN (
     SELECT 0 AS [$empty], [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
@@ -2002,7 +2002,7 @@ LEFT JOIN (
                 @"SELECT [t].[$empty] AS [$empty], [t].[Prop1] AS [Prop1], [t].[Prop2] AS [Prop2]
 FROM (
     SELECT NULL AS [Empty]
-) AS [t0]
+) AS [t_0]
 LEFT JOIN (
     SELECT 0 AS [$empty], [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
@@ -2480,14 +2480,14 @@ FROM [dbo].[MyClass1] AS [m]",
 
             Assert.AreEqual(
                 @"SELECT [ms].[Prop1] AS [m.Prop1], [ms].[Prop2] AS [m.Prop2], [t].[ms.Key] AS [Key], [t].[max] AS [max], [t].[min] AS [min], [t].[count] AS [count], (
-    SELECT SUM([ms0].[Prop2])
-    FROM [dbo].[MyClass1] AS [ms0]
-    WHERE [t].[ms.Key] = [ms0].[Prop1]
+    SELECT SUM([ms_0].[Prop2])
+    FROM [dbo].[MyClass1] AS [ms_0]
+    WHERE [t].[ms.Key] = [ms_0].[Prop1]
 ) AS [sum]
 FROM (
-    SELECT [ms1].[Prop1] AS [ms.Key], MAX([ms1].[Prop2]) AS [max], MIN(DISTINCT [ms1].[Prop2]) AS [min], COUNT((CASE WHEN [ms1].[Prop2] > 7 THEN 1 ELSE NULL END)) AS [count]
-    FROM [dbo].[MyClass1] AS [ms1]
-    GROUP BY [ms1].[Prop1]
+    SELECT [ms_1].[Prop1] AS [ms.Key], MAX([ms_1].[Prop2]) AS [max], MIN(DISTINCT [ms_1].[Prop2]) AS [min], COUNT((CASE WHEN [ms_1].[Prop2] > 7 THEN 1 ELSE NULL END)) AS [count]
+    FROM [dbo].[MyClass1] AS [ms_1]
+    GROUP BY [ms_1].[Prop1]
 ) AS [t]
 INNER JOIN [dbo].[MyClass1] AS [ms] ON [t].[ms.Key] = [ms].[Prop1]",
                 SqlLog);
@@ -2511,9 +2511,9 @@ INNER JOIN [dbo].[MyClass1] AS [ms] ON [t].[ms.Key] = [ms].[Prop1]",
 
             Assert.AreEqual(
                 @"SELECT [m1].[Prop1] AS [m1.Prop1], [m1].[Prop2] AS [m1.Prop2], [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2], (
-    SELECT SUM([m20].[Prop2])
-    FROM [dbo].[MyClass2] AS [m20]
-    WHERE [m1].[Prop1] = [m20].[Prop1]
+    SELECT SUM([m2_0].[Prop2])
+    FROM [dbo].[MyClass2] AS [m2_0]
+    WHERE [m1].[Prop1] = [m2_0].[Prop1]
 ) AS [sum]
 FROM [dbo].[MyClass1] AS [m1]
 INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop1] = [m2].[Prop1]",
@@ -2545,18 +2545,18 @@ INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop1] = [m2].[Prop1]",
 
             Assert.AreEqual(
                 @"SELECT [m1].[Prop1] AS [sub.m1.Prop1], [m1].[Prop2] AS [sub.m1.Prop2], [m2].[Prop1] AS [sub.m2.Prop1], [m2].[Prop2] AS [sub.m2.Prop2], (
-    SELECT SUM([m20].[Prop2])
-    FROM [dbo].[MyClass2] AS [m20]
-    WHERE [m1].[Prop1] = [m20].[Prop1]
+    SELECT SUM([m2_0].[Prop2])
+    FROM [dbo].[MyClass2] AS [m2_0]
+    WHERE [m1].[Prop1] = [m2_0].[Prop1]
 ) AS [sub.sum], (
-    SELECT [m20].[Prop1] AS [Prop1], [m20].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass2] AS [m20]
-    WHERE [m1].[Prop1] = [m20].[Prop1]
+    SELECT [m2_0].[Prop1] AS [Prop1], [m2_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass2] AS [m2_0]
+    WHERE [m1].[Prop1] = [m2_0].[Prop1]
     FOR JSON PATH
-) AS [sub.m2s], [m21].[Prop1] AS [m2.Prop1], [m21].[Prop2] AS [m2.Prop2]
+) AS [sub.m2s], [m2_1].[Prop1] AS [m2.Prop1], [m2_1].[Prop2] AS [m2.Prop2]
 FROM [dbo].[MyClass1] AS [m1]
 INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop1] = [m2].[Prop1]
-INNER JOIN [dbo].[MyClass2] AS [m21] ON [m1].[Prop1] = [m21].[Prop1]",
+INNER JOIN [dbo].[MyClass2] AS [m2_1] ON [m1].[Prop1] = [m2_1].[Prop1]",
                 SqlLog);
         }
 
@@ -2629,8 +2629,8 @@ WHERE @p0 = [o].[CustomerID]"));
             Assert.AreEqual(
                 @"SELECT [m1].[Prop1] AS [m1.Prop1], [m1].[Prop2] AS [m1.Prop2], [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2]
 FROM (
-    SELECT DISTINCT [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m10]
+    SELECT DISTINCT [m1_0].[Prop1] AS [Prop1], [m1_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m1_0]
 ) AS [m1]
 INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop2] = [m2].[Prop2]",
                 SqlLog);
@@ -2649,8 +2649,8 @@ INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop2] = [m2].[Prop2]",
             Assert.AreEqual(
                 @"SELECT [m1].[Prop1] AS [m1.Prop1], [m1].[Prop2] AS [m1.Prop2], [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2]
 FROM (
-    SELECT TOP (1) [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m10]
+    SELECT TOP (1) [m1_0].[Prop1] AS [Prop1], [m1_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m1_0]
 ) AS [m1]
 INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop2] = [m2].[Prop2]",
                 SqlLog);
@@ -2669,8 +2669,8 @@ INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop2] = [m2].[Prop2]",
             Assert.AreEqual(
                 @"SELECT [m1].[Prop1] AS [m1.Prop1], [m1].[Prop2] AS [m1.Prop2], [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2]
 FROM (
-    SELECT [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m10]
+    SELECT [m1_0].[Prop1] AS [Prop1], [m1_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m1_0]
     ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [m1]
@@ -3219,8 +3219,8 @@ FROM (
             Assert.AreEqual(
                 @"SELECT AVG(CAST([m].[Prop2] AS float))
 FROM (
-    SELECT DISTINCT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT DISTINCT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
 ) AS [m]",
                 SqlLog);
         }
@@ -3233,8 +3233,8 @@ FROM (
             Assert.AreEqual(
                 @"SELECT AVG(CAST([m].[Prop2] AS float))
 FROM (
-    SELECT [m0].[Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT [m_0].[Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
     ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [m]",
@@ -3249,8 +3249,8 @@ FROM (
             Assert.AreEqual(
                 @"SELECT AVG(CAST([m].[Prop2] AS float))
 FROM (
-    SELECT TOP (2) [m0].[Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT TOP (2) [m_0].[Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
 ) AS [m]",
                 SqlLog);
         }
@@ -3263,9 +3263,9 @@ FROM (
             Assert.AreEqual(
                 @"SELECT AVG(CAST([g].[Prop2] AS float))
 FROM (
-    SELECT [g0].[Prop2]
-    FROM [dbo].[MyClass1] AS [g0]
-    GROUP BY [g0].[Prop2]
+    SELECT [g_0].[Prop2]
+    FROM [dbo].[MyClass1] AS [g_0]
+    GROUP BY [g_0].[Prop2]
 ) AS [g]",
                 SqlLog);
         }
@@ -3339,8 +3339,8 @@ FROM (
 FROM (
     SELECT DISTINCT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
-) AS [m0]
-WHERE [m0].[Prop2] = 77",
+) AS [m_0]
+WHERE [m_0].[Prop2] = 77",
                 SqlLog);
         }
 
@@ -3356,8 +3356,8 @@ FROM (
     FROM [dbo].[MyClass1] AS [m]
     ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
-) AS [m0]
-WHERE [m0].[Prop2] = 77",
+) AS [m_0]
+WHERE [m_0].[Prop2] = 77",
                 SqlLog);
         }
 
@@ -3371,8 +3371,8 @@ WHERE [m0].[Prop2] = 77",
 FROM (
     SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
-) AS [m0]
-WHERE [m0].[Prop2] = 77",
+) AS [m_0]
+WHERE [m_0].[Prop2] = 77",
                 SqlLog);
         }
 
@@ -3387,8 +3387,8 @@ FROM (
     SELECT [g].[Prop2] AS [Key]
     FROM [dbo].[MyClass1] AS [g]
     GROUP BY [g].[Prop2]
-) AS [g0]
-WHERE [g0].[Key] = 77",
+) AS [g_0]
+WHERE [g_0].[Key] = 77",
                 SqlLog);
         }
 
@@ -3461,8 +3461,8 @@ FROM (
 FROM (
     SELECT DISTINCT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
-) AS [m0]
-WHERE [m0].[Prop2] = 77",
+) AS [m_0]
+WHERE [m_0].[Prop2] = 77",
                 SqlLog);
         }
 
@@ -3478,8 +3478,8 @@ FROM (
     FROM [dbo].[MyClass1] AS [m]
     ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
-) AS [m0]
-WHERE [m0].[Prop2] = 77",
+) AS [m_0]
+WHERE [m_0].[Prop2] = 77",
                 SqlLog);
         }
 
@@ -3493,8 +3493,8 @@ WHERE [m0].[Prop2] = 77",
 FROM (
     SELECT TOP (2) [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m]
-) AS [m0]
-WHERE [m0].[Prop2] = 77",
+) AS [m_0]
+WHERE [m_0].[Prop2] = 77",
                 SqlLog);
         }
 
@@ -3509,8 +3509,8 @@ FROM (
     SELECT [g].[Prop2] AS [Key]
     FROM [dbo].[MyClass1] AS [g]
     GROUP BY [g].[Prop2]
-) AS [g0]
-WHERE [g0].[Key] = 77",
+) AS [g_0]
+WHERE [g_0].[Key] = 77",
                 SqlLog);
         }
 
@@ -3581,8 +3581,8 @@ FROM (
             Assert.AreEqual(
                 @"SELECT MAX([m].[Prop2])
 FROM (
-    SELECT DISTINCT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT DISTINCT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
 ) AS [m]",
                 SqlLog);
         }
@@ -3595,8 +3595,8 @@ FROM (
             Assert.AreEqual(
                 @"SELECT MAX([m].[Prop2])
 FROM (
-    SELECT [m0].[Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT [m_0].[Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
     ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [m]",
@@ -3611,8 +3611,8 @@ FROM (
             Assert.AreEqual(
                 @"SELECT MAX([m].[Prop2])
 FROM (
-    SELECT TOP (2) [m0].[Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT TOP (2) [m_0].[Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
 ) AS [m]",
                 SqlLog);
         }
@@ -3625,9 +3625,9 @@ FROM (
             Assert.AreEqual(
                 @"SELECT MAX([g].[Prop2])
 FROM (
-    SELECT [g0].[Prop2]
-    FROM [dbo].[MyClass1] AS [g0]
-    GROUP BY [g0].[Prop2]
+    SELECT [g_0].[Prop2]
+    FROM [dbo].[MyClass1] AS [g_0]
+    GROUP BY [g_0].[Prop2]
 ) AS [g]",
                 SqlLog);
         }
@@ -3699,8 +3699,8 @@ FROM (
             Assert.AreEqual(
                 @"SELECT MIN([m].[Prop2])
 FROM (
-    SELECT DISTINCT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT DISTINCT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
 ) AS [m]",
                 SqlLog);
         }
@@ -3713,8 +3713,8 @@ FROM (
             Assert.AreEqual(
                 @"SELECT MIN([m].[Prop2])
 FROM (
-    SELECT [m0].[Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT [m_0].[Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
     ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [m]",
@@ -3729,8 +3729,8 @@ FROM (
             Assert.AreEqual(
                 @"SELECT MIN([m].[Prop2])
 FROM (
-    SELECT TOP (2) [m0].[Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT TOP (2) [m_0].[Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
 ) AS [m]",
                 SqlLog);
         }
@@ -3743,9 +3743,9 @@ FROM (
             Assert.AreEqual(
                 @"SELECT MIN([g].[Prop2])
 FROM (
-    SELECT [g0].[Prop2]
-    FROM [dbo].[MyClass1] AS [g0]
-    GROUP BY [g0].[Prop2]
+    SELECT [g_0].[Prop2]
+    FROM [dbo].[MyClass1] AS [g_0]
+    GROUP BY [g_0].[Prop2]
 ) AS [g]",
                 SqlLog);
         }
@@ -3817,8 +3817,8 @@ FROM (
             Assert.AreEqual(
                 @"SELECT SUM([m].[Prop2])
 FROM (
-    SELECT DISTINCT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT DISTINCT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
 ) AS [m]",
                 SqlLog);
         }
@@ -3831,8 +3831,8 @@ FROM (
             Assert.AreEqual(
                 @"SELECT SUM([m].[Prop2])
 FROM (
-    SELECT [m0].[Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT [m_0].[Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
     ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [m]",
@@ -3847,8 +3847,8 @@ FROM (
             Assert.AreEqual(
                 @"SELECT SUM([m].[Prop2])
 FROM (
-    SELECT TOP (2) [m0].[Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT TOP (2) [m_0].[Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
 ) AS [m]",
                 SqlLog);
         }
@@ -3861,9 +3861,9 @@ FROM (
             Assert.AreEqual(
                 @"SELECT SUM([g].[Prop2])
 FROM (
-    SELECT [g0].[Prop2]
-    FROM [dbo].[MyClass1] AS [g0]
-    GROUP BY [g0].[Prop2]
+    SELECT [g_0].[Prop2]
+    FROM [dbo].[MyClass1] AS [g_0]
+    GROUP BY [g_0].[Prop2]
 ) AS [g]",
                 SqlLog);
         }
@@ -3876,8 +3876,8 @@ FROM (
             Assert.AreEqual(
                 @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM (
-    SELECT DISTINCT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT DISTINCT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
 ) AS [m]
 WHERE [m].[Prop2] = 77",
                 SqlLog);
@@ -3891,8 +3891,8 @@ WHERE [m].[Prop2] = 77",
             Assert.AreEqual(
                 @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM (
-    SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
     ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [m]
@@ -3908,8 +3908,8 @@ WHERE [m].[Prop2] = 77",
             Assert.AreEqual(
                 @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM (
-    SELECT TOP (2) [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT TOP (2) [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
 ) AS [m]
 WHERE [m].[Prop2] = 77",
                 SqlLog);
@@ -3928,9 +3928,9 @@ WHERE [m].[Prop2] = 77",
             Assert.AreEqual(
                 @"SELECT [g].[Key]
 FROM (
-    SELECT [g0].[Prop2] AS [Key]
-    FROM [dbo].[MyClass1] AS [g0]
-    GROUP BY [g0].[Prop2]
+    SELECT [g_0].[Prop2] AS [Key]
+    FROM [dbo].[MyClass1] AS [g_0]
+    GROUP BY [g_0].[Prop2]
 ) AS [g]
 WHERE [g].[Key] = 77",
                 SqlLog);
@@ -3944,8 +3944,8 @@ WHERE [g].[Key] = 77",
             Assert.AreEqual(
                 @"SELECT [m].[Prop2]
 FROM (
-    SELECT DISTINCT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT DISTINCT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
 ) AS [m]",
                 SqlLog);
         }
@@ -3999,8 +3999,8 @@ FROM [dbo].[MyClass1] AS [m]",
             Assert.AreEqual(
                 @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM (
-    SELECT DISTINCT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT DISTINCT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
 ) AS [m]
 ORDER BY [m].[Prop2] ASC",
                 SqlLog);
@@ -4014,8 +4014,8 @@ ORDER BY [m].[Prop2] ASC",
             Assert.AreEqual(
                 @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM (
-    SELECT [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
     ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
     OFFSET 1 ROWS
 ) AS [m]
@@ -4031,8 +4031,8 @@ ORDER BY [m].[Prop2] ASC",
             Assert.AreEqual(
                 @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
 FROM (
-    SELECT TOP (2) [m0].[Prop1] AS [Prop1], [m0].[Prop2] AS [Prop2]
-    FROM [dbo].[MyClass1] AS [m0]
+    SELECT TOP (2) [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass1] AS [m_0]
 ) AS [m]
 ORDER BY [m].[Prop2] ASC",
                 SqlLog);
@@ -4060,8 +4060,8 @@ LEFT JOIN (
     SELECT 0 AS [$empty], [m1b].[Prop1] AS [m1b.Prop1], [m1b].[Prop2] AS [m1b.Prop2], [m2].[$empty] AS [m2.$empty], [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2]
     FROM [dbo].[MyClass1] AS [m1b]
     LEFT JOIN (
-        SELECT 0 AS [$empty], [m20].[Prop1] AS [Prop1], [m20].[Prop2] AS [Prop2]
-        FROM [dbo].[MyClass2] AS [m20]
+        SELECT 0 AS [$empty], [m2_0].[Prop1] AS [Prop1], [m2_0].[Prop2] AS [Prop2]
+        FROM [dbo].[MyClass2] AS [m2_0]
     ) AS [m2] ON [m1b].[Prop2] = [m2].[Prop2]
 ) AS [x] ON [m1a].[Prop2] = [x].[m1b.Prop2]",
                 SqlLog);
@@ -4087,8 +4087,8 @@ FROM (
     SELECT TOP (10) [m1b].[Prop1] AS [m1b.Prop1], [m1b].[Prop2] AS [m1b.Prop2], [m2].[$empty] AS [m2.$empty], [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2]
     FROM [dbo].[MyClass1] AS [m1b]
     LEFT JOIN (
-        SELECT 0 AS [$empty], [m20].[Prop1] AS [Prop1], [m20].[Prop2] AS [Prop2]
-        FROM [dbo].[MyClass2] AS [m20]
+        SELECT 0 AS [$empty], [m2_0].[Prop1] AS [Prop1], [m2_0].[Prop2] AS [Prop2]
+        FROM [dbo].[MyClass2] AS [m2_0]
     ) AS [m2] ON [m1b].[Prop2] = [m2].[Prop2]
 ) AS [x]
 INNER JOIN [dbo].[MyClass1] AS [m1a] ON [x].[m1b.Prop2] = [m1a].[Prop2]",
@@ -4143,12 +4143,12 @@ CROSS APPLY (
             Assert.AreEqual(
                 @"SELECT [m1].[Prop1] AS [m1.Prop1], [m1].[Prop2] AS [m1.Prop2], [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2]
 FROM (
-    SELECT [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
-    FROM [dbo].[MyClass1] AS [m10]
+    SELECT [m1_0].[Prop1] AS [Prop1], [m1_0].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [m1_0]
 ) AS [m1]
 INNER JOIN (
-    SELECT [m20].[Prop1] AS [Prop1], [m20].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
-    FROM [dbo].[MyClass2] AS [m20]
+    SELECT [m2_0].[Prop1] AS [Prop1], [m2_0].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    FROM [dbo].[MyClass2] AS [m2_0]
 ) AS [m2] ON [m1].[$rownumber] = [m2].[$rownumber]",
                 SqlLog);
         }
@@ -4173,8 +4173,8 @@ INNER JOIN (
     FULL JOIN (
         SELECT [m2].[Prop1] AS [Prop1], [m2].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
         FROM [dbo].[MyClass2] AS [m2]
-    ) AS [t0] ON [t].[$rownumber] = [t0].[$rownumber]
-    WHERE (([t].[$rownumber] IS NULL) OR ([t0].[$rownumber] IS NULL)) OR (([t].[Prop1] <> [t0].[Prop1]) OR ([t].[Prop2] <> [t0].[Prop2]))
+    ) AS [t_0] ON [t].[$rownumber] = [t_0].[$rownumber]
+    WHERE (([t].[$rownumber] IS NULL) OR ([t_0].[$rownumber] IS NULL)) OR (([t].[Prop1] <> [t_0].[Prop1]) OR ([t].[Prop2] <> [t_0].[Prop2]))
 ) THEN 1 ELSE 0 END) AS BIT)",
                 SqlLog);
         }
@@ -4191,16 +4191,16 @@ INNER JOIN (
             Assert.AreEqual(
                 @"SELECT [m1].[Prop1] AS [Prop1], [m1].[Prop2] AS [Prop2]
 FROM (
-    SELECT [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
-    FROM [dbo].[MyClass1] AS [m10]
+    SELECT [m1_0].[Prop1] AS [Prop1], [m1_0].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [m1_0]
 ) AS [m1]
 WHERE [m1].[$rownumber] >= (
-    SELECT COALESCE(MIN([m11].[$rownumber]), 0)
+    SELECT COALESCE(MIN([m1_1].[$rownumber]), 0)
     FROM (
-        SELECT [m12].[Prop1] AS [Prop1], [m12].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
-        FROM [dbo].[MyClass1] AS [m12]
-    ) AS [m11]
-    WHERE [m11].[Prop2] >= 8
+        SELECT [m1_2].[Prop1] AS [Prop1], [m1_2].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+        FROM [dbo].[MyClass1] AS [m1_2]
+    ) AS [m1_1]
+    WHERE [m1_1].[Prop2] >= 8
 )",
                 SqlLog);
         }
@@ -4217,16 +4217,16 @@ WHERE [m1].[$rownumber] >= (
             Assert.AreEqual(
                 @"SELECT [m1].[Prop1] AS [Prop1], [m1].[Prop2] AS [Prop2]
 FROM (
-    SELECT [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
-    FROM [dbo].[MyClass1] AS [m10]
+    SELECT [m1_0].[Prop1] AS [Prop1], [m1_0].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [m1_0]
 ) AS [m1]
 WHERE [m1].[$rownumber] >= (
-    SELECT COALESCE(MIN([m11].[$rownumber]), 0)
+    SELECT COALESCE(MIN([m1_1].[$rownumber]), 0)
     FROM (
-        SELECT [m12].[Prop1] AS [Prop1], [m12].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
-        FROM [dbo].[MyClass1] AS [m12]
-    ) AS [m11]
-    WHERE ([m11].[$rownumber] > 1) AND ([m11].[Prop2] >= 8)
+        SELECT [m1_2].[Prop1] AS [Prop1], [m1_2].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+        FROM [dbo].[MyClass1] AS [m1_2]
+    ) AS [m1_1]
+    WHERE ([m1_1].[$rownumber] > 1) AND ([m1_1].[Prop2] >= 8)
 )",
                 SqlLog);
         }
@@ -4243,16 +4243,16 @@ WHERE [m1].[$rownumber] >= (
             Assert.AreEqual(
                 @"SELECT [m1].[Prop1] AS [Prop1], [m1].[Prop2] AS [Prop2]
 FROM (
-    SELECT [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
-    FROM [dbo].[MyClass1] AS [m10]
+    SELECT [m1_0].[Prop1] AS [Prop1], [m1_0].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [m1_0]
 ) AS [m1]
 WHERE [m1].[$rownumber] < (
-    SELECT COALESCE(MIN([m11].[$rownumber]), 2147483647)
+    SELECT COALESCE(MIN([m1_1].[$rownumber]), 2147483647)
     FROM (
-        SELECT [m12].[Prop1] AS [Prop1], [m12].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
-        FROM [dbo].[MyClass1] AS [m12]
-    ) AS [m11]
-    WHERE [m11].[Prop2] <= 8
+        SELECT [m1_2].[Prop1] AS [Prop1], [m1_2].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+        FROM [dbo].[MyClass1] AS [m1_2]
+    ) AS [m1_1]
+    WHERE [m1_1].[Prop2] <= 8
 )",
                 SqlLog);
         }
@@ -4269,47 +4269,18 @@ WHERE [m1].[$rownumber] < (
             Assert.AreEqual(
                 @"SELECT [m1].[Prop1] AS [Prop1], [m1].[Prop2] AS [Prop2]
 FROM (
-    SELECT [m10].[Prop1] AS [Prop1], [m10].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
-    FROM [dbo].[MyClass1] AS [m10]
+    SELECT [m1_0].[Prop1] AS [Prop1], [m1_0].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    FROM [dbo].[MyClass1] AS [m1_0]
 ) AS [m1]
 WHERE [m1].[$rownumber] < (
-    SELECT COALESCE(MIN([m11].[$rownumber]), 2147483647)
+    SELECT COALESCE(MIN([m1_1].[$rownumber]), 2147483647)
     FROM (
-        SELECT [m12].[Prop1] AS [Prop1], [m12].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
-        FROM [dbo].[MyClass1] AS [m12]
-    ) AS [m11]
-    WHERE ([m11].[$rownumber] > 8) AND ([m11].[Prop2] <= 8)
+        SELECT [m1_2].[Prop1] AS [Prop1], [m1_2].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+        FROM [dbo].[MyClass1] AS [m1_2]
+    ) AS [m1_1]
+    WHERE ([m1_1].[$rownumber] > 8) AND ([m1_1].[Prop2] <= 8)
 )",
                 SqlLog);
-        }
-
-        [TestMethod]
-        public void TakeWhile_idea()
-        {
-            var leads = new[] { "Bertholdt", "Eren", "Annie", "Christa", "Ymir", "Reiner", "Mikasa", "Jean" };
-
-            var scoutLogs = from i in Enumerable.Range(0, leads.Length)
-                            select new
-                            {
-                                Date = new DateTime(781, 10, 01).AddDays(i),
-                                Lead = leads[i]
-                            };
-
-            var takeWhileOriginal
-                = scoutLogs
-                    .OrderBy(l => l.Date)
-                    .TakeWhile(l => l.Lead != "Reiner");
-
-            var takeWhileTranslated
-                = scoutLogs
-                    .OrderBy(l => l.Date)
-                    .Where((l, i) => i < scoutLogs
-                        .OrderBy(l2 => l2.Date)
-                        .Select((l2, i2) => (l: l2, i: i2))
-                        .Where(t => t.l.Lead == "Reiner")
-                        .Min(t => t.i));
-
-            Assert.IsTrue(takeWhileOriginal.SequenceEqual(takeWhileTranslated));
         }
 
         private class TestImpatientConnectionFactory : IImpatientDbConnectionFactory

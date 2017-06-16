@@ -497,7 +497,7 @@ namespace Impatient.Query.ExpressionVisitors
                             builder.Append(FormatIdentifier(alias));
                         }
                         else if (selectExpressionSourceStack.Peek() is SubqueryTableExpression
-                            && !(expression is SqlColumnExpression 
+                            && !(expression is SqlColumnExpression
                                 || expression is SqlAliasExpression))
                         {
                             // TODO: Something OTHER THAN this
@@ -1173,8 +1173,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                     do
                     {
-                        // TODO: Insert an underscore for readability
-                        alias = $"{table.Alias}{++i}";
+                        alias = $"{table.Alias}_{++i}";
                     }
                     while (!tableAliases.Add(alias));
                 }

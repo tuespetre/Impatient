@@ -523,12 +523,12 @@ VALUES
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [b].[Id] AS [Item1], [b].[Property_BaseAbstractType1] AS [Item2], [d].[Id] AS [Item3], [d].[Property_DerivedConcreteType1] AS [Item4], [d0].[Id] AS [Item5], [d0].[Property_DerivedAbstractType1] AS [Item6], [d1].[Id] AS [Item7], [d1].[Property_DerivedConcreteType2] AS [Rest.Item1], [d2].[Id] AS [Rest.Item2], [d2].[Property_DerivedConcreteType3] AS [Rest.Item3]
+                @"SELECT [b].[Id] AS [Item1], [b].[Property_BaseAbstractType1] AS [Item2], [d].[Id] AS [Item3], [d].[Property_DerivedConcreteType1] AS [Item4], [d_0].[Id] AS [Item5], [d_0].[Property_DerivedAbstractType1] AS [Item6], [d_1].[Id] AS [Item7], [d_1].[Property_DerivedConcreteType2] AS [Rest.Item1], [d_2].[Id] AS [Rest.Item2], [d_2].[Property_DerivedConcreteType3] AS [Rest.Item3]
 FROM [dbo].[BaseAbstractType1] AS [b]
 LEFT JOIN [dbo].[DerivedConcreteType1] AS [d] ON [b].[Id] = [d].[Id]
-LEFT JOIN [dbo].[DerivedAbstractType1] AS [d0] ON [b].[Id] = [d0].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType2] AS [d1] ON [d0].[Id] = [d1].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType3] AS [d2] ON [d0].[Id] = [d2].[Id]",
+LEFT JOIN [dbo].[DerivedAbstractType1] AS [d_0] ON [b].[Id] = [d_0].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType2] AS [d_1] ON [d_0].[Id] = [d_1].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType3] AS [d_2] ON [d_0].[Id] = [d_2].[Id]",
                 SqlLog);
         }
 
@@ -541,11 +541,11 @@ LEFT JOIN [dbo].[DerivedConcreteType3] AS [d2] ON [d0].[Id] = [d2].[Id]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [b].[Id] AS [Item1], [b].[Property_BaseAbstractType1] AS [Item2], [d].[Id] AS [Item3], [d].[Property_DerivedAbstractType1] AS [Item4], [d0].[Id] AS [Item5], [d0].[Property_DerivedConcreteType2] AS [Item6], [d1].[Id] AS [Item7], [d1].[Property_DerivedConcreteType3] AS [Rest.Item1]
+                @"SELECT [b].[Id] AS [Item1], [b].[Property_BaseAbstractType1] AS [Item2], [d].[Id] AS [Item3], [d].[Property_DerivedAbstractType1] AS [Item4], [d_0].[Id] AS [Item5], [d_0].[Property_DerivedConcreteType2] AS [Item6], [d_1].[Id] AS [Item7], [d_1].[Property_DerivedConcreteType3] AS [Rest.Item1]
 FROM [dbo].[BaseAbstractType1] AS [b]
 LEFT JOIN [dbo].[DerivedAbstractType1] AS [d] ON [b].[Id] = [d].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType2] AS [d0] ON [d].[Id] = [d0].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType3] AS [d1] ON [d].[Id] = [d1].[Id]",
+LEFT JOIN [dbo].[DerivedConcreteType2] AS [d_0] ON [d].[Id] = [d_0].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType3] AS [d_1] ON [d].[Id] = [d_1].[Id]",
                 SqlLog);
         }
 
@@ -557,13 +557,13 @@ LEFT JOIN [dbo].[DerivedConcreteType3] AS [d1] ON [d].[Id] = [d1].[Id]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [b].[Id] AS [Item1], [b].[Property_BaseAbstractType1] AS [Item2], [d].[Id] AS [Item3], [d].[Property_DerivedConcreteType1] AS [Item4], [d0].[Id] AS [Item5], [d0].[Property_DerivedAbstractType1] AS [Item6], [d1].[Id] AS [Item7], [d1].[Property_DerivedConcreteType2] AS [Rest.Item1], [d2].[Id] AS [Rest.Item2], [d2].[Property_DerivedConcreteType3] AS [Rest.Item3]
+                @"SELECT [b].[Id] AS [Item1], [b].[Property_BaseAbstractType1] AS [Item2], [d].[Id] AS [Item3], [d].[Property_DerivedConcreteType1] AS [Item4], [d_0].[Id] AS [Item5], [d_0].[Property_DerivedAbstractType1] AS [Item6], [d_1].[Id] AS [Item7], [d_1].[Property_DerivedConcreteType2] AS [Rest.Item1], [d_2].[Id] AS [Rest.Item2], [d_2].[Property_DerivedConcreteType3] AS [Rest.Item3]
 FROM [dbo].[BaseAbstractType1] AS [b]
 LEFT JOIN [dbo].[DerivedConcreteType1] AS [d] ON [b].[Id] = [d].[Id]
-LEFT JOIN [dbo].[DerivedAbstractType1] AS [d0] ON [b].[Id] = [d0].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType2] AS [d1] ON [d0].[Id] = [d1].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType3] AS [d2] ON [d0].[Id] = [d2].[Id]
-WHERE ([d1].[Id] IS NOT NULL) OR ([d2].[Id] IS NOT NULL)",
+LEFT JOIN [dbo].[DerivedAbstractType1] AS [d_0] ON [b].[Id] = [d_0].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType2] AS [d_1] ON [d_0].[Id] = [d_1].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType3] AS [d_2] ON [d_0].[Id] = [d_2].[Id]
+WHERE ([d_1].[Id] IS NOT NULL) OR ([d_2].[Id] IS NOT NULL)",
                 SqlLog);
         }
 
@@ -580,11 +580,11 @@ WHERE ([d1].[Id] IS NOT NULL) OR ([d2].[Id] IS NOT NULL)",
             Assert.AreEqual(
                 @"SELECT CAST((CASE WHEN [d].[Id] IS NOT NULL THEN 1 ELSE 0 END) AS BIT)
 FROM [dbo].[BaseAbstractType1] AS [b]
-LEFT JOIN [dbo].[DerivedConcreteType1] AS [d0] ON [b].[Id] = [d0].[Id]
-LEFT JOIN [dbo].[DerivedAbstractType1] AS [d1] ON [b].[Id] = [d1].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType2] AS [d2] ON [d1].[Id] = [d2].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType3] AS [d] ON [d1].[Id] = [d].[Id]
-WHERE ([d2].[Id] IS NOT NULL) OR ([d].[Id] IS NOT NULL)",
+LEFT JOIN [dbo].[DerivedConcreteType1] AS [d_0] ON [b].[Id] = [d_0].[Id]
+LEFT JOIN [dbo].[DerivedAbstractType1] AS [d_1] ON [b].[Id] = [d_1].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType2] AS [d_2] ON [d_1].[Id] = [d_2].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType3] AS [d] ON [d_1].[Id] = [d].[Id]
+WHERE ([d_2].[Id] IS NOT NULL) OR ([d].[Id] IS NOT NULL)",
                 SqlLog);
         }
 
@@ -606,11 +606,11 @@ WHERE ([d2].[Id] IS NOT NULL) OR ([d].[Id] IS NOT NULL)",
             Assert.AreEqual(
                 @"SELECT CAST((CASE WHEN [d].[Id] IS NOT NULL THEN 1 ELSE 0 END) AS BIT)
 FROM [dbo].[BaseAbstractType1] AS [b]
-LEFT JOIN [dbo].[DerivedConcreteType1] AS [d0] ON [b].[Id] = [d0].[Id]
-LEFT JOIN [dbo].[DerivedAbstractType1] AS [d1] ON [b].[Id] = [d1].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType2] AS [d2] ON [d1].[Id] = [d2].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType3] AS [d] ON [d1].[Id] = [d].[Id]
-WHERE ([d2].[Id] IS NOT NULL) OR ([d].[Id] IS NOT NULL)",
+LEFT JOIN [dbo].[DerivedConcreteType1] AS [d_0] ON [b].[Id] = [d_0].[Id]
+LEFT JOIN [dbo].[DerivedAbstractType1] AS [d_1] ON [b].[Id] = [d_1].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType2] AS [d_2] ON [d_1].[Id] = [d_2].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType3] AS [d] ON [d_1].[Id] = [d].[Id]
+WHERE ([d_2].[Id] IS NOT NULL) OR ([d].[Id] IS NOT NULL)",
                 SqlLog);
         }
 
@@ -634,13 +634,13 @@ WHERE ([d2].[Id] IS NOT NULL) OR ([d].[Id] IS NOT NULL)",
             Assert.IsNotNull(results[5]);
 
             Assert.AreEqual(
-                @"SELECT [b].[Id] AS [Item1], [b].[Property_BaseAbstractType1] AS [Item2], [d].[Id] AS [Item3], [d].[Property_DerivedConcreteType1] AS [Item4], [d0].[Id] AS [Item5], [d0].[Property_DerivedAbstractType1] AS [Item6], [d1].[Id] AS [Item7], [d1].[Property_DerivedConcreteType2] AS [Rest.Item1], [d2].[Id] AS [Rest.Item2], [d2].[Property_DerivedConcreteType3] AS [Rest.Item3]
+                @"SELECT [b].[Id] AS [Item1], [b].[Property_BaseAbstractType1] AS [Item2], [d].[Id] AS [Item3], [d].[Property_DerivedConcreteType1] AS [Item4], [d_0].[Id] AS [Item5], [d_0].[Property_DerivedAbstractType1] AS [Item6], [d_1].[Id] AS [Item7], [d_1].[Property_DerivedConcreteType2] AS [Rest.Item1], [d_2].[Id] AS [Rest.Item2], [d_2].[Property_DerivedConcreteType3] AS [Rest.Item3]
 FROM [dbo].[BaseAbstractType1] AS [b]
 LEFT JOIN [dbo].[DerivedConcreteType1] AS [d] ON [b].[Id] = [d].[Id]
-LEFT JOIN [dbo].[DerivedAbstractType1] AS [d0] ON [b].[Id] = [d0].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType2] AS [d1] ON [d0].[Id] = [d1].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType3] AS [d2] ON [d0].[Id] = [d2].[Id]
-WHERE ([d1].[Id] IS NOT NULL) OR ([d2].[Id] IS NOT NULL)",
+LEFT JOIN [dbo].[DerivedAbstractType1] AS [d_0] ON [b].[Id] = [d_0].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType2] AS [d_1] ON [d_0].[Id] = [d_1].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType3] AS [d_2] ON [d_0].[Id] = [d_2].[Id]
+WHERE ([d_1].[Id] IS NOT NULL) OR ([d_2].[Id] IS NOT NULL)",
                 SqlLog);
         }
 
@@ -657,9 +657,9 @@ WHERE ([d1].[Id] IS NOT NULL) OR ([d2].[Id] IS NOT NULL)",
                 @"SELECT [b].[Property_BaseAbstractType1]
 FROM [dbo].[BaseAbstractType1] AS [b]
 LEFT JOIN [dbo].[DerivedConcreteType1] AS [d] ON [b].[Id] = [d].[Id]
-LEFT JOIN [dbo].[DerivedAbstractType1] AS [d0] ON [b].[Id] = [d0].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType2] AS [d1] ON [d0].[Id] = [d1].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType3] AS [d2] ON [d0].[Id] = [d2].[Id]",
+LEFT JOIN [dbo].[DerivedAbstractType1] AS [d_0] ON [b].[Id] = [d_0].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType2] AS [d_1] ON [d_0].[Id] = [d_1].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType3] AS [d_2] ON [d_0].[Id] = [d_2].[Id]",
                 SqlLog);
         }
 
@@ -678,9 +678,9 @@ LEFT JOIN [dbo].[DerivedConcreteType3] AS [d2] ON [d0].[Id] = [d2].[Id]",
                 @"SELECT [b].[Property_BaseAbstractType1]
 FROM [dbo].[BaseAbstractType1] AS [b]
 LEFT JOIN [dbo].[DerivedConcreteType1] AS [d] ON [b].[Id] = [d].[Id]
-LEFT JOIN [dbo].[DerivedAbstractType1] AS [d0] ON [b].[Id] = [d0].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType2] AS [d1] ON [d0].[Id] = [d1].[Id]
-LEFT JOIN [dbo].[DerivedConcreteType3] AS [d2] ON [d0].[Id] = [d2].[Id]
+LEFT JOIN [dbo].[DerivedAbstractType1] AS [d_0] ON [b].[Id] = [d_0].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType2] AS [d_1] ON [d_0].[Id] = [d_1].[Id]
+LEFT JOIN [dbo].[DerivedConcreteType3] AS [d_2] ON [d_0].[Id] = [d_2].[Id]
 WHERE [d].[Id] IS NOT NULL",
                 SqlLog);
         }
@@ -698,12 +698,12 @@ WHERE [d].[Id] IS NOT NULL",
             Assert.AreEqual(
                 @"SELECT [b].[Item1] AS [Item1], [b].[Item2] AS [Item2], [b].[Item3] AS [Item3], [b].[Item4] AS [Item4], [b].[Item5] AS [Item5], [b].[Item6] AS [Item6], [b].[Item7] AS [Item7], [b].[Rest.Item1] AS [Rest.Item1], [b].[Rest.Item2] AS [Rest.Item2], [b].[Rest.Item3] AS [Rest.Item3]
 FROM (
-    SELECT TOP (10) [b0].[Id] AS [Item1], [b0].[Property_BaseAbstractType1] AS [Item2], [d].[Id] AS [Item3], [d].[Property_DerivedConcreteType1] AS [Item4], [d0].[Id] AS [Item5], [d0].[Property_DerivedAbstractType1] AS [Item6], [d1].[Id] AS [Item7], [d1].[Property_DerivedConcreteType2] AS [Rest.Item1], [d2].[Id] AS [Rest.Item2], [d2].[Property_DerivedConcreteType3] AS [Rest.Item3]
-    FROM [dbo].[BaseAbstractType1] AS [b0]
-    LEFT JOIN [dbo].[DerivedConcreteType1] AS [d] ON [b0].[Id] = [d].[Id]
-    LEFT JOIN [dbo].[DerivedAbstractType1] AS [d0] ON [b0].[Id] = [d0].[Id]
-    LEFT JOIN [dbo].[DerivedConcreteType2] AS [d1] ON [d0].[Id] = [d1].[Id]
-    LEFT JOIN [dbo].[DerivedConcreteType3] AS [d2] ON [d0].[Id] = [d2].[Id]
+    SELECT TOP (10) [b_0].[Id] AS [Item1], [b_0].[Property_BaseAbstractType1] AS [Item2], [d].[Id] AS [Item3], [d].[Property_DerivedConcreteType1] AS [Item4], [d_0].[Id] AS [Item5], [d_0].[Property_DerivedAbstractType1] AS [Item6], [d_1].[Id] AS [Item7], [d_1].[Property_DerivedConcreteType2] AS [Rest.Item1], [d_2].[Id] AS [Rest.Item2], [d_2].[Property_DerivedConcreteType3] AS [Rest.Item3]
+    FROM [dbo].[BaseAbstractType1] AS [b_0]
+    LEFT JOIN [dbo].[DerivedConcreteType1] AS [d] ON [b_0].[Id] = [d].[Id]
+    LEFT JOIN [dbo].[DerivedAbstractType1] AS [d_0] ON [b_0].[Id] = [d_0].[Id]
+    LEFT JOIN [dbo].[DerivedConcreteType2] AS [d_1] ON [d_0].[Id] = [d_1].[Id]
+    LEFT JOIN [dbo].[DerivedConcreteType3] AS [d_2] ON [d_0].[Id] = [d_2].[Id]
 ) AS [b]
 WHERE [b].[Item2] IS NOT NULL",
                 SqlLog);
