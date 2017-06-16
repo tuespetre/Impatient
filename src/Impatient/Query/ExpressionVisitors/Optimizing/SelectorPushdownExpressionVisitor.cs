@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -28,6 +27,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                     {
                         if (methodCallExpression.Arguments.Count != 1)
                         {
+                            // TODO: also optimize predicate overloads
                             break;
                         }
 
