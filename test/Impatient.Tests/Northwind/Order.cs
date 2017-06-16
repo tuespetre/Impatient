@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Impatient.Tests.Northwind
@@ -33,5 +34,9 @@ namespace Impatient.Tests.Northwind
         public string ShipPostalCode { get; set; }
 
         public string ShipCountry { get; set; }
+
+        public Customer Customer { get; set; }
+
+        public IEnumerable<OrderDetail> OrderDetails { get; set; }
     }
 }

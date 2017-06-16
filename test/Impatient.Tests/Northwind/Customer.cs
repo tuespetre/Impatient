@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Impatient.Tests.Northwind
@@ -29,5 +30,7 @@ namespace Impatient.Tests.Northwind
         public string Phone { get; set; }
 
         public string Fax { get; set; }
+
+        public IEnumerable<Order> Orders { get; set; }
     }
 }

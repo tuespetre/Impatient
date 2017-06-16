@@ -9,8 +9,42 @@ using System.Reflection;
 
 namespace Impatient
 {
-    internal static class ImpatientExtensions
+    public static class ImpatientExtensions
     {
+        #region Naive implementations of Enumerable operators from .NET Core 2.0
+
+        public static IEnumerable<TSource> Append<TSource>(this IEnumerable<TSource> source, TSource element)
+        {
+            foreach (var item in source)
+            {
+                yield return item;
+            }
+
+            yield return element;
+        }
+
+        public static IEnumerable<TSource> Prepend<TSource>(this IEnumerable<TSource> source, TSource element)
+        {
+            yield return element;
+
+            foreach (var item in source)
+            {
+                yield return item;
+            }
+        }
+
+        public static IEnumerable<TSource> SkipLast<TSource>(this IEnumerable<TSource> source, int count)
+        {
+            return source.Reverse().Skip(count).Reverse();
+        }
+
+        public static IEnumerable<TSource> TakeLast<TSource>(this IEnumerable<TSource> source, int count)
+        {
+            return source.Reverse().Take(count).Reverse();
+        }
+
+        #endregion
+
         public static bool IsBoolean(this Type type)
         {
             return type == typeof(bool) || type == typeof(bool?);
@@ -34,6 +68,11 @@ namespace Impatient
         public static MethodInfo GetGenericMethodDefinition<TArg, TResult>(Expression<Func<TArg, TResult>> expression)
         {
             return GetMethodDefinition(expression).GetGenericMethodDefinition();
+        }
+
+        public static bool IsSequenceType(this Type type)
+        {
+            return type.FindGenericType(typeof(IEnumerable<>)) != null;
         }
 
         public static Type GetSequenceType(this Type type)

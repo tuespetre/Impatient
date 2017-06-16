@@ -28,5 +28,22 @@ namespace Impatient.Query
 
         public TranslatabilityAnalyzingExpressionVisitor TranslatabilityAnalyzingExpressionVisitor
             => translatabilityAnalyzingExpressionVisitor;
+
+        private List<NavigationDescriptor> navigationDescriptors = new List<NavigationDescriptor>();
+
+        public DefaultImpatientExpressionVisitorProvider WithNavigations(IEnumerable<NavigationDescriptor> navigationDescriptors)
+        {
+            this.navigationDescriptors.AddRange(navigationDescriptors);
+
+            return this;
+        }
+
+        public IEnumerable<ExpressionVisitor> MidOptimizationExpressionVisitors
+        {
+            get
+            {
+                yield return new NavigationRewritingExpressionVisitor(navigationDescriptors);
+            }
+        }
     }
 }

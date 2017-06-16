@@ -23,10 +23,10 @@ namespace Impatient.Query.ExpressionVisitors
         {
             get
             {
-                yield return this;
-
                 yield return new GroupingAggregationRewritingExpressionVisitor(
                     expressionVisitorProvider.TranslatabilityAnalyzingExpressionVisitor);
+
+                yield return this;
 
                 foreach (var rewritingVisitor in expressionVisitorProvider.RewritingExpressionVisitors)
                 {
@@ -1701,6 +1701,8 @@ namespace Impatient.Query.ExpressionVisitors
                             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
                             var innerProjection = innerSelectExpression.Projection.Flatten().Body;
 
+                            // TODO: Check to make sure the projections have the same 'shape'
+
                             if (!IsTranslatable(outerProjection) || !IsTranslatable(innerProjection))
                             {
                                 goto ReturnEnumerableCall;
@@ -2252,6 +2254,31 @@ namespace Impatient.Query.ExpressionVisitors
                             .AddToPredicate(Expression.Equal(
                                 groupedRelationalQueryExpression.OuterKeySelector,
                                 groupedRelationalQueryExpression.InnerKeySelector)));
+                }
+
+                case GroupByResultExpression groupByResultExpression:
+                {
+                    var selectExpression = groupByResultExpression.SelectExpression;
+                    var uniquifier = new TableUniquifyingExpressionVisitor();
+                    var oldTables = selectExpression.Table.Flatten();
+
+                    selectExpression = uniquifier.VisitAndConvert(selectExpression, nameof(Visit));
+
+                    var newTables = selectExpression.Table.Flatten();
+
+                    var replacingVisitor
+                        = new ExpressionReplacingExpressionVisitor(
+                            oldTables.Zip(newTables, ValueTuple.Create<Expression, Expression>)
+                                .ToDictionary(t => t.Item1, t => t.Item2));
+
+                    var outerKeySelector = groupByResultExpression.OuterKeySelector;
+                    var innerKeySelector = replacingVisitor.Visit(groupByResultExpression.InnerKeySelector);
+                    var elementSelector = replacingVisitor.Visit(groupByResultExpression.ElementSelector);
+
+                    return new EnumerableRelationalQueryExpression(
+                        selectExpression
+                            .UpdateProjection(new ServerProjectionExpression(elementSelector))
+                            .AddToPredicate(Expression.Equal(outerKeySelector, innerKeySelector)));
                 }
 
                 default:

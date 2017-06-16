@@ -93,7 +93,14 @@ namespace Impatient
                 {
                     expression = new QueryableExpandingExpressionVisitor(parameterMapping).Visit(expression);
 
-                    expression = ExpressionVisitorProvider.OptimizingExpressionVisitors.Aggregate(expression, (e, v) => v.Visit(e));
+                    var visitors = new[]
+                    {
+                        ExpressionVisitorProvider.OptimizingExpressionVisitors,
+                        ExpressionVisitorProvider.MidOptimizationExpressionVisitors,
+                        ExpressionVisitorProvider.OptimizingExpressionVisitors,
+                    };
+
+                    expression = visitors.SelectMany(vs => vs).Aggregate(expression, (e, v) => v.Visit(e));
 
                     expression = new QueryActivatingExpressionVisitor(this).Visit(expression);
 

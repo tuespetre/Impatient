@@ -28,7 +28,7 @@ namespace Impatient.Tests
 
         public Expression MyClass2QueryExpression { get; }
 
-        public static Expression CreateQueryExpression(Type type)
+        private static Expression CreateQueryExpression(Type type)
         {
             var annotation = type.GetTypeInfo().GetCustomAttribute<TableAttribute>();
 
@@ -44,6 +44,7 @@ namespace Impatient.Tests
                         Expression.MemberInit(
                             Expression.New(type),
                             from property in type.GetTypeInfo().DeclaredProperties
+                            where property.PropertyType.IsScalarType()
                             let nullable =
                                 (property.PropertyType.IsConstructedGenericType
                                     && property.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
