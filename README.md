@@ -2,8 +2,6 @@
 
 > Ain't nobody got time for data
 
---------------------------------------------------------------------------------
-
 ## Summary
 
 The (current) objective of this project is to provide a reusable, composable, and 
@@ -15,8 +13,8 @@ modelling API, a change tracker, migrations, or other similar ORM features.
 
 ### Principles
 
--  Be as 'close to the metal' as possible: use `Expression`s and 
-   `ExpressionVisitor`s rather than using or concocting a separate
+-  Be as 'close to the metal' and 'out of the box' as possible: use 
+  `Expression`s and `ExpressionVisitor`s rather than a bespoke
    AST model
 
 -  Be immutable: all `Expression`s must be immutable and `ExpressionVisitor`s
@@ -96,15 +94,6 @@ modelling API, a change tracker, migrations, or other similar ORM features.
 - Currently unsupported `Queryable` operators:
 
   - `Aggregate`
-  - `ElementAt`
-  - `ElementAtOrDefault`
-  - `Last`
-  - `LastOrDefault`
-  - `SequenceEqual`
-  - `SkipWhile`
-  - `TakeWhile`
-  - `Zip`
-  - Operators with index parameter overloads
   - Operators with `IComparer` and `IEqualityComparer` overloads
 
   It is unclear how exactly `Aggregate` could be translated considering
@@ -112,11 +101,7 @@ modelling API, a change tracker, migrations, or other similar ORM features.
   function that can be expressed as a function expression with an optional
   seed value.) The operators with `IComparer` and `IEqualityComparer` overloads
   are also interesting as it is unclear how they were ever intended to be
-  translatable to a remote data source of any kind -- perhaps by referencing
-  a static singleton marker implementation that translates to a directive
-  of some kind? The rest of the operators listed all have possible translations
-  to SQL that, while not difficult to conceive of, do not appear to have a good
-  return on investment.
+  translatable to a remote data source of any kind.
   
 ### Examples and explanations
 
