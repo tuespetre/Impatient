@@ -1,13 +1,10 @@
 ﻿using Impatient.Query.Expressions;
-using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors
 {
     public class SubqueryAliasDecoratingExpressionVisitor : ExpressionVisitor
     {
-        private readonly Stack<string> currentPath = new Stack<string>();
-
         public override Expression Visit(Expression node)
         {
             switch (node)
