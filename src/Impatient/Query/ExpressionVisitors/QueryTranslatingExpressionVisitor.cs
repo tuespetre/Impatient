@@ -8,6 +8,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using static System.Linq.Enumerable;
 
 namespace Impatient.Query.ExpressionVisitors
 {
@@ -495,14 +496,6 @@ namespace Impatient.Query.ExpressionVisitors
                         {
                             builder.Append(" AS ");
                             builder.Append(FormatIdentifier(alias));
-                        }
-                        else if (selectExpressionSourceStack.Peek() is SubqueryTableExpression
-                            && !(expression is SqlColumnExpression
-                                || expression is SqlAliasExpression))
-                        {
-                            // TODO: Something OTHER THAN this
-                            //builder.Append(" AS ");
-                            //builder.Append(FormatIdentifier("$c"));
                         }
                     }
 
@@ -1332,11 +1325,18 @@ namespace Impatient.Query.ExpressionVisitors
                                 .ToDictionary(p => p.Item1, p => p.Item2);
                     }
 
-                    CurrentPath.Push($"${topLevelIndex}");
+                    var previousExpressions = GatheredExpressions;
+
+                    GatheredExpressions = new Dictionary<string, Expression>();
 
                     var result = Visit(node);
 
-                    CurrentPath.Pop();
+                    GatheredExpressions
+                        = GatheredExpressions
+                            .Select(p => ($"${topLevelIndex}." + p.Key, p.Value))
+                            .ToDictionary(p => p.Item1, p => p.Item2)
+                            .Concat(previousExpressions)
+                            .ToDictionary(p => p.Key, p => p.Value);                    
 
                     topLevelIndex++;
 
@@ -1347,8 +1347,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                 return Visit(node);
             }
-
-            private string ComputeCurrentName() => string.Join(".", GetNameParts());
 
             public override Expression Visit(Expression node)
             {
@@ -1363,9 +1361,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                     case DefaultIfEmptyExpression defaultIfEmptyExpression:
                     {
-                        CurrentPath.Push("$empty");
-                        var name = ComputeCurrentName();
-                        CurrentPath.Pop();
+                        var name = string.Join(".", GetNameParts().Concat(Repeat("$empty", 1)));
 
                         GatheredExpressions[name] = defaultIfEmptyExpression.Flag;
 
@@ -1407,7 +1403,7 @@ namespace Impatient.Query.ExpressionVisitors
                         .TranslatabilityAnalyzingExpressionVisitor
                         .Visit(expression) is TranslatableExpression:
                     {
-                        GatheredExpressions[ComputeCurrentName()] = expression;
+                        GatheredExpressions[string.Join(".", GetNameParts())] = expression;
 
                         if (!expression.Type.IsScalarType())
                         {

@@ -2,20 +2,23 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Impatient.Query.ExpressionVisitors
 {
     public abstract class ProjectionExpressionVisitor : ExpressionVisitor
     {
-        protected Stack<string> CurrentPath { get; } = new Stack<string>();
+        private Stack<MemberInfo> memberStack = new Stack<MemberInfo>();
 
         protected bool InLeaf { get; private set; }
+
+        protected IEnumerable<MemberInfo> CurrentPath => memberStack.Reverse();
 
         protected virtual Expression VisitLeaf(Expression node) => base.Visit(node);
 
         protected virtual IEnumerable<string> GetNameParts()
         {
-            return CurrentPath.Reverse().Where(n => n != null && !n.StartsWith("<>"));
+            return CurrentPath.Select(m => m.GetPathSegmentName()).Where(n => n != null && !n.StartsWith("<>"));
         }
 
         public override Expression Visit(Expression node)
@@ -29,11 +32,11 @@ namespace Impatient.Query.ExpressionVisitors
 
                     for (var i = 0; i < newExpression.Arguments.Count; i++)
                     {
-                        CurrentPath.Push(newExpression.Members[i].GetPathSegmentName());
+                        memberStack.Push(newExpression.Members[i]);
 
                         arguments[i] = Visit(newExpression.Arguments[i]);
 
-                        CurrentPath.Pop();
+                        memberStack.Pop();
                     }
 
                     return newExpression.Update(arguments);
@@ -45,11 +48,11 @@ namespace Impatient.Query.ExpressionVisitors
 
                     for (var i = 0; i < memberInitExpression.Bindings.Count; i++)
                     {
-                        CurrentPath.Push(memberInitExpression.Bindings[i].Member.GetPathSegmentName());
+                        memberStack.Push(memberInitExpression.Bindings[i].Member);
 
                         bindings[i] = VisitMemberBinding(memberInitExpression.Bindings[i]);
 
-                        CurrentPath.Pop();
+                        memberStack.Pop();
                     }
 
                     return memberInitExpression.Update(memberInitExpression.NewExpression, bindings);
