@@ -4226,7 +4226,7 @@ WHERE [m1].[$rownumber] >= (
         SELECT [m1_2].[Prop1] AS [Prop1], [m1_2].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
         FROM [dbo].[MyClass1] AS [m1_2]
     ) AS [m1_1]
-    WHERE ([m1_1].[$rownumber] > 1) AND ([m1_1].[Prop2] >= 8)
+    WHERE (([m1_1].[$rownumber] - 1) > 1) AND ([m1_1].[Prop2] >= 8)
 )",
                 SqlLog);
         }
@@ -4247,7 +4247,7 @@ FROM (
     FROM [dbo].[MyClass1] AS [m1_0]
 ) AS [m1]
 WHERE [m1].[$rownumber] < (
-    SELECT COALESCE(MIN([m1_1].[$rownumber]), 2147483647)
+    SELECT COALESCE(MIN([m1_1].[$rownumber]), [m1].[$rownumber] + 1)
     FROM (
         SELECT [m1_2].[Prop1] AS [Prop1], [m1_2].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
         FROM [dbo].[MyClass1] AS [m1_2]
@@ -4273,12 +4273,12 @@ FROM (
     FROM [dbo].[MyClass1] AS [m1_0]
 ) AS [m1]
 WHERE [m1].[$rownumber] < (
-    SELECT COALESCE(MIN([m1_1].[$rownumber]), 2147483647)
+    SELECT COALESCE(MIN([m1_1].[$rownumber]), [m1].[$rownumber] + 1)
     FROM (
         SELECT [m1_2].[Prop1] AS [Prop1], [m1_2].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
         FROM [dbo].[MyClass1] AS [m1_2]
     ) AS [m1_1]
-    WHERE ([m1_1].[$rownumber] > 8) AND ([m1_1].[Prop2] <= 8)
+    WHERE (([m1_1].[$rownumber] - 1) > 8) AND ([m1_1].[Prop2] <= 8)
 )",
                 SqlLog);
         }

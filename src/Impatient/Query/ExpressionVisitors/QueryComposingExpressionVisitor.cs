@@ -1427,7 +1427,6 @@ namespace Impatient.Query.ExpressionVisitors
                                 .UpdateSelectExpression(outerSelectExpression
                                     .UpdateOffset(count));
                         }
-
                         case nameof(Queryable.TakeWhile):
                         {
                             var outerSelectExpression = outerQuery.SelectExpression;
@@ -1494,7 +1493,9 @@ namespace Impatient.Query.ExpressionVisitors
                                                 new[]
                                                 {
                                                     (subqueryProjection as NewExpression).Arguments[0],
-                                                    (subqueryProjection as NewExpression).Arguments[1]
+                                                    Expression.Subtract(
+                                                        (subqueryProjection as NewExpression).Arguments[1],
+                                                        Expression.Constant(1)),
                                                 },
                                                 (a, b) => b)
                                             .ToArray())
@@ -1515,7 +1516,9 @@ namespace Impatient.Query.ExpressionVisitors
                                                 "MIN",
                                                 (subqueryProjection as NewExpression).Arguments[1],
                                                 typeof(int?)),
-                                            Expression.Constant(int.MaxValue))));
+                                            Expression.Add(
+                                                outerRowNumberExpression,
+                                                Expression.Constant(1)))));
 
                             Func<Expression, Expression, Expression> factory = Expression.LessThan;
 
@@ -1594,7 +1597,9 @@ namespace Impatient.Query.ExpressionVisitors
                                                 new[]
                                                 {
                                                     (subqueryProjection as NewExpression).Arguments[0],
-                                                    (subqueryProjection as NewExpression).Arguments[1]
+                                                    Expression.Subtract(
+                                                        (subqueryProjection as NewExpression).Arguments[1],
+                                                        Expression.Constant(1)),
                                                 },
                                                 (a, b) => b)
                                             .ToArray())
