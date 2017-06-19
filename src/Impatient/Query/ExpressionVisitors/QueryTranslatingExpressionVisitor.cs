@@ -1536,6 +1536,9 @@ namespace Impatient.Query.ExpressionVisitors
             private static readonly PropertyInfo enumeratorCurrentPropertyInfo
                 = typeof(IEnumerator).GetTypeInfo().GetDeclaredProperty(nameof(IEnumerator.Current));
 
+            private static readonly MethodInfo disposableDisposeMethodInfo
+                = typeof(IDisposable).GetTypeInfo().GetDeclaredMethod(nameof(IDisposable.Dispose));
+
             public void Append(string sql)
             {
                 workingStringBuilder.Append(sql);
@@ -1614,7 +1617,6 @@ namespace Impatient.Query.ExpressionVisitors
                 var parameterNameVariable = Expression.Parameter(typeof(string), "parameterName");
                 var breakLabel = Expression.Label();
 
-                // TODO: Dispose of the enumerator
                 var parameterListBlock
                     = Expression.Block(
                         new[]
@@ -1624,60 +1626,71 @@ namespace Impatient.Query.ExpressionVisitors
                             parameterPrefixVariable,
                             parameterNameVariable
                         },
-                        Expression.Assign(
-                            enumeratorVariable,
-                            Expression.Call(
-                                node,
-                                enumerableGetEnumeratorMethodInfo)),
-                        Expression.Assign(
-                            parameterPrefixVariable,
-                            Expression.Constant(formatter($"p{parameterIndex}_"))),
-                        Expression.Loop(
-                            @break: breakLabel,
+                        Expression.TryFinally(
                             body: Expression.Block(
                                 Expression.Assign(
-                                    parameterNameVariable,
+                                    enumeratorVariable,
                                     Expression.Call(
-                                        stringConcatObjectMethodInfo,
-                                        parameterPrefixVariable,
-                                        Expression.Convert(indexVariable, typeof(object)))),
-                                Expression.IfThenElse(
-                                    Expression.Call(enumeratorVariable, enumeratorMoveNextMethodInfo),
-                                    Expression.Increment(indexVariable),
-                                    Expression.Break(breakLabel)),
-                                Expression.IfThen(
-                                    Expression.GreaterThan(indexVariable, Expression.Constant(0)),
-                                    Expression.Call(
-                                        stringBuilderVariable,
-                                        stringBuilderAppendMethodInfo,
-                                        Expression.Constant(", "))),
-                                Expression.Call(
-                                    stringBuilderVariable,
-                                    stringBuilderAppendMethodInfo,
-                                    parameterNameVariable),
+                                        node,
+                                        enumerableGetEnumeratorMethodInfo)),
                                 Expression.Assign(
-                                    dbParameterVariable,
-                                    Expression.Call(
-                                        dbCommandVariable,
-                                        dbCommandCreateParameterMethodInfo)),
-                                Expression.Assign(
-                                    Expression.MakeMemberAccess(
-                                        dbParameterVariable,
-                                        dbParameterParameterNamePropertyInfo),
-                                    parameterNameVariable),
-                                Expression.Assign(
-                                    Expression.MakeMemberAccess(
-                                        dbParameterVariable,
-                                        dbParameterValuePropertyInfo),
-                                    Expression.MakeMemberAccess(
+                                    parameterPrefixVariable,
+                                    Expression.Constant(formatter($"p{parameterIndex}_"))),
+                                Expression.Loop(
+                                    @break: breakLabel,
+                                    body: Expression.Block(
+                                        Expression.Assign(
+                                            parameterNameVariable,
+                                            Expression.Call(
+                                                stringConcatObjectMethodInfo,
+                                                parameterPrefixVariable,
+                                                Expression.Convert(indexVariable, typeof(object)))),
+                                        Expression.IfThenElse(
+                                            Expression.Call(enumeratorVariable, enumeratorMoveNextMethodInfo),
+                                            Expression.Increment(indexVariable),
+                                            Expression.Break(breakLabel)),
+                                        Expression.IfThen(
+                                            Expression.GreaterThan(indexVariable, Expression.Constant(0)),
+                                            Expression.Call(
+                                                stringBuilderVariable,
+                                                stringBuilderAppendMethodInfo,
+                                                Expression.Constant(", "))),
+                                        Expression.Call(
+                                            stringBuilderVariable,
+                                            stringBuilderAppendMethodInfo,
+                                            parameterNameVariable),
+                                        Expression.Assign(
+                                            dbParameterVariable,
+                                            Expression.Call(
+                                                dbCommandVariable,
+                                                dbCommandCreateParameterMethodInfo)),
+                                        Expression.Assign(
+                                            Expression.MakeMemberAccess(
+                                                dbParameterVariable,
+                                                dbParameterParameterNamePropertyInfo),
+                                            parameterNameVariable),
+                                        Expression.Assign(
+                                            Expression.MakeMemberAccess(
+                                                dbParameterVariable,
+                                                dbParameterValuePropertyInfo),
+                                            Expression.MakeMemberAccess(
+                                                enumeratorVariable,
+                                                enumeratorCurrentPropertyInfo)),
+                                        Expression.Call(
+                                            Expression.MakeMemberAccess(
+                                                dbCommandVariable,
+                                                dbCommandParametersPropertyInfo),
+                                            dbParameterCollectionAddMethodInfo,
+                                            dbParameterVariable)))),
+                                @finally: Expression.IfThen(
+                                    Expression.TypeIs(
                                         enumeratorVariable,
-                                        enumeratorCurrentPropertyInfo)),
-                                Expression.Call(
-                                    Expression.MakeMemberAccess(
-                                        dbCommandVariable,
-                                        dbCommandParametersPropertyInfo),
-                                    dbParameterCollectionAddMethodInfo,
-                                    dbParameterVariable))));
+                                        typeof(IDisposable)),
+                                    Expression.Call(
+                                        Expression.Convert(
+                                            enumeratorVariable,
+                                            typeof(IDisposable)),
+                                        disposableDisposeMethodInfo))));
 
                 EmitSql();
                 blockExpressions.Add(parameterListBlock);
