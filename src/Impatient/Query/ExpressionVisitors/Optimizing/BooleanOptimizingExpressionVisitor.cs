@@ -5,57 +5,52 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 {
     public class BooleanOptimizingExpressionVisitor : ExpressionVisitor
     {
-        private static readonly NotBooleanConstantEliminatingExpressionVisitor notBooleanConstantEliminatingExpressionVisitor = new NotBooleanConstantEliminatingExpressionVisitor();
-        private static readonly RedundantNotEliminatingExpressionVisitor redundantNotEliminatingExpressionVisitor = new RedundantNotEliminatingExpressionVisitor();
-        private static readonly BinaryExpressionReducingExpressionVisitor binaryExpressionReducingExpressionVisitor = new BinaryExpressionReducingExpressionVisitor();
-        private static readonly NotDistributingExpressionVisitor notDistributingExpressionVisitor = new NotDistributingExpressionVisitor();
+        private static readonly ExpressionVisitor binaryExpressionReducingExpressionVisitor
+            = new BinaryExpressionReducingExpressionVisitor();
+
+        private static readonly ExpressionVisitor unaryNotDistributingExpressionVisitor 
+            = new UnaryNotDistributingExpressionVisitor();
 
         public override Expression Visit(Expression node)
         {
-            node = notBooleanConstantEliminatingExpressionVisitor.Visit(node);
             node = binaryExpressionReducingExpressionVisitor.Visit(node);
-            node = notDistributingExpressionVisitor.Visit(node);
-            node = redundantNotEliminatingExpressionVisitor.Visit(node);
+            node = unaryNotDistributingExpressionVisitor.Visit(node);
 
             return node;
         }
 
-        private class NotBooleanConstantEliminatingExpressionVisitor : ExpressionVisitor
-        {
-            protected override Expression VisitUnary(UnaryExpression node)
-            {
-                var operand = Visit(node.Operand);
-
-                if (node.NodeType == ExpressionType.Not
-                    && operand.Type == typeof(bool)
-                    && operand is ConstantExpression constantExpression)
-                {
-                    return constantExpression.Value.Equals(true)
-                        ? Expression.Constant(false)
-                        : Expression.Constant(true);
-                }
-
-                return base.VisitUnary(node);
-            }
-        }
-
-        private class RedundantNotEliminatingExpressionVisitor : ExpressionVisitor
-        {
-            protected override Expression VisitUnary(UnaryExpression node)
-            {
-                var operand = Visit(node.Operand);
-
-                if (node.NodeType == ExpressionType.Not
-                    && operand is UnaryExpression unaryExpression
-                    && unaryExpression.NodeType == ExpressionType.Not)
-                {
-                    return unaryExpression.Operand;
-                }
-
-                return base.VisitUnary(node);
-            }
-        }
-
+        // false && false -> false
+        // true && false -> false
+        // false && true -> false
+        // true && true -> true
+        // false && x -> false
+        // true && x -> x
+        // x && false -> false
+        // x && true -> x
+        // true || true -> true
+        // true || false -> true
+        // false || true -> true
+        // false || false -> false
+        // true || x -> true
+        // false || x -> x
+        // x || true -> true
+        // x || false -> x
+        // false == false -> true
+        // true == true -> true
+        // false == true -> false
+        // true == false -> false
+        // true == x -> x
+        // false == x -> !x
+        // x == true -> x
+        // x == false -> !x
+        // false != false -> false
+        // true != true -> false
+        // false != true -> true
+        // true != false -> true
+        // false != x -> x
+        // true != x -> !x
+        // x != false -> x
+        // x != true -> !x
         private class BinaryExpressionReducingExpressionVisitor : ExpressionVisitor
         {
             protected override Expression VisitBinary(BinaryExpression node)
@@ -229,7 +224,18 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             }
         }
 
-        private class NotDistributingExpressionVisitor : ExpressionVisitor
+        // !(true) -> false
+        // !(false) -> true
+        // !(!(x)) -> x
+        // !(x == y) -> x != y
+        // !(x != y) -> x == y
+        // !(x && y) -> !x || !y
+        // !(x || y) -> !x && !y
+        // !(x > y) -> x <= y
+        // !(x >= y) -> x < y
+        // !(x < y) -> x >= y
+        // !(x <= y) -> x > y
+        private class UnaryNotDistributingExpressionVisitor : ExpressionVisitor
         {
             protected override Expression VisitUnary(UnaryExpression node)
             {
@@ -241,7 +247,8 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                     {
                         case BinaryExpression binaryExpression:
                         {
-                            return BinaryInvertingExpressionVisitor.Instance.Visit(binaryExpression);
+                            // Immediately visiting the result ensures that any resulting double-nots are optimized.
+                            return Visit(BinaryInvertingExpressionVisitor.Instance.Visit(binaryExpression));
                         }
 
                         case ConstantExpression constantExpression:
