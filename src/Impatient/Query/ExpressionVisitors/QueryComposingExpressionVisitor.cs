@@ -548,34 +548,8 @@ namespace Impatient.Query.ExpressionVisitors
 
                             if (predicateLambda.Body is BinaryExpression unresolvedBinaryExpression)
                             {
-                                IEnumerable<Expression> SplitAndAlso(Expression expression)
-                                {
-                                    switch (expression)
-                                    {
-                                        case BinaryExpression binaryExpression
-                                        when binaryExpression.NodeType == ExpressionType.AndAlso:
-                                        {
-                                            var left = SplitAndAlso(binaryExpression.Left);
-                                            var right = SplitAndAlso(binaryExpression.Right);
-
-                                            foreach (var split in left.Concat(right))
-                                            {
-                                                yield return split;
-                                            }
-
-                                            yield break;
-                                        }
-
-                                        default:
-                                        {
-                                            yield return expression;
-                                            yield break;
-                                        }
-                                    }
-                                }
-
                                 var parts
-                                    = (from unresolved in SplitAndAlso(unresolvedBinaryExpression)
+                                    = (from unresolved in unresolvedBinaryExpression.SplitNodes(ExpressionType.AndAlso)
                                        let lambda = Expression.Lambda(unresolved, predicateLambda.Parameters)
                                        let resolved = lambda.ExpandParameters(expansionParameters).VisitWith(PostExpansionVisitors)
                                        let translatable = IsTranslatable(resolved)
@@ -587,17 +561,19 @@ namespace Impatient.Query.ExpressionVisitors
                                     visitedArguments[0]
                                         = outerQuery
                                             .UpdateSelectExpression(outerSelectExpression
-                                                .AddToPredicate(parts
+                                                .AddToPredicate((parts
                                                     .Where(p => p.translatable)
                                                     .Select(p => p.expression)
-                                                    .Aggregate(Expression.AndAlso)));
+                                                    .Aggregate(Expression.AndAlso) as BinaryExpression)
+                                                    .Balance()));
 
                                     visitedArguments[1]
                                         = Expression.Lambda(
-                                            parts
+                                            (parts
                                                 .Where(p => !p.translatable)
                                                 .Select(p => p.expression)
-                                                .Aggregate(Expression.AndAlso),
+                                                .Aggregate(Expression.AndAlso) as BinaryExpression)
+                                                .Balance(),
                                             predicateLambda.Parameters);
                                 }
                             }

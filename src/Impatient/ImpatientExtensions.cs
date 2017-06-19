@@ -45,6 +45,37 @@ namespace Impatient
 
         #endregion
 
+        public static BinaryExpression Balance(this BinaryExpression binaryExpression)
+        {
+            return BinaryBalancingExpressionVisitor.Instance.VisitAndConvert(binaryExpression, nameof(Balance));
+        }
+
+        public static IEnumerable<Expression> SplitNodes(this Expression expression, ExpressionType splitOn)
+        {
+            switch (expression)
+            {
+                case BinaryExpression binaryExpression
+                when binaryExpression.NodeType == splitOn:
+                {
+                    var left = SplitNodes(binaryExpression.Left, splitOn);
+                    var right = SplitNodes(binaryExpression.Right, splitOn);
+
+                    foreach (var split in left.Concat(right))
+                    {
+                        yield return split;
+                    }
+
+                    yield break;
+                }
+
+                default:
+                {
+                    yield return expression;
+                    yield break;
+                }
+            }
+        }
+
         public static bool IsBoolean(this Type type)
         {
             return type == typeof(bool) || type == typeof(bool?);
@@ -59,7 +90,7 @@ namespace Impatient
         {
             return method.IsGenericMethod && method.GetGenericMethodDefinition() == other;
         }
-        
+
         public static MethodInfo GetMethodDefinition<TArg, TResult>(Expression<Func<TArg, TResult>> expression)
         {
             return ((MethodCallExpression)expression.Body).Method;

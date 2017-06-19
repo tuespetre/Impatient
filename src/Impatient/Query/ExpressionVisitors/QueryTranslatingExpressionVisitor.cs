@@ -150,7 +150,8 @@ namespace Impatient.Query.ExpressionVisitors
                         return Visit(
                             leftNewExpression.Arguments
                                 .Zip(rightNewExpression.Arguments, Expression.Equal)
-                                .Aggregate(Expression.AndAlso));
+                                .Aggregate(Expression.AndAlso)
+                                .Balance());
                     }
                     else if (node.Left is MemberInitExpression leftMemberInitExpression
                         && node.Right is MemberInitExpression rightMemberInitExpression)
@@ -166,7 +167,8 @@ namespace Impatient.Query.ExpressionVisitors
                         return Visit(
                             leftBindings
                                 .Zip(rightBindings, Expression.Equal)
-                                .Aggregate(Expression.AndAlso));
+                                .Aggregate(Expression.AndAlso)
+                                .Balance());
                     }
                     else if (node.Left is ConstantExpression leftConstantExpression
                         && leftConstantExpression.Value is null)
