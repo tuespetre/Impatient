@@ -1426,6 +1426,190 @@ INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
         }
 
         [TestMethod]
+        public void GroupBy4_navigation_intact_key()
+        {
+            var context = new QueryContext(impatient);
+
+            var query
+                = context.OrderDetails
+                    .GroupBy(
+                        d => d.Order,
+                        d => d,
+                        (x, y) => new { x, y });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [o].[OrderID] AS [x.OrderID], [o].[CustomerID] AS [x.CustomerID], [o].[EmployeeID] AS [x.EmployeeID], [o].[OrderDate] AS [x.OrderDate], [o].[RequiredDate] AS [x.RequiredDate], [o].[ShippedDate] AS [x.ShippedDate], [o].[ShipVia] AS [x.ShipVia], [o].[Freight] AS [x.Freight], [o].[ShipName] AS [x.ShipName], [o].[ShipAddress] AS [x.ShipAddress], [o].[ShipCity] AS [x.ShipCity], [o].[ShipRegion] AS [x.ShipRegion], [o].[ShipPostalCode] AS [x.ShipPostalCode], [o].[ShipCountry] AS [x.ShipCountry], [o].[OrderID] AS [y.Key.OrderID], [o].[CustomerID] AS [y.Key.CustomerID], [o].[EmployeeID] AS [y.Key.EmployeeID], [o].[OrderDate] AS [y.Key.OrderDate], [o].[RequiredDate] AS [y.Key.RequiredDate], [o].[ShippedDate] AS [y.Key.ShippedDate], [o].[ShipVia] AS [y.Key.ShipVia], [o].[Freight] AS [y.Key.Freight], [o].[ShipName] AS [y.Key.ShipName], [o].[ShipAddress] AS [y.Key.ShipAddress], [o].[ShipCity] AS [y.Key.ShipCity], [o].[ShipRegion] AS [y.Key.ShipRegion], [o].[ShipPostalCode] AS [y.Key.ShipPostalCode], [o].[ShipCountry] AS [y.Key.ShipCountry], (
+    SELECT [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[UnitPrice] AS [UnitPrice], [d].[Quantity] AS [Quantity], [d].[Discount] AS [Discount]
+    FROM [dbo].[Order Details] AS [d]
+    INNER JOIN [dbo].[Orders] AS [o_0] ON [d].[OrderID] = [o_0].[OrderID]
+    WHERE ((((((((((((([o].[OrderID] = [o_0].[OrderID]) AND ((([o].[CustomerID] IS NULL AND [o_0].[CustomerID] IS NULL) OR ([o].[CustomerID] = [o_0].[CustomerID])))) AND ((([o].[EmployeeID] IS NULL AND [o_0].[EmployeeID] IS NULL) OR ([o].[EmployeeID] = [o_0].[EmployeeID])))) AND ((([o].[OrderDate] IS NULL AND [o_0].[OrderDate] IS NULL) OR ([o].[OrderDate] = [o_0].[OrderDate])))) AND ((([o].[RequiredDate] IS NULL AND [o_0].[RequiredDate] IS NULL) OR ([o].[RequiredDate] = [o_0].[RequiredDate])))) AND ((([o].[ShippedDate] IS NULL AND [o_0].[ShippedDate] IS NULL) OR ([o].[ShippedDate] = [o_0].[ShippedDate])))) AND ((([o].[ShipVia] IS NULL AND [o_0].[ShipVia] IS NULL) OR ([o].[ShipVia] = [o_0].[ShipVia])))) AND ((([o].[Freight] IS NULL AND [o_0].[Freight] IS NULL) OR ([o].[Freight] = [o_0].[Freight])))) AND ((([o].[ShipName] IS NULL AND [o_0].[ShipName] IS NULL) OR ([o].[ShipName] = [o_0].[ShipName])))) AND ((([o].[ShipAddress] IS NULL AND [o_0].[ShipAddress] IS NULL) OR ([o].[ShipAddress] = [o_0].[ShipAddress])))) AND ((([o].[ShipCity] IS NULL AND [o_0].[ShipCity] IS NULL) OR ([o].[ShipCity] = [o_0].[ShipCity])))) AND ((([o].[ShipRegion] IS NULL AND [o_0].[ShipRegion] IS NULL) OR ([o].[ShipRegion] = [o_0].[ShipRegion])))) AND ((([o].[ShipPostalCode] IS NULL AND [o_0].[ShipPostalCode] IS NULL) OR ([o].[ShipPostalCode] = [o_0].[ShipPostalCode])))) AND ((([o].[ShipCountry] IS NULL AND [o_0].[ShipCountry] IS NULL) OR ([o].[ShipCountry] = [o_0].[ShipCountry])))
+    FOR JSON PATH
+) AS [y.Elements]
+FROM [dbo].[Order Details] AS [d_0]
+INNER JOIN [dbo].[Orders] AS [o] ON [d_0].[OrderID] = [o].[OrderID]
+GROUP BY [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate], [o].[RequiredDate], [o].[ShippedDate], [o].[ShipVia], [o].[Freight], [o].[ShipName], [o].[ShipAddress], [o].[ShipCity], [o].[ShipRegion], [o].[ShipPostalCode], [o].[ShipCountry]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void GroupBy4_navigation_intact_element()
+        {
+            var context = new QueryContext(impatient);
+
+            var query
+                = context.OrderDetails
+                    .GroupBy(
+                        d => d.ProductID,
+                        d => d.Order.Customer,
+                        (x, y) => new { x, y });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [d].[ProductID] AS [x], [d].[ProductID] AS [y.Key], (
+    SELECT [c].[CustomerID] AS [CustomerID], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Address] AS [Address], [c].[City] AS [City], [c].[Region] AS [Region], [c].[PostalCode] AS [PostalCode], [c].[Country] AS [Country], [c].[Phone] AS [Phone], [c].[Fax] AS [Fax]
+    FROM [dbo].[Order Details] AS [d_0]
+    INNER JOIN [dbo].[Orders] AS [o] ON [d_0].[OrderID] = [o].[OrderID]
+    INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
+    WHERE [d].[ProductID] = [d_0].[ProductID]
+    FOR JSON PATH
+) AS [y.Elements]
+FROM [dbo].[Order Details] AS [d]
+INNER JOIN [dbo].[Orders] AS [o_0] ON [d].[OrderID] = [o_0].[OrderID]
+INNER JOIN [dbo].[Customers] AS [c_0] ON [o_0].[CustomerID] = [c_0].[CustomerID]
+GROUP BY [d].[ProductID]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void GroupBy4_navigation_intact_result()
+        {
+            var context = new QueryContext(impatient);
+
+            var query
+                = context.OrderDetails
+                    .GroupBy(
+                        d => d,
+                        d => d,
+                        (x, y) => new { x.Order, y });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [o].[OrderID] AS [Order.OrderID], [o].[CustomerID] AS [Order.CustomerID], [o].[EmployeeID] AS [Order.EmployeeID], [o].[OrderDate] AS [Order.OrderDate], [o].[RequiredDate] AS [Order.RequiredDate], [o].[ShippedDate] AS [Order.ShippedDate], [o].[ShipVia] AS [Order.ShipVia], [o].[Freight] AS [Order.Freight], [o].[ShipName] AS [Order.ShipName], [o].[ShipAddress] AS [Order.ShipAddress], [o].[ShipCity] AS [Order.ShipCity], [o].[ShipRegion] AS [Order.ShipRegion], [o].[ShipPostalCode] AS [Order.ShipPostalCode], [o].[ShipCountry] AS [Order.ShipCountry], [t].[Key.OrderID] AS [y.Key.OrderID], [t].[Key.ProductID] AS [y.Key.ProductID], [t].[Key.UnitPrice] AS [y.Key.UnitPrice], [t].[Key.Quantity] AS [y.Key.Quantity], [t].[Key.Discount] AS [y.Key.Discount], (
+    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[ProductID] AS [ProductID], [o_0].[UnitPrice] AS [UnitPrice], [o_0].[Quantity] AS [Quantity], [o_0].[Discount] AS [Discount]
+    FROM [dbo].[Order Details] AS [o_0]
+    WHERE (((([t].[Key.OrderID] = [o_0].[OrderID]) AND ([t].[Key.ProductID] = [o_0].[ProductID])) AND ([t].[Key.UnitPrice] = [o_0].[UnitPrice])) AND ([t].[Key.Quantity] = [o_0].[Quantity])) AND ([t].[Key.Discount] = [o_0].[Discount])
+    FOR JSON PATH
+) AS [y.Elements]
+FROM (
+    SELECT [o_1].[OrderID] AS [OrderID], [o_1].[ProductID] AS [ProductID], [o_1].[UnitPrice] AS [UnitPrice], [o_1].[Quantity] AS [Quantity], [o_1].[Discount] AS [Discount], [o_1].[OrderID] AS [Key.OrderID], [o_1].[ProductID] AS [Key.ProductID], [o_1].[UnitPrice] AS [Key.UnitPrice], [o_1].[Quantity] AS [Key.Quantity], [o_1].[Discount] AS [Key.Discount]
+    FROM [dbo].[Order Details] AS [o_1]
+    GROUP BY [o_1].[OrderID], [o_1].[ProductID], [o_1].[UnitPrice], [o_1].[Quantity], [o_1].[Discount]
+) AS [t]
+INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void GroupBy4_navigation_intact_key_element()
+        {
+            var context = new QueryContext(impatient);
+
+            var query
+                = context.OrderDetails
+                    .GroupBy(
+                        d => d.Order,
+                        d => d.Order.Customer,
+                        (x, y) => new { x, y });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [o].[OrderID] AS [x.OrderID], [o].[CustomerID] AS [x.CustomerID], [o].[EmployeeID] AS [x.EmployeeID], [o].[OrderDate] AS [x.OrderDate], [o].[RequiredDate] AS [x.RequiredDate], [o].[ShippedDate] AS [x.ShippedDate], [o].[ShipVia] AS [x.ShipVia], [o].[Freight] AS [x.Freight], [o].[ShipName] AS [x.ShipName], [o].[ShipAddress] AS [x.ShipAddress], [o].[ShipCity] AS [x.ShipCity], [o].[ShipRegion] AS [x.ShipRegion], [o].[ShipPostalCode] AS [x.ShipPostalCode], [o].[ShipCountry] AS [x.ShipCountry], [o].[OrderID] AS [y.Key.OrderID], [o].[CustomerID] AS [y.Key.CustomerID], [o].[EmployeeID] AS [y.Key.EmployeeID], [o].[OrderDate] AS [y.Key.OrderDate], [o].[RequiredDate] AS [y.Key.RequiredDate], [o].[ShippedDate] AS [y.Key.ShippedDate], [o].[ShipVia] AS [y.Key.ShipVia], [o].[Freight] AS [y.Key.Freight], [o].[ShipName] AS [y.Key.ShipName], [o].[ShipAddress] AS [y.Key.ShipAddress], [o].[ShipCity] AS [y.Key.ShipCity], [o].[ShipRegion] AS [y.Key.ShipRegion], [o].[ShipPostalCode] AS [y.Key.ShipPostalCode], [o].[ShipCountry] AS [y.Key.ShipCountry], (
+    SELECT [c].[CustomerID] AS [CustomerID], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Address] AS [Address], [c].[City] AS [City], [c].[Region] AS [Region], [c].[PostalCode] AS [PostalCode], [c].[Country] AS [Country], [c].[Phone] AS [Phone], [c].[Fax] AS [Fax]
+    FROM [dbo].[Order Details] AS [d]
+    INNER JOIN [dbo].[Orders] AS [o_0] ON [d].[OrderID] = [o_0].[OrderID]
+    INNER JOIN [dbo].[Customers] AS [c] ON [o_0].[CustomerID] = [c].[CustomerID]
+    WHERE ((((((((((((([o].[OrderID] = [o_0].[OrderID]) AND ((([o].[CustomerID] IS NULL AND [o_0].[CustomerID] IS NULL) OR ([o].[CustomerID] = [o_0].[CustomerID])))) AND ((([o].[EmployeeID] IS NULL AND [o_0].[EmployeeID] IS NULL) OR ([o].[EmployeeID] = [o_0].[EmployeeID])))) AND ((([o].[OrderDate] IS NULL AND [o_0].[OrderDate] IS NULL) OR ([o].[OrderDate] = [o_0].[OrderDate])))) AND ((([o].[RequiredDate] IS NULL AND [o_0].[RequiredDate] IS NULL) OR ([o].[RequiredDate] = [o_0].[RequiredDate])))) AND ((([o].[ShippedDate] IS NULL AND [o_0].[ShippedDate] IS NULL) OR ([o].[ShippedDate] = [o_0].[ShippedDate])))) AND ((([o].[ShipVia] IS NULL AND [o_0].[ShipVia] IS NULL) OR ([o].[ShipVia] = [o_0].[ShipVia])))) AND ((([o].[Freight] IS NULL AND [o_0].[Freight] IS NULL) OR ([o].[Freight] = [o_0].[Freight])))) AND ((([o].[ShipName] IS NULL AND [o_0].[ShipName] IS NULL) OR ([o].[ShipName] = [o_0].[ShipName])))) AND ((([o].[ShipAddress] IS NULL AND [o_0].[ShipAddress] IS NULL) OR ([o].[ShipAddress] = [o_0].[ShipAddress])))) AND ((([o].[ShipCity] IS NULL AND [o_0].[ShipCity] IS NULL) OR ([o].[ShipCity] = [o_0].[ShipCity])))) AND ((([o].[ShipRegion] IS NULL AND [o_0].[ShipRegion] IS NULL) OR ([o].[ShipRegion] = [o_0].[ShipRegion])))) AND ((([o].[ShipPostalCode] IS NULL AND [o_0].[ShipPostalCode] IS NULL) OR ([o].[ShipPostalCode] = [o_0].[ShipPostalCode])))) AND ((([o].[ShipCountry] IS NULL AND [o_0].[ShipCountry] IS NULL) OR ([o].[ShipCountry] = [o_0].[ShipCountry])))
+    FOR JSON PATH
+) AS [y.Elements]
+FROM [dbo].[Order Details] AS [d_0]
+INNER JOIN [dbo].[Orders] AS [o] ON [d_0].[OrderID] = [o].[OrderID]
+INNER JOIN [dbo].[Customers] AS [c_0] ON [o].[CustomerID] = [c_0].[CustomerID]
+GROUP BY [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate], [o].[RequiredDate], [o].[ShippedDate], [o].[ShipVia], [o].[Freight], [o].[ShipName], [o].[ShipAddress], [o].[ShipCity], [o].[ShipRegion], [o].[ShipPostalCode], [o].[ShipCountry]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void GroupBy4_navigation_intact_key_result()
+        {
+            var context = new QueryContext(impatient);
+
+            var query
+                = context.OrderDetails
+                    .GroupBy(
+                        d => d.Order,
+                        d => d,
+                        (x, y) => new { x.Customer, y });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [c].[CustomerID] AS [Customer.CustomerID], [c].[CompanyName] AS [Customer.CompanyName], [c].[ContactName] AS [Customer.ContactName], [c].[ContactTitle] AS [Customer.ContactTitle], [c].[Address] AS [Customer.Address], [c].[City] AS [Customer.City], [c].[Region] AS [Customer.Region], [c].[PostalCode] AS [Customer.PostalCode], [c].[Country] AS [Customer.Country], [c].[Phone] AS [Customer.Phone], [c].[Fax] AS [Customer.Fax], [t].[Key.OrderID] AS [y.Key.OrderID], [t].[Key.CustomerID] AS [y.Key.CustomerID], [t].[Key.EmployeeID] AS [y.Key.EmployeeID], [t].[Key.OrderDate] AS [y.Key.OrderDate], [t].[Key.RequiredDate] AS [y.Key.RequiredDate], [t].[Key.ShippedDate] AS [y.Key.ShippedDate], [t].[Key.ShipVia] AS [y.Key.ShipVia], [t].[Key.Freight] AS [y.Key.Freight], [t].[Key.ShipName] AS [y.Key.ShipName], [t].[Key.ShipAddress] AS [y.Key.ShipAddress], [t].[Key.ShipCity] AS [y.Key.ShipCity], [t].[Key.ShipRegion] AS [y.Key.ShipRegion], [t].[Key.ShipPostalCode] AS [y.Key.ShipPostalCode], [t].[Key.ShipCountry] AS [y.Key.ShipCountry], (
+    SELECT [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[UnitPrice] AS [UnitPrice], [d].[Quantity] AS [Quantity], [d].[Discount] AS [Discount]
+    FROM [dbo].[Order Details] AS [d]
+    INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
+    WHERE ((((((((((((([t].[Key.OrderID] = [o].[OrderID]) AND ([t].[Key.CustomerID] = [o].[CustomerID])) AND ([t].[Key.EmployeeID] = [o].[EmployeeID])) AND ([t].[Key.OrderDate] = [o].[OrderDate])) AND ([t].[Key.RequiredDate] = [o].[RequiredDate])) AND ([t].[Key.ShippedDate] = [o].[ShippedDate])) AND ([t].[Key.ShipVia] = [o].[ShipVia])) AND ([t].[Key.Freight] = [o].[Freight])) AND ([t].[Key.ShipName] = [o].[ShipName])) AND ([t].[Key.ShipAddress] = [o].[ShipAddress])) AND ([t].[Key.ShipCity] = [o].[ShipCity])) AND ([t].[Key.ShipRegion] = [o].[ShipRegion])) AND ([t].[Key.ShipPostalCode] = [o].[ShipPostalCode])) AND ([t].[Key.ShipCountry] = [o].[ShipCountry])
+    FOR JSON PATH
+) AS [y.Elements]
+FROM (
+    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [o_0].[OrderID] AS [Key.OrderID], [o_0].[CustomerID] AS [Key.CustomerID], [o_0].[EmployeeID] AS [Key.EmployeeID], [o_0].[OrderDate] AS [Key.OrderDate], [o_0].[RequiredDate] AS [Key.RequiredDate], [o_0].[ShippedDate] AS [Key.ShippedDate], [o_0].[ShipVia] AS [Key.ShipVia], [o_0].[Freight] AS [Key.Freight], [o_0].[ShipName] AS [Key.ShipName], [o_0].[ShipAddress] AS [Key.ShipAddress], [o_0].[ShipCity] AS [Key.ShipCity], [o_0].[ShipRegion] AS [Key.ShipRegion], [o_0].[ShipPostalCode] AS [Key.ShipPostalCode], [o_0].[ShipCountry] AS [Key.ShipCountry]
+    FROM [dbo].[Order Details] AS [d_0]
+    INNER JOIN [dbo].[Orders] AS [o_0] ON [d_0].[OrderID] = [o_0].[OrderID]
+    GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
+) AS [t]
+INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void GroupBy4_navigation_intact_element_result()
+        {
+            var context = new QueryContext(impatient);
+
+            var query
+                = context.OrderDetails
+                    .GroupBy(
+                        d => d,
+                        d => d.Order.Customer,
+                        (x, y) => new { x.Order, y });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [o].[OrderID] AS [Order.OrderID], [o].[CustomerID] AS [Order.CustomerID], [o].[EmployeeID] AS [Order.EmployeeID], [o].[OrderDate] AS [Order.OrderDate], [o].[RequiredDate] AS [Order.RequiredDate], [o].[ShippedDate] AS [Order.ShippedDate], [o].[ShipVia] AS [Order.ShipVia], [o].[Freight] AS [Order.Freight], [o].[ShipName] AS [Order.ShipName], [o].[ShipAddress] AS [Order.ShipAddress], [o].[ShipCity] AS [Order.ShipCity], [o].[ShipRegion] AS [Order.ShipRegion], [o].[ShipPostalCode] AS [Order.ShipPostalCode], [o].[ShipCountry] AS [Order.ShipCountry], [t].[Key.OrderID] AS [y.Key.OrderID], [t].[Key.ProductID] AS [y.Key.ProductID], [t].[Key.UnitPrice] AS [y.Key.UnitPrice], [t].[Key.Quantity] AS [y.Key.Quantity], [t].[Key.Discount] AS [y.Key.Discount], (
+    SELECT [c].[CustomerID] AS [CustomerID], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Address] AS [Address], [c].[City] AS [City], [c].[Region] AS [Region], [c].[PostalCode] AS [PostalCode], [c].[Country] AS [Country], [c].[Phone] AS [Phone], [c].[Fax] AS [Fax]
+    FROM [dbo].[Order Details] AS [d]
+    INNER JOIN [dbo].[Orders] AS [o_0] ON [d].[OrderID] = [o_0].[OrderID]
+    INNER JOIN [dbo].[Customers] AS [c] ON [o_0].[CustomerID] = [c].[CustomerID]
+    WHERE (((([t].[Key.OrderID] = [d].[OrderID]) AND ([t].[Key.ProductID] = [d].[ProductID])) AND ([t].[Key.UnitPrice] = [d].[UnitPrice])) AND ([t].[Key.Quantity] = [d].[Quantity])) AND ([t].[Key.Discount] = [d].[Discount])
+    FOR JSON PATH
+) AS [y.Elements]
+FROM (
+    SELECT [d_0].[OrderID] AS [OrderID], [d_0].[ProductID] AS [ProductID], [d_0].[UnitPrice] AS [UnitPrice], [d_0].[Quantity] AS [Quantity], [d_0].[Discount] AS [Discount], [d_0].[OrderID] AS [Key.OrderID], [d_0].[ProductID] AS [Key.ProductID], [d_0].[UnitPrice] AS [Key.UnitPrice], [d_0].[Quantity] AS [Key.Quantity], [d_0].[Discount] AS [Key.Discount]
+    FROM [dbo].[Order Details] AS [d_0]
+    INNER JOIN [dbo].[Orders] AS [o_1] ON [d_0].[OrderID] = [o_1].[OrderID]
+    INNER JOIN [dbo].[Customers] AS [c_0] ON [o_1].[CustomerID] = [c_0].[CustomerID]
+    GROUP BY [d_0].[OrderID], [d_0].[ProductID], [d_0].[UnitPrice], [d_0].[Quantity], [d_0].[Discount]
+) AS [t]
+INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
+                SqlLog);
+        }
+
+        [TestMethod]
         public void GroupBy4_navigation_intact_key_element_result()
         {
             var context = new QueryContext(impatient);
@@ -1453,6 +1637,197 @@ FROM (
     FROM [dbo].[Order Details] AS [d_0]
     INNER JOIN [dbo].[Orders] AS [o_0] ON [d_0].[OrderID] = [o_0].[OrderID]
     INNER JOIN [dbo].[Customers] AS [c_1] ON [o_0].[CustomerID] = [c_1].[CustomerID]
+    GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
+) AS [t]
+INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void GroupBy4_navigation_aggregate_key()
+        {
+            var context = new QueryContext(impatient);
+
+            var query
+                = context.OrderDetails
+                    .GroupBy(
+                        d => d.Order,
+                        d => d,
+                        (x, y) => new { x, y = y.Max(z => z.Quantity) });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [o].[OrderID] AS [x.OrderID], [o].[CustomerID] AS [x.CustomerID], [o].[EmployeeID] AS [x.EmployeeID], [o].[OrderDate] AS [x.OrderDate], [o].[RequiredDate] AS [x.RequiredDate], [o].[ShippedDate] AS [x.ShippedDate], [o].[ShipVia] AS [x.ShipVia], [o].[Freight] AS [x.Freight], [o].[ShipName] AS [x.ShipName], [o].[ShipAddress] AS [x.ShipAddress], [o].[ShipCity] AS [x.ShipCity], [o].[ShipRegion] AS [x.ShipRegion], [o].[ShipPostalCode] AS [x.ShipPostalCode], [o].[ShipCountry] AS [x.ShipCountry], MAX([d].[Quantity]) AS [y]
+FROM [dbo].[Order Details] AS [d]
+INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
+GROUP BY [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate], [o].[RequiredDate], [o].[ShippedDate], [o].[ShipVia], [o].[Freight], [o].[ShipName], [o].[ShipAddress], [o].[ShipCity], [o].[ShipRegion], [o].[ShipPostalCode], [o].[ShipCountry]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void GroupBy4_navigation_aggregate_element()
+        {
+            var context = new QueryContext(impatient);
+
+            var query
+                = context.OrderDetails
+                    .GroupBy(
+                        d => d.ProductID,
+                        d => d.Order,
+                        (x, y) => new { x, y = y.Max(z => z.OrderDate) });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [d].[ProductID] AS [x], MAX([o].[OrderDate]) AS [y]
+FROM [dbo].[Order Details] AS [d]
+INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
+GROUP BY [d].[ProductID]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void GroupBy4_navigation_aggregate_result()
+        {
+            var context = new QueryContext(impatient);
+
+            var query
+                = context.OrderDetails
+                    .GroupBy(
+                        d => d.Order,
+                        d => d,
+                        (x, y) => new { x.Customer, y = y.Max(z => z.Quantity) });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [c].[CustomerID] AS [Customer.CustomerID], [c].[CompanyName] AS [Customer.CompanyName], [c].[ContactName] AS [Customer.ContactName], [c].[ContactTitle] AS [Customer.ContactTitle], [c].[Address] AS [Customer.Address], [c].[City] AS [Customer.City], [c].[Region] AS [Customer.Region], [c].[PostalCode] AS [Customer.PostalCode], [c].[Country] AS [Customer.Country], [c].[Phone] AS [Customer.Phone], [c].[Fax] AS [Customer.Fax], (
+    SELECT MAX([d].[Quantity])
+    FROM [dbo].[Order Details] AS [d]
+    INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
+    WHERE ((((((((((((([t].[Key.OrderID] = [o].[OrderID]) AND ([t].[Key.CustomerID] = [o].[CustomerID])) AND ([t].[Key.EmployeeID] = [o].[EmployeeID])) AND ([t].[Key.OrderDate] = [o].[OrderDate])) AND ([t].[Key.RequiredDate] = [o].[RequiredDate])) AND ([t].[Key.ShippedDate] = [o].[ShippedDate])) AND ([t].[Key.ShipVia] = [o].[ShipVia])) AND ([t].[Key.Freight] = [o].[Freight])) AND ([t].[Key.ShipName] = [o].[ShipName])) AND ([t].[Key.ShipAddress] = [o].[ShipAddress])) AND ([t].[Key.ShipCity] = [o].[ShipCity])) AND ([t].[Key.ShipRegion] = [o].[ShipRegion])) AND ([t].[Key.ShipPostalCode] = [o].[ShipPostalCode])) AND ([t].[Key.ShipCountry] = [o].[ShipCountry])
+) AS [y]
+FROM (
+    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [o_0].[OrderID] AS [Key.OrderID], [o_0].[CustomerID] AS [Key.CustomerID], [o_0].[EmployeeID] AS [Key.EmployeeID], [o_0].[OrderDate] AS [Key.OrderDate], [o_0].[RequiredDate] AS [Key.RequiredDate], [o_0].[ShippedDate] AS [Key.ShippedDate], [o_0].[ShipVia] AS [Key.ShipVia], [o_0].[Freight] AS [Key.Freight], [o_0].[ShipName] AS [Key.ShipName], [o_0].[ShipAddress] AS [Key.ShipAddress], [o_0].[ShipCity] AS [Key.ShipCity], [o_0].[ShipRegion] AS [Key.ShipRegion], [o_0].[ShipPostalCode] AS [Key.ShipPostalCode], [o_0].[ShipCountry] AS [Key.ShipCountry]
+    FROM [dbo].[Order Details] AS [d_0]
+    INNER JOIN [dbo].[Orders] AS [o_0] ON [d_0].[OrderID] = [o_0].[OrderID]
+    GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
+) AS [t]
+INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void GroupBy4_navigation_aggregate_key_element()
+        {
+            var context = new QueryContext(impatient);
+
+            var query
+                = context.OrderDetails
+                    .GroupBy(
+                        d => d.Order.Customer,
+                        d => d.Order,
+                        (x, y) => new { x, y = y.Max(z => z.OrderDate) });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [c].[CustomerID] AS [x.CustomerID], [c].[CompanyName] AS [x.CompanyName], [c].[ContactName] AS [x.ContactName], [c].[ContactTitle] AS [x.ContactTitle], [c].[Address] AS [x.Address], [c].[City] AS [x.City], [c].[Region] AS [x.Region], [c].[PostalCode] AS [x.PostalCode], [c].[Country] AS [x.Country], [c].[Phone] AS [x.Phone], [c].[Fax] AS [x.Fax], MAX([o].[OrderDate]) AS [y]
+FROM [dbo].[Order Details] AS [d]
+INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
+INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
+GROUP BY [c].[CustomerID], [c].[CompanyName], [c].[ContactName], [c].[ContactTitle], [c].[Address], [c].[City], [c].[Region], [c].[PostalCode], [c].[Country], [c].[Phone], [c].[Fax]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void GroupBy4_navigation_aggregate_key_result()
+        {
+            var context = new QueryContext(impatient);
+
+            var query
+                = context.OrderDetails
+                    .GroupBy(
+                        d => d.Order,
+                        d => d,
+                        (x, y) => new { x.Customer, y = y.Max(z => z.Quantity) });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [c].[CustomerID] AS [Customer.CustomerID], [c].[CompanyName] AS [Customer.CompanyName], [c].[ContactName] AS [Customer.ContactName], [c].[ContactTitle] AS [Customer.ContactTitle], [c].[Address] AS [Customer.Address], [c].[City] AS [Customer.City], [c].[Region] AS [Customer.Region], [c].[PostalCode] AS [Customer.PostalCode], [c].[Country] AS [Customer.Country], [c].[Phone] AS [Customer.Phone], [c].[Fax] AS [Customer.Fax], (
+    SELECT MAX([d].[Quantity])
+    FROM [dbo].[Order Details] AS [d]
+    INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
+    WHERE ((((((((((((([t].[Key.OrderID] = [o].[OrderID]) AND ([t].[Key.CustomerID] = [o].[CustomerID])) AND ([t].[Key.EmployeeID] = [o].[EmployeeID])) AND ([t].[Key.OrderDate] = [o].[OrderDate])) AND ([t].[Key.RequiredDate] = [o].[RequiredDate])) AND ([t].[Key.ShippedDate] = [o].[ShippedDate])) AND ([t].[Key.ShipVia] = [o].[ShipVia])) AND ([t].[Key.Freight] = [o].[Freight])) AND ([t].[Key.ShipName] = [o].[ShipName])) AND ([t].[Key.ShipAddress] = [o].[ShipAddress])) AND ([t].[Key.ShipCity] = [o].[ShipCity])) AND ([t].[Key.ShipRegion] = [o].[ShipRegion])) AND ([t].[Key.ShipPostalCode] = [o].[ShipPostalCode])) AND ([t].[Key.ShipCountry] = [o].[ShipCountry])
+) AS [y]
+FROM (
+    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [o_0].[OrderID] AS [Key.OrderID], [o_0].[CustomerID] AS [Key.CustomerID], [o_0].[EmployeeID] AS [Key.EmployeeID], [o_0].[OrderDate] AS [Key.OrderDate], [o_0].[RequiredDate] AS [Key.RequiredDate], [o_0].[ShippedDate] AS [Key.ShippedDate], [o_0].[ShipVia] AS [Key.ShipVia], [o_0].[Freight] AS [Key.Freight], [o_0].[ShipName] AS [Key.ShipName], [o_0].[ShipAddress] AS [Key.ShipAddress], [o_0].[ShipCity] AS [Key.ShipCity], [o_0].[ShipRegion] AS [Key.ShipRegion], [o_0].[ShipPostalCode] AS [Key.ShipPostalCode], [o_0].[ShipCountry] AS [Key.ShipCountry]
+    FROM [dbo].[Order Details] AS [d_0]
+    INNER JOIN [dbo].[Orders] AS [o_0] ON [d_0].[OrderID] = [o_0].[OrderID]
+    GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
+) AS [t]
+INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void GroupBy4_navigation_aggregate_element_result()
+        {
+            var context = new QueryContext(impatient);
+
+            var query
+                = context.OrderDetails
+                    .GroupBy(
+                        d => d,
+                        d => d.Order,
+                        (x, y) => new { x.Order, y = y.Max(z => z.OrderDate) });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [o].[OrderID] AS [Order.OrderID], [o].[CustomerID] AS [Order.CustomerID], [o].[EmployeeID] AS [Order.EmployeeID], [o].[OrderDate] AS [Order.OrderDate], [o].[RequiredDate] AS [Order.RequiredDate], [o].[ShippedDate] AS [Order.ShippedDate], [o].[ShipVia] AS [Order.ShipVia], [o].[Freight] AS [Order.Freight], [o].[ShipName] AS [Order.ShipName], [o].[ShipAddress] AS [Order.ShipAddress], [o].[ShipCity] AS [Order.ShipCity], [o].[ShipRegion] AS [Order.ShipRegion], [o].[ShipPostalCode] AS [Order.ShipPostalCode], [o].[ShipCountry] AS [Order.ShipCountry], (
+    SELECT MAX([o_0].[OrderDate])
+    FROM [dbo].[Order Details] AS [d]
+    INNER JOIN [dbo].[Orders] AS [o_0] ON [d].[OrderID] = [o_0].[OrderID]
+    WHERE (((([t].[Key.OrderID] = [d].[OrderID]) AND ([t].[Key.ProductID] = [d].[ProductID])) AND ([t].[Key.UnitPrice] = [d].[UnitPrice])) AND ([t].[Key.Quantity] = [d].[Quantity])) AND ([t].[Key.Discount] = [d].[Discount])
+) AS [y]
+FROM (
+    SELECT [d_0].[OrderID] AS [OrderID], [d_0].[ProductID] AS [ProductID], [d_0].[UnitPrice] AS [UnitPrice], [d_0].[Quantity] AS [Quantity], [d_0].[Discount] AS [Discount], [d_0].[OrderID] AS [Key.OrderID], [d_0].[ProductID] AS [Key.ProductID], [d_0].[UnitPrice] AS [Key.UnitPrice], [d_0].[Quantity] AS [Key.Quantity], [d_0].[Discount] AS [Key.Discount]
+    FROM [dbo].[Order Details] AS [d_0]
+    INNER JOIN [dbo].[Orders] AS [o_1] ON [d_0].[OrderID] = [o_1].[OrderID]
+    GROUP BY [d_0].[OrderID], [d_0].[ProductID], [d_0].[UnitPrice], [d_0].[Quantity], [d_0].[Discount]
+) AS [t]
+INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void GroupBy4_navigation_aggregate_key_element_result()
+        {
+            var context = new QueryContext(impatient);
+
+            var query
+                = context.OrderDetails
+                    .GroupBy(
+                        d => d.Order,
+                        d => d.Order,
+                        (x, y) => new { x.Customer, y = y.Max(z => z.OrderDate) });
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [c].[CustomerID] AS [Customer.CustomerID], [c].[CompanyName] AS [Customer.CompanyName], [c].[ContactName] AS [Customer.ContactName], [c].[ContactTitle] AS [Customer.ContactTitle], [c].[Address] AS [Customer.Address], [c].[City] AS [Customer.City], [c].[Region] AS [Customer.Region], [c].[PostalCode] AS [Customer.PostalCode], [c].[Country] AS [Customer.Country], [c].[Phone] AS [Customer.Phone], [c].[Fax] AS [Customer.Fax], (
+    SELECT MAX([o].[OrderDate])
+    FROM [dbo].[Order Details] AS [d]
+    INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
+    WHERE ((((((((((((([t].[Key.OrderID] = [o].[OrderID]) AND ([t].[Key.CustomerID] = [o].[CustomerID])) AND ([t].[Key.EmployeeID] = [o].[EmployeeID])) AND ([t].[Key.OrderDate] = [o].[OrderDate])) AND ([t].[Key.RequiredDate] = [o].[RequiredDate])) AND ([t].[Key.ShippedDate] = [o].[ShippedDate])) AND ([t].[Key.ShipVia] = [o].[ShipVia])) AND ([t].[Key.Freight] = [o].[Freight])) AND ([t].[Key.ShipName] = [o].[ShipName])) AND ([t].[Key.ShipAddress] = [o].[ShipAddress])) AND ([t].[Key.ShipCity] = [o].[ShipCity])) AND ([t].[Key.ShipRegion] = [o].[ShipRegion])) AND ([t].[Key.ShipPostalCode] = [o].[ShipPostalCode])) AND ([t].[Key.ShipCountry] = [o].[ShipCountry])
+) AS [y]
+FROM (
+    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [o_0].[OrderID] AS [Key.OrderID], [o_0].[CustomerID] AS [Key.CustomerID], [o_0].[EmployeeID] AS [Key.EmployeeID], [o_0].[OrderDate] AS [Key.OrderDate], [o_0].[RequiredDate] AS [Key.RequiredDate], [o_0].[ShippedDate] AS [Key.ShippedDate], [o_0].[ShipVia] AS [Key.ShipVia], [o_0].[Freight] AS [Key.Freight], [o_0].[ShipName] AS [Key.ShipName], [o_0].[ShipAddress] AS [Key.ShipAddress], [o_0].[ShipCity] AS [Key.ShipCity], [o_0].[ShipRegion] AS [Key.ShipRegion], [o_0].[ShipPostalCode] AS [Key.ShipPostalCode], [o_0].[ShipCountry] AS [Key.ShipCountry]
+    FROM [dbo].[Order Details] AS [d_0]
+    INNER JOIN [dbo].[Orders] AS [o_0] ON [d_0].[OrderID] = [o_0].[OrderID]
     GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
 ) AS [t]
 INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
