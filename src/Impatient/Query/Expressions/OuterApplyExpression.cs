@@ -1,4 +1,4 @@
-﻿using Impatient.Query.ExpressionVisitors.Utility;
+﻿using Impatient.Query.ExpressionVisitors;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
@@ -21,15 +21,12 @@ namespace Impatient.Query.Expressions
             {
                 if (outerTable != OuterTable)
                 {
-                    var oldTables = OuterTable.Flatten().Cast<Expression>();
-                    var newTables = outerTable.Flatten().Cast<Expression>();
+                    var oldTables = OuterTable.Flatten().ToArray();
+                    var newTables = outerTable.Flatten().ToArray();
 
-                    var replacingVisitor
-                        = new ExpressionReplacingExpressionVisitor(
-                            oldTables.Zip(newTables, ValueTuple.Create)
-                                .ToDictionary(t => t.Item1, t => t.Item2));
+                    var updater = new TableUpdatingExpressionVisitor(oldTables, newTables);
 
-                    innerTable = replacingVisitor.VisitAndConvert(innerTable, nameof(VisitChildren));
+                    innerTable = updater.VisitAndConvert(innerTable, nameof(VisitChildren));
                 }
 
                 return new OuterApplyExpression(outerTable, innerTable, Type);

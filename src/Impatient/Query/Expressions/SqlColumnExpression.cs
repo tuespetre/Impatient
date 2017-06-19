@@ -23,12 +23,12 @@ namespace Impatient.Query.Expressions
 
         protected override Expression VisitChildren(ExpressionVisitor visitor)
         {
-            var table = visitor.VisitAndConvert(Table, nameof(VisitChildren));
+            /*var table = visitor.VisitAndConvert(Table, nameof(VisitChildren));
 
             if (table != Table)
             {
                 return new SqlColumnExpression(table, ColumnName, Type, IsNullable);
-            }
+            }*/
 
             return this;
         }

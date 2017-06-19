@@ -4105,10 +4105,7 @@ INNER JOIN [dbo].[MyClass1] AS [m1a] ON [x].[m1b.Prop2] = [m1a].[Prop2]",
                                    select new { x, zs }).Take(10)
                         from z in q.zs
                         select new { q.x, z };
-            
-            // Drop is not a LambdaExpression or a quoted LambdaExpression so it needs to be skipped.
-            // TODO: Add checks alongside each usage of UnwrapLambda() for non-lambda funcs.
-            //query.Select(x => new { x, y = query.Where(Drop).ToList() }).ToList();
+
             query.ToList();
 
             Assert.AreEqual(
@@ -4123,6 +4120,19 @@ CROSS APPLY (
     ) AS [$c]
     FROM [dbo].[MyClass2] AS [y]
 ) AS [zs]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void NonLambdaPredicate()
+        {
+            var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Where(Drop);
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [m]",
                 SqlLog);
         }
 

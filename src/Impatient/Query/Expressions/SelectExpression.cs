@@ -1,4 +1,4 @@
-﻿using Impatient.Query.ExpressionVisitors.Utility;
+﻿using Impatient.Query.ExpressionVisitors;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
@@ -85,20 +85,17 @@ namespace Impatient.Query.Expressions
 
             if (table != Table)
             {
-                var oldTables = Table.Flatten().Cast<Expression>();
-                var newTables = table.Flatten().Cast<Expression>();
+                var oldTables = Table.Flatten().ToArray();
+                var newTables = table.Flatten().ToArray();
 
-                var replacingVisitor 
-                    = new ExpressionReplacingExpressionVisitor(
-                        oldTables.Zip(newTables, ValueTuple.Create)
-                            .ToDictionary(t => t.Item1, t => t.Item2));
+                var updater = new TableUpdatingExpressionVisitor(oldTables, newTables);
 
-                projection = replacingVisitor.VisitAndConvert(projection, nameof(VisitChildren));
-                predicate = replacingVisitor.VisitAndConvert(predicate, nameof(VisitChildren));
-                orderBy = replacingVisitor.VisitAndConvert(orderBy, nameof(VisitChildren));
-                offset = replacingVisitor.VisitAndConvert(offset, nameof(VisitChildren));
-                limit = replacingVisitor.VisitAndConvert(limit, nameof(VisitChildren));
-                grouping = replacingVisitor.VisitAndConvert(grouping, nameof(VisitChildren));
+                projection = updater.VisitAndConvert(projection, nameof(VisitChildren));
+                predicate = updater.VisitAndConvert(predicate, nameof(VisitChildren));
+                orderBy = updater.VisitAndConvert(orderBy, nameof(VisitChildren));
+                offset = updater.VisitAndConvert(offset, nameof(VisitChildren));
+                limit = updater.VisitAndConvert(limit, nameof(VisitChildren));
+                grouping = updater.VisitAndConvert(grouping, nameof(VisitChildren));
             }
 
             if (projection != Projection

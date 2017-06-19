@@ -71,29 +71,26 @@ namespace Impatient.Query.ExpressionVisitors
 
                 case GroupByResultExpression groupByResultExpression:
                 {
-                    var selectExpression = groupByResultExpression.SelectExpression;
                     var uniquifier = new TableUniquifyingExpressionVisitor();
-                    var oldTables = selectExpression.Table.Flatten();
 
-                    selectExpression = uniquifier.VisitAndConvert(selectExpression, nameof(Visit));
+                    var oldSelectExpression = groupByResultExpression.SelectExpression;
+                    var newSelectExpression = uniquifier.VisitAndConvert(oldSelectExpression, nameof(Visit));
 
-                    var newTables = selectExpression.Table.Flatten();
+                    var oldTables = oldSelectExpression.Table.Flatten().ToArray();
+                    var newTables = newSelectExpression.Table.Flatten().ToArray();
 
-                    var replacingVisitor
-                        = new ExpressionReplacingExpressionVisitor(
-                            oldTables.Zip(newTables, ValueTuple.Create<Expression, Expression>)
-                                .ToDictionary(t => t.Item1, t => t.Item2));
+                    var updater = new TableUpdatingExpressionVisitor(oldTables, newTables);
 
                     currentPath.Push("Key");
 
                     var outerKeySelector = Visit(groupByResultExpression.OuterKeySelector);
-                    var innerKeySelector = replacingVisitor.Visit(groupByResultExpression.InnerKeySelector);
-                    var elementSelector = replacingVisitor.Visit(groupByResultExpression.ElementSelector);
+                    var innerKeySelector = updater.Visit(groupByResultExpression.InnerKeySelector);
+                    var elementSelector = updater.Visit(groupByResultExpression.ElementSelector);
 
                     currentPath.Pop();
 
                     return new GroupedRelationalQueryExpression(
-                        selectExpression.UpdateProjection(new ServerProjectionExpression(elementSelector)),
+                        newSelectExpression.UpdateProjection(new ServerProjectionExpression(elementSelector)),
                         outerKeySelector,
                         innerKeySelector,
                         groupByResultExpression.InnerKeyLambda,
@@ -102,28 +99,25 @@ namespace Impatient.Query.ExpressionVisitors
 
                 case GroupedRelationalQueryExpression groupedRelationalQueryExpression:
                 {
-                    var selectExpression = groupedRelationalQueryExpression.SelectExpression;
                     var uniquifier = new TableUniquifyingExpressionVisitor();
-                    var oldTables = selectExpression.Table.Flatten();
 
-                    selectExpression = uniquifier.VisitAndConvert(selectExpression, nameof(Visit));
+                    var oldSelectExpression = groupedRelationalQueryExpression.SelectExpression;
+                    var newSelectExpression = uniquifier.VisitAndConvert(oldSelectExpression, nameof(Visit));
 
-                    var newTables = selectExpression.Table.Flatten();
+                    var oldTables = oldSelectExpression.Table.Flatten().ToArray();
+                    var newTables = newSelectExpression.Table.Flatten().ToArray();
 
-                    var replacingVisitor
-                        = new ExpressionReplacingExpressionVisitor(
-                            oldTables.Zip(newTables, ValueTuple.Create<Expression, Expression>)
-                                .ToDictionary(t => t.Item1, t => t.Item2));
+                    var updater = new TableUpdatingExpressionVisitor(oldTables, newTables);
 
                     currentPath.Push("Key");
 
                     var outerKeySelector = Visit(groupedRelationalQueryExpression.OuterKeySelector);
-                    var innerKeySelector = replacingVisitor.Visit(groupedRelationalQueryExpression.InnerKeySelector);
+                    var innerKeySelector = updater.Visit(groupedRelationalQueryExpression.InnerKeySelector);
 
                     currentPath.Pop();
 
                     return new GroupedRelationalQueryExpression(
-                        selectExpression,
+                        newSelectExpression,
                         outerKeySelector,
                         innerKeySelector,
                         groupedRelationalQueryExpression.InnerKeyLambda,

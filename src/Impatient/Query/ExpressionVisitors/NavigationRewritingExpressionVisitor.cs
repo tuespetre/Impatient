@@ -56,7 +56,9 @@ namespace Impatient.Query.ExpressionVisitors
 
             protected override Expression VisitMethodCall(MethodCallExpression node)
             {
-                if (node.Method.DeclaringType != typeof(Queryable) && node.Method.DeclaringType != typeof(Enumerable))
+                if ((node.Method.DeclaringType != typeof(Queryable) 
+                        && node.Method.DeclaringType != typeof(Enumerable))
+                    || node.ContainsNonLambdaSelectors())
                 {
                     return base.VisitMethodCall(node);
                 }

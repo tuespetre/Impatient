@@ -1,4 +1,4 @@
-﻿using Impatient.Query.ExpressionVisitors.Utility;
+﻿using Impatient.Query.ExpressionVisitors;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
@@ -40,16 +40,13 @@ namespace Impatient.Query.Expressions
 
             if (selectExpression != SelectExpression)
             {
-                var oldTables = SelectExpression.Table.Flatten().Cast<Expression>();
-                var newTables = selectExpression.Table.Flatten().Cast<Expression>();
+                var oldTables = SelectExpression.Table.Flatten().ToArray();
+                var newTables = selectExpression.Table.Flatten().ToArray();
 
-                var replacingVisitor
-                    = new ExpressionReplacingExpressionVisitor(
-                        oldTables.Zip(newTables, ValueTuple.Create)
-                            .ToDictionary(t => t.Item1, t => t.Item2));
+                var updater = new TableUpdatingExpressionVisitor(oldTables, newTables);
 
-                outerKeySelector = replacingVisitor.VisitAndConvert(outerKeySelector, nameof(VisitChildren));
-                innerKeySelector = replacingVisitor.VisitAndConvert(innerKeySelector, nameof(VisitChildren));
+                outerKeySelector = updater.VisitAndConvert(outerKeySelector, nameof(VisitChildren));
+                innerKeySelector = updater.VisitAndConvert(innerKeySelector, nameof(VisitChildren));
             }
 
             if (selectExpression != SelectExpression

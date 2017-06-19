@@ -1,4 +1,5 @@
-﻿using Impatient.Query.ExpressionVisitors.Utility;
+﻿using Impatient.Query.ExpressionVisitors;
+using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
@@ -35,29 +36,23 @@ namespace Impatient.Query.Expressions
             {
                 if (outerTable != OuterTable)
                 {
-                    var oldTables = OuterTable.Flatten().Cast<Expression>();
-                    var newTables = outerTable.Flatten().Cast<Expression>();
+                    var oldTables = OuterTable.Flatten().ToArray();
+                    var newTables = outerTable.Flatten().ToArray();
 
-                    var replacingVisitor
-                        = new ExpressionReplacingExpressionVisitor(
-                            oldTables.Zip(newTables, ValueTuple.Create)
-                                .ToDictionary(t => t.Item1, t => t.Item2));
+                    var updater = new TableUpdatingExpressionVisitor(oldTables, newTables);
 
-                    innerTable = replacingVisitor.VisitAndConvert(innerTable, nameof(VisitChildren));
-                    predicate = replacingVisitor.Visit(predicate);
+                    innerTable = updater.VisitAndConvert(innerTable, nameof(VisitChildren));
+                    predicate = updater.Visit(predicate);
                 }
 
                 if (innerTable != InnerTable)
                 {
-                    var oldTables = InnerTable.Flatten().Cast<Expression>();
-                    var newTables = innerTable.Flatten().Cast<Expression>();
+                    var oldTables = InnerTable.Flatten().ToArray();
+                    var newTables = innerTable.Flatten().ToArray();
 
-                    var replacingVisitor
-                        = new ExpressionReplacingExpressionVisitor(
-                            oldTables.Zip(newTables, ValueTuple.Create)
-                                .ToDictionary(t => t.Item1, t => t.Item2));
+                    var updater = new TableUpdatingExpressionVisitor(oldTables, newTables);
 
-                    predicate = replacingVisitor.Visit(predicate);
+                    predicate = updater.Visit(predicate);
                 }
 
                 return Recreate(outerTable, innerTable, predicate, Type);

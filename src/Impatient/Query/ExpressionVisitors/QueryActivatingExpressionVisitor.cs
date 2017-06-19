@@ -77,7 +77,7 @@ namespace Impatient.Query.ExpressionVisitors
                     {
                         var arguments = new Expression[node.Arguments.Count];
                         var alias = this.alias;
-                        this.alias = node.Arguments[1].UnwrapLambda().Parameters[0].Name;
+                        this.alias = node.Arguments[1].UnwrapLambda()?.Parameters[0].Name;
                         arguments[0] = Visit(node.Arguments[0]);
                         this.alias = null;
                         arguments[1] = Visit(node.Arguments[1]);
@@ -99,9 +99,9 @@ namespace Impatient.Query.ExpressionVisitors
                     {
                         var arguments = new Expression[node.Arguments.Count];
                         var alias = this.alias;
-                        this.alias = node.Arguments[2].UnwrapLambda().Parameters[0].Name;
+                        this.alias = node.Arguments[2].UnwrapLambda()?.Parameters[0].Name;
                         arguments[0] = Visit(node.Arguments[0]);
-                        this.alias = node.Arguments[3].UnwrapLambda().Parameters[0].Name;
+                        this.alias = node.Arguments[3].UnwrapLambda()?.Parameters[0].Name;
                         arguments[1] = Visit(node.Arguments[1]);
                         this.alias = null;
                         for (var i = 2; i < node.Arguments.Count; i++)
@@ -117,7 +117,7 @@ namespace Impatient.Query.ExpressionVisitors
                     {
                         var arguments = new Expression[node.Arguments.Count];
                         var alias = this.alias;
-                        this.alias = node.Arguments[1].UnwrapLambda().Parameters[0].Name;
+                        this.alias = node.Arguments[1].UnwrapLambda()?.Parameters[0].Name;
                         arguments[0] = Visit(node.Arguments[0]);
                         this.alias = null;
                         for (var i = 1; i < node.Arguments.Count; i++)
@@ -133,9 +133,9 @@ namespace Impatient.Query.ExpressionVisitors
                     {
                         var arguments = new Expression[node.Arguments.Count];
                         var alias = this.alias;
-                        this.alias = node.Arguments[2].UnwrapLambda().Parameters[0].Name;
+                        this.alias = node.Arguments[2].UnwrapLambda()?.Parameters[0].Name;
                         arguments[0] = Visit(node.Arguments[0]);
-                        this.alias = node.Arguments[2].UnwrapLambda().Parameters[1].Name;
+                        this.alias = node.Arguments[2].UnwrapLambda()?.Parameters[1].Name;
                         arguments[1] = Visit(node.Arguments[1]);
                         this.alias = null;
                         arguments[2] = Visit(node.Arguments[2]);

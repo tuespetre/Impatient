@@ -45,6 +45,13 @@ namespace Impatient
 
         #endregion
 
+        public static bool ContainsNonLambdaSelectors(this MethodCallExpression methodCallExpression)
+        {
+            return methodCallExpression.Arguments
+                .Where(a => typeof(Delegate).IsAssignableFrom(a.Type))
+                .Any(a => a.NodeType != ExpressionType.Lambda);
+        }
+
         public static BinaryExpression Balance(this BinaryExpression binaryExpression)
         {
             return BinaryBalancingExpressionVisitor.Instance.VisitAndConvert(binaryExpression, nameof(Balance));

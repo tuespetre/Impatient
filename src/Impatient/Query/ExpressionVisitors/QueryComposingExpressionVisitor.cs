@@ -61,10 +61,36 @@ namespace Impatient.Query.ExpressionVisitors
             return base.Visit(node);
         }
 
+        protected override Expression VisitLambda<T>(Expression<T> node)
+        {
+            if (node.ReturnType.FindGenericType(typeof(IQueryable<>)) != null)
+            {
+                var parameters = node.Parameters.Select(p => VisitAndConvert(p, nameof(VisitLambda))).ToArray();
+                var body = Visit(node.Body);
+
+                if (body.Type.FindGenericType(typeof(IQueryable<>)) == null)
+                {
+                    body 
+                        = Expression.Call(
+                            GetGenericMethodDefinition((IEnumerable<object> o) => o.AsQueryable())
+                                .MakeGenericMethod(body.Type.GetSequenceType()),
+                            body);
+                }
+
+                return Expression.Lambda(
+                    node.Type,
+                    body,
+                    node.Name,
+                    node.TailCall,
+                    parameters);
+            }
+
+            return base.VisitLambda(node);
+        }
+
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            if (node.Method.DeclaringType == typeof(Queryable)
-                || node.Method.DeclaringType == typeof(Enumerable))
+            if (node.Method.DeclaringType == typeof(Queryable) || node.Method.DeclaringType == typeof(Enumerable))
             {
                 var visitedArguments = new Expression[node.Arguments.Count];
 
@@ -78,7 +104,8 @@ namespace Impatient.Query.ExpressionVisitors
                        select p).Any();
 
                 if (outerSource is EnumerableRelationalQueryExpression outerQuery
-                    && !isComparerOverload)
+                    && !isComparerOverload
+                    && !node.ContainsNonLambdaSelectors())
                 {
                     switch (node.Method.Name)
                     {
@@ -704,9 +731,7 @@ namespace Impatient.Query.ExpressionVisitors
                                                         resultLambda.Parameters[1],
                                                         new GroupByResultExpression(
                                                             outerSelectExpression,
-                                                            keySelectorLambda.Body.Replace(
-                                                                keySelectorLambda.Parameters[0],
-                                                                resultLambda.Parameters[0]),
+                                                            resultLambda.Parameters[0],
                                                             keySelector,
                                                             keySelectorLambda,
                                                             elementSelector,
@@ -2160,7 +2185,7 @@ namespace Impatient.Query.ExpressionVisitors
                     MatchQueryableMethod(node.Method),
                     node.Arguments
                         .Zip(visitedArguments, (original, visited) => visited ?? Visit(original))
-                        .Select(a => a.NodeType == ExpressionType.Quote ? a.UnwrapLambda() : a));
+                        .Select(a => a.UnwrapLambda() ?? a));
             }
 
             return base.VisitMethodCall(node);
@@ -2234,25 +2259,22 @@ namespace Impatient.Query.ExpressionVisitors
 
                 case GroupByResultExpression groupByResultExpression:
                 {
-                    var selectExpression = groupByResultExpression.SelectExpression;
                     var uniquifier = new TableUniquifyingExpressionVisitor();
-                    var oldTables = selectExpression.Table.Flatten();
 
-                    selectExpression = uniquifier.VisitAndConvert(selectExpression, nameof(Visit));
+                    var oldSelectExpression = groupByResultExpression.SelectExpression;
+                    var newSelectExpression = uniquifier.VisitAndConvert(oldSelectExpression, nameof(Visit));
 
-                    var newTables = selectExpression.Table.Flatten();
+                    var oldTables = oldSelectExpression.Table.Flatten().ToArray();
+                    var newTables = newSelectExpression.Table.Flatten().ToArray();
 
-                    var replacingVisitor
-                        = new ExpressionReplacingExpressionVisitor(
-                            oldTables.Zip(newTables, ValueTuple.Create<Expression, Expression>)
-                                .ToDictionary(t => t.Item1, t => t.Item2));
+                    var updater = new TableUpdatingExpressionVisitor(oldTables, newTables);
 
                     var outerKeySelector = groupByResultExpression.OuterKeySelector;
-                    var innerKeySelector = replacingVisitor.Visit(groupByResultExpression.InnerKeySelector);
-                    var elementSelector = replacingVisitor.Visit(groupByResultExpression.ElementSelector);
+                    var innerKeySelector = updater.Visit(groupByResultExpression.InnerKeySelector);
+                    var elementSelector = updater.Visit(groupByResultExpression.ElementSelector);
 
                     return new EnumerableRelationalQueryExpression(
-                        selectExpression
+                        newSelectExpression
                             .UpdateProjection(new ServerProjectionExpression(elementSelector))
                             .AddToPredicate(Expression.Equal(outerKeySelector, innerKeySelector)));
                 }

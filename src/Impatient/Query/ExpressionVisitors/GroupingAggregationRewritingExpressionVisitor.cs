@@ -24,6 +24,7 @@ namespace Impatient.Query.ExpressionVisitors
 
             if ((node.Method.DeclaringType == typeof(Queryable)
                     || node.Method.DeclaringType == typeof(Enumerable))
+                && !node.ContainsNonLambdaSelectors()
                 && arguments[0] is GroupByResultExpression relationalGrouping)
             {
                 switch (node.Method.Name)

@@ -19,26 +19,23 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 case GroupByResultExpression groupByResultExpression:
                 {
-                    var selectExpression = groupByResultExpression.SelectExpression;
                     var uniquifier = new TableUniquifyingExpressionVisitor();
-                    var oldTables = selectExpression.Table.Flatten();
 
-                    selectExpression = uniquifier.VisitAndConvert(selectExpression, nameof(VisitMethodCall));
+                    var oldSelectExpression = groupByResultExpression.SelectExpression;
+                    var newSelectExpression = uniquifier.VisitAndConvert(oldSelectExpression, nameof(VisitMethodCall));
 
-                    var newTables = selectExpression.Table.Flatten();
+                    var oldTables = oldSelectExpression.Table.Flatten().ToArray();
+                    var newTables = newSelectExpression.Table.Flatten().ToArray();
 
-                    var replacingVisitor
-                        = new ExpressionReplacingExpressionVisitor(
-                            oldTables.Zip(newTables, ValueTuple.Create<Expression, Expression>)
-                                .ToDictionary(t => t.Item1, t => t.Item2));
+                    var updater = new TableUpdatingExpressionVisitor(oldTables, newTables);
 
                     var outerKeySelector = groupByResultExpression.OuterKeySelector;
-                    var innerKeySelector = replacingVisitor.Visit(groupByResultExpression.InnerKeySelector);
-                    var elementSelector = replacingVisitor.Visit(groupByResultExpression.ElementSelector);
+                    var innerKeySelector = updater.Visit(groupByResultExpression.InnerKeySelector);
+                    var elementSelector = updater.Visit(groupByResultExpression.ElementSelector);
 
                     var elements
                         = new EnumerableRelationalQueryExpression(
-                            selectExpression
+                            newSelectExpression
                                 .UpdateProjection(new ServerProjectionExpression(elementSelector))
                                 .AddToPredicate(Expression.Equal(outerKeySelector, innerKeySelector)));
 
