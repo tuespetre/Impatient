@@ -6,6 +6,16 @@ using System.Reflection;
 
 namespace Impatient.Query.ExpressionVisitors
 {
+    public class NavigationDescriptor
+    {
+        public Type Type;
+        public MemberInfo Member;
+        public LambdaExpression OuterKeySelector;
+        public LambdaExpression InnerKeySelector;
+        public bool IsNullable;
+        public Expression Expansion;
+    }
+
     public class NavigationRewritingExpressionVisitor : ExpressionVisitor
     {
         private readonly IEnumerable<NavigationDescriptor> navigationDescriptors;
@@ -1635,9 +1645,9 @@ namespace Impatient.Query.ExpressionVisitors
 
             protected override Expression VisitMember(MemberExpression node)
             {
-                var descriptor = descriptors.Cast<NavigationDescriptor?>().SingleOrDefault(d => d?.Member == node.Member);
+                var descriptor = descriptors.Cast<NavigationDescriptor>().SingleOrDefault(d => d.Member == node.Member);
 
-                if (!descriptor.HasValue)
+                if (descriptor == null)
                 {
                     return base.VisitMember(node);
                 }
@@ -1651,7 +1661,7 @@ namespace Impatient.Query.ExpressionVisitors
                     {
                         FoundNavigations.Add(new FoundNavigation
                         {
-                            Descriptor = descriptor.Value,
+                            Descriptor = descriptor,
                             Path = path,
                             SourceType = node.Expression.Type,
                             DestinationType = node.Type,
@@ -1766,15 +1776,5 @@ namespace Impatient.Query.ExpressionVisitors
                 }
             }
         }
-    }
-
-    public struct NavigationDescriptor
-    {
-        public Type Type;
-        public MemberInfo Member;
-        public LambdaExpression OuterKeySelector;
-        public LambdaExpression InnerKeySelector;
-        public bool IsNullable;
-        public Expression Expansion;
     }
 }

@@ -29,9 +29,19 @@ namespace Impatient.Query
         public TranslatabilityAnalyzingExpressionVisitor TranslatabilityAnalyzingExpressionVisitor
             => translatabilityAnalyzingExpressionVisitor;
 
+        private List<PrimaryKeyDescriptor> primaryKeyDescriptors = new List<PrimaryKeyDescriptor>();
         private List<NavigationDescriptor> navigationDescriptors = new List<NavigationDescriptor>();
 
-        public DefaultImpatientExpressionVisitorProvider WithNavigations(IEnumerable<NavigationDescriptor> navigationDescriptors)
+        public DefaultImpatientExpressionVisitorProvider WithPrimaryKeyDescriptors(
+            IEnumerable<PrimaryKeyDescriptor> primaryKeyDescriptors)
+        {
+            this.primaryKeyDescriptors.AddRange(primaryKeyDescriptors);
+
+            return this;
+        }
+
+        public DefaultImpatientExpressionVisitorProvider WithNavigationDescriptors(
+            IEnumerable<NavigationDescriptor> navigationDescriptors)
         {
             this.navigationDescriptors.AddRange(navigationDescriptors);
 
@@ -42,6 +52,7 @@ namespace Impatient.Query
         {
             get
             {
+                yield return new KeyEqualityRewritingExpressionVisitor(primaryKeyDescriptors, navigationDescriptors);
                 yield return new NavigationRewritingExpressionVisitor(navigationDescriptors);
             }
         }

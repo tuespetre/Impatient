@@ -5,11 +5,8 @@ using Impatient.Tests.Northwind;
 using Impatient.Tests.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Data.Common;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -80,7 +77,7 @@ namespace Impatient.Tests
         {
             var expressionVisitorProvider =
                 new DefaultImpatientExpressionVisitorProvider()
-                    .WithNavigations(new[]
+                    .WithNavigationDescriptors(new[]
                     {
                         new NavigationDescriptor
                         {

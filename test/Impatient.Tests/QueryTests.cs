@@ -4105,9 +4105,9 @@ INNER JOIN [dbo].[MyClass1] AS [m1a] ON [x].[m1b.Prop2] = [m1a].[Prop2]",
                                    select new { x, zs }).Take(10)
                         from z in q.zs
                         select new { q.x, z };
-
+            
             // Drop is not a LambdaExpression or a quoted LambdaExpression so it needs to be skipped.
-            // Every place that calls UnwrapLambda() is going to need checks for this.
+            // TODO: Add checks alongside each usage of UnwrapLambda() for non-lambda funcs.
             //query.Select(x => new { x, y = query.Where(Drop).ToList() }).ToList();
             query.ToList();
 
