@@ -25,27 +25,42 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                     case nameof(Queryable.Single):
                     case nameof(Queryable.SingleOrDefault):
                     {
-                        if (methodCallExpression.Arguments.Count != 1)
+                        var targetSequence = methodCallExpression.Arguments[0];
+                        var targetSequenceType = methodCallExpression.Arguments[0].Type.GetSequenceType();
+                        var targetMethod = methodCallExpression.Method.GetGenericMethodDefinition();
+                        var selectorParameter = Expression.Parameter(targetSequenceType, "x");
+
+                        if (methodCallExpression.Arguments.Count == 2)
                         {
-                            // TODO: also optimize predicate overloads
-                            break;
+                            targetMethod
+                                = (from m in methodCallExpression.Method.DeclaringType.GetMethods()
+                                   where m.Name == targetMethod.Name
+                                   where m.GetParameters().Length == 1
+                                   select m).Single();
+
+                            targetSequence
+                                = Expression.Call(
+                                    methodCallExpression.Method.DeclaringType == typeof(Queryable)
+                                        ? queryableWhere.MakeGenericMethod(targetSequenceType)
+                                        : enumerableWhere.MakeGenericMethod(targetSequenceType),
+                                    targetSequence,
+                                    methodCallExpression.Arguments[1]);
                         }
 
-                        var sequenceType = methodCallExpression.Arguments[0].Type.GetSequenceType();
-
-                        var parameter = Expression.Parameter(sequenceType, "x");
-
-                        return Expression.Call(
-                            methodCallExpression.Method.GetGenericMethodDefinition().MakeGenericMethod(node.Type),
-                            Expression.Call(
+                        var selectCall
+                            = Expression.Call(
                                 methodCallExpression.Method.DeclaringType == typeof(Queryable)
-                                    ? queryableSelect.MakeGenericMethod(sequenceType, node.Type)
-                                    : enumerableSelect.MakeGenericMethod(sequenceType, node.Type),
-                                methodCallExpression.Arguments[0],
+                                    ? queryableSelect.MakeGenericMethod(targetSequenceType, node.Type)
+                                    : enumerableSelect.MakeGenericMethod(targetSequenceType, node.Type),
+                                targetSequence,
                                 Expression.Quote(
                                     Expression.Lambda(
-                                        Expression.MakeMemberAccess(parameter, node.Member),
-                                        parameter))));
+                                        Expression.MakeMemberAccess(selectorParameter, node.Member),
+                                        selectorParameter)));
+
+                        return Expression.Call(
+                            targetMethod.MakeGenericMethod(node.Type),
+                            selectCall);
                     }
 
                     case nameof(Queryable.ElementAt):
@@ -77,7 +92,13 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
         private static readonly MethodInfo enumerableSelect
             = GetGenericMethodDefinition((IEnumerable<object> e) => e.Select(x => x));
 
+        private static readonly MethodInfo enumerableWhere
+            = GetGenericMethodDefinition((IEnumerable<bool> e) => e.Where(x => x));
+
         private static readonly MethodInfo queryableSelect
             = GetGenericMethodDefinition((IQueryable<object> e) => e.Select(x => x));
+
+        private static readonly MethodInfo queryableWhere
+            = GetGenericMethodDefinition((IQueryable<bool> e) => e.Where(x => x));
     }
 }

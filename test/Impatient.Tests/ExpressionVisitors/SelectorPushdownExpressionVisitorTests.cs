@@ -40,11 +40,27 @@ namespace Impatient.Tests.ExpressionVisitors
         }
 
         [TestMethod]
+        public void Works_with_First_predicate()
+        {
+            AssertTransformation(
+                input: q => q.First(x => x.Prop1.Day > 1).Prop1,
+                output: q => q.Where(x => x.Prop1.Day > 1).Select(x => x.Prop1).First());
+        }
+
+        [TestMethod]
         public void Works_with_FirstOrDefault()
         {
             AssertTransformation(
                 input: q => q.FirstOrDefault().Prop1,
                 output: q => q.Select(x => x.Prop1).FirstOrDefault());
+        }
+
+        [TestMethod]
+        public void Works_with_FirstOrDefault_predicate()
+        {
+            AssertTransformation(
+                input: q => q.FirstOrDefault(x => x.Prop1.Day > 1).Prop1,
+                output: q => q.Where(x => x.Prop1.Day > 1).Select(x => x.Prop1).FirstOrDefault());
         }
 
         [TestMethod]
@@ -56,11 +72,27 @@ namespace Impatient.Tests.ExpressionVisitors
         }
 
         [TestMethod]
+        public void Works_with_Last_predicate()
+        {
+            AssertTransformation(
+                input: q => q.Last(x => x.Prop1.Day > 1).Prop1,
+                output: q => q.Where(x => x.Prop1.Day > 1).Select(x => x.Prop1).Last());
+        }
+
+        [TestMethod]
         public void Works_with_LastOrDefault()
         {
             AssertTransformation(
                 input: q => q.LastOrDefault().Prop1,
                 output: q => q.Select(x => x.Prop1).LastOrDefault());
+        }
+
+        [TestMethod]
+        public void Works_with_LastOrDefault_predicate()
+        {
+            AssertTransformation(
+                input: q => q.LastOrDefault(x => x.Prop1.Day > 1).Prop1,
+                output: q => q.Where(x => x.Prop1.Day > 1).Select(x => x.Prop1).LastOrDefault());
         }
 
         [TestMethod]
@@ -72,11 +104,27 @@ namespace Impatient.Tests.ExpressionVisitors
         }
 
         [TestMethod]
+        public void Works_with_Single_predicate()
+        {
+            AssertTransformation(
+                input: q => q.Single(x => x.Prop1.Day > 1).Prop1,
+                output: q => q.Where(x => x.Prop1.Day > 1).Select(x => x.Prop1).Single());
+        }
+
+        [TestMethod]
         public void Works_with_SingleOrDefault()
         {
             AssertTransformation(
                 input: q => q.SingleOrDefault().Prop1,
                 output: q => q.Select(x => x.Prop1).SingleOrDefault());
+        }
+
+        [TestMethod]
+        public void Works_with_SingleOrDefault_predicate()
+        {
+            AssertTransformation(
+                input: q => q.SingleOrDefault(x => x.Prop1.Day > 1).Prop1,
+                output: q => q.Where(x => x.Prop1.Day > 1).Select(x => x.Prop1).SingleOrDefault());
         }
 
         [TestMethod]
