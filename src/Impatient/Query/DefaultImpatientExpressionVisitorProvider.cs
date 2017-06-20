@@ -14,6 +14,7 @@ namespace Impatient.Query
         public IEnumerable<ExpressionVisitor> RewritingExpressionVisitors { get; } = new ExpressionVisitor[]
         {
             new NullableMemberRewritingExpressionVisitor(),
+            new DateTimeMemberRewritingExpressionVisitor(),
             new CollectionContainsRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor),
             new EnumerableContainsRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor),
         };

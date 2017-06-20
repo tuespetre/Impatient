@@ -4,6 +4,10 @@ namespace Impatient.Query.Expressions
 {
     public class SqlFragmentExpression : SqlExpression
     {
+        public SqlFragmentExpression(string fragment) : this(fragment, typeof(void))
+        {
+        }
+
         public SqlFragmentExpression(string fragment, Type type)
         {
             Fragment = fragment ?? throw new ArgumentNullException(nameof(fragment));
