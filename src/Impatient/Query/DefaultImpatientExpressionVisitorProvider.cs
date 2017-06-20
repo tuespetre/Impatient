@@ -13,13 +13,14 @@ namespace Impatient.Query
 
         public IEnumerable<ExpressionVisitor> RewritingExpressionVisitors { get; } = new ExpressionVisitor[]
         {
+            new NullableMemberRewritingExpressionVisitor(),
             new CollectionContainsRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor),
             new EnumerableContainsRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor),
         };
 
         public IEnumerable<ExpressionVisitor> OptimizingExpressionVisitors { get; } = new ExpressionVisitor[]
         {
-            new PartialEvaluatingExpressionVisitor(),
+            new SelectorPushdownExpressionVisitor(),
             new BooleanOptimizingExpressionVisitor(),
         };
 

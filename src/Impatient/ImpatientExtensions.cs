@@ -45,6 +45,13 @@ namespace Impatient
 
         #endregion
 
+        public static bool IsNullableType(this Type type)
+        {
+            return type != null
+                && type.IsConstructedGenericType
+                && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+        }
+
         public static bool ContainsNonLambdaSelectors(this MethodCallExpression methodCallExpression)
         {
             return methodCallExpression.Arguments

@@ -1,77 +1,18 @@
 ﻿using Impatient.Query;
-using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors;
 using Impatient.Tests.Northwind;
 using Impatient.Tests.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
+using static Impatient.Tests.Utilities.QueryExpressionHelper;
 
 namespace Impatient.Tests
 {
     [TestClass]
     public class NavigationTests
     {
-        private static readonly ImpatientQueryProvider impatient;
-
-        private static readonly StringBuilder commandLog = new StringBuilder();
-
-        private static string SqlLog => commandLog.ToString();
-
-        private static Expression CreateQueryExpression<TElement>()
-        {
-            var type = typeof(TElement);
-
-            var annotation = type.GetTypeInfo().GetCustomAttribute<TableAttribute>();
-
-            var table = new BaseTableExpression(
-                annotation?.Schema ?? "dbo",
-                annotation?.Name ?? type.Name,
-                (annotation?.Name ?? type.Name).ToLower().First().ToString(),
-                type);
-
-            return new EnumerableRelationalQueryExpression(
-                new SelectExpression(
-                    new ServerProjectionExpression(
-                        Expression.MemberInit(
-                            Expression.New(type),
-                            from property in type.GetTypeInfo().DeclaredProperties
-                            where property.PropertyType.IsScalarType()
-                            let nullable =
-                                (property.PropertyType.IsConstructedGenericType
-                                    && property.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                                || (!property.PropertyType.GetTypeInfo().IsValueType
-                                    && property.GetCustomAttribute<RequiredAttribute>() == null)
-                            let column = new SqlColumnExpression(table, property.Name, property.PropertyType, nullable)
-                            select Expression.Bind(property, column))),
-                    table));
-        }
-
-        private static LambdaExpression GetExpression<TSource, TResult>(Expression<Func<TSource, TResult>> expression)
-        {
-            return expression;
-        }
-
-        private class QueryContext
-        {
-            private readonly ImpatientQueryProvider impatient;
-
-            public QueryContext(ImpatientQueryProvider impatient)
-            {
-                this.impatient = impatient;
-            }
-
-            public IQueryable<Customer> Customers => impatient.CreateQuery<Customer>(CreateQueryExpression<Customer>());
-
-            public IQueryable<Order> Orders => impatient.CreateQuery<Order>(CreateQueryExpression<Order>());
-
-            public IQueryable<OrderDetail> OrderDetails => impatient.CreateQuery<OrderDetail>(CreateQueryExpression<OrderDetail>());
-        }
+        private static NorthwindQueryContext context;
 
         static NavigationTests()
         {
@@ -113,34 +54,25 @@ namespace Impatient.Tests
                         },
                     });
 
-            impatient = new ImpatientQueryProvider(
-                new TestImpatientConnectionFactory(@"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True"),
-                new DefaultImpatientQueryCache(),
-                expressionVisitorProvider)
-            {
-                DbCommandInterceptor = command =>
-                {
-                    if (commandLog.Length > 0)
-                    {
-                        commandLog.AppendLine().AppendLine();
-                    }
+            var impatient 
+                = new ImpatientQueryProvider(
+                    new TestImpatientConnectionFactory(
+                        @"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True"),
+                    new DefaultImpatientQueryCache(),
+                    expressionVisitorProvider);
 
-                    commandLog.Append(command.CommandText);
-                }
-            };
+            context = new NorthwindQueryContext(impatient);
         }
 
         [TestCleanup]
         public void Cleanup()
         {
-            commandLog.Clear();
+            context.ClearLog();
         }
 
         [TestMethod]
         public void Where_navigation_m1r()
         {
-            var context = new QueryContext(impatient);
-
             var query = from o in context.Orders
                         where o.Customer.City == "Berlin"
                         select o;
@@ -152,14 +84,12 @@ namespace Impatient.Tests
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 WHERE [c].[City] = N'Berlin'",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Where_navigation_m1r_m1r()
         {
-            var context = new QueryContext(impatient);
-
             var query = from d in context.OrderDetails
                         where d.Order.Customer.City == "Berlin"
                         select d;
@@ -172,14 +102,12 @@ FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 WHERE [c].[City] = N'Berlin'",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Where_navigation_m1r_m1r_repeated_access()
         {
-            var context = new QueryContext(impatient);
-
             var query = from d in context.OrderDetails
                         where d.Order.Customer.City == "Berlin"
                         where d.Order.Customer.City != "Winnipeg"
@@ -195,14 +123,12 @@ FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 WHERE ([c].[City] = N'Berlin') AND (([c].[City] IS NULL OR ([c].[City] <> N'Winnipeg')))",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Where2_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query = context.Orders.Where((o, i) => o.Customer.City == "Berlin");
 
             query.ToList();
@@ -212,14 +138,12 @@ WHERE ([c].[City] = N'Berlin') AND (([c].[City] IS NULL OR ([c].[City] <> N'Winn
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 WHERE [c].[City] = N'Berlin'",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Select_navigation_m1r()
         {
-            var context = new QueryContext(impatient);
-
             var query = from o in context.Orders
                         select o.Customer;
 
@@ -229,14 +153,12 @@ WHERE [c].[City] = N'Berlin'",
                 @"SELECT [c].[CustomerID] AS [CustomerID], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Address] AS [Address], [c].[City] AS [City], [c].[Region] AS [Region], [c].[PostalCode] AS [PostalCode], [c].[Country] AS [Country], [c].[Phone] AS [Phone], [c].[Fax] AS [Fax]
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Select_navigation_m1r_repeated_access()
         {
-            var context = new QueryContext(impatient);
-
             var query = from o in context.Orders
                         select new
                         {
@@ -253,14 +175,12 @@ INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]",
                 @"SELECT [o].[OrderID] AS [OrderID], [o].[OrderDate] AS [OrderDate], [c].[CustomerID] AS [CustomerID], [c].[ContactName] AS [ContactName], [c].[CompanyName] AS [CompanyName]
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Select_navigation_m1r_m1r()
         {
-            var context = new QueryContext(impatient);
-
             var query = from d in context.OrderDetails
                         select d.Order.Customer;
 
@@ -271,14 +191,12 @@ INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]",
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Select_navigation_12m_scalar()
         {
-            var context = new QueryContext(impatient);
-
             var query = from c in context.Customers
                         select new
                         {
@@ -300,14 +218,12 @@ INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]",
     WHERE [c].[CustomerID] = [o].[CustomerID]
 ) AS [max]
 FROM [dbo].[Customers] AS [c]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void SelectMany_navigation_12m()
         {
-            var context = new QueryContext(impatient);
-
             var query = from c in context.Customers
                         from o in c.Orders
                         select new { c.CustomerID, o.OrderID };
@@ -318,14 +234,12 @@ FROM [dbo].[Customers] AS [c]",
                 @"SELECT [c].[CustomerID] AS [CustomerID], [o].[OrderID] AS [OrderID]
 FROM [dbo].[Customers] AS [c]
 INNER JOIN [dbo].[Orders] AS [o] ON [c].[CustomerID] = [o].[CustomerID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void SelectMany_navigation_12m_2()
         {
-            var context = new QueryContext(impatient);
-
             var query = context.Customers.SelectMany(c => c.Orders).Select(o => o.OrderID);
 
             query.ToList();
@@ -334,14 +248,12 @@ INNER JOIN [dbo].[Orders] AS [o] ON [c].[CustomerID] = [o].[CustomerID]",
                 @"SELECT [o].[OrderID]
 FROM [dbo].[Customers] AS [c]
 INNER JOIN [dbo].[Orders] AS [o] ON [c].[CustomerID] = [o].[CustomerID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void SelectMany_navigation_12m_12m()
         {
-            var context = new QueryContext(impatient);
-
             var query = from c in context.Customers
                         from o in c.Orders
                         from d in o.OrderDetails
@@ -354,14 +266,12 @@ INNER JOIN [dbo].[Orders] AS [o] ON [c].[CustomerID] = [o].[CustomerID]",
 FROM [dbo].[Customers] AS [c]
 INNER JOIN [dbo].[Orders] AS [o] ON [c].[CustomerID] = [o].[CustomerID]
 INNER JOIN [dbo].[Order Details] AS [d] ON [o].[OrderID] = [d].[OrderID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void SelectMany_navigation_12m_DefaultIfEmpty()
         {
-            var context = new QueryContext(impatient);
-
             var query = from c in context.Customers
                         from o in c.Orders.DefaultIfEmpty()
                         select new { c.CustomerID, o.OrderID };
@@ -375,22 +285,19 @@ LEFT JOIN (
     SELECT 0 AS [$empty], [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry]
     FROM [dbo].[Orders] AS [o_0]
 ) AS [o] ON [c].[CustomerID] = [o].[CustomerID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void SelectMany_navigation_12m_DefaultIfEmpty_12m_DefaultIfEmpty()
         {
-            var context = new QueryContext(impatient);
-
             var query = from c in context.Customers
                         from o in c.Orders.DefaultIfEmpty()
                         from d in o.OrderDetails.DefaultIfEmpty()
                         select new { c.CustomerID, o.OrderID };
 
             query.ToList();
-
-            // TODO: Eliminate the unnecessary null checking in the predicate
+            
             Assert.AreEqual(
                 @"SELECT [c].[CustomerID] AS [CustomerID], [o].[OrderID] AS [OrderID]
 FROM [dbo].[Customers] AS [c]
@@ -402,14 +309,12 @@ LEFT JOIN (
     SELECT 0 AS [$empty], [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[UnitPrice] AS [UnitPrice], [d].[Quantity] AS [Quantity], [d].[Discount] AS [Discount]
     FROM [dbo].[Order Details] AS [d]
 ) AS [d_0] ON (([o].[OrderID] IS NULL AND [d_0].[OrderID] IS NULL) OR ([o].[OrderID] = [d_0].[OrderID]))",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void OrderBy_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query = from o in context.Orders
                         orderby o.Customer.ContactName
                         select o;
@@ -421,14 +326,12 @@ LEFT JOIN (
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 ORDER BY [c].[ContactName] ASC",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void OrderByDescending_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query = from o in context.Orders
                         orderby o.Customer.ContactName descending
                         select o;
@@ -440,14 +343,12 @@ ORDER BY [c].[ContactName] ASC",
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 ORDER BY [c].[ContactName] DESC",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void ThenBy_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query = from o in context.Orders
                         orderby o.Customer.City, o.Customer.ContactName
                         select o;
@@ -459,14 +360,12 @@ ORDER BY [c].[ContactName] DESC",
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 ORDER BY [c].[City] ASC, [c].[ContactName] ASC",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void ThenByDescending_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query = from o in context.Orders
                         orderby o.Customer.City, o.Customer.ContactName descending
                         select o;
@@ -478,14 +377,12 @@ ORDER BY [c].[City] ASC, [c].[ContactName] ASC",
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 ORDER BY [c].[City] ASC, [c].[ContactName] DESC",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void SkipWhile1_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query = context.Orders.SkipWhile(o => o.Customer.City != "Berlin");
 
             query.ToList();
@@ -506,14 +403,12 @@ WHERE [t].[$rownumber] >= (
     ) AS [t_0]
     WHERE [t_0].[City] = N'Berlin'
 )",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void SkipWhile2_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query = context.Orders.SkipWhile((o, i) => o.Customer.City != "Berlin");
 
             query.ToList();
@@ -534,14 +429,12 @@ WHERE [t].[$rownumber] >= (
     ) AS [t_0]
     WHERE [t_0].[City] = N'Berlin'
 )",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void TakeWhile1_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query = context.Orders.TakeWhile(o => o.Customer.City != "Berlin");
 
             query.ToList();
@@ -562,14 +455,12 @@ WHERE [t].[$rownumber] < (
     ) AS [t_0]
     WHERE [t_0].[City] = N'Berlin'
 )",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void TakeWhile2_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query = context.Orders.TakeWhile((o, i) => o.Customer.City != "Berlin");
 
             query.ToList();
@@ -590,14 +481,12 @@ WHERE [t].[$rownumber] < (
     ) AS [t_0]
     WHERE [t_0].[City] = N'Berlin'
 )",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void All_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var result = context.Orders.All(o => o.Customer.ContactName != null);
 
             Assert.AreEqual(
@@ -607,14 +496,12 @@ WHERE [t].[$rownumber] < (
     INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
     WHERE [c].[ContactName] IS NULL
 ) THEN 1 ELSE 0 END) AS BIT)",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Any2_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var result = context.Orders.Any(o => o.Customer.ContactName != null);
 
             Assert.AreEqual(
@@ -624,14 +511,12 @@ WHERE [t].[$rownumber] < (
     INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
     WHERE [c].[ContactName] IS NOT NULL
 ) THEN 1 ELSE 0 END) AS BIT)",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Count2_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var result = context.Orders.Count(o => o.Customer.ContactName != null);
 
             Assert.AreEqual(
@@ -639,14 +524,12 @@ WHERE [t].[$rownumber] < (
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 WHERE [c].[ContactName] IS NOT NULL",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void LongCount2_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var result = context.Orders.LongCount(o => o.Customer.ContactName != null);
 
             Assert.AreEqual(
@@ -654,14 +537,12 @@ WHERE [c].[ContactName] IS NOT NULL",
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 WHERE [c].[ContactName] IS NOT NULL",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void First2_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var result = context.Orders.First(o => o.Customer.ContactName != null);
 
             Assert.AreEqual(
@@ -669,14 +550,12 @@ WHERE [c].[ContactName] IS NOT NULL",
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 WHERE [c].[ContactName] IS NOT NULL",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void FirstOrDefault2_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var result = context.Orders.FirstOrDefault(o => o.Customer.ContactName != null);
 
             Assert.AreEqual(
@@ -684,14 +563,12 @@ WHERE [c].[ContactName] IS NOT NULL",
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 WHERE [c].[ContactName] IS NOT NULL",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Last2_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var result = context.Orders.OrderBy(o => o.OrderDate).Last(o => o.Customer.ContactName != null);
 
             Assert.AreEqual(
@@ -700,14 +577,12 @@ FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 WHERE [c].[ContactName] IS NOT NULL
 ORDER BY [o].[OrderDate] DESC",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void LastOrDefault2_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var result = context.Orders.OrderBy(o => o.OrderDate).LastOrDefault(o => o.Customer.ContactName != null);
 
             Assert.AreEqual(
@@ -716,14 +591,12 @@ FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 WHERE [c].[ContactName] IS NOT NULL
 ORDER BY [o].[OrderDate] DESC",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Single2_navigation()
         {
-            var context = new QueryContext(impatient);
-
             try
             {
                 context.Orders.Single(o => o.Customer.ContactName != null);
@@ -737,14 +610,12 @@ ORDER BY [o].[OrderDate] DESC",
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 WHERE [c].[ContactName] IS NOT NULL",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void SingleOrDefault2_navigation()
         {
-            var context = new QueryContext(impatient);
-
             try
             {
                 context.Orders.SingleOrDefault(o => o.Customer.ContactName != null);
@@ -758,70 +629,60 @@ WHERE [c].[ContactName] IS NOT NULL",
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 WHERE [c].[ContactName] IS NOT NULL",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Average_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var result = context.OrderDetails.Average(d => d.Order.Freight);
 
             Assert.AreEqual(
                 @"SELECT AVG(CAST([o].[Freight] AS decimal))
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Max_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var result = context.OrderDetails.Max(d => d.Order.Freight);
 
             Assert.AreEqual(
                 @"SELECT MAX([o].[Freight])
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Min_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var result = context.OrderDetails.Min(d => d.Order.Freight);
 
             Assert.AreEqual(
                 @"SELECT MIN([o].[Freight])
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Sum_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var result = context.OrderDetails.Sum(d => d.Order.Freight);
 
             Assert.AreEqual(
                 @"SELECT SUM([o].[Freight])
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Cast_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query = context.OrderDetails.Select(d => d.Order).Cast<Order>().Select(o => o.OrderDate);
 
             query.ToList();
@@ -830,14 +691,12 @@ INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]",
                 @"SELECT [o].[OrderDate]
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void OfType_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query = context.OrderDetails.Select(d => d.Order).Cast<Order>().Select(o => o.OrderDate);
 
             query.ToList();
@@ -846,14 +705,12 @@ INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]",
                 @"SELECT [o].[OrderDate]
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Reverse_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query = context.OrderDetails.OrderBy(d => d.UnitPrice).Select(d => d.Order).Reverse().Select(o => o.OrderDate);
 
             query.ToList();
@@ -863,14 +720,12 @@ INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]",
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
 ORDER BY [d].[UnitPrice] DESC",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Skip_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query = context.OrderDetails.OrderBy(d => d.UnitPrice).Select(d => d.Order).Skip(1).Select(o => o.OrderDate);
 
             query.ToList();
@@ -881,14 +736,12 @@ FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
 ORDER BY [d].[UnitPrice] ASC
 OFFSET 1 ROWS",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Take_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query = context.OrderDetails.Select(d => d.Order).Take(1).Select(o => o.OrderDate);
 
             query.ToList();
@@ -897,14 +750,12 @@ OFFSET 1 ROWS",
                 @"SELECT TOP (1) [o].[OrderDate]
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Join_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query = from o1 in context.Orders
                         join o2 in context.Orders on o1.Customer.City equals o2.Customer.City
                         select new { o1, o2 };
@@ -920,14 +771,12 @@ INNER JOIN (
     FROM [dbo].[Orders] AS [o2]
     INNER JOIN [dbo].[Customers] AS [c_0] ON [o2].[CustomerID] = [c_0].[CustomerID]
 ) AS [t] ON [c].[City] = [t].[City]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Join_navigation_repeated_access()
         {
-            var context = new QueryContext(impatient);
-
             var query = from o1 in context.Orders
                         join o2 in context.Orders on o1.Customer.City equals o2.Customer.City
                         select new { c1 = o1.Customer.CustomerID, c2 = o2.Customer.CustomerID };
@@ -943,14 +792,12 @@ INNER JOIN (
     FROM [dbo].[Orders] AS [o2]
     INNER JOIN [dbo].[Customers] AS [c_0] ON [o2].[CustomerID] = [c_0].[CustomerID]
 ) AS [t] ON [c].[City] = [t].[City]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupJoin_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query = from o1 in context.Orders
                         join o2 in context.Orders on o1.Customer.City equals o2.Customer.City into o2g
                         select new { o1, count = o2g.Count() };
@@ -966,7 +813,7 @@ INNER JOIN (
 ) AS [count]
 FROM [dbo].[Orders] AS [o1]
 INNER JOIN [dbo].[Customers] AS [c_0] ON [o1].[CustomerID] = [c_0].[CustomerID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         /*
@@ -1026,8 +873,6 @@ INNER JOIN [dbo].[Customers] AS [c_0] ON [o1].[CustomerID] = [c_0].[CustomerID]"
         [TestMethod]
         public void GroupBy1_navigation_intact_key()
         {
-            var context = new QueryContext(impatient);
-
             var query = context.Orders.GroupBy(o => o.Customer.City);
 
             query.ToList();
@@ -1043,14 +888,12 @@ INNER JOIN [dbo].[Customers] AS [c_0] ON [o1].[CustomerID] = [c_0].[CustomerID]"
 FROM [dbo].[Orders] AS [o_0]
 INNER JOIN [dbo].[Customers] AS [c] ON [o_0].[CustomerID] = [c].[CustomerID]
 GROUP BY [c].[City]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy1_navigation_aggregate_key()
         {
-            var context = new QueryContext(impatient);
-
             var query 
                 = context.Orders
                     .GroupBy(o => o.Customer.City)
@@ -1067,14 +910,12 @@ GROUP BY [c].[City]",
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 GROUP BY [c].[City]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy2_navigation_intact_key()
         {
-            var context = new QueryContext(impatient);
-            
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1094,14 +935,12 @@ GROUP BY [c].[City]",
 FROM [dbo].[Order Details] AS [d_0]
 INNER JOIN [dbo].[Orders] AS [o] ON [d_0].[OrderID] = [o].[OrderID]
 GROUP BY [o].[OrderDate]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy2_navigation_intact_element()
         {
-            var context = new QueryContext(impatient);
-            
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1123,14 +962,12 @@ FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o_0] ON [d].[OrderID] = [o_0].[OrderID]
 INNER JOIN [dbo].[Customers] AS [c_0] ON [o_0].[CustomerID] = [c_0].[CustomerID]
 GROUP BY [d].[ProductID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy2_navigation_intact_key_element()
         {
-            var context = new QueryContext(impatient);
-            
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1152,14 +989,12 @@ FROM [dbo].[Order Details] AS [d_0]
 INNER JOIN [dbo].[Orders] AS [o] ON [d_0].[OrderID] = [o].[OrderID]
 INNER JOIN [dbo].[Customers] AS [c_0] ON [o].[CustomerID] = [c_0].[CustomerID]
 GROUP BY [o].[OrderDate]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy2_navigation_aggregate_key()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1179,14 +1014,12 @@ GROUP BY [o].[OrderDate]",
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
 GROUP BY [o].[OrderDate]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy2_navigation_aggregate_element()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1207,14 +1040,12 @@ FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 GROUP BY [d].[ProductID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy2_navigation_aggregate_key_element()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1235,14 +1066,12 @@ FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 GROUP BY [o].[OrderDate]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy3_navigation_intact_key()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1262,14 +1091,12 @@ GROUP BY [o].[OrderDate]",
 FROM [dbo].[Order Details] AS [d_0]
 INNER JOIN [dbo].[Orders] AS [o] ON [d_0].[OrderID] = [o].[OrderID]
 GROUP BY [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate], [o].[RequiredDate], [o].[ShippedDate], [o].[ShipVia], [o].[Freight], [o].[ShipName], [o].[ShipAddress], [o].[ShipCity], [o].[ShipRegion], [o].[ShipPostalCode], [o].[ShipCountry]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy3_navigation_intact_result()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1291,14 +1118,12 @@ FROM (
     GROUP BY [o_1].[OrderID], [o_1].[ProductID], [o_1].[UnitPrice], [o_1].[Quantity], [o_1].[Discount]
 ) AS [t]
 INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy3_navigation_intact_key_result()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1322,14 +1147,12 @@ FROM (
     GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
 ) AS [t]
 INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy3_navigation_aggregate_key()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1349,14 +1172,12 @@ INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
 GROUP BY [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate], [o].[RequiredDate], [o].[ShippedDate], [o].[ShipVia], [o].[Freight], [o].[ShipName], [o].[ShipAddress], [o].[ShipCity], [o].[ShipRegion], [o].[ShipPostalCode], [o].[ShipCountry]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy3_navigation_aggregate_result()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1383,14 +1204,12 @@ FROM (
     GROUP BY [o_1].[OrderID], [o_1].[ProductID], [o_1].[UnitPrice], [o_1].[Quantity], [o_1].[Discount]
 ) AS [t]
 INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy3_navigation_aggregate_key_result()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1419,14 +1238,12 @@ FROM (
     GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
 ) AS [t]
 INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy4_navigation_intact_key()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1447,14 +1264,12 @@ INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
 FROM [dbo].[Order Details] AS [d_0]
 INNER JOIN [dbo].[Orders] AS [o] ON [d_0].[OrderID] = [o].[OrderID]
 GROUP BY [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate], [o].[RequiredDate], [o].[ShippedDate], [o].[ShipVia], [o].[Freight], [o].[ShipName], [o].[ShipAddress], [o].[ShipCity], [o].[ShipRegion], [o].[ShipPostalCode], [o].[ShipCountry]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy4_navigation_intact_element()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1477,14 +1292,12 @@ FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o_0] ON [d].[OrderID] = [o_0].[OrderID]
 INNER JOIN [dbo].[Customers] AS [c_0] ON [o_0].[CustomerID] = [c_0].[CustomerID]
 GROUP BY [d].[ProductID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy4_navigation_intact_result()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1507,14 +1320,12 @@ FROM (
     GROUP BY [o_1].[OrderID], [o_1].[ProductID], [o_1].[UnitPrice], [o_1].[Quantity], [o_1].[Discount]
 ) AS [t]
 INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy4_navigation_intact_key_element()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1537,14 +1348,12 @@ FROM [dbo].[Order Details] AS [d_0]
 INNER JOIN [dbo].[Orders] AS [o] ON [d_0].[OrderID] = [o].[OrderID]
 INNER JOIN [dbo].[Customers] AS [c_0] ON [o].[CustomerID] = [c_0].[CustomerID]
 GROUP BY [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate], [o].[RequiredDate], [o].[ShippedDate], [o].[ShipVia], [o].[Freight], [o].[ShipName], [o].[ShipAddress], [o].[ShipCity], [o].[ShipRegion], [o].[ShipPostalCode], [o].[ShipCountry]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy4_navigation_intact_key_result()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1569,14 +1378,12 @@ FROM (
     GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
 ) AS [t]
 INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy4_navigation_intact_element_result()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1603,14 +1410,12 @@ FROM (
     GROUP BY [d_0].[OrderID], [d_0].[ProductID], [d_0].[UnitPrice], [d_0].[Quantity], [d_0].[Discount]
 ) AS [t]
 INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy4_navigation_intact_key_element_result()
         {
-            var context = new QueryContext(impatient);
-
             var query 
                 = context.OrderDetails
                     .GroupBy(
@@ -1637,14 +1442,12 @@ FROM (
     GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
 ) AS [t]
 INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy4_navigation_aggregate_key()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1659,14 +1462,12 @@ INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
 GROUP BY [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate], [o].[RequiredDate], [o].[ShippedDate], [o].[ShipVia], [o].[Freight], [o].[ShipName], [o].[ShipAddress], [o].[ShipCity], [o].[ShipRegion], [o].[ShipPostalCode], [o].[ShipCountry]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy4_navigation_aggregate_element()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1681,14 +1482,12 @@ GROUP BY [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate], [o]
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
 GROUP BY [d].[ProductID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy4_navigation_aggregate_result()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1712,14 +1511,12 @@ FROM (
     GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
 ) AS [t]
 INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy4_navigation_aggregate_key_element()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1735,14 +1532,12 @@ FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 GROUP BY [c].[CustomerID], [c].[CompanyName], [c].[ContactName], [c].[ContactTitle], [c].[Address], [c].[City], [c].[Region], [c].[PostalCode], [c].[Country], [c].[Phone], [c].[Fax]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy4_navigation_aggregate_key_result()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1766,14 +1561,12 @@ FROM (
     GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
 ) AS [t]
 INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy4_navigation_aggregate_element_result()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1797,14 +1590,12 @@ FROM (
     GROUP BY [d_0].[OrderID], [d_0].[ProductID], [d_0].[UnitPrice], [d_0].[Quantity], [d_0].[Discount]
 ) AS [t]
 INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void GroupBy4_navigation_aggregate_key_element_result()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(
@@ -1828,7 +1619,7 @@ FROM (
     GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
 ) AS [t]
 INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
-                SqlLog);
+                context.SqlLog);
         }
 
         // Extra GroupBy tests: navigations within aggregations, etc.
@@ -1836,8 +1627,6 @@ INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
         [TestMethod]
         public void GroupBy1_navigation_aggregate_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query
                 = context.OrderDetails
                     .GroupBy(d => d.Order.Customer.City)
@@ -1864,14 +1653,12 @@ FROM [dbo].[Order Details] AS [d_0]
 INNER JOIN [dbo].[Orders] AS [o_1] ON [d_0].[OrderID] = [o_1].[OrderID]
 INNER JOIN [dbo].[Customers] AS [c] ON [o_1].[CustomerID] = [c].[CustomerID]
 GROUP BY [c].[City]",
-                SqlLog);
+                context.SqlLog);
         }
 
         [TestMethod]
         public void Zip_navigation()
         {
-            var context = new QueryContext(impatient);
-
             var query 
                 = context.OrderDetails
                     .Take(10)
@@ -1904,7 +1691,7 @@ INNER JOIN (
     ) AS [o_0]
     INNER JOIN [dbo].[Customers] AS [c_0] ON [o_0].[CustomerID] = [c_0].[CustomerID]
 ) AS [t_0] ON [t].[$rownumber] = [t_0].[$rownumber]",
-                SqlLog);
+                context.SqlLog);
         }
     }
 }

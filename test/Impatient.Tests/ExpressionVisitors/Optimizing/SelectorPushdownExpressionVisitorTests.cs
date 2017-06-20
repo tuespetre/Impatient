@@ -5,7 +5,7 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Impatient.Tests.ExpressionVisitors
+namespace Impatient.Tests.ExpressionVisitors.Optimizing
 {
     [TestClass]
     public class SelectorPushdownExpressionVisitorTests

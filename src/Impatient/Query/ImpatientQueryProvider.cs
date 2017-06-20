@@ -1,6 +1,6 @@
 ﻿using Impatient.Query;
-using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors;
+using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
@@ -93,18 +93,27 @@ namespace Impatient
                 {
                     expression = new QueryableExpandingExpressionVisitor(parameterMapping).Visit(expression);
 
-                    var visitors = new[]
+                    expression = new PartialEvaluatingExpressionVisitor().Visit(expression);
+
+                    var preCompositionVisitors = new[]
                     {
                         ExpressionVisitorProvider.OptimizingExpressionVisitors,
                         ExpressionVisitorProvider.MidOptimizationExpressionVisitors,
                         ExpressionVisitorProvider.OptimizingExpressionVisitors,
                     };
 
-                    expression = visitors.SelectMany(vs => vs).Aggregate(expression, (e, v) => v.Visit(e));
+                    expression = preCompositionVisitors.SelectMany(vs => vs).Aggregate(expression, (e, v) => v.Visit(e));
 
                     expression = new QueryActivatingExpressionVisitor(this).Visit(expression);
 
                     expression = new QueryComposingExpressionVisitor(ExpressionVisitorProvider).Visit(expression);
+
+                    var postCompositionVisitors = new[]
+                    {
+                        ExpressionVisitorProvider.OptimizingExpressionVisitors,
+                    };
+
+                    expression = postCompositionVisitors.SelectMany(vs => vs).Aggregate(expression, (e, v) => v.Visit(e));
 
                     var queryProviderParameter = Expression.Parameter(typeof(ImpatientQueryProvider), "queryProvider");
                     

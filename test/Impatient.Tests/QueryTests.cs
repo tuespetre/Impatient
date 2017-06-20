@@ -1627,23 +1627,6 @@ FROM [dbo].[MyClass1] AS [m_0]",
         }
 
         [TestMethod]
-        public void Subquery_in_selector_enumerable()
-        {
-            var query = from m in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
-                        select impatient.CreateQuery<MyClass2>(MyClass2QueryExpression);
-
-            var expression = impatient.ExpressionVisitorProvider.OptimizingExpressionVisitors
-                .Aggregate(query.Expression, (e, v) => v.Visit(e));
-
-            expression = new QueryActivatingExpressionVisitor(impatient).Visit(expression);
-            expression = new QueryComposingExpressionVisitor(impatient.ExpressionVisitorProvider).Visit(expression);
-
-            Assert.IsInstanceOfType(expression, typeof(EnumerableRelationalQueryExpression));
-
-            Assert.IsInstanceOfType(((EnumerableRelationalQueryExpression)expression).SelectExpression.Projection, typeof(ServerProjectionExpression));
-        }
-
-        [TestMethod]
         public void OfType_passthrough()
         {
             var query = from m in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).OfType<MyClass1>()

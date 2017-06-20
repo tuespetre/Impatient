@@ -18,7 +18,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
             return node;
         }
-
+        
         // false && false -> false
         // true && false -> false
         // false && true -> false
@@ -35,18 +35,18 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
         // false || x -> x
         // x || true -> true
         // x || false -> x
-        // false == false -> true
-        // true == true -> true
-        // false == true -> false
-        // true == false -> false
+        // false == false -> true (not applied)
+        // true == true -> true (not applied)
+        // false == true -> false (not applied)
+        // true == false -> false (not applied)
         // true == x -> x
         // false == x -> !x
         // x == true -> x
         // x == false -> !x
-        // false != false -> false
-        // true != true -> false
-        // false != true -> true
-        // true != false -> true
+        // false != false -> false (not applied)
+        // true != true -> false (not applied)
+        // false != true -> true (not applied)
+        // true != false -> true (not applied)
         // false != x -> x
         // true != x -> !x
         // x != false -> x
@@ -145,14 +145,16 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                     {
                         if (leftConstant != null && rightConstant != null)
                         {
-                            if (leftConstant.Value == rightConstant.Value)
+                            break;
+
+                            /*if (leftConstant.Value == rightConstant.Value)
                             {
                                 return Expression.Constant(true);
                             }
                             else
                             {
                                 return Expression.Constant(false);
-                            }
+                            }*/
                         }
                         else if (leftConstant != null)
                         {
@@ -184,14 +186,16 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                     {
                         if (leftConstant != null && rightConstant != null)
                         {
-                            if (leftConstant.Value == rightConstant.Value)
+                            break;
+
+                            /*if (leftConstant.Value == rightConstant.Value)
                             {
                                 return Expression.Constant(false);
                             }
                             else
                             {
                                 return Expression.Constant(true);
-                            }
+                            }*/
                         }
                         else if (leftConstant != null)
                         {
