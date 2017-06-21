@@ -64,15 +64,14 @@ modelling API, a change tracker, migrations, or other similar ORM features.
 	select new { maxA, y }
 	```
 
-- Object equality translation will be supported in the future via an API that
-  allows consumers to define the key comparisons and null checks that the equality
-  expressions should be rewritten into.
+- Object equality translation is supported via an API that
+  allows consumers to define the key comparison expressions 
+  the equality expressions should be rewritten into.
 
-- Navigation property translation will be supported in the future via an API that
-  allows consumers to define the corresponding key selectors and query expressions
-  to use in order to rewrite navigations into join and subqueries. This will be done
-  in such a way that the rewriting component does not depend on any particular high-level
-  mapping API.
+- Navigation property translation is supported via an API that
+  allows consumers to define the corresponding key selectors and 
+  query expressions to use in order to rewrite navigations into joins
+  and subqueries. One-to-one optional navigations are not yet supported.
 
 - Relational null semantics are partially addressed but still have some work to be done.
 
@@ -84,11 +83,16 @@ modelling API, a change tracker, migrations, or other similar ORM features.
   should be supported (including but not limited to Oracle, Postgres, 
   and Sqlite.)
 
-- Translation of `DateTime`/`TimeSpan`/`Math` and similar methods and members
-  is not yet supported.
+- Translation of some common .NET APIs/idioms are supported:
 
-- Configurable support for nested (serialized) collections in projections 
-  (using `FOR JSON`, `FOR XML`, and similar) would be nice; the project 
+    - `DateTime` (`DateTime.Now`, `date.AddDays(x)`, etc.)
+	- `Nullable<T>` (`nullable.Value`, `nullable.HasValue`, `nullable.GetValueOrDefault()`)
+	- `string` (`Trim`, `Concat`, `Length`)
+
+- Some .NET APIs are not currently translated, like `Math` and `Convert`.
+
+- Support for nested (serialized) collections in projections 
+  (using `FOR JSON`, `FOR XML`, and similar) is a goal; the project 
   currently includes some rough implementation using `FOR JSON`.
 
 - Currently unsupported `Queryable` operators:
@@ -172,32 +176,3 @@ A materialization expression should consist only of (possibly nested)
 `MemberInitExpression`s and `NewExpression`s. Any `NewExpression` that 
 appears must include the `Members`, and any `MemberInitExpression` that 
 appears must not include a `MemberListBinding` node.
-
-#### `ProjectionExpression`s
-
-There are three concrete implementations of the abstract `ProjectionExpression`
-class included with Impatient:
-
-- `ServerProjectionExpression`
-
-  This `ProjectionExpression` represents a projection that is entirely
-  translatable, and will typically be composed by the consumer with a 
-  `MemberInitExpression` or a `NewExpression`.
-  
-- `ClientProjectionExpression`
-
-  This `ProjectionExpression` represents a projection that is
-  partially translatable. It contains a `LambdaExpression` that is
-  translatable and another `LambdaExpression` that is not translatable,
-  which transforms the result of the translatable `LambdaExpression`.
-  
-- `CompositeProjectionExpression`
-
-  This `ProjectionExpression` also represents a projection that is
-  partially translatable. It contains two `ProjectionExpression`s
-  and a `LambdaExpression` that combines the results of the 
-  `ProjectionExpression`s.
-  
-The `ClientProjectionExpression` and `CompositeProjectionExpression` types
-are mostly produced by Impatient as the result of processing `Join`,
-`GroupJoin`, `SelectMany`, `Select`, and similar operators.
