@@ -478,7 +478,7 @@ namespace Impatient.Query.ExpressionVisitors
                         }
 
                         if (queryDepth == 0
-                            && expression.Type.IsBoolean()
+                            && expression.Type.IsBooleanType()
                             && !(expression is SqlAliasExpression
                                || expression is SqlColumnExpression
                                || expression is SqlCastExpression))
@@ -1126,7 +1126,7 @@ namespace Impatient.Query.ExpressionVisitors
 
         protected virtual void EmitExpressionListExpression(Expression expression)
         {
-            if (expression.Type.IsBoolean()
+            if (expression.Type.IsBooleanType()
                 && !(expression is ConditionalExpression
                     || expression is ConstantExpression
                     || expression is SqlColumnExpression
@@ -1300,7 +1300,7 @@ namespace Impatient.Query.ExpressionVisitors
                 = dbDataReaderTypeInfo.GetDeclaredMethod(nameof(DbDataReader.IsDBNull));
 
             private static readonly MethodInfo enumerableEmptyMethodInfo
-                = ImpatientExtensions.GetGenericMethodDefinition((object o) => Enumerable.Empty<object>());
+                = ImpatientExtensions.GetGenericMethodDefinition((object o) => Empty<object>());
 
             private readonly IImpatientExpressionVisitorProvider expressionVisitorProvider;
             private readonly ParameterExpression readerParameter;
@@ -1363,7 +1363,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                     case DefaultIfEmptyExpression defaultIfEmptyExpression:
                     {
-                        var name = string.Join(".", GetNameParts().Concat(Repeat("$empty", 1)));
+                        var name = string.Join(".", GetNameParts().Append("$empty"));
 
                         GatheredExpressions[name] = defaultIfEmptyExpression.Flag;
 
@@ -1410,27 +1410,51 @@ namespace Impatient.Query.ExpressionVisitors
                         if (!expression.Type.IsScalarType())
                         {
                             var type = node.Type;
+                            var sequenceType = type.GetSequenceType();
                             var defaultValue = Expression.Default(type) as Expression;
 
-                            if (node.Type.FindGenericType(typeof(IEnumerable<>)) != null)
+                            if (type.IsSequenceType())
                             {
-                                if (node.Type.IsArray)
+                                if (type.IsArray)
                                 {
-                                    defaultValue = Expression.NewArrayInit(node.Type.GetElementType());
+                                    defaultValue = Expression.NewArrayInit(type.GetElementType());
                                 }
-                                else if (node.Type.FindGenericType(typeof(List<>)) != null)
+                                else if (type.IsGenericType(typeof(List<>)))
                                 {
                                     defaultValue = Expression.New(type);
                                 }
                                 else
                                 {
-                                    type = node.Type.FindGenericType(typeof(IEnumerable<>));
-                                    defaultValue = Expression.Call(enumerableEmptyMethodInfo.MakeGenericMethod(type.GetSequenceType()));
+                                    type = type.FindGenericType(typeof(IEnumerable<>));
+                                    defaultValue = Expression.Call(enumerableEmptyMethodInfo.MakeGenericMethod(sequenceType));
+                                }
+
+                                if (sequenceType.IsScalarType())
+                                {
+                                    // TODO: Handle sequences of scalar types with FOR JSON
+                                    // - Use a JsonTextReader to stream through the text
+                                    // - while (reader.Read())
+                                    // - (StartArray)(1)
+                                    // - (StartObject -> PropertyName -> String | Number -> EndObject)(*)
+                                    // - (EndArray)(1)
                                 }
                             }
 
                             var currentIndex = readerIndex;
                             readerIndex++;
+
+                            var getFieldValueExpression
+                                = Expression.Call(
+                                    readerParameter,
+                                    getFieldValueMethodInfo.MakeGenericMethod(typeof(string)),
+                                    Expression.Constant(currentIndex));
+
+                            var deserializerExpression
+                                = Expression.Call(
+                                    ImpatientExtensions
+                                        .GetGenericMethodDefinition((string s) => JsonConvert.DeserializeObject<object>(s))
+                                        .MakeGenericMethod(type),
+                                    getFieldValueExpression);
 
                             var result
                                 = Expression.Condition(
@@ -1439,22 +1463,15 @@ namespace Impatient.Query.ExpressionVisitors
                                         isDBNullMethodInfo,
                                         Expression.Constant(currentIndex)),
                                     defaultValue,
-                                    Expression.Call(
-                                        ImpatientExtensions
-                                            .GetGenericMethodDefinition((string s) => JsonConvert.DeserializeObject<object>(s))
-                                            .MakeGenericMethod(type),
-                                        Expression.Call(
-                                            readerParameter,
-                                            getFieldValueMethodInfo.MakeGenericMethod(typeof(string)),
-                                            Expression.Constant(currentIndex)))) as Expression;
+                                    deserializerExpression) as Expression;
 
-                            if (node.Type.FindGenericType(typeof(IQueryable<>)) != null)
+                            if (node.Type.IsGenericType(typeof(IQueryable<>)))
                             {
                                 result
                                     = Expression.Call(
                                         ImpatientExtensions
                                             .GetGenericMethodDefinition((IEnumerable<object> e) => e.AsQueryable())
-                                            .MakeGenericMethod(type.GetSequenceType()),
+                                            .MakeGenericMethod(sequenceType),
                                         result);
                             }
 

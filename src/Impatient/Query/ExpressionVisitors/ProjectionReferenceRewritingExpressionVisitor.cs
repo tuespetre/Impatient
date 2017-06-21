@@ -1,6 +1,4 @@
 ﻿using Impatient.Query.Expressions;
-using Impatient.Query.ExpressionVisitors.Utility;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -128,7 +126,7 @@ namespace Impatient.Query.ExpressionVisitors
                 {
                     var expression = sqlColumnNullabilityExpressionVisitor.Visit(Visit(defaultIfEmptyExpression.Expression));
 
-                    var parts = GetNameParts().Concat(Repeat("$empty", 1));
+                    var parts = GetNameParts().Append("$empty");
 
                     var name = string.Join(".", parts);
 

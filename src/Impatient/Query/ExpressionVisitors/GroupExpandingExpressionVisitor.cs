@@ -1,6 +1,4 @@
 ﻿using Impatient.Query.Expressions;
-using Impatient.Query.ExpressionVisitors.Utility;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -66,7 +64,7 @@ namespace Impatient.Query.ExpressionVisitors
             Expression keyExpression,
             EnumerableRelationalQueryExpression elementsExpression)
         {
-            if (expression.Type.FindGenericType(typeof(IGrouping<,>)) != null)
+            if (expression.Type.IsGenericType(typeof(IGrouping<,>)))
             {
                 var groupingType
                     = typeof(ExpandedGrouping<,>)

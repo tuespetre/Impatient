@@ -152,7 +152,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                 goto Finish;
             }
 
-            if (visitedArguments.Any(a => a.Type.FindGenericType(typeof(IQueryable<>)) != null))
+            if (visitedArguments.Any(a => typeof(IQueryable).IsAssignableFrom(a.Type)))
             {
                 // If it's a method call that takes a queryable as an argument, we (for the most part)
                 // can't guarantee that evaluating the method call won't trigger a query.

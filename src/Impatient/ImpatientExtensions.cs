@@ -45,14 +45,7 @@ namespace Impatient
 
         #endregion
 
-        public static bool IsNullableType(this Type type)
-        {
-            return type != null
-                && type.IsConstructedGenericType
-                && type.GetGenericTypeDefinition() == typeof(Nullable<>);
-        }
-
-        public static bool ContainsNonLambdaSelectors(this MethodCallExpression methodCallExpression)
+        public static bool ContainsNonLambdaDelegates(this MethodCallExpression methodCallExpression)
         {
             return methodCallExpression.Arguments
                 .Where(a => typeof(Delegate).IsAssignableFrom(a.Type))
@@ -71,12 +64,14 @@ namespace Impatient
                 case BinaryExpression binaryExpression
                 when binaryExpression.NodeType == splitOn:
                 {
-                    var left = SplitNodes(binaryExpression.Left, splitOn);
-                    var right = SplitNodes(binaryExpression.Right, splitOn);
-
-                    foreach (var split in left.Concat(right))
+                    foreach (var left in SplitNodes(binaryExpression.Left, splitOn))
                     {
-                        yield return split;
+                        yield return left;
+                    }
+
+                    foreach (var right in SplitNodes(binaryExpression.Right, splitOn))
+                    {
+                        yield return right;
                     }
 
                     yield break;
@@ -90,71 +85,14 @@ namespace Impatient
             }
         }
 
-        public static bool IsBoolean(this Type type)
-        {
-            return type == typeof(bool) || type == typeof(bool?);
-        }
-
         public static Expression VisitWith(this Expression expression, IEnumerable<ExpressionVisitor> visitors)
         {
             return visitors.Aggregate(expression, (e, v) => v.Visit(e));
         }
 
-        public static bool MatchesGenericMethod(this MethodInfo method, MethodInfo other)
-        {
-            return method.IsGenericMethod && method.GetGenericMethodDefinition() == other;
-        }
-
-        public static MethodInfo GetMethodDefinition<TArg, TResult>(Expression<Func<TArg, TResult>> expression)
-        {
-            return ((MethodCallExpression)expression.Body).Method;
-        }
-
         public static MethodInfo GetGenericMethodDefinition<TArg, TResult>(Expression<Func<TArg, TResult>> expression)
         {
-            return GetMethodDefinition(expression).GetGenericMethodDefinition();
-        }
-
-        public static bool IsSequenceType(this Type type)
-        {
-            return type.FindGenericType(typeof(IEnumerable<>)) != null;
-        }
-
-        public static Type GetSequenceType(this Type type)
-        {
-            return type.FindGenericType(typeof(IEnumerable<>))?.GenericTypeArguments[0];
-        }
-
-        public static Type FindGenericType(this Type type, Type definition)
-        {
-            var definitionTypeInfo = definition.GetTypeInfo();
-
-            while (type != null && type != typeof(object))
-            {
-                if (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == definition)
-                {
-                    return type;
-                }
-
-                var typeTypeInfo = type.GetTypeInfo();
-
-                if (definitionTypeInfo.IsInterface)
-                {
-                    foreach (var interfaceType in typeTypeInfo.ImplementedInterfaces)
-                    {
-                        var found = interfaceType.FindGenericType(definition);
-
-                        if (found != null)
-                        {
-                            return found;
-                        }
-                    }
-                }
-
-                type = type.GetTypeInfo().BaseType;
-            }
-
-            return null;
+            return ((MethodCallExpression)expression.Body).Method.GetGenericMethodDefinition();
         }
 
         public static LambdaExpression UnwrapLambda(this Expression expression)
@@ -206,6 +144,79 @@ namespace Impatient
                 : memberInfo.Name;
         }
 
+        public static bool IsNullableType(this Type type)
+        {
+            return type != null
+                && type.IsConstructedGenericType
+                && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+        }
+
+        public static bool IsBooleanType(this Type type)
+        {
+            return type == typeof(bool) || type == typeof(bool?);
+        }
+
+        public static bool IsSequenceType(this Type type)
+        {
+            return type.IsGenericType(typeof(IEnumerable<>));
+        }
+
+        public static Type GetSequenceType(this Type type)
+        {
+            return type.FindGenericType(typeof(IEnumerable<>))?.GenericTypeArguments[0];
+        }
+
+        public static bool IsGenericType(this Type type, Type definition)
+        {
+            return type.FindGenericType(definition) != null;
+        }
+
+        public static Type FindGenericType(this Type type, Type definition)
+        {
+            if (type == null || type == typeof(object))
+            {
+                return null;
+            }
+            else if (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == definition)
+            {
+                return type;
+            }
+
+            var definitionTypeInfo = definition.GetTypeInfo();
+
+            if (definitionTypeInfo.IsInterface)
+            {
+                foreach (var interfaceType in type.GetInterfaces())
+                {
+                    if (interfaceType.IsConstructedGenericType && interfaceType.GetGenericTypeDefinition() == definition)
+                    {
+                        return interfaceType;
+                    }
+                }
+
+                return null;
+            }
+            else
+            {
+                GetBaseType:
+
+                var baseType = type.GetTypeInfo().BaseType;
+
+                if (baseType == null || baseType == typeof(object))
+                {
+                    return null;
+                }
+                else if (baseType.IsConstructedGenericType && baseType.GetGenericTypeDefinition() == definition)
+                {
+                    return baseType;
+                }
+                else
+                {
+                    goto GetBaseType;
+                }
+            }
+        }
+
         public static bool IsScalarType(this Type type)
         {
             if (scalarTypes.Contains(type))
@@ -213,18 +224,11 @@ namespace Impatient
                 return true;
             }
 
-            var typeInfo = type.GetTypeInfo();
-
-            if (typeInfo.IsGenericType)
+            if (type.IsNullableType())
             {
-                var genericTypeDefinition = typeInfo.GetGenericTypeDefinition();
+                var underlyingType = Nullable.GetUnderlyingType(type);
 
-                if (genericTypeDefinition == typeof(Nullable<>))
-                {
-                    var underlyingType = typeInfo.GenericTypeArguments[0];
-
-                    return scalarTypes.Contains(underlyingType);
-                }
+                return scalarTypes.Contains(underlyingType);
             }
 
             return false;

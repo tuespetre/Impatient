@@ -62,12 +62,12 @@ namespace Impatient.Query.ExpressionVisitors
 
         protected override Expression VisitLambda<T>(Expression<T> node)
         {
-            if (node.ReturnType.FindGenericType(typeof(IQueryable<>)) != null)
+            if (node.ReturnType.IsGenericType(typeof(IQueryable<>)))
             {
                 var parameters = node.Parameters.Select(p => VisitAndConvert(p, nameof(VisitLambda))).ToArray();
                 var body = Visit(node.Body);
 
-                if (body.Type.FindGenericType(typeof(IQueryable<>)) == null)
+                if (!body.Type.IsGenericType(typeof(IQueryable<>)))
                 {
                     body 
                         = Expression.Call(
@@ -76,12 +76,7 @@ namespace Impatient.Query.ExpressionVisitors
                             body);
                 }
 
-                return Expression.Lambda(
-                    node.Type,
-                    body,
-                    node.Name,
-                    node.TailCall,
-                    parameters);
+                return node.Update(body, parameters);
             }
 
             return base.VisitLambda(node);
@@ -96,15 +91,15 @@ namespace Impatient.Query.ExpressionVisitors
                 var outerSource = visitedArguments[0] = ProcessQuerySource(Visit(node.Arguments[0]));
 
                 var isComparerOverload
-                    = (from p in node.Method.GetParameters()
-                       where p.ParameterType.IsConstructedGenericType
-                       let g = p.ParameterType.GetGenericTypeDefinition()
-                       where g == typeof(IEqualityComparer<>) || g == typeof(IComparer<>)
-                       select p).Any();
+                    = node.Method
+                        .GetParameters()
+                        .Select(p => p.ParameterType)
+                        .Any(t => t.IsGenericType(typeof(IEqualityComparer<>)) 
+                            || t.IsGenericType(typeof(IComparer<>)));
 
                 if (outerSource is EnumerableRelationalQueryExpression outerQuery
                     && !isComparerOverload
-                    && !node.ContainsNonLambdaSelectors())
+                    && !node.ContainsNonLambdaDelegates())
                 {
                     switch (node.Method.Name)
                     {
@@ -115,6 +110,16 @@ namespace Impatient.Query.ExpressionVisitors
                         case nameof(Enumerable.ToList):
                         {
                             return outerQuery.WithTransformationMethod(node.Method);
+                        }
+
+                        // Materialization operations
+
+                        case nameof(Enumerable.ToDictionary):
+                        case nameof(Enumerable.ToLookup):
+                        {
+                            // TODO: Implement ToDictionary
+                            // TODO: Implement ToLookup
+                            break;
                         }
 
                         // Projection operations
@@ -785,6 +790,16 @@ namespace Impatient.Query.ExpressionVisitors
                         }
 
                         // Generation operations
+
+                        case nameof(Enumerable.Empty):
+                        case nameof(Enumerable.Range):
+                        case nameof(Enumerable.Repeat):
+                        {
+                            // TODO: Implement Empty
+                            // TODO: Implement Range
+                            // TODO: Implement Repeat
+                            break;
+                        }
 
                         case nameof(Queryable.DefaultIfEmpty):
                         {

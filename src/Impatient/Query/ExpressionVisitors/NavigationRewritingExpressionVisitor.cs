@@ -58,7 +58,7 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 if ((node.Method.DeclaringType != typeof(Queryable) 
                         && node.Method.DeclaringType != typeof(Enumerable))
-                    || node.ContainsNonLambdaSelectors())
+                    || node.ContainsNonLambdaDelegates())
                 {
                     return base.VisitMethodCall(node);
                 }
@@ -171,6 +171,8 @@ namespace Impatient.Query.ExpressionVisitors
 
                         if (outerExpanded || innerExpanded)
                         {
+                            // TODO: Zip: navigations inside result selector
+
                             var resultContext
                                 = NavigationExpansionContext.Merge(
                                     outerContext,
@@ -638,6 +640,8 @@ namespace Impatient.Query.ExpressionVisitors
 
                         if (outerExpanded || innerExpanded)
                         {
+                            // TODO: GroupJoin: navigations inside result selector
+
                             if (innerExpanded)
                             {
                                 var oldResultInnerParameter = resultSelector.Parameters[1];
@@ -755,7 +759,8 @@ namespace Impatient.Query.ExpressionVisitors
 
                         if (outerExpanded || innerExpanded)
                         {
-                            // TODO: Need to check navigations inside result selector.
+                            // TODO: Join: navigations inside result selector
+
                             var resultContext
                                 = NavigationExpansionContext.Merge(
                                     outerContext,
@@ -1417,7 +1422,7 @@ namespace Impatient.Query.ExpressionVisitors
                     }
                     else if (navigation.Descriptor.IsNullable)
                     {
-                        // create a GroupJoin/SelectMany/DefaultIfEmpty
+                        // TODO: Handle nullable/optional navigations
                         throw new NotImplementedException();
                     }
                     else

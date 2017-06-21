@@ -34,7 +34,7 @@ namespace Impatient.Query.ExpressionVisitors
         public static MemberInitExpression CreateKeyPlaceholderGrouping(Expression expression, Expression keySelector)
         {
             var typeArguments
-                = expression.Type.FindGenericType(typeof(IGrouping<,>)) != null
+                = expression.Type.IsGenericType(typeof(IGrouping<,>))
                     ? expression.Type.GenericTypeArguments
                     : new[] { keySelector.Type, typeof(object) };
 
