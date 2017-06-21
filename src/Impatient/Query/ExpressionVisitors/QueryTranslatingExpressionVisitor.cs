@@ -848,6 +848,20 @@ namespace Impatient.Query.ExpressionVisitors
                             return sqlColumnExpression;
                         }
 
+                        case SqlConcatExpression sqlConcatExpression:
+                        {
+                            Visit(sqlConcatExpression.Segments.First());
+
+                            foreach (var segment in sqlConcatExpression.Segments.Skip(1))
+                            {
+                                builder.Append(" + ");
+
+                                Visit(segment);
+                            }
+
+                            return sqlConcatExpression;
+                        }
+
                         case SqlExistsExpression sqlExistsExpression:
                         {
                             builder.Append("EXISTS (");
