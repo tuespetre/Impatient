@@ -42,12 +42,22 @@ namespace Impatient.Query.ExpressionVisitors
 
                 case GroupedRelationalQueryExpression groupedRelationalQueryExpression:
                 {
-                    var elements 
+                    var outerKeySelector = groupedRelationalQueryExpression.OuterKeySelector;
+                    var innerKeySelector = groupedRelationalQueryExpression.InnerKeySelector;
+
+                    if (groupedRelationalQueryExpression.RequiresDenullification)
+                    {
+                        outerKeySelector = JoinKeyDenullifyingExpressionVisitor.Instance.Visit(outerKeySelector);
+                        innerKeySelector = JoinKeyDenullifyingExpressionVisitor.Instance.Visit(innerKeySelector);
+                    }
+
+                    var elements
                         = new EnumerableRelationalQueryExpression(
                             groupedRelationalQueryExpression.SelectExpression
-                                .AddToPredicate(Expression.Equal(
-                                    groupedRelationalQueryExpression.OuterKeySelector,
-                                    groupedRelationalQueryExpression.InnerKeySelector)));
+                                .AddToPredicate(
+                                    Expression.Equal(
+                                        outerKeySelector, 
+                                        innerKeySelector)));
 
                     return ExpandGroup(visited, groupedRelationalQueryExpression.OuterKeySelector, elements);
                 }

@@ -12,12 +12,14 @@ namespace Impatient.Query.Expressions
             Expression outerKeySelector,
             Expression innerKeySelector,
             LambdaExpression innerKeyLambda,
+            bool requiresDenullification,
             Type type) 
             : base(selectExpression)
         {
             OuterKeySelector = outerKeySelector ?? throw new ArgumentNullException(nameof(outerKeySelector));
             InnerKeySelector = innerKeySelector ?? throw new ArgumentNullException(nameof(innerKeySelector));
             InnerKeyLambda = innerKeyLambda ?? throw new ArgumentNullException(nameof(innerKeyLambda));
+            RequiresDenullification = requiresDenullification;
             Type = type ?? throw new ArgumentNullException(nameof(type));
         }
 
@@ -26,6 +28,8 @@ namespace Impatient.Query.Expressions
         public Expression InnerKeySelector { get; }
 
         public LambdaExpression InnerKeyLambda { get; }
+
+        public bool RequiresDenullification { get; }
 
         public override Type Type { get; }
 
@@ -59,6 +63,7 @@ namespace Impatient.Query.Expressions
                     outerKeySelector,
                     innerKeySelector,
                     innerKeyLambda,
+                    RequiresDenullification,
                     Type);
             }
 

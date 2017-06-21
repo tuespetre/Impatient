@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using static System.Linq.Enumerable;
 
 namespace Impatient.Query.ExpressionVisitors
@@ -92,7 +93,8 @@ namespace Impatient.Query.ExpressionVisitors
                         outerKeySelector,
                         innerKeySelector,
                         groupByResultExpression.InnerKeyLambda,
-                        groupByResultExpression.Type);
+                        requiresDenullification: false,
+                        type: groupByResultExpression.Type);
                 }
 
                 case GroupedRelationalQueryExpression groupedRelationalQueryExpression:
@@ -119,6 +121,7 @@ namespace Impatient.Query.ExpressionVisitors
                         outerKeySelector,
                         innerKeySelector,
                         groupedRelationalQueryExpression.InnerKeyLambda,
+                        groupedRelationalQueryExpression.RequiresDenullification,
                         groupedRelationalQueryExpression.Type);
                 }
 
@@ -151,12 +154,14 @@ namespace Impatient.Query.ExpressionVisitors
                 default:
                 {
                     var parts = GetNameParts();
+                    var isNullable = !node.Type.GetTypeInfo().IsValueType;
 
                     switch (node)
                     {
                         case SqlColumnExpression sqlColumnExpression:
                         {
                             parts = parts.DefaultIfEmpty(sqlColumnExpression.ColumnName);
+                            isNullable = sqlColumnExpression.IsNullable;
                             break;
                         }
 
@@ -167,14 +172,18 @@ namespace Impatient.Query.ExpressionVisitors
                         }
                     }
 
-                    return new SqlColumnExpression(targetTable, string.Join(".", parts), node.Type);
+                    return new SqlColumnExpression(
+                        targetTable, 
+                        string.Join(".", parts), 
+                        node.Type,
+                        isNullable);
                 }
             }
         }
 
-        private class SqlColumnNullabilityExpressionVisitor : ExpressionVisitor
+        private class SqlColumnNullabilityExpressionVisitor : ProjectionExpressionVisitor
         {
-            public override Expression Visit(Expression node)
+            protected override Expression VisitLeaf(Expression node)
             {
                 switch (node)
                 {
@@ -189,7 +198,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                     default:
                     {
-                        return base.Visit(node);
+                        return node;
                     }
                 }
             }

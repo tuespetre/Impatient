@@ -73,12 +73,6 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 switch (node.Method.Name)
                 {
-                    case nameof(Queryable.GroupBy):
-                    {
-                        // TODO: Investigate GroupBy support for key equality rewriting (tricky!)
-                        break;
-                    }
-
                     case nameof(Queryable.GroupJoin):
                     case nameof(Queryable.Join):
                     {
@@ -148,13 +142,26 @@ namespace Impatient.Query.ExpressionVisitors
 
         private bool CanRewrite(Expression expression)
         {
-            while (expression is MemberExpression memberExpression)
-            {
-                expression = memberExpression.Expression;
-            }
-
             // TODO: Support rewriting on the 'element operators' (First, Last, etc.)
-            return expression is ParameterExpression;
+            switch (expression)
+            {
+                case NewExpression _:
+                case MemberInitExpression _:
+                case ParameterExpression _:
+                {
+                    return true;
+                }
+
+                default:
+                {
+                    while (expression is MemberExpression memberExpression)
+                    {
+                        expression = memberExpression.Expression;
+                    }
+
+                    return expression is ParameterExpression;
+                }
+            }
         }
 
         private Expression TryReduceNavigationKey(Expression expression, out bool reduced)

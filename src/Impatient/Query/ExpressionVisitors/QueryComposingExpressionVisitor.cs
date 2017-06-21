@@ -422,7 +422,9 @@ namespace Impatient.Query.ExpressionVisitors
                                 = new InnerJoinExpression(
                                     outerSelectExpression.Table,
                                     innerSelectExpression.Table as AliasedTableExpression,
-                                    Expression.Equal(outerKeySelector, innerKeySelector),
+                                    Expression.Equal(
+                                        JoinKeyDenullifyingExpressionVisitor.Instance.Visit(outerKeySelector),
+                                        JoinKeyDenullifyingExpressionVisitor.Instance.Visit(innerKeySelector)),
                                     resultSelector.Type);
 
                             return outerQuery
@@ -478,7 +480,8 @@ namespace Impatient.Query.ExpressionVisitors
                                     outerKeySelector,
                                     innerKeySelector,
                                     innerKeyLambda,
-                                    resultLambda.Parameters[1].Type);
+                                    type: resultLambda.Parameters[1].Type,
+                                    requiresDenullification: true);
 
                             var resultSelector
                                 = resultLambda
@@ -503,7 +506,8 @@ namespace Impatient.Query.ExpressionVisitors
                                         resultLambda.Parameters[0]),
                                     innerKeySelector,
                                     innerKeyLambda,
-                                    resultLambda.Parameters[1].Type);
+                                    type: resultLambda.Parameters[1].Type,
+                                    requiresDenullification: true);
 
                             resultLambda
                                 = Expression.Lambda(
@@ -2265,11 +2269,21 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 case GroupedRelationalQueryExpression groupedRelationalQueryExpression:
                 {
+                    var outerKeySelector = groupedRelationalQueryExpression.OuterKeySelector;
+                    var innerKeySelector = groupedRelationalQueryExpression.InnerKeySelector;
+
+                    if (groupedRelationalQueryExpression.RequiresDenullification)
+                    {
+                        outerKeySelector = JoinKeyDenullifyingExpressionVisitor.Instance.Visit(outerKeySelector);
+                        innerKeySelector = JoinKeyDenullifyingExpressionVisitor.Instance.Visit(innerKeySelector);
+                    }
+
                     return new EnumerableRelationalQueryExpression(
                         groupedRelationalQueryExpression.SelectExpression
-                            .AddToPredicate(Expression.Equal(
-                                groupedRelationalQueryExpression.OuterKeySelector,
-                                groupedRelationalQueryExpression.InnerKeySelector)));
+                            .AddToPredicate(
+                                Expression.Equal(
+                                    outerKeySelector, 
+                                    innerKeySelector)));
                 }
 
                 case GroupByResultExpression groupByResultExpression:

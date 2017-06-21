@@ -20,13 +20,17 @@ namespace Impatient.Query
             new EnumerableContainsRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor),
         };
 
-        public IEnumerable<ExpressionVisitor> OptimizingExpressionVisitors { get; } = new ExpressionVisitor[]
+        public IEnumerable<ExpressionVisitor> OptimizingExpressionVisitors
         {
-            new SelectorPushdownExpressionVisitor(),
-            new BooleanOptimizingExpressionVisitor(),
-        };
+            get
+            {
+                yield return new KeyEqualityRewritingExpressionVisitor(primaryKeyDescriptors, navigationDescriptors);
+                yield return new SelectorPushdownExpressionVisitor();
+                yield return new BooleanOptimizingExpressionVisitor();
+            }
+        }
 
-        public QueryTranslatingExpressionVisitor QueryTranslatingExpressionVisitor 
+        public QueryTranslatingExpressionVisitor QueryTranslatingExpressionVisitor
             => new QueryTranslatingExpressionVisitor(this);
 
         public TranslatabilityAnalyzingExpressionVisitor TranslatabilityAnalyzingExpressionVisitor
@@ -55,7 +59,6 @@ namespace Impatient.Query
         {
             get
             {
-                yield return new KeyEqualityRewritingExpressionVisitor(primaryKeyDescriptors, navigationDescriptors);
                 yield return new NavigationRewritingExpressionVisitor(navigationDescriptors);
             }
         }

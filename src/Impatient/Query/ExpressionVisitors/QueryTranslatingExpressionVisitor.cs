@@ -1482,16 +1482,25 @@ namespace Impatient.Query.ExpressionVisitors
                             var currentIndex = readerIndex;
                             readerIndex++;
 
+                            var readValueExpression
+                                = Expression.Call(
+                                    readerParameter,
+                                    getFieldValueMethodInfo.MakeGenericMethod(node.Type),
+                                    Expression.Constant(currentIndex));
+
+                            if (node is SqlColumnExpression sqlColumnExpression
+                                && !sqlColumnExpression.IsNullable)
+                            {
+                                return readValueExpression;
+                            }
+
                             return Expression.Condition(
                                 Expression.Call(
                                     readerParameter,
                                     isDBNullMethodInfo,
                                     Expression.Constant(currentIndex)),
                                 Expression.Default(node.Type),
-                                Expression.Call(
-                                    readerParameter,
-                                    getFieldValueMethodInfo.MakeGenericMethod(node.Type),
-                                    Expression.Constant(currentIndex)));
+                                readValueExpression);
                         }
                     }
 
