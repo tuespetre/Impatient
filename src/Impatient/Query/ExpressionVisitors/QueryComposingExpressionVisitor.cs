@@ -1,5 +1,4 @@
 ﻿using Impatient.Query.Expressions;
-using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
@@ -1317,13 +1316,14 @@ namespace Impatient.Query.ExpressionVisitors
                                         || methodCall.Method.Name == nameof(Queryable.ThenBy)
                                         || methodCall.Method.Name == nameof(Queryable.ThenByDescending)))
                                 {
-                                    resultNode = methodCall.Update(null, Repeat(resultNode, 1).Concat(methodCall.Arguments.Skip(1)));
+                                    resultNode = methodCall.Update(null, methodCall.Arguments.Skip(1).Prepend(resultNode));
 
                                     resultNode
                                         = Expression.Call(
                                             MatchQueryableMethod(methodCall.Method),
-                                            Repeat(resultNode, 1)
-                                                .Concat(methodCall.Arguments.Skip(1))
+                                            methodCall.Arguments
+                                                .Skip(1)
+                                                .Prepend(resultNode)
                                                 .Select(a => a.NodeType == ExpressionType.Quote ? a.UnwrapLambda() : a));
 
                                     currentNode = methodCall.Arguments[0];

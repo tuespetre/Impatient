@@ -18,7 +18,7 @@ namespace Impatient.Query.Expressions
 
         public override IEnumerable<AliasedTableExpression> Flatten()
         {
-            return Enumerable.Repeat(this, 1);
+            yield return this;
         }
     }
 }

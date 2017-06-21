@@ -1548,7 +1548,7 @@ namespace Impatient.Query.ExpressionVisitors
                 var resultOuterField = resultScopeType.GetRuntimeField("Outer");
                 var resultInnerField = resultScopeType.GetRuntimeField("Inner");
 
-                var resultMappings = new List<ExpansionMapping>(outerMappings.Concat(innerMappings));
+                var resultMappings = outerMappings.Concat(innerMappings).ToList();
 
                 resultMappings.ForEach(m => m.NewPath.Insert(0, resultOuterField));
 

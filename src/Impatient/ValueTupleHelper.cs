@@ -40,7 +40,7 @@ namespace Impatient
             {
                 resultType
                     = typeof(ValueTuple<,,,,,,,>).MakeGenericType(
-                        types.Take(7).Reverse().Concat(Repeat(resultType, 1)).ToArray());
+                        types.Take(7).Reverse().Append(resultType).ToArray());
 
                 types = types.Skip(7);
             }
