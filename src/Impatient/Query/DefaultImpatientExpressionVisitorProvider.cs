@@ -15,6 +15,7 @@ namespace Impatient.Query
         {
             new NullableMemberRewritingExpressionVisitor(),
             new DateTimeMemberRewritingExpressionVisitor(),
+            new StringMemberRewritingExpressionVisitor(),
             new CollectionContainsRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor),
             new EnumerableContainsRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor),
         };
