@@ -405,6 +405,12 @@ namespace Impatient.Query.ExpressionVisitors
                     break;
                 }
 
+                case char value:
+                {
+                    builder.Append($@"N'{value}'");
+                    break;
+                }
+
                 case bool value:
                 {
                     builder.Append(value ? "1" : "0");
