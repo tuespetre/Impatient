@@ -1008,6 +1008,40 @@ WHERE ([a].[Prop1] = N'What the') OR ([a].[Prop2] = 77)",
         }
 
         [TestMethod]
+        public void Where_true()
+        {
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                where true
+                select a;
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [a]
+WHERE 1 = 1",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Where_false()
+        {
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                where false
+                select a;
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [a]
+WHERE 1 = 0",
+                SqlLog);
+        }
+
+        [TestMethod]
         public void Where_Where()
         {
             var query =

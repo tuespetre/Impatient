@@ -32,34 +32,76 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 var left = Visit(node.Left);
                 var right = Visit(node.Right);
+                var leftIsNullConstant = left is ConstantExpression leftConstant && leftConstant.Value == null;
+                var rightIsNullConstant = right is ConstantExpression rightConstant && rightConstant.Value == null;
+                var canRewriteLeft = CanRewrite(left);
+                var canRewriteRight = CanRewrite(right);
 
-                if (CanRewrite(left) && CanRewrite(right))
+                if ((leftIsNullConstant && rightIsNullConstant)
+                    || (!canRewriteLeft && !leftIsNullConstant)
+                    || (!canRewriteRight && !rightIsNullConstant))
                 {
-                    left = TryReduceNavigationKey(left, out var rewroteLeft);
-                    right = TryReduceNavigationKey(right, out var rewroteRight);
+                    goto Finish;
+                }
 
-                    if (!rewroteLeft || !rewroteRight)
+                left = TryReduceNavigationKey(left, out var rewroteLeft);
+                right = TryReduceNavigationKey(right, out var rewroteRight);
+
+                if (rewroteLeft && rewroteRight)
+                {
+                    goto Finish;
+                }
+                
+                var primaryKeyDescriptor
+                    = primaryKeyDescriptors
+                        .FirstOrDefault(d => d.TargetType.IsAssignableFrom(node.Left.Type));
+
+                if (primaryKeyDescriptor == null)
+                {
+                    goto Finish;
+                }
+                
+                if (!rewroteLeft && canRewriteLeft)
+                {
+                    left = primaryKeyDescriptor.KeySelector.ExpandParameters(left);
+                }
+
+                if (!rewroteRight && canRewriteRight)
+                {
+                    right = primaryKeyDescriptor.KeySelector.ExpandParameters(right);
+                }
+
+                if (leftIsNullConstant || rightIsNullConstant)
+                {
+                    var nonNullExpression = leftIsNullConstant ? right : left;
+
+                    if (nonNullExpression is NewExpression newExpression)
                     {
-                        var primaryKeyDescriptor 
-                            = primaryKeyDescriptors
-                                .FirstOrDefault(d => d.TargetType.IsAssignableFrom(node.Left.Type));
-
-                        if (primaryKeyDescriptor != null)
-                        {
-                            if (!rewroteLeft)
-                            {
-                                left = primaryKeyDescriptor.KeySelector.ExpandParameters(left);
-                            }
-
-                            if (!rewroteRight)
-                            {
-                                right = primaryKeyDescriptor.KeySelector.ExpandParameters(right);
-                            }
-                        }
+                        nonNullExpression = newExpression.Arguments.First(a => a.Type.IsScalarType());
                     }
 
-                    return Expression.MakeBinary(node.NodeType, left, right);
+                    if (nonNullExpression.Type.GetTypeInfo().IsValueType)
+                    {
+                        nonNullExpression 
+                            = Expression.Convert(
+                                nonNullExpression, 
+                                typeof(Nullable<>).MakeGenericType(nonNullExpression.Type));
+                    }
+
+                    if (leftIsNullConstant)
+                    {
+                        left = Expression.Constant(null, nonNullExpression.Type);
+                        right = nonNullExpression;
+                    }
+                    else
+                    {
+                        left = nonNullExpression;
+                        right = Expression.Constant(null, nonNullExpression.Type);
+                    }
                 }
+
+                Finish:
+                return Expression.MakeBinary(node.NodeType, left, right);
             }
 
             return base.VisitBinary(node);
@@ -67,7 +109,7 @@ namespace Impatient.Query.ExpressionVisitors
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            if ((node.Method.DeclaringType == typeof(Queryable) 
+            if ((node.Method.DeclaringType == typeof(Queryable)
                     || node.Method.DeclaringType == typeof(Enumerable))
                 && !node.ContainsNonLambdaDelegates())
             {
@@ -95,7 +137,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                             if (!rewroteOuter || !rewroteInner)
                             {
-                                var primaryKeyDescriptor 
+                                var primaryKeyDescriptor
                                     = primaryKeyDescriptors
                                         .FirstOrDefault(d => d.TargetType.IsAssignableFrom(genericArguments[2]));
 
@@ -142,7 +184,6 @@ namespace Impatient.Query.ExpressionVisitors
 
         private bool CanRewrite(Expression expression)
         {
-            // TODO: Support rewriting on the 'element operators' (First, Last, etc.)
             switch (expression)
             {
                 case NewExpression _:

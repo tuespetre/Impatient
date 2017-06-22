@@ -49,7 +49,7 @@ namespace Impatient.Tests.ExpressionVisitors
                             where x1 == null
                             select true,
                 output: x => from x1 in x
-                             where x1 == null
+                             where ((int?)x1.Id) == null
                              select true);
         }
 

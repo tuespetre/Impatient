@@ -14,7 +14,6 @@ namespace Impatient.Query.ExpressionVisitors
 {
     public class QueryTranslatingExpressionVisitor : ExpressionVisitor
     {
-        private readonly Stack<object> selectExpressionSourceStack = new Stack<object>();
         private int queryDepth = -1;
         private HashSet<string> tableAliases = new HashSet<string>();
         private IDictionary<AliasedTableExpression, string> aliasLookup = new Dictionary<AliasedTableExpression, string>();
@@ -34,11 +33,7 @@ namespace Impatient.Query.ExpressionVisitors
                 = new SqlParameterRewritingExpressionVisitor()
                     .VisitAndConvert(selectExpression, nameof(Translate));
 
-            selectExpressionSourceStack.Push(selectExpression);
-
             selectExpression = VisitAndConvert(selectExpression, nameof(Translate));
-
-            selectExpressionSourceStack.Pop();
 
             return (selectExpression.Projection.Flatten(), builder.Build());
         }
@@ -514,6 +509,11 @@ namespace Impatient.Query.ExpressionVisitors
                         builder.AppendLine();
                         builder.Append("WHERE ");
 
+                        if (!(selectExpression.Predicate is BinaryExpression || selectExpression.Predicate is TypeBinaryExpression))
+                        {
+                            builder.Append("1 = ");
+                        }
+
                         Visit(selectExpression.Predicate);
                     }
 
@@ -572,8 +572,6 @@ namespace Impatient.Query.ExpressionVisitors
 
                 case SingleValueRelationalQueryExpression singleValueRelationalQueryExpression:
                 {
-                    selectExpressionSourceStack.Push(singleValueRelationalQueryExpression);
-
                     if (!singleValueRelationalQueryExpression.Type.IsScalarType())
                     {
                         VisitComplexNestedQuery(singleValueRelationalQueryExpression.SelectExpression);
@@ -597,18 +595,12 @@ namespace Impatient.Query.ExpressionVisitors
                         builder.Append(")");
                     }
 
-                    selectExpressionSourceStack.Pop();
-
                     return singleValueRelationalQueryExpression;
                 }
 
                 case EnumerableRelationalQueryExpression enumerableRelationalQueryExpression:
                 {
-                    selectExpressionSourceStack.Push(enumerableRelationalQueryExpression);
-
                     VisitComplexNestedQuery(enumerableRelationalQueryExpression.SelectExpression);
-
-                    selectExpressionSourceStack.Pop();
 
                     return enumerableRelationalQueryExpression;
                 }
@@ -635,11 +627,7 @@ namespace Impatient.Query.ExpressionVisitors
                             builder.IncreaseIndent();
                             builder.AppendLine();
 
-                            selectExpressionSourceStack.Push(subqueryTableExpression);
-
                             Visit(subqueryTableExpression.Subquery);
-
-                            selectExpressionSourceStack.Pop();
 
                             builder.DecreaseIndent();
                             builder.AppendLine();
