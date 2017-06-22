@@ -246,11 +246,16 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
         {
             var visitedExpression = Visit(node.Expression);
 
-            if (visitedExpression is ConstantExpression constantExpression)
+            if (visitedExpression is ConstantExpression || visitedExpression is ParameterExpression)
             {
-                return Expression.Constant(
-                    node.TypeOperand.GetTypeInfo().IsAssignableFrom(
-                        constantExpression.Value?.GetType().GetTypeInfo()));
+                if (node.TypeOperand.IsAssignableFrom(visitedExpression.Type))
+                {
+                    return Expression.Constant(true);
+                }
+                else if (!visitedExpression.Type.IsAssignableFrom(node.TypeOperand))
+                {
+                    return Expression.Constant(false);
+                }                       
             }
 
             return node.Update(visitedExpression);
