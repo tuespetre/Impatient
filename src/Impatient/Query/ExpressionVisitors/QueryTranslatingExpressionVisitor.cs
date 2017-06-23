@@ -14,17 +14,21 @@ namespace Impatient.Query.ExpressionVisitors
 {
     public class QueryTranslatingExpressionVisitor : ExpressionVisitor
     {
-        private int queryDepth = -1;
-        private HashSet<string> tableAliases = new HashSet<string>();
-        private IDictionary<AliasedTableExpression, string> aliasLookup = new Dictionary<AliasedTableExpression, string>();
-        private DbCommandBuilderExpressionBuilder builder = new DbCommandBuilderExpressionBuilder();
-
-        private readonly IImpatientExpressionVisitorProvider expressionVisitorProvider;
-
+        private static readonly IComplexTypeSubqueryFormatter complexTypeSubqueryFormatter
+            = new SqlServerForJsonComplexTypeSubqueryFormatter();
+        
+        private readonly HashSet<string> tableAliases = new HashSet<string>();
+        private readonly IDictionary<AliasedTableExpression, string> aliasLookup = new Dictionary<AliasedTableExpression, string>();
+        
         public QueryTranslatingExpressionVisitor(IImpatientExpressionVisitorProvider expressionVisitorProvider)
         {
-            this.expressionVisitorProvider = expressionVisitorProvider ?? throw new ArgumentNullException(nameof(expressionVisitorProvider));
+            ExpressionVisitorProvider = expressionVisitorProvider ?? throw new ArgumentNullException(nameof(expressionVisitorProvider));
+            Builder = new DbCommandBuilderExpressionBuilder();
         }
+
+        protected IImpatientExpressionVisitorProvider ExpressionVisitorProvider { get; }
+
+        protected DbCommandBuilderExpressionBuilder Builder { get; }
 
         // TODO: Separate command builder production from materializer production
         public (Expression materializer, Expression commandBuilder) Translate(SelectExpression selectExpression)
@@ -33,9 +37,9 @@ namespace Impatient.Query.ExpressionVisitors
                 = new SqlParameterRewritingExpressionVisitor()
                     .VisitAndConvert(selectExpression, nameof(Translate));
 
-            selectExpression = VisitAndConvert(selectExpression, nameof(Translate));
+            selectExpression = (SelectExpression)VisitSelectExpression(selectExpression, true);
 
-            return (selectExpression.Projection.Flatten(), builder.Build());
+            return (selectExpression.Projection.Flatten(), Builder.Build());
         }
 
         #region ExpressionVisitor overrides
@@ -48,11 +52,11 @@ namespace Impatient.Query.ExpressionVisitors
                 {
                     case BinaryExpression binaryExpression:
                     {
-                        builder.Append("(");
+                        Builder.Append("(");
 
                         operand = VisitBinary(binaryExpression);
 
-                        builder.Append(")");
+                        Builder.Append(")");
 
                         break;
                     }
@@ -72,7 +76,7 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 var left = VisitBinaryOperand(node.Left);
 
-                builder.Append(@operator);
+                Builder.Append(@operator);
 
                 var right = VisitBinaryOperand(node.Right);
 
@@ -114,15 +118,15 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 case ExpressionType.Coalesce:
                 {
-                    builder.Append("COALESCE(");
+                    Builder.Append("COALESCE(");
 
                     var left = Visit(node.Left);
 
-                    builder.Append(", ");
+                    Builder.Append(", ");
 
                     var right = Visit(node.Right);
 
-                    builder.Append(")");
+                    Builder.Append(")");
 
                     return node.Update(left, node.Conversion, right);
                 }
@@ -170,7 +174,7 @@ namespace Impatient.Query.ExpressionVisitors
                     {
                         var visitedRight = Visit(node.Right);
 
-                        builder.Append(" IS NULL");
+                        Builder.Append(" IS NULL");
 
                         return node.Update(node.Left, node.Conversion, visitedRight);
                     }
@@ -179,7 +183,7 @@ namespace Impatient.Query.ExpressionVisitors
                     {
                         var visitedLeft = Visit(node.Left);
 
-                        builder.Append(" IS NULL");
+                        Builder.Append(" IS NULL");
 
                         return node.Update(visitedLeft, node.Conversion, node.Right);
                     }
@@ -194,15 +198,15 @@ namespace Impatient.Query.ExpressionVisitors
 
                     if (leftIsNullable && rightIsNullable)
                     {
-                        builder.Append("((");
+                        Builder.Append("((");
                         Visit(node.Left);
-                        builder.Append(" IS NULL AND ");
+                        Builder.Append(" IS NULL AND ");
                         Visit(node.Right);
-                        builder.Append(" IS NULL) OR (");
+                        Builder.Append(" IS NULL) OR (");
                         var visitedLeft = Visit(node.Left);
-                        builder.Append(" = ");
+                        Builder.Append(" = ");
                         var visitedRight = Visit(node.Right);
-                        builder.Append("))");
+                        Builder.Append("))");
 
                         return node.Update(visitedLeft, node.Conversion, visitedRight);
                     }
@@ -241,7 +245,7 @@ namespace Impatient.Query.ExpressionVisitors
                     {
                         var visitedRight = Visit(node.Right);
 
-                        builder.Append(" IS NOT NULL");
+                        Builder.Append(" IS NOT NULL");
 
                         return node.Update(node.Left, node.Conversion, visitedRight);
                     }
@@ -250,7 +254,7 @@ namespace Impatient.Query.ExpressionVisitors
                     {
                         var visitedLeft = Visit(node.Left);
 
-                        builder.Append(" IS NOT NULL");
+                        Builder.Append(" IS NOT NULL");
 
                         return node.Update(visitedLeft, node.Conversion, node.Right);
                     }
@@ -265,43 +269,43 @@ namespace Impatient.Query.ExpressionVisitors
 
                     if (leftIsNullable && rightIsNullable)
                     {
-                        builder.Append("((");
+                        Builder.Append("((");
                         Visit(node.Left);
-                        builder.Append(" IS NULL AND ");
+                        Builder.Append(" IS NULL AND ");
                         Visit(node.Right);
-                        builder.Append(" IS NOT NULL) OR (");
+                        Builder.Append(" IS NOT NULL) OR (");
                         Visit(node.Left);
-                        builder.Append(" IS NOT NULL AND ");
+                        Builder.Append(" IS NOT NULL AND ");
                         Visit(node.Right);
-                        builder.Append(" IS NULL) OR (");
+                        Builder.Append(" IS NULL) OR (");
                         var visitedLeft = Visit(node.Left);
-                        builder.Append(" <> ");
+                        Builder.Append(" <> ");
                         var visitedRight = Visit(node.Right);
-                        builder.Append("))");
+                        Builder.Append("))");
 
                         return node.Update(visitedLeft, node.Conversion, visitedRight);
                     }
                     else if (leftIsNullable)
                     {
-                        builder.Append("(");
+                        Builder.Append("(");
                         Visit(node.Left);
-                        builder.Append(" IS NULL OR (");
+                        Builder.Append(" IS NULL OR (");
                         var visitedLeft = Visit(node.Left);
-                        builder.Append(" <> ");
+                        Builder.Append(" <> ");
                         var visitedRight = Visit(node.Right);
-                        builder.Append("))");
+                        Builder.Append("))");
 
                         return node.Update(visitedLeft, node.Conversion, visitedRight);
                     }
                     else if (rightIsNullable)
                     {
-                        builder.Append("(");
+                        Builder.Append("(");
                         Visit(node.Right);
-                        builder.Append(" IS NULL OR (");
+                        Builder.Append(" IS NULL OR (");
                         var visitedLeft = Visit(node.Left);
-                        builder.Append(" <> ");
+                        Builder.Append(" <> ");
                         var visitedRight = Visit(node.Right);
-                        builder.Append("))");
+                        Builder.Append("))");
 
                         return node.Update(visitedLeft, node.Conversion, visitedRight);
                     }
@@ -353,7 +357,7 @@ namespace Impatient.Query.ExpressionVisitors
                 {
                     return VisitSimple(" % ");
                 }
-                
+
                 case ExpressionType.And:
                 {
                     return VisitSimple(" & ");
@@ -378,19 +382,19 @@ namespace Impatient.Query.ExpressionVisitors
 
         protected override Expression VisitConditional(ConditionalExpression node)
         {
-            builder.Append("(CASE WHEN ");
+            Builder.Append("(CASE WHEN ");
 
             var test = Visit(node.Test);
 
-            builder.Append(" THEN ");
+            Builder.Append(" THEN ");
 
             var ifTrue = Visit(node.IfTrue);
 
-            builder.Append(" ELSE ");
+            Builder.Append(" ELSE ");
 
             var ifFalse = Visit(node.IfFalse);
 
-            builder.Append(" END)");
+            Builder.Append(" END)");
 
             return node.Update(test, ifTrue, ifFalse);
         }
@@ -401,31 +405,31 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 case string value:
                 {
-                    builder.Append($@"N'{value}'");
+                    Builder.Append($@"N'{value}'");
                     break;
                 }
 
                 case char value:
                 {
-                    builder.Append($@"N'{value}'");
+                    Builder.Append($@"N'{value}'");
                     break;
                 }
 
                 case bool value:
                 {
-                    builder.Append(value ? "1" : "0");
+                    Builder.Append(value ? "1" : "0");
                     break;
                 }
 
                 case object value:
                 {
-                    builder.Append(value.ToString());
+                    Builder.Append(value.ToString());
                     break;
                 }
 
                 case null:
                 {
-                    builder.Append("NULL");
+                    Builder.Append("NULL");
                     break;
                 }
             }
@@ -439,596 +443,122 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 case SelectExpression selectExpression:
                 {
-                    queryDepth++;
-
-                    builder.Append("SELECT ");
-
-                    if (selectExpression.IsDistinct)
-                    {
-                        builder.Append("DISTINCT ");
-                    }
-
-                    if (selectExpression.Limit != null && selectExpression.Offset == null)
-                    {
-                        builder.Append("TOP (");
-
-                        Visit(selectExpression.Limit);
-
-                        builder.Append(") ");
-                    }
-
-                    var readerParameter = Expression.Parameter(typeof(DbDataReader));
-
-                    var projectionVisitor
-                        = new ReaderParameterInjectingExpressionVisitor(
-                            expressionVisitorProvider,
-                            readerParameter);
-
-                    var selectorBody = FlattenProjection(selectExpression.Projection, projectionVisitor);
-
-                    var projectionExpressions
-                        = projectionVisitor.GatheredExpressions
-                            .Select((p, i) => (i, p.Key, p.Value))
-                            .DefaultIfEmpty((0, null, Expression.Constant(1)));
-
-                    foreach (var (index, alias, expression) in projectionExpressions)
-                    {
-                        if (index > 0)
-                        {
-                            builder.Append(", ");
-                        }
-
-                        if (queryDepth == 0
-                            && expression.Type.IsBooleanType()
-                            && !(expression is SqlAliasExpression
-                               || expression is SqlColumnExpression
-                               || expression is SqlCastExpression))
-                        {
-                            builder.Append("CAST(");
-
-                            EmitExpressionListExpression(expression);
-
-                            builder.Append(" AS BIT)");
-                        }
-                        else
-                        {
-                            EmitExpressionListExpression(expression);
-                        }
-
-                        if (!string.IsNullOrEmpty(alias))
-                        {
-                            builder.Append(" AS ");
-                            builder.Append(FormatIdentifier(alias));
-                        }
-                    }
-
-                    if (selectExpression.Table != null)
-                    {
-                        builder.AppendLine();
-                        builder.Append($"FROM ");
-
-                        Visit(selectExpression.Table);
-                    }
-
-                    if (selectExpression.Predicate != null)
-                    {
-                        builder.AppendLine();
-                        builder.Append("WHERE ");
-
-                        if (!(selectExpression.Predicate is BinaryExpression || selectExpression.Predicate is TypeBinaryExpression))
-                        {
-                            builder.Append("1 = ");
-                        }
-
-                        Visit(selectExpression.Predicate);
-                    }
-
-                    if (selectExpression.Grouping != null)
-                    {
-                        builder.AppendLine();
-                        builder.Append("GROUP BY ");
-
-                        var gatherer = new ProjectionLeafGatheringExpressionVisitor();
-                        gatherer.Visit(selectExpression.Grouping);
-
-                        foreach (var (index, alias, expression) in gatherer.GatheredExpressions.Select((p, i) => (i, p.Key, p.Value)))
-                        {
-                            if (index > 0)
-                            {
-                                builder.Append(", ");
-                            }
-
-                            EmitExpressionListExpression(expression);
-                        }
-                    }
-
-                    if (selectExpression.OrderBy != null)
-                    {
-                        builder.AppendLine();
-                        builder.Append("ORDER BY ");
-
-                        Visit(selectExpression.OrderBy);
-                    }
-
-                    if (selectExpression.Offset != null)
-                    {
-                        builder.AppendLine();
-                        builder.Append("OFFSET ");
-
-                        Visit(selectExpression.Offset);
-
-                        builder.Append(" ROWS");
-
-                        if (selectExpression.Limit != null)
-                        {
-                            builder.Append(" FETCH NEXT ");
-
-                            Visit(selectExpression.Limit);
-
-                            builder.Append(" ROWS ONLY");
-                        }
-                    }
-
-                    queryDepth--;
-
-                    return selectExpression.UpdateProjection(
-                        new ServerProjectionExpression(
-                            Expression.Lambda(selectorBody, readerParameter)));
+                    return VisitSelectExpression(selectExpression, false);
                 }
 
                 case SingleValueRelationalQueryExpression singleValueRelationalQueryExpression:
                 {
-                    if (!singleValueRelationalQueryExpression.Type.IsScalarType())
-                    {
-                        VisitComplexNestedQuery(singleValueRelationalQueryExpression.SelectExpression);
-                    }
-                    else if (singleValueRelationalQueryExpression == SingleValueRelationalQueryExpression.SelectOne)
-                    {
-                        builder.Append("(SELECT 1)");
-                    }
-                    else
-                    {
-                        builder.Append("(");
-
-                        builder.IncreaseIndent();
-                        builder.AppendLine();
-
-                        Visit(singleValueRelationalQueryExpression.SelectExpression);
-
-                        builder.DecreaseIndent();
-                        builder.AppendLine();
-
-                        builder.Append(")");
-                    }
-
-                    return singleValueRelationalQueryExpression;
+                    return VisitSingleValueRelationalQueryExpression(singleValueRelationalQueryExpression);
                 }
 
                 case EnumerableRelationalQueryExpression enumerableRelationalQueryExpression:
                 {
-                    VisitComplexNestedQuery(enumerableRelationalQueryExpression.SelectExpression);
-
-                    return enumerableRelationalQueryExpression;
+                    return VisitEnumerableRelationalQueryExpression(enumerableRelationalQueryExpression);
                 }
 
-                case TableExpression tableExpression:
+                case BaseTableExpression baseTableExpression:
                 {
-                    switch (tableExpression)
-                    {
-                        case BaseTableExpression baseTableExpression:
-                        {
-                            builder.Append(FormatIdentifier(baseTableExpression.SchemaName));
-                            builder.Append(".");
-                            builder.Append(FormatIdentifier(baseTableExpression.TableName));
-                            builder.Append(" AS ");
-                            builder.Append(FormatIdentifier(GetTableAlias(baseTableExpression)));
-
-                            return baseTableExpression;
-                        }
-
-                        case SubqueryTableExpression subqueryTableExpression:
-                        {
-                            builder.Append("(");
-
-                            builder.IncreaseIndent();
-                            builder.AppendLine();
-
-                            Visit(subqueryTableExpression.Subquery);
-
-                            builder.DecreaseIndent();
-                            builder.AppendLine();
-
-                            builder.Append(") AS ");
-                            builder.Append(FormatIdentifier(GetTableAlias(subqueryTableExpression)));
-
-                            return subqueryTableExpression;
-                        }
-
-                        case InnerJoinExpression innerJoinExpression:
-                        {
-                            Visit(innerJoinExpression.OuterTable);
-
-                            builder.AppendLine();
-                            builder.Append("INNER JOIN ");
-
-                            Visit(innerJoinExpression.InnerTable);
-
-                            builder.Append(" ON ");
-
-                            Visit(innerJoinExpression.Predicate);
-
-                            return innerJoinExpression;
-                        }
-
-                        case LeftJoinExpression leftJoinExpression:
-                        {
-                            Visit(leftJoinExpression.OuterTable);
-
-                            builder.AppendLine();
-                            builder.Append("LEFT JOIN ");
-
-                            Visit(leftJoinExpression.InnerTable);
-
-                            builder.Append(" ON ");
-
-                            Visit(leftJoinExpression.Predicate);
-
-                            return leftJoinExpression;
-                        }
-
-                        case FullJoinExpression fullJoinExpression:
-                        {
-                            Visit(fullJoinExpression.OuterTable);
-
-                            builder.AppendLine();
-                            builder.Append("FULL JOIN ");
-
-                            Visit(fullJoinExpression.InnerTable);
-
-                            builder.Append(" ON ");
-
-                            Visit(fullJoinExpression.Predicate);
-
-                            return fullJoinExpression;
-                        }
-
-                        case CrossJoinExpression crossJoinExpression:
-                        {
-                            Visit(crossJoinExpression.OuterTable);
-
-                            builder.AppendLine();
-                            builder.Append("CROSS JOIN ");
-
-                            Visit(crossJoinExpression.InnerTable);
-
-                            return crossJoinExpression;
-                        }
-
-                        case CrossApplyExpression crossApplyExpression:
-                        {
-                            Visit(crossApplyExpression.OuterTable);
-
-                            builder.AppendLine();
-                            builder.Append("CROSS APPLY ");
-
-                            Visit(crossApplyExpression.InnerTable);
-
-                            return crossApplyExpression;
-                        }
-
-                        case OuterApplyExpression outerApplyExpression:
-                        {
-                            Visit(outerApplyExpression.OuterTable);
-
-                            builder.AppendLine();
-                            builder.Append("OUTER APPLY ");
-
-                            Visit(outerApplyExpression.InnerTable);
-
-                            return outerApplyExpression;
-                        }
-
-                        case SetOperatorExpression setOperatorExpression:
-                        {
-                            builder.Append("(");
-
-                            builder.IncreaseIndent();
-                            builder.AppendLine();
-
-                            Visit(setOperatorExpression.Set1);
-
-                            builder.AppendLine();
-
-                            switch (setOperatorExpression)
-                            {
-                                case ExceptExpression exceptExpression:
-                                {
-                                    builder.Append("EXCEPT");
-                                    break;
-                                }
-
-                                case IntersectExpression intersectExpression:
-                                {
-                                    builder.Append("INTERSECT");
-                                    break;
-                                }
-
-                                case UnionAllExpression unionAllExpression:
-                                {
-                                    builder.Append("UNION ALL");
-                                    break;
-                                }
-
-                                case UnionExpression unionExpression:
-                                {
-                                    builder.Append("UNION");
-                                    break;
-                                }
-
-                                default:
-                                {
-                                    throw new NotSupportedException();
-                                }
-                            }
-
-                            builder.AppendLine();
-
-                            Visit(setOperatorExpression.Set2);
-
-                            builder.DecreaseIndent();
-                            builder.AppendLine();
-
-                            builder.Append(") AS ");
-                            builder.Append(FormatIdentifier(GetTableAlias(setOperatorExpression)));
-
-                            return setOperatorExpression;
-                        }
-
-                        default:
-                        {
-                            throw new NotSupportedException();
-                        }
-                    }
+                    return VisitBaseTableExpression(baseTableExpression);
                 }
 
-                case SqlExpression sqlExpression:
+                case SubqueryTableExpression subqueryTableExpression:
                 {
-                    switch (sqlExpression)
-                    {
-                        case SqlAggregateExpression sqlAggregateExpression:
-                        {
-                            builder.Append(sqlAggregateExpression.FunctionName);
-                            builder.Append("(");
+                    return VisitSubqueryTableExpression(subqueryTableExpression);
+                }
 
-                            if (sqlAggregateExpression.IsDistinct)
-                            {
-                                builder.Append("DISTINCT ");
-                            }
+                case InnerJoinExpression innerJoinExpression:
+                {
+                    return VisitInnerJoinExpression(innerJoinExpression);
+                }
 
-                            Visit(sqlAggregateExpression.Expression);
+                case LeftJoinExpression leftJoinExpression:
+                {
+                    return VisitLeftJoinExpression(leftJoinExpression);
+                }
 
-                            builder.Append(")");
+                case FullJoinExpression fullJoinExpression:
+                {
+                    return VisitFullJoinExpression(fullJoinExpression);
+                }
 
-                            return sqlAggregateExpression;
-                        }
+                case CrossJoinExpression crossJoinExpression:
+                {
+                    return VisitCrossJoinExpression(crossJoinExpression);
+                }
 
-                        case SqlAliasExpression sqlAliasExpression:
-                        {
-                            Visit(sqlAliasExpression.Expression);
+                case CrossApplyExpression crossApplyExpression:
+                {
+                    return VisitCrossApplyExpression(crossApplyExpression);
+                }
 
-                            builder.Append(" AS ");
-                            builder.Append(FormatIdentifier(sqlAliasExpression.Alias));
+                case OuterApplyExpression outerApplyExpression:
+                {
+                    return VisitOuterApplyExpression(outerApplyExpression);
+                }
 
-                            return sqlAliasExpression;
-                        }
+                case SetOperatorExpression setOperatorExpression:
+                {
+                    return VisitSetOperatorExpression(setOperatorExpression);
+                }
 
-                        case SqlCastExpression sqlCastExpression:
-                        {
-                            builder.Append("CAST(");
+                case SqlAggregateExpression sqlAggregateExpression:
+                {
+                    return VisitSqlAggregateExpression(sqlAggregateExpression);
+                }
 
-                            Visit(sqlCastExpression.Expression);
+                case SqlAliasExpression sqlAliasExpression:
+                {
+                    return VisitSqlAliasExpression(sqlAliasExpression);
+                }
 
-                            builder.Append($" AS {sqlCastExpression.SqlType})");
+                case SqlCastExpression sqlCastExpression:
+                {
+                    return VisitSqlCastExpression(sqlCastExpression);
+                }
 
-                            return sqlCastExpression;
-                        }
+                case SqlColumnExpression sqlColumnExpression:
+                {
+                    return VisitSqlColumnExpression(sqlColumnExpression);
+                }
 
-                        case SqlColumnExpression sqlColumnExpression:
-                        {
-                            builder.Append(FormatIdentifier(GetTableAlias(sqlColumnExpression.Table)));
-                            builder.Append(".");
-                            builder.Append(FormatIdentifier(sqlColumnExpression.ColumnName));
+                case SqlConcatExpression sqlConcatExpression:
+                {
+                    return VisitSqlConcatExpression(sqlConcatExpression);
+                }
 
-                            return sqlColumnExpression;
-                        }
+                case SqlExistsExpression sqlExistsExpression:
+                {
+                    return VisitSqlExistsExpression(sqlExistsExpression);
+                }
 
-                        case SqlConcatExpression sqlConcatExpression:
-                        {
-                            Visit(sqlConcatExpression.Segments.First());
+                case SqlFragmentExpression sqlFragmentExpression:
+                {
+                    return VisitSqlFragmentExpression(sqlFragmentExpression);
+                }
 
-                            foreach (var segment in sqlConcatExpression.Segments.Skip(1))
-                            {
-                                builder.Append(" + ");
+                case SqlFunctionExpression sqlFunctionExpression:
+                {
+                    return VisitSqlFunctionExpression(sqlFunctionExpression);
+                }
 
-                                Visit(segment);
-                            }
+                case SqlInExpression sqlInExpression:
+                {
+                    return VisitSqlInExpression(sqlInExpression);
+                }
 
-                            return sqlConcatExpression;
-                        }
+                case SqlParameterExpression sqlParameterExpression:
+                {
+                    return VisitSqlParameterExpression(sqlParameterExpression);
+                }
 
-                        case SqlExistsExpression sqlExistsExpression:
-                        {
-                            builder.Append("EXISTS (");
-
-                            builder.IncreaseIndent();
-                            builder.AppendLine();
-
-                            Visit(sqlExistsExpression.SelectExpression);
-
-                            builder.DecreaseIndent();
-                            builder.AppendLine();
-
-                            builder.Append(")");
-
-                            return sqlExistsExpression;
-                        }
-
-                        case SqlFragmentExpression sqlFragmentExpression:
-                        {
-                            builder.Append(sqlFragmentExpression.Fragment);
-
-                            return sqlFragmentExpression;
-                        }
-
-                        case SqlFunctionExpression sqlFunctionExpression:
-                        {
-                            builder.Append(sqlFunctionExpression.FunctionName);
-                            builder.Append("(");
-
-                            if (sqlFunctionExpression.Arguments.Any())
-                            {
-                                Visit(sqlFunctionExpression.Arguments.First());
-
-                                foreach (var argument in sqlFunctionExpression.Arguments.Skip(1))
-                                {
-                                    builder.Append(", ");
-
-                                    Visit(argument);
-                                }
-                            }
-
-                            builder.Append(")");
-
-                            return sqlFunctionExpression;
-                        }
-
-                        case SqlInExpression sqlInExpression:
-                        {
-                            Visit(sqlInExpression.Value);
-
-                            builder.Append(" IN (");
-
-                            switch (sqlInExpression.Values)
-                            {
-                                case SelectExpression selectExpression:
-                                {
-                                    builder.IncreaseIndent();
-                                    builder.AppendLine();
-
-                                    Visit(selectExpression);
-
-                                    builder.DecreaseIndent();
-                                    builder.AppendLine();
-
-                                    break;
-                                }
-
-                                case NewArrayExpression newArrayExpression:
-                                {
-                                    foreach (var (expression, index) in newArrayExpression.Expressions.Select((e, i) => (e, i)))
-                                    {
-                                        if (index > 0)
-                                        {
-                                            builder.Append(", ");
-                                        }
-
-                                        Visit(expression);
-                                    }
-
-                                    break;
-                                }
-
-                                case ListInitExpression listInitExpression:
-                                {
-                                    foreach (var (elementInit, index) in listInitExpression.Initializers.Select((e, i) => (e, i)))
-                                    {
-                                        if (index > 0)
-                                        {
-                                            builder.Append(", ");
-                                        }
-
-                                        Visit(elementInit.Arguments[0]);
-                                    }
-
-                                    break;
-                                }
-
-                                case ConstantExpression constantExpression:
-                                {
-                                    var values = from object value in ((IEnumerable)constantExpression.Value)
-                                                 select Expression.Constant(value);
-
-                                    foreach (var (value, index) in values.Select((v, i) => (v, i)))
-                                    {
-                                        if (index > 0)
-                                        {
-                                            builder.Append(", ");
-                                        }
-
-                                        Visit(value);
-                                    }
-
-                                    break;
-                                }
-
-                                case Expression expression:
-                                {
-                                    builder.AddParameterList(expression, FormatParameterName);
-
-                                    break;
-                                }
-                            }
-
-                            builder.Append(")");
-
-                            return sqlInExpression;
-                        }
-
-                        case SqlParameterExpression sqlParameterExpression:
-                        {
-                            builder.AddParameter(sqlParameterExpression.Expression, FormatParameterName);
-
-                            return sqlParameterExpression;
-                        }
-
-                        case SqlWindowFunctionExpression sqlWindowFunctionExpression:
-                        {
-                            Visit(sqlWindowFunctionExpression.Function);
-
-                            if (sqlWindowFunctionExpression.Ordering != null)
-                            {
-                                builder.Append(" OVER(ORDER BY ");
-
-                                Visit(sqlWindowFunctionExpression.Ordering);
-
-                                builder.Append(")");
-                            }
-
-                            return sqlWindowFunctionExpression;
-                        }
-
-                        default:
-                        {
-                            throw new NotSupportedException();
-                        }
-                    }
+                case SqlWindowFunctionExpression sqlWindowFunctionExpression:
+                {
+                    return VisitSqlWindowFunctionExpression(sqlWindowFunctionExpression);
                 }
 
                 case OrderByExpression orderByExpression:
                 {
-                    if (orderByExpression is ThenOrderByExpression thenOrderBy)
-                    {
-                        Visit(thenOrderBy.Previous);
-
-                        builder.Append(", ");
-                    }
-
-                    EmitExpressionListExpression(orderByExpression.Expression);
-
-                    builder.Append(" ");
-                    builder.Append(orderByExpression.Descending ? "DESC" : "ASC");
-
-                    return orderByExpression;
+                    return VisitOrderByExpression(orderByExpression);
                 }
 
                 default:
@@ -1077,7 +607,7 @@ namespace Impatient.Query.ExpressionVisitors
                         case SqlExistsExpression sqlExistsExpression:
                         case SqlInExpression sqlInExpression:
                         {
-                            builder.Append("NOT ");
+                            Builder.Append("NOT ");
 
                             return base.VisitUnary(node);
                         }
@@ -1091,7 +621,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                 case ExpressionType.Not:
                 {
-                    builder.Append("~ ");
+                    Builder.Append("~ ");
 
                     return base.VisitUnary(node);
                 }
@@ -1110,27 +640,586 @@ namespace Impatient.Query.ExpressionVisitors
 
         #endregion
 
-        #region Extensibility points
+        #region Extension Expression visiting methods
 
-        protected virtual Expression VisitComplexNestedQuery(SelectExpression subquery)
+        protected virtual Expression VisitSelectExpression(SelectExpression selectExpression, bool isTopLevel)
         {
-            builder.Append("(");
+            Builder.Append("SELECT ");
 
-            builder.IncreaseIndent();
-            builder.AppendLine();
+            if (selectExpression.IsDistinct)
+            {
+                Builder.Append("DISTINCT ");
+            }
 
-            Visit(subquery);
+            if (selectExpression.Limit != null && selectExpression.Offset == null)
+            {
+                Builder.Append("TOP (");
 
-            builder.AppendLine();
-            builder.Append("FOR JSON PATH");
+                Visit(selectExpression.Limit);
 
-            builder.DecreaseIndent();
-            builder.AppendLine();
+                Builder.Append(") ");
+            }
 
-            builder.Append(")");
+            var readerParameter = Expression.Parameter(typeof(DbDataReader));
 
-            return subquery;
+            var projectionVisitor
+                = new ReaderParameterInjectingExpressionVisitor(
+                    ExpressionVisitorProvider,
+                    readerParameter);
+
+            var selectorBody = FlattenProjection(selectExpression.Projection, projectionVisitor);
+
+            var projectionExpressions
+                = projectionVisitor.GatheredExpressions
+                    .Select((p, i) => (i, p.Key, p.Value))
+                    .DefaultIfEmpty((0, null, Expression.Constant(1)));
+
+            foreach (var (index, alias, expression) in projectionExpressions)
+            {
+                if (index > 0)
+                {
+                    Builder.Append(", ");
+                }
+
+                if (isTopLevel
+                    && expression.Type.IsBooleanType()
+                    && !(expression is SqlAliasExpression
+                       || expression is SqlColumnExpression
+                       || expression is SqlCastExpression))
+                {
+                    Builder.Append("CAST(");
+
+                    EmitExpressionListExpression(expression);
+
+                    Builder.Append(" AS BIT)");
+                }
+                else
+                {
+                    EmitExpressionListExpression(expression);
+                }
+
+                if (!string.IsNullOrEmpty(alias))
+                {
+                    Builder.Append(" AS ");
+                    Builder.Append(FormatIdentifier(alias));
+                }
+            }
+
+            if (selectExpression.Table != null)
+            {
+                Builder.AppendLine();
+                Builder.Append("FROM ");
+
+                Visit(selectExpression.Table);
+            }
+
+            if (selectExpression.Predicate != null)
+            {
+                Builder.AppendLine();
+                Builder.Append("WHERE ");
+
+                if (!(selectExpression.Predicate is BinaryExpression || selectExpression.Predicate is TypeBinaryExpression))
+                {
+                    Builder.Append("1 = ");
+                }
+
+                Visit(selectExpression.Predicate);
+            }
+
+            if (selectExpression.Grouping != null)
+            {
+                Builder.AppendLine();
+                Builder.Append("GROUP BY ");
+
+                var gatherer = new ProjectionLeafGatheringExpressionVisitor();
+
+                gatherer.Visit(selectExpression.Grouping);
+
+                foreach (var (index, alias, expression) in gatherer.GatheredExpressions.Select((p, i) => (i, p.Key, p.Value)))
+                {
+                    if (index > 0)
+                    {
+                        Builder.Append(", ");
+                    }
+
+                    EmitExpressionListExpression(expression);
+                }
+            }
+
+            if (selectExpression.OrderBy != null)
+            {
+                Builder.AppendLine();
+                Builder.Append("ORDER BY ");
+
+                Visit(selectExpression.OrderBy);
+            }
+
+            if (selectExpression.Offset != null)
+            {
+                Builder.AppendLine();
+                Builder.Append("OFFSET ");
+
+                Visit(selectExpression.Offset);
+
+                Builder.Append(" ROWS");
+
+                if (selectExpression.Limit != null)
+                {
+                    Builder.Append(" FETCH NEXT ");
+
+                    Visit(selectExpression.Limit);
+
+                    Builder.Append(" ROWS ONLY");
+                }
+            }
+
+            return selectExpression.UpdateProjection(
+                new ServerProjectionExpression(
+                    Expression.Lambda(selectorBody, readerParameter)));
         }
+
+        protected virtual Expression VisitSingleValueRelationalQueryExpression(SingleValueRelationalQueryExpression singleValueRelationalQueryExpression)
+        {
+            if (!singleValueRelationalQueryExpression.Type.IsScalarType())
+            {
+                complexTypeSubqueryFormatter.Format(
+                    singleValueRelationalQueryExpression.SelectExpression,
+                    Builder,
+                    this);
+            }
+            else if (singleValueRelationalQueryExpression == SingleValueRelationalQueryExpression.SelectOne)
+            {
+                Builder.Append("(SELECT 1)");
+            }
+            else
+            {
+                Builder.Append("(");
+
+                Builder.IncreaseIndent();
+                Builder.AppendLine();
+
+                Visit(singleValueRelationalQueryExpression.SelectExpression);
+
+                Builder.DecreaseIndent();
+                Builder.AppendLine();
+
+                Builder.Append(")");
+            }
+
+            return singleValueRelationalQueryExpression;
+        }
+
+        protected virtual Expression VisitEnumerableRelationalQueryExpression(EnumerableRelationalQueryExpression enumerableRelationalQueryExpression)
+        {
+            complexTypeSubqueryFormatter.Format(
+                enumerableRelationalQueryExpression.SelectExpression,
+                Builder,
+                this);
+
+            return enumerableRelationalQueryExpression;
+        }
+
+        protected virtual Expression VisitBaseTableExpression(BaseTableExpression baseTableExpression)
+        {
+            Builder.Append(FormatIdentifier(baseTableExpression.SchemaName));
+            Builder.Append(".");
+            Builder.Append(FormatIdentifier(baseTableExpression.TableName));
+            Builder.Append(" AS ");
+            Builder.Append(FormatIdentifier(GetTableAlias(baseTableExpression)));
+
+            return baseTableExpression;
+        }
+
+        protected virtual Expression VisitSubqueryTableExpression(SubqueryTableExpression subqueryTableExpression)
+        {
+            Builder.Append("(");
+
+            Builder.IncreaseIndent();
+            Builder.AppendLine();
+
+            Visit(subqueryTableExpression.Subquery);
+
+            Builder.DecreaseIndent();
+            Builder.AppendLine();
+
+            Builder.Append(") AS ");
+            Builder.Append(FormatIdentifier(GetTableAlias(subqueryTableExpression)));
+
+            return subqueryTableExpression;
+        }
+
+        protected virtual Expression VisitInnerJoinExpression(InnerJoinExpression innerJoinExpression)
+        {
+            Visit(innerJoinExpression.OuterTable);
+
+            Builder.AppendLine();
+            Builder.Append("INNER JOIN ");
+
+            Visit(innerJoinExpression.InnerTable);
+
+            Builder.Append(" ON ");
+
+            Visit(innerJoinExpression.Predicate);
+
+            return innerJoinExpression;
+        }
+
+        protected virtual Expression VisitLeftJoinExpression(LeftJoinExpression leftJoinExpression)
+        {
+            Visit(leftJoinExpression.OuterTable);
+
+            Builder.AppendLine();
+            Builder.Append("LEFT JOIN ");
+
+            Visit(leftJoinExpression.InnerTable);
+
+            Builder.Append(" ON ");
+
+            Visit(leftJoinExpression.Predicate);
+
+            return leftJoinExpression;
+        }
+
+        protected virtual Expression VisitFullJoinExpression(FullJoinExpression fullJoinExpression)
+        {
+            Visit(fullJoinExpression.OuterTable);
+
+            Builder.AppendLine();
+            Builder.Append("FULL JOIN ");
+
+            Visit(fullJoinExpression.InnerTable);
+
+            Builder.Append(" ON ");
+
+            Visit(fullJoinExpression.Predicate);
+
+            return fullJoinExpression;
+        }
+
+        protected virtual Expression VisitCrossJoinExpression(CrossJoinExpression crossJoinExpression)
+        {
+            Visit(crossJoinExpression.OuterTable);
+
+            Builder.AppendLine();
+            Builder.Append("CROSS JOIN ");
+
+            Visit(crossJoinExpression.InnerTable);
+
+            return crossJoinExpression;
+        }
+
+        protected virtual Expression VisitCrossApplyExpression(CrossApplyExpression crossApplyExpression)
+        {
+            Visit(crossApplyExpression.OuterTable);
+
+            Builder.AppendLine();
+            Builder.Append("CROSS APPLY ");
+
+            Visit(crossApplyExpression.InnerTable);
+
+            return crossApplyExpression;
+        }
+
+        protected virtual Expression VisitOuterApplyExpression(OuterApplyExpression outerApplyExpression)
+        {
+            Visit(outerApplyExpression.OuterTable);
+
+            Builder.AppendLine();
+            Builder.Append("OUTER APPLY ");
+
+            Visit(outerApplyExpression.InnerTable);
+
+            return outerApplyExpression;
+        }
+
+        protected virtual Expression VisitSetOperatorExpression(SetOperatorExpression setOperatorExpression)
+        {
+            Builder.Append("(");
+
+            Builder.IncreaseIndent();
+            Builder.AppendLine();
+
+            Visit(setOperatorExpression.Set1);
+
+            Builder.AppendLine();
+
+            switch (setOperatorExpression)
+            {
+                case ExceptExpression exceptExpression:
+                {
+                    Builder.Append("EXCEPT");
+                    break;
+                }
+
+                case IntersectExpression intersectExpression:
+                {
+                    Builder.Append("INTERSECT");
+                    break;
+                }
+
+                case UnionAllExpression unionAllExpression:
+                {
+                    Builder.Append("UNION ALL");
+                    break;
+                }
+
+                case UnionExpression unionExpression:
+                {
+                    Builder.Append("UNION");
+                    break;
+                }
+
+                default:
+                {
+                    throw new NotSupportedException();
+                }
+            }
+
+            Builder.AppendLine();
+
+            Visit(setOperatorExpression.Set2);
+
+            Builder.DecreaseIndent();
+            Builder.AppendLine();
+
+            Builder.Append(") AS ");
+            Builder.Append(FormatIdentifier(GetTableAlias(setOperatorExpression)));
+
+            return setOperatorExpression;
+        }
+
+        protected virtual Expression VisitSqlAggregateExpression(SqlAggregateExpression sqlAggregateExpression)
+        {
+            Builder.Append(sqlAggregateExpression.FunctionName);
+            Builder.Append("(");
+
+            if (sqlAggregateExpression.IsDistinct)
+            {
+                Builder.Append("DISTINCT ");
+            }
+
+            Visit(sqlAggregateExpression.Expression);
+
+            Builder.Append(")");
+
+            return sqlAggregateExpression;
+        }
+
+        protected virtual Expression VisitSqlAliasExpression(SqlAliasExpression sqlAliasExpression)
+        {
+            Visit(sqlAliasExpression.Expression);
+
+            Builder.Append(" AS ");
+            Builder.Append(FormatIdentifier(sqlAliasExpression.Alias));
+
+            return sqlAliasExpression;
+        }
+
+        protected virtual Expression VisitSqlCastExpression(SqlCastExpression sqlCastExpression)
+        {
+            Builder.Append("CAST(");
+
+            Visit(sqlCastExpression.Expression);
+
+            Builder.Append($" AS {sqlCastExpression.SqlType})");
+
+            return sqlCastExpression;
+        }
+
+        protected virtual Expression VisitSqlColumnExpression(SqlColumnExpression sqlColumnExpression)
+        {
+            Builder.Append(FormatIdentifier(GetTableAlias(sqlColumnExpression.Table)));
+            Builder.Append(".");
+            Builder.Append(FormatIdentifier(sqlColumnExpression.ColumnName));
+
+            return sqlColumnExpression;
+        }
+
+        protected virtual Expression VisitSqlConcatExpression(SqlConcatExpression sqlConcatExpression)
+        {
+            Visit(sqlConcatExpression.Segments.First());
+
+            foreach (var segment in sqlConcatExpression.Segments.Skip(1))
+            {
+                Builder.Append(" + ");
+
+                Visit(segment);
+            }
+
+            return sqlConcatExpression;
+        }
+
+        protected virtual Expression VisitSqlExistsExpression(SqlExistsExpression sqlExistsExpression)
+        {
+            Builder.Append("EXISTS (");
+
+            Builder.IncreaseIndent();
+            Builder.AppendLine();
+
+            Visit(sqlExistsExpression.SelectExpression);
+
+            Builder.DecreaseIndent();
+            Builder.AppendLine();
+
+            Builder.Append(")");
+
+            return sqlExistsExpression;
+        }
+
+        protected virtual Expression VisitSqlFragmentExpression(SqlFragmentExpression sqlFragmentExpression)
+        {
+            Builder.Append(sqlFragmentExpression.Fragment);
+
+            return sqlFragmentExpression;
+        }
+
+        protected virtual Expression VisitSqlFunctionExpression(SqlFunctionExpression sqlFunctionExpression)
+        {
+            Builder.Append(sqlFunctionExpression.FunctionName);
+            Builder.Append("(");
+
+            if (sqlFunctionExpression.Arguments.Any())
+            {
+                Visit(sqlFunctionExpression.Arguments.First());
+
+                foreach (var argument in sqlFunctionExpression.Arguments.Skip(1))
+                {
+                    Builder.Append(", ");
+
+                    Visit(argument);
+                }
+            }
+
+            Builder.Append(")");
+
+            return sqlFunctionExpression;
+        }
+
+        protected virtual Expression VisitSqlInExpression(SqlInExpression sqlInExpression)
+        {
+            Visit(sqlInExpression.Value);
+
+            Builder.Append(" IN (");
+
+            switch (sqlInExpression.Values)
+            {
+                case SelectExpression selectExpression:
+                {
+                    Builder.IncreaseIndent();
+                    Builder.AppendLine();
+
+                    Visit(selectExpression);
+
+                    Builder.DecreaseIndent();
+                    Builder.AppendLine();
+
+                    break;
+                }
+
+                case NewArrayExpression newArrayExpression:
+                {
+                    foreach (var (expression, index) in newArrayExpression.Expressions.Select((e, i) => (e, i)))
+                    {
+                        if (index > 0)
+                        {
+                            Builder.Append(", ");
+                        }
+
+                        Visit(expression);
+                    }
+
+                    break;
+                }
+
+                case ListInitExpression listInitExpression:
+                {
+                    foreach (var (elementInit, index) in listInitExpression.Initializers.Select((e, i) => (e, i)))
+                    {
+                        if (index > 0)
+                        {
+                            Builder.Append(", ");
+                        }
+
+                        Visit(elementInit.Arguments[0]);
+                    }
+
+                    break;
+                }
+
+                case ConstantExpression constantExpression:
+                {
+                    var values = from object value in ((IEnumerable)constantExpression.Value)
+                                 select Expression.Constant(value);
+
+                    foreach (var (value, index) in values.Select((v, i) => (v, i)))
+                    {
+                        if (index > 0)
+                        {
+                            Builder.Append(", ");
+                        }
+
+                        Visit(value);
+                    }
+
+                    break;
+                }
+
+                case Expression expression:
+                {
+                    Builder.AddParameterList(expression, FormatParameterName);
+
+                    break;
+                }
+            }
+
+            Builder.Append(")");
+
+            return sqlInExpression;
+        }
+
+        protected virtual Expression VisitSqlParameterExpression(SqlParameterExpression sqlParameterExpression)
+        {
+            Builder.AddParameter(sqlParameterExpression.Expression, FormatParameterName);
+
+            return sqlParameterExpression;
+        }
+
+        protected virtual Expression VisitSqlWindowFunctionExpression(SqlWindowFunctionExpression sqlWindowFunctionExpression)
+        {
+            Visit(sqlWindowFunctionExpression.Function);
+
+            if (sqlWindowFunctionExpression.Ordering != null)
+            {
+                Builder.Append(" OVER(ORDER BY ");
+
+                Visit(sqlWindowFunctionExpression.Ordering);
+
+                Builder.Append(")");
+            }
+
+            return sqlWindowFunctionExpression;
+        }
+
+        protected virtual Expression VisitOrderByExpression(OrderByExpression orderByExpression)
+        {
+            if (orderByExpression is ThenOrderByExpression thenOrderBy)
+            {
+                Visit(thenOrderBy.Previous);
+
+                Builder.Append(", ");
+            }
+
+            EmitExpressionListExpression(orderByExpression.Expression);
+
+            Builder.Append(" ");
+            Builder.Append(orderByExpression.Descending ? "DESC" : "ASC");
+
+            return orderByExpression;
+        }
+
+        #endregion
+
+        #region Extensibility points
 
         protected virtual void EmitExpressionListExpression(Expression expression)
         {
@@ -1140,11 +1229,11 @@ namespace Impatient.Query.ExpressionVisitors
                     || expression is SqlColumnExpression
                     || expression is SqlCastExpression))
             {
-                builder.Append("(CASE WHEN ");
+                Builder.Append("(CASE WHEN ");
 
                 Visit(expression);
 
-                builder.Append(" THEN 1 ELSE 0 END)");
+                Builder.Append(" THEN 1 ELSE 0 END)");
             }
             else
             {
@@ -1164,7 +1253,7 @@ namespace Impatient.Query.ExpressionVisitors
 
         #endregion
 
-        private string GetTableAlias(AliasedTableExpression table)
+        protected string GetTableAlias(AliasedTableExpression table)
         {
             if (!aliasLookup.TryGetValue(table, out var alias))
             {
@@ -1187,7 +1276,7 @@ namespace Impatient.Query.ExpressionVisitors
             return alias;
         }
 
-        private class SqlParameterRewritingExpressionVisitor : ExpressionVisitor
+        protected class SqlParameterRewritingExpressionVisitor : ExpressionVisitor
         {
             private readonly ParameterAndExtensionCountingExpressionVisitor countingVisitor
                 = new ParameterAndExtensionCountingExpressionVisitor();
@@ -1247,7 +1336,7 @@ namespace Impatient.Query.ExpressionVisitors
             }
         }
 
-        private class SqlParameterExpression : SqlExpression
+        protected class SqlParameterExpression : SqlExpression
         {
             public SqlParameterExpression(Expression expression)
             {
@@ -1259,7 +1348,7 @@ namespace Impatient.Query.ExpressionVisitors
             public Expression Expression { get; }
         }
 
-        private static Expression FlattenProjection(
+        protected static Expression FlattenProjection(
             ProjectionExpression projection,
             ReaderParameterInjectingExpressionVisitor visitor)
         {
@@ -1294,7 +1383,7 @@ namespace Impatient.Query.ExpressionVisitors
             }
         }
 
-        private class ReaderParameterInjectingExpressionVisitor : ProjectionExpressionVisitor
+        protected class ReaderParameterInjectingExpressionVisitor : ProjectionExpressionVisitor
         {
             public IDictionary<string, Expression> GatheredExpressions { get; private set; } = new Dictionary<string, Expression>();
 
@@ -1307,13 +1396,17 @@ namespace Impatient.Query.ExpressionVisitors
             private static readonly MethodInfo isDBNullMethodInfo
                 = dbDataReaderTypeInfo.GetDeclaredMethod(nameof(DbDataReader.IsDBNull));
 
-            private static readonly MethodInfo enumerableEmptyMethodInfo
-                = ImpatientExtensions.GetGenericMethodDefinition((object o) => Empty<object>());
-
             private readonly IImpatientExpressionVisitorProvider expressionVisitorProvider;
             private readonly ParameterExpression readerParameter;
             private int readerIndex;
             private int topLevelIndex;
+
+            private static readonly IReadValueExpressionFactory[] readValueExpressionFactories
+                =
+                {
+                    new DefaultScalarReadValueExpressionFactory(),
+                    new SqlServerForJsonReadValueExpressionFactory(),
+                };
 
             public ReaderParameterInjectingExpressionVisitor(
                 IImpatientExpressionVisitorProvider expressionVisitorProvider,
@@ -1346,7 +1439,7 @@ namespace Impatient.Query.ExpressionVisitors
                             .Select(p => ($"${topLevelIndex}." + p.Key, p.Value))
                             .ToDictionary(p => p.Item1, p => p.Item2)
                             .Concat(previousExpressions)
-                            .ToDictionary(p => p.Key, p => p.Value);                    
+                            .ToDictionary(p => p.Key, p => p.Value);
 
                     topLevelIndex++;
 
@@ -1408,119 +1501,27 @@ namespace Impatient.Query.ExpressionVisitors
                         return unaryExpression.Update(Visit(unaryExpression.Operand));
                     }
 
-                    case Expression expression
-                    when expressionVisitorProvider
-                        .TranslatabilityAnalyzingExpressionVisitor
-                        .Visit(expression) is TranslatableExpression:
-                    {
-                        GatheredExpressions[string.Join(".", GetNameParts())] = expression;
-
-                        if (!expression.Type.IsScalarType())
-                        {
-                            var type = node.Type;
-                            var sequenceType = type.GetSequenceType();
-                            var defaultValue = Expression.Default(type) as Expression;
-
-                            if (type.IsSequenceType())
-                            {
-                                if (type.IsArray)
-                                {
-                                    defaultValue = Expression.NewArrayInit(type.GetElementType());
-                                }
-                                else if (type.IsGenericType(typeof(List<>)))
-                                {
-                                    defaultValue = Expression.New(type);
-                                }
-                                else
-                                {
-                                    type = type.FindGenericType(typeof(IEnumerable<>));
-                                    defaultValue = Expression.Call(enumerableEmptyMethodInfo.MakeGenericMethod(sequenceType));
-                                }
-
-                                if (sequenceType.IsScalarType())
-                                {
-                                    // TODO: Handle sequences of scalar types with FOR JSON
-                                    // - Use a JsonTextReader to stream through the text
-                                    // - while (reader.Read())
-                                    // - (StartArray)(1)
-                                    // - (StartObject -> PropertyName -> String | Number -> EndObject)(*)
-                                    // - (EndArray)(1)
-                                }
-                            }
-
-                            var currentIndex = readerIndex;
-                            readerIndex++;
-
-                            var getFieldValueExpression
-                                = Expression.Call(
-                                    readerParameter,
-                                    getFieldValueMethodInfo.MakeGenericMethod(typeof(string)),
-                                    Expression.Constant(currentIndex));
-
-                            var deserializerExpression
-                                = Expression.Call(
-                                    ImpatientExtensions
-                                        .GetGenericMethodDefinition((string s) => JsonConvert.DeserializeObject<object>(s))
-                                        .MakeGenericMethod(type),
-                                    getFieldValueExpression);
-
-                            var result
-                                = Expression.Condition(
-                                    Expression.Call(
-                                        readerParameter,
-                                        isDBNullMethodInfo,
-                                        Expression.Constant(currentIndex)),
-                                    defaultValue,
-                                    deserializerExpression) as Expression;
-
-                            if (node.Type.IsGenericType(typeof(IQueryable<>)))
-                            {
-                                result
-                                    = Expression.Call(
-                                        ImpatientExtensions
-                                            .GetGenericMethodDefinition((IEnumerable<object> e) => e.AsQueryable())
-                                            .MakeGenericMethod(sequenceType),
-                                        result);
-                            }
-
-                            return result;
-                        }
-                        else
-                        {
-                            var currentIndex = readerIndex;
-                            readerIndex++;
-
-                            var readValueExpression
-                                = Expression.Call(
-                                    readerParameter,
-                                    getFieldValueMethodInfo.MakeGenericMethod(node.Type),
-                                    Expression.Constant(currentIndex));
-
-                            if (node is SqlColumnExpression sqlColumnExpression
-                                && !sqlColumnExpression.IsNullable)
-                            {
-                                return readValueExpression;
-                            }
-
-                            return Expression.Condition(
-                                Expression.Call(
-                                    readerParameter,
-                                    isDBNullMethodInfo,
-                                    Expression.Constant(currentIndex)),
-                                Expression.Default(node.Type),
-                                readValueExpression);
-                        }
-                    }
-
                     default:
                     {
+                        if (expressionVisitorProvider.TranslatabilityAnalyzingExpressionVisitor.Visit(node) is TranslatableExpression)
+                        {
+                            GatheredExpressions[string.Join(".", GetNameParts())] = node;
+
+                            var currentIndex = readerIndex;
+                            readerIndex++;
+
+                            return readValueExpressionFactories
+                                .First(f => f.CanReadType(node.Type))
+                                .CreateExpression(node, readerParameter, currentIndex);
+                        }
+
                         return node;
                     }
                 }
             }
         }
 
-        private class DbCommandBuilderExpressionBuilder
+        protected class DbCommandBuilderExpressionBuilder
         {
             private int parameterIndex = 0;
             private int indentationLevel = 0;
@@ -1797,5 +1798,176 @@ namespace Impatient.Query.ExpressionVisitors
                 workingStringBuilder.Append(string.Empty.PadLeft(indentationLevel * 4));
             }
         }
+
+        #region IReadValueExpressionFactory
+
+        protected interface IReadValueExpressionFactory
+        {
+            bool CanReadType(Type type);
+
+            Expression CreateExpression(Expression source, Expression reader, int index);
+        }
+
+        protected class SqlServerForJsonReadValueExpressionFactory : IReadValueExpressionFactory
+        {
+            private static readonly TypeInfo dbDataReaderTypeInfo
+                = typeof(DbDataReader).GetTypeInfo();
+
+            private static readonly MethodInfo getFieldValueMethodInfo
+                = dbDataReaderTypeInfo.GetDeclaredMethod(nameof(DbDataReader.GetFieldValue));
+
+            private static readonly MethodInfo isDBNullMethodInfo
+                = dbDataReaderTypeInfo.GetDeclaredMethod(nameof(DbDataReader.IsDBNull));
+
+            private static readonly MethodInfo enumerableEmptyMethodInfo
+                = ImpatientExtensions.GetGenericMethodDefinition((object o) => Empty<object>());
+
+            public bool CanReadType(Type type)
+            {
+                return !type.IsScalarType();
+            }
+
+            public Expression CreateExpression(Expression source, Expression reader, int index)
+            {
+                var type = source.Type;
+                var sequenceType = type.GetSequenceType();
+                var defaultValue = Expression.Default(type) as Expression;
+
+                if (type.IsSequenceType())
+                {
+                    if (type.IsArray)
+                    {
+                        defaultValue = Expression.NewArrayInit(type.GetElementType());
+                    }
+                    else if (type.IsGenericType(typeof(List<>)))
+                    {
+                        defaultValue = Expression.New(type);
+                    }
+                    else
+                    {
+                        type = type.FindGenericType(typeof(IEnumerable<>));
+                        defaultValue = Expression.Call(enumerableEmptyMethodInfo.MakeGenericMethod(sequenceType));
+                    }
+
+                    if (sequenceType.IsScalarType())
+                    {
+                        // TODO: Handle sequences of scalar types with FOR JSON
+                        // - Use a JsonTextReader to stream through the text
+                        // - while (reader.Read())
+                        // - (StartArray)(1)
+                        // - (StartObject -> PropertyName -> String | Number -> EndObject)(*)
+                        // - (EndArray)(1)
+                    }
+                }
+
+                var getFieldValueExpression
+                    = Expression.Call(
+                        reader,
+                        getFieldValueMethodInfo.MakeGenericMethod(typeof(string)),
+                        Expression.Constant(index));
+
+                var deserializerExpression
+                    = Expression.Call(
+                        ImpatientExtensions
+                            .GetGenericMethodDefinition((string s) => JsonConvert.DeserializeObject<object>(s))
+                            .MakeGenericMethod(type),
+                        getFieldValueExpression);
+
+                var result
+                    = Expression.Condition(
+                        Expression.Call(
+                            reader,
+                            isDBNullMethodInfo,
+                            Expression.Constant(index)),
+                        defaultValue,
+                        deserializerExpression) as Expression;
+
+                if (source.Type.IsGenericType(typeof(IQueryable<>)))
+                {
+                    result
+                        = Expression.Call(
+                            ImpatientExtensions
+                                .GetGenericMethodDefinition((IEnumerable<object> e) => e.AsQueryable())
+                                .MakeGenericMethod(sequenceType),
+                            result);
+                }
+
+                return result;
+            }
+        }
+
+        protected class DefaultScalarReadValueExpressionFactory : IReadValueExpressionFactory
+        {
+            private static readonly TypeInfo dbDataReaderTypeInfo
+                = typeof(DbDataReader).GetTypeInfo();
+
+            private static readonly MethodInfo getFieldValueMethodInfo
+                = dbDataReaderTypeInfo.GetDeclaredMethod(nameof(DbDataReader.GetFieldValue));
+
+            private static readonly MethodInfo isDBNullMethodInfo
+                = dbDataReaderTypeInfo.GetDeclaredMethod(nameof(DbDataReader.IsDBNull));
+
+            public bool CanReadType(Type type)
+            {
+                return type.IsScalarType();
+            }
+
+            public Expression CreateExpression(Expression source, Expression reader, int index)
+            {
+                var readValueExpression
+                    = Expression.Call(
+                        reader,
+                        getFieldValueMethodInfo.MakeGenericMethod(source.Type),
+                        Expression.Constant(index));
+
+                if (source is SqlColumnExpression sqlColumnExpression
+                    && !sqlColumnExpression.IsNullable)
+                {
+                    return readValueExpression;
+                }
+
+                return Expression.Condition(
+                    Expression.Call(
+                        reader,
+                        isDBNullMethodInfo,
+                        Expression.Constant(index)),
+                    Expression.Default(source.Type),
+                    readValueExpression);
+            }
+        }
+
+        #endregion
+
+        #region IComplexTypeSubqueryFormatter
+
+        protected interface IComplexTypeSubqueryFormatter
+        {
+            SelectExpression Format(SelectExpression subquery, DbCommandBuilderExpressionBuilder builder, ExpressionVisitor visitor);
+        }
+
+        protected class SqlServerForJsonComplexTypeSubqueryFormatter : IComplexTypeSubqueryFormatter
+        {
+            public SelectExpression Format(SelectExpression subquery, DbCommandBuilderExpressionBuilder builder, ExpressionVisitor visitor)
+            {
+                builder.Append("(");
+
+                builder.IncreaseIndent();
+                builder.AppendLine();
+
+                subquery = visitor.VisitAndConvert(subquery, nameof(Format));
+
+                builder.AppendLine();
+                builder.Append("FOR JSON PATH");
+
+                builder.DecreaseIndent();
+                builder.AppendLine();
+
+                builder.Append(")");
+
+                return subquery;
+            }
+        }
+
+        #endregion
     }
 }
