@@ -396,36 +396,44 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 case string value:
                 {
-                    Builder.Append($@"N'{value}'");
-                    break;
+                    Builder.Append($@"N'{value.Replace("'", "''")}'");
+
+                    return node;
                 }
 
                 case char value:
                 {
                     Builder.Append($@"N'{value}'");
-                    break;
+
+                    return node;
                 }
 
                 case bool value:
                 {
                     Builder.Append(value ? "1" : "0");
-                    break;
+
+                    return node;
                 }
 
                 case object value:
                 {
                     Builder.Append(value.ToString());
-                    break;
+
+                    return node;
                 }
 
                 case null:
                 {
                     Builder.Append("NULL");
-                    break;
+
+                    return node;
+                }
+
+                default:
+                {
+                    throw new NotSupportedException();
                 }
             }
-
-            return node;
         }
 
         protected override Expression VisitExtension(Expression node)

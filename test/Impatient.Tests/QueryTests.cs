@@ -665,6 +665,24 @@ WHERE [a].[Prop1] = N'What the'",
         }
 
         [TestMethod]
+        public void Select_Where_bobby_tables()
+        {
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                select new { x = new { a.Prop1 }, a.Prop2 } into a
+                where a.x.Prop1 == "'; DROP TABLE [dbo].[MyClass];--"
+                select a.Prop2;
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [a].[Prop2]
+FROM [dbo].[MyClass1] AS [a]
+WHERE [a].[Prop1] = N'''; DROP TABLE [dbo].[MyClass];--'",
+                SqlLog);
+        }
+
+        [TestMethod]
         public void Select_with_index()
         {
             var query
