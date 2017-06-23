@@ -1997,7 +1997,7 @@ FROM (
             Assert.AreEqual(
                 @"SELECT [t].[$empty] AS [$empty], [t].[Prop1] AS [Prop1], [t].[Prop2] AS [Prop2]
 FROM (
-    SELECT NULL AS [Empty]
+    SELECT NULL AS [$empty]
 ) AS [t_0]
 LEFT JOIN (
     SELECT 0 AS [$empty], [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
@@ -2019,7 +2019,7 @@ LEFT JOIN (
             Assert.AreEqual(
                 @"SELECT [t].[$empty] AS [$empty], [t].[Prop1] AS [Prop1], [t].[Prop2] AS [Prop2]
 FROM (
-    SELECT NULL AS [Empty]
+    SELECT NULL AS [$empty]
 ) AS [t_0]
 LEFT JOIN (
     SELECT 0 AS [$empty], [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]

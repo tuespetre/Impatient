@@ -1,5 +1,6 @@
 ﻿using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Utility;
+using Impatient.Query.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -2463,22 +2464,6 @@ namespace Impatient.Query.ExpressionVisitors
                     return base.Visit(node);
                 }
             }
-        }
-
-        private class EmptyRecord
-        {
-            private EmptyRecord(string empty)
-            {
-                Empty = empty;
-            }
-
-            public string Empty { get; }
-
-            public static readonly NewExpression NewExpression
-                = Expression.New(
-                    typeof(EmptyRecord).GetTypeInfo().DeclaredConstructors.Single(c => !c.IsStatic),
-                    new[] { Expression.Constant(null, typeof(string)) },
-                    new[] { typeof(EmptyRecord).GetRuntimeProperty(nameof(Empty)) });
         }
 
         private struct RowNumberTuple<TProjection>

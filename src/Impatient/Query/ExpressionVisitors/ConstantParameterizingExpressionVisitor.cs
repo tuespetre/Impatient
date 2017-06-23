@@ -2,14 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace Impatient.Query.ExpressionVisitors
 {
     public class ConstantParameterizingExpressionVisitor : ExpressionVisitor
     {
-        private int discoveredConstants = -1;
+        private int discoveredConstants = 0;
 
         public IDictionary<object, ParameterExpression> Mapping { get; }
             = new Dictionary<object, ParameterExpression>();
@@ -41,9 +39,9 @@ namespace Impatient.Query.ExpressionVisitors
                     return parameter;
                 }
 
-                discoveredConstants++;
-
                 parameter = Expression.Parameter(type, $"scope{discoveredConstants}");
+
+                discoveredConstants++;
 
                 Mapping.Add(node.Value, parameter);
 

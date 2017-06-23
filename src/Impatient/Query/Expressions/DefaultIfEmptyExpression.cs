@@ -29,5 +29,18 @@ namespace Impatient.Query.Expressions
 
             return this;
         }
+
+        public DefaultIfEmptyExpression Update(Expression expression, Expression flag)
+        {
+            expression = expression ?? throw new ArgumentNullException(nameof(expression));
+            flag = flag ?? throw new ArgumentNullException(nameof(flag));
+
+            if (expression != Expression || flag != Flag)
+            {
+                return new DefaultIfEmptyExpression(expression, flag);
+            }
+
+            return this;
+        }
     }
 }

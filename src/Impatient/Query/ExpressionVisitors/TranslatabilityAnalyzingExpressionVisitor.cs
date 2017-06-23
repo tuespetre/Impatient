@@ -148,28 +148,6 @@ namespace Impatient.Query.ExpressionVisitors
             return node;
         }
 
-        protected override Expression VisitMember(MemberExpression node)
-        {
-            // TODO: Can this be replaced with checking for 'IsParameterizable' like in the translator?
-
-            if (node.Type.IsScalarType())
-            {
-                var expression = node.Expression;
-
-                while (expression is MemberExpression memberExpression)
-                {
-                    expression = memberExpression.Expression;
-                }
-
-                if (expression is ParameterExpression)
-                {
-                    return new TranslatableExpression(node);
-                }
-            }
-
-            return node;
-        }
-
         protected override Expression VisitMemberInit(MemberInitExpression node)
         {
             if (Visit(node.NewExpression) is TranslatableExpression
@@ -198,29 +176,6 @@ namespace Impatient.Query.ExpressionVisitors
                 default:
                 {
                     return false;
-                }
-            }
-        }
-
-        protected override Expression VisitTypeBinary(TypeBinaryExpression node)
-        {
-            switch (node.NodeType)
-            {
-                case ExpressionType.TypeEqual:
-                case ExpressionType.TypeIs:
-                {
-                    if (Visit(node.Expression) is TranslatableExpression
-                        && node.Expression is PolymorphicExpression)
-                    {
-                        return new TranslatableExpression(node);
-                    }
-
-                    goto default;
-                }
-
-                default:
-                {
-                    return node;
                 }
             }
         }

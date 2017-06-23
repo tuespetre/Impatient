@@ -13,6 +13,8 @@ namespace Impatient.Query
 
         public IEnumerable<ExpressionVisitor> RewritingExpressionVisitors { get; } = new ExpressionVisitor[]
         {
+            new SqlParameterRewritingExpressionVisitor(),
+            new TypeBinaryExpressionRewritingExpressionVisitor(),
             new NullableMemberRewritingExpressionVisitor(),
             new DateTimeMemberRewritingExpressionVisitor(),
             new StringMemberRewritingExpressionVisitor(),

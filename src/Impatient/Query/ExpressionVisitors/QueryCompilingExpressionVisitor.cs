@@ -1,4 +1,5 @@
 ﻿using Impatient.Query.Expressions;
+using Impatient.Query.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -28,12 +29,9 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 case EnumerableRelationalQueryExpression enumerableRelationalQueryExpression:
                 {
-                    var translator = expressionVisitorProvider.QueryTranslatingExpressionVisitor;
-
-                    var (materializerLambda, commandBuilderLambda)
-                        = translator.Translate(
-                            enumerableRelationalQueryExpression.SelectExpression);
-
+                    var selectExpression = enumerableRelationalQueryExpression.SelectExpression;
+                    var translator = expressionVisitorProvider.QueryTranslatingExpressionVisitor;                    
+                    var commandBuilderLambda = translator.Translate(selectExpression);
                     var sequenceType = node.Type.GetSequenceType();
 
                     return Expression.Call(
@@ -43,16 +41,14 @@ namespace Impatient.Query.ExpressionVisitors
                             executeEnumerableMethodInfo.MakeGenericMethod(sequenceType),
                             queryProviderParameter,
                             commandBuilderLambda,
-                            Visit(materializerLambda)));
+                            Visit(GenerateMaterializer(selectExpression))));
                 }
 
                 case SingleValueRelationalQueryExpression singleValueRelationalQueryExpression:
                 {
+                    var selectExpression = singleValueRelationalQueryExpression.SelectExpression;
                     var translator = expressionVisitorProvider.QueryTranslatingExpressionVisitor;
-
-                    var (materializerLambda, commandBuilderLambda)
-                        = translator.Translate(
-                            singleValueRelationalQueryExpression.SelectExpression);
+                    var commandBuilderLambda = translator.Translate(selectExpression);
 
                     return singleValueRelationalQueryExpression.Type.IsScalarType()
                         ? Expression.Call(
@@ -63,7 +59,7 @@ namespace Impatient.Query.ExpressionVisitors
                             executeComplexMethodInfo.MakeGenericMethod(node.Type),
                             queryProviderParameter,
                             commandBuilderLambda,
-                            Visit(materializerLambda));
+                            Visit(GenerateMaterializer(selectExpression)));
                 }
 
                 default:
@@ -152,6 +148,132 @@ namespace Impatient.Query.ExpressionVisitors
                 connection.Open();
 
                 return (TResult)command.ExecuteScalar();
+            }
+        }
+
+        private LambdaExpression GenerateMaterializer(SelectExpression selectExpression)
+        {
+            Expression MaterializeProjection(ProjectionExpression projection, MaterializerBuildingExpressionVisitor visitor)
+            {
+                switch (projection)
+                {
+                    case ServerProjectionExpression serverProjectionExpression:
+                    {
+                        return visitor.Visit(serverProjectionExpression.ResultLambda.Body);
+                    }
+
+                    case ClientProjectionExpression clientProjectionExpression:
+                    {
+                        var server = clientProjectionExpression.ServerProjection;
+                        var result = clientProjectionExpression.ResultLambda;
+
+                        return Expression.Invoke(result, MaterializeProjection(server, visitor));
+                    }
+
+                    case CompositeProjectionExpression compositeProjectionExpression:
+                    {
+                        var outer = MaterializeProjection(compositeProjectionExpression.OuterProjection, visitor);
+                        var inner = MaterializeProjection(compositeProjectionExpression.InnerProjection, visitor);
+                        var result = compositeProjectionExpression.ResultLambda;
+
+                        return Expression.Invoke(result, outer, inner);
+                    }
+
+                    default:
+                    {
+                        throw new InvalidOperationException();
+                    }
+                }
+            }
+
+            var readerParameter = Expression.Parameter(typeof(DbDataReader));
+
+            return Expression.Lambda(
+                MaterializeProjection(
+                    selectExpression.Projection,
+                    new MaterializerBuildingExpressionVisitor(expressionVisitorProvider, readerParameter)), 
+                readerParameter);
+        }
+
+        private class MaterializerBuildingExpressionVisitor : ProjectionExpressionVisitor
+        {
+            private static readonly MethodInfo isDBNullMethodInfo
+                = typeof(DbDataReader).GetTypeInfo().GetDeclaredMethod(nameof(DbDataReader.IsDBNull));
+
+            private readonly IImpatientExpressionVisitorProvider expressionVisitorProvider;
+            private readonly ParameterExpression readerParameter;
+            private int readerIndex;
+
+            private static readonly IReadValueExpressionFactory[] readValueExpressionFactories =
+            {
+                new DefaultScalarReadValueExpressionFactory(),
+                new SqlServerForJsonReadValueExpressionFactory(),
+            };
+
+            public MaterializerBuildingExpressionVisitor(
+                IImpatientExpressionVisitorProvider expressionVisitorProvider,
+                ParameterExpression readerParameter)
+            {
+                this.expressionVisitorProvider = expressionVisitorProvider;
+                this.readerParameter = readerParameter;
+            }
+
+            protected override Expression VisitLeaf(Expression node)
+            {
+                if (expressionVisitorProvider.TranslatabilityAnalyzingExpressionVisitor.Visit(node) is TranslatableExpression)
+                {
+                    return readValueExpressionFactories
+                        .First(f => f.CanReadType(node.Type))
+                        .CreateExpression(node, readerParameter, readerIndex++);
+                }
+
+                return node;
+            }
+
+            public override Expression Visit(Expression node)
+            {
+                switch (node)
+                {
+                    case DefaultIfEmptyExpression defaultIfEmptyExpression:
+                    {
+                        return Expression.Condition(
+                            test: Expression.Call(
+                                readerParameter,
+                                isDBNullMethodInfo,
+                                Expression.Constant(readerIndex++)),
+                            ifTrue: Expression.Default(defaultIfEmptyExpression.Type),
+                            ifFalse: Visit(defaultIfEmptyExpression.Expression));
+                    }
+
+                    case PolymorphicExpression polymorphicExpression:
+                    {
+                        var row = Visit(polymorphicExpression.Row);
+                        var descriptors = polymorphicExpression.Descriptors.ToArray();
+                        var result = Expression.Default(polymorphicExpression.Type) as Expression;
+
+                        for (var i = 0; i < descriptors.Length; i++)
+                        {
+                            result = Expression.Condition(
+                                test: descriptors[i].Test.ExpandParameters(row),
+                                ifTrue: descriptors[i].Materializer.ExpandParameters(row),
+                                ifFalse: result,
+                                type: polymorphicExpression.Type);
+                        }
+
+                        return result;
+                    }
+
+                    case UnaryExpression unaryExpression
+                    when unaryExpression.NodeType == ExpressionType.Convert:
+                    {
+                        return unaryExpression.Update(Visit(unaryExpression.Operand));
+                    }
+
+                    default:
+                    {
+                        return base.Visit(node);
+                    }
+                }
             }
         }
     }

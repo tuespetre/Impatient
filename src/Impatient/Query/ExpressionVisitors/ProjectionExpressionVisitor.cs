@@ -1,4 +1,5 @@
 ﻿using Impatient.Query.Expressions;
+using Impatient.Query.Infrastructure;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -14,7 +15,7 @@ namespace Impatient.Query.ExpressionVisitors
 
         protected IEnumerable<MemberInfo> CurrentPath => memberStack.Reverse();
 
-        protected virtual Expression VisitLeaf(Expression node) => base.Visit(node);
+        protected virtual Expression VisitLeaf(Expression node) => node;
 
         protected virtual IEnumerable<string> GetNameParts()
         {
@@ -23,6 +24,11 @@ namespace Impatient.Query.ExpressionVisitors
 
         public override Expression Visit(Expression node)
         {
+            if (InLeaf)
+            {
+                return base.Visit(node);
+            }
+
             switch (node)
             {
                 case NewExpression newExpression
@@ -58,25 +64,48 @@ namespace Impatient.Query.ExpressionVisitors
                     return memberInitExpression.Update(memberInitExpression.NewExpression, bindings);
                 }
 
+                case PolymorphicExpression polymorphicExpression:
+                {
+                    var row = Visit(polymorphicExpression.Row);
+
+                    return new PolymorphicExpression(
+                        polymorphicExpression.Type,
+                        polymorphicExpression.Row,
+                        polymorphicExpression.Descriptors);
+                }
+
+                case DefaultIfEmptyExpression defaultIfEmptyExpression
+                when defaultIfEmptyExpression.Flag != null:
+                {
+                    memberStack.Push(EmptyRecord.EmptyFieldInfo);
+
+                    InLeaf = true;
+
+                    var flag = VisitLeaf(defaultIfEmptyExpression.Flag);
+
+                    InLeaf = false;
+
+                    memberStack.Pop();
+
+                    var expression = Visit(defaultIfEmptyExpression.Expression);
+
+                    return defaultIfEmptyExpression.Update(expression, flag);
+                }
+
                 case AnnotationExpression annotationExpression:
                 {
                     return base.Visit(annotationExpression);
                 }
 
-                case Expression expression when !InLeaf:
+                default:
                 {
                     InLeaf = true;
 
-                    var leaf = VisitLeaf(expression);
+                    node = VisitLeaf(node);
 
                     InLeaf = false;
 
-                    return leaf;
-                }
-
-                default:
-                {
-                    return base.Visit(node);
+                    return node;
                 }
             }
         }
