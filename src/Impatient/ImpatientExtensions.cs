@@ -45,6 +45,39 @@ namespace Impatient
 
         #endregion
 
+        public static IEnumerable<MemberBinding> Iterate(this IEnumerable<MemberBinding> bindings)
+        {
+            foreach (var binding in bindings)
+            {
+                switch (binding)
+                {
+                    case MemberAssignment memberAssignment:
+                    {
+                        yield return memberAssignment;
+
+                        break;
+                    }
+
+                    case MemberListBinding memberListBinding:
+                    {
+                        yield return memberListBinding;
+
+                        break;
+                    }
+
+                    case MemberMemberBinding memberMemberBinding:
+                    {
+                        foreach (var yielded in memberMemberBinding.Bindings.Iterate())
+                        {
+                            yield return yielded;
+                        }
+
+                        break;
+                    }
+                }
+            }
+        }
+
         public static bool ContainsNonLambdaDelegates(this MethodCallExpression methodCallExpression)
         {
             return methodCallExpression.Arguments

@@ -92,29 +92,29 @@ namespace Impatient.Query.Infrastructure
 
             var expressions = new Expression[]
             {
-                    Expression.Assign(
-                        dbParameterVariable,
-                        Expression.Call(
-                            dbCommandVariable,
-                            dbCommandCreateParameterMethodInfo)),
-                    Expression.Assign(
-                        Expression.MakeMemberAccess(
-                            dbParameterVariable,
-                            dbParameterParameterNamePropertyInfo),
-                        Expression.Constant(parameterName)),
-                    Expression.Assign(
-                        Expression.MakeMemberAccess(
-                            dbParameterVariable,
-                            dbParameterValuePropertyInfo),
-                        node.Type.GetTypeInfo().IsValueType
-                            ? Expression.Convert(node, typeof(object))
-                            : node),
+                Expression.Assign(
+                    dbParameterVariable,
                     Expression.Call(
-                        Expression.MakeMemberAccess(
-                            dbCommandVariable,
-                            dbCommandParametersPropertyInfo),
-                        dbParameterCollectionAddMethodInfo,
-                        dbParameterVariable)
+                        dbCommandVariable,
+                        dbCommandCreateParameterMethodInfo)),
+                Expression.Assign(
+                    Expression.MakeMemberAccess(
+                        dbParameterVariable,
+                        dbParameterParameterNamePropertyInfo),
+                    Expression.Constant(parameterName)),
+                Expression.Assign(
+                    Expression.MakeMemberAccess(
+                        dbParameterVariable,
+                        dbParameterValuePropertyInfo),
+                    node.Type.GetTypeInfo().IsValueType
+                        ? Expression.Convert(node, typeof(object))
+                        : node),
+                Expression.Call(
+                    Expression.MakeMemberAccess(
+                        dbCommandVariable,
+                        dbCommandParametersPropertyInfo),
+                    dbParameterCollectionAddMethodInfo,
+                    dbParameterVariable)
             };
 
             blockExpressions.AddRange(expressions);
@@ -135,10 +135,10 @@ namespace Impatient.Query.Infrastructure
                 = Expression.Block(
                     new[]
                     {
-                            enumeratorVariable,
-                            indexVariable,
-                            parameterPrefixVariable,
-                            parameterNameVariable
+                        enumeratorVariable,
+                        indexVariable,
+                        parameterPrefixVariable,
+                        parameterNameVariable
                     },
                     Expression.TryFinally(
                         body: Expression.Block(

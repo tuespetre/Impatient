@@ -15,7 +15,8 @@ namespace Impatient.Query.Infrastructure
             subquery = visitor.VisitAndConvert(subquery, nameof(Format));
 
             builder.AppendLine();
-            builder.Append("FOR JSON PATH");
+            // TODO: Don't use INCLUDE_NULL_VALUES
+            builder.Append("FOR JSON PATH, INCLUDE_NULL_VALUES");
 
             builder.DecreaseIndent();
             builder.AppendLine();

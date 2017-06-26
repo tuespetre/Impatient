@@ -1754,7 +1754,7 @@ GROUP BY [ms].[Prop1]",
     SELECT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m_0]
     WHERE [m].[Prop1] = [m_0].[Prop1]
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [Elements]
 FROM [dbo].[MyClass1] AS [m]
 GROUP BY [m].[Prop1]",
@@ -1776,7 +1776,7 @@ GROUP BY [m].[Prop1]",
     SELECT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m_0]
     WHERE [g].[Key] = [m_0].[Prop1]
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [g.Elements]
 FROM [dbo].[MyClass1] AS [m]
 CROSS JOIN (
@@ -2447,7 +2447,7 @@ OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
                 @"SELECT [m].[Prop2] AS [Prop2], (
     SELECT [m2].[Prop1] AS [Prop1], [m2].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass2] AS [m2]
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [m2s]
 FROM [dbo].[MyClass1] AS [m]",
                 SqlLog);
@@ -2492,10 +2492,10 @@ FROM [dbo].[MyClass1] AS [m]",
     SELECT [m2].[Prop1] AS [Prop1], [m2].[Prop2] AS [Prop2], (
         SELECT [m1].[Prop1] AS [a], [m1].[Prop2] AS [b], [m1].[Prop2] * [m2].[Prop2] AS [x.y]
         FROM [dbo].[MyClass1] AS [m1]
-        FOR JSON PATH
+        FOR JSON PATH, INCLUDE_NULL_VALUES
     ) AS [m1s]
     FROM [dbo].[MyClass2] AS [m2]
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [m2s]
 FROM [dbo].[MyClass1] AS [m]",
                 SqlLog);
@@ -2588,7 +2588,7 @@ INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop1] = [m2].[Prop1]",
     SELECT [m2_0].[Prop1] AS [Prop1], [m2_0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass2] AS [m2_0]
     WHERE [m1].[Prop1] = [m2_0].[Prop1]
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [sub.m2s], [m2_1].[Prop1] AS [m2.Prop1], [m2_1].[Prop2] AS [m2.Prop2]
 FROM [dbo].[MyClass1] AS [m1]
 INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop1] = [m2].[Prop1]
@@ -4151,7 +4151,7 @@ CROSS APPLY (
         SELECT [z].[Prop1] AS [Prop1], [z].[Prop2] AS [Prop2]
         FROM [dbo].[MyClass2] AS [z]
         WHERE [z].[Prop2] = [x].[Prop2]
-        FOR JSON PATH
+        FOR JSON PATH, INCLUDE_NULL_VALUES
     ) AS [$c]
     FROM [dbo].[MyClass2] AS [y]
 ) AS [zs]",
@@ -4326,6 +4326,46 @@ WHERE [m1].[$rownumber] < (
     ) AS [m1_1]
     WHERE (([m1_1].[$rownumber] - 1) > 8) AND ([m1_1].[Prop2] <= 8)
 )",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Complex_Nested_Query_sequence_of_scalar_values_ToList()
+        {
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                select (from b in impatient.CreateQuery<MyClass2>(MyClass2QueryExpression)
+                        select b.Prop2).ToList();
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT (
+    SELECT [b].[Prop2]
+    FROM [dbo].[MyClass2] AS [b]
+    FOR JSON PATH, INCLUDE_NULL_VALUES
+)
+FROM [dbo].[MyClass1] AS [a]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Complex_Nested_Query_sequence_of_scalar_values_ToArray()
+        {
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                select (from b in impatient.CreateQuery<MyClass2>(MyClass2QueryExpression)
+                        select b.Prop2).ToArray();
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT (
+    SELECT [b].[Prop2]
+    FROM [dbo].[MyClass2] AS [b]
+    FOR JSON PATH, INCLUDE_NULL_VALUES
+)
+FROM [dbo].[MyClass1] AS [a]",
                 SqlLog);
         }
 

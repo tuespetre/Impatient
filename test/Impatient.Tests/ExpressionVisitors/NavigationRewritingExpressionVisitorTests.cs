@@ -901,7 +901,7 @@ INNER JOIN [dbo].[Customers] AS [c_0] ON [o1].[CustomerID] = [c_0].[CustomerID]"
     FROM [dbo].[Orders] AS [o]
     INNER JOIN [dbo].[Customers] AS [c_0] ON [o].[CustomerID] = [c_0].[CustomerID]
     WHERE (([c].[City] IS NULL AND [c_0].[City] IS NULL) OR ([c].[City] = [c_0].[City]))
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [Elements]
 FROM [dbo].[Orders] AS [o_0]
 INNER JOIN [dbo].[Customers] AS [c] ON [o_0].[CustomerID] = [c].[CustomerID]
@@ -948,7 +948,7 @@ GROUP BY [c].[City]",
     FROM [dbo].[Order Details] AS [d]
     INNER JOIN [dbo].[Orders] AS [o_0] ON [d].[OrderID] = [o_0].[OrderID]
     WHERE (([o].[OrderDate] IS NULL AND [o_0].[OrderDate] IS NULL) OR ([o].[OrderDate] = [o_0].[OrderDate]))
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [Elements]
 FROM [dbo].[Order Details] AS [d_0]
 INNER JOIN [dbo].[Orders] AS [o] ON [d_0].[OrderID] = [o].[OrderID]
@@ -974,7 +974,7 @@ GROUP BY [o].[OrderDate]",
     INNER JOIN [dbo].[Orders] AS [o] ON [d_0].[OrderID] = [o].[OrderID]
     INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
     WHERE [d].[ProductID] = [d_0].[ProductID]
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [Elements]
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o_0] ON [d].[OrderID] = [o_0].[OrderID]
@@ -1001,7 +1001,7 @@ GROUP BY [d].[ProductID]",
     INNER JOIN [dbo].[Orders] AS [o_0] ON [d].[OrderID] = [o_0].[OrderID]
     INNER JOIN [dbo].[Customers] AS [c] ON [o_0].[CustomerID] = [c].[CustomerID]
     WHERE (([o].[OrderDate] IS NULL AND [o_0].[OrderDate] IS NULL) OR ([o].[OrderDate] = [o_0].[OrderDate]))
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [Elements]
 FROM [dbo].[Order Details] AS [d_0]
 INNER JOIN [dbo].[Orders] AS [o] ON [d_0].[OrderID] = [o].[OrderID]
@@ -1104,7 +1104,7 @@ GROUP BY [o].[OrderDate]",
     FROM [dbo].[Order Details] AS [d]
     INNER JOIN [dbo].[Orders] AS [o_0] ON [d].[OrderID] = [o_0].[OrderID]
     WHERE [o].[OrderID] = [o_0].[OrderID]
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [e.Elements]
 FROM [dbo].[Order Details] AS [d_0]
 INNER JOIN [dbo].[Orders] AS [o] ON [d_0].[OrderID] = [o].[OrderID]
@@ -1128,7 +1128,7 @@ GROUP BY [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate], [o]
     SELECT [o_0].[OrderID] AS [OrderID], [o_0].[ProductID] AS [ProductID], [o_0].[UnitPrice] AS [UnitPrice], [o_0].[Quantity] AS [Quantity], [o_0].[Discount] AS [Discount]
     FROM [dbo].[Order Details] AS [o_0]
     WHERE ([t].[Key.OrderID] = [o_0].[OrderID]) AND ([t].[Key.ProductID] = [o_0].[ProductID])
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [e.Elements]
 FROM (
     SELECT [o_1].[OrderID] AS [OrderID], [o_1].[ProductID] AS [ProductID], [o_1].[UnitPrice] AS [UnitPrice], [o_1].[Quantity] AS [Quantity], [o_1].[Discount] AS [Discount], [o_1].[OrderID] AS [Key.OrderID], [o_1].[ProductID] AS [Key.ProductID], [o_1].[UnitPrice] AS [Key.UnitPrice], [o_1].[Quantity] AS [Key.Quantity], [o_1].[Discount] AS [Key.Discount]
@@ -1156,7 +1156,7 @@ INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
     FROM [dbo].[Order Details] AS [d]
     INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
     WHERE [t].[Key.OrderID] = [o].[OrderID]
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [e.Elements]
 FROM (
     SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [o_0].[OrderID] AS [Key.OrderID], [o_0].[CustomerID] AS [Key.CustomerID], [o_0].[EmployeeID] AS [Key.EmployeeID], [o_0].[OrderDate] AS [Key.OrderDate], [o_0].[RequiredDate] AS [Key.RequiredDate], [o_0].[ShippedDate] AS [Key.ShippedDate], [o_0].[ShipVia] AS [Key.ShipVia], [o_0].[Freight] AS [Key.Freight], [o_0].[ShipName] AS [Key.ShipName], [o_0].[ShipAddress] AS [Key.ShipAddress], [o_0].[ShipCity] AS [Key.ShipCity], [o_0].[ShipRegion] AS [Key.ShipRegion], [o_0].[ShipPostalCode] AS [Key.ShipPostalCode], [o_0].[ShipCountry] AS [Key.ShipCountry]
@@ -1277,7 +1277,7 @@ INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
     FROM [dbo].[Order Details] AS [d]
     INNER JOIN [dbo].[Orders] AS [o_0] ON [d].[OrderID] = [o_0].[OrderID]
     WHERE [o].[OrderID] = [o_0].[OrderID]
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [y.Elements]
 FROM [dbo].[Order Details] AS [d_0]
 INNER JOIN [dbo].[Orders] AS [o] ON [d_0].[OrderID] = [o].[OrderID]
@@ -1304,7 +1304,7 @@ GROUP BY [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate], [o]
     INNER JOIN [dbo].[Orders] AS [o] ON [d_0].[OrderID] = [o].[OrderID]
     INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
     WHERE [d].[ProductID] = [d_0].[ProductID]
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [y.Elements]
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o_0] ON [d].[OrderID] = [o_0].[OrderID]
@@ -1330,7 +1330,7 @@ GROUP BY [d].[ProductID]",
     SELECT [o_0].[OrderID] AS [OrderID], [o_0].[ProductID] AS [ProductID], [o_0].[UnitPrice] AS [UnitPrice], [o_0].[Quantity] AS [Quantity], [o_0].[Discount] AS [Discount]
     FROM [dbo].[Order Details] AS [o_0]
     WHERE ([t].[Key.OrderID] = [o_0].[OrderID]) AND ([t].[Key.ProductID] = [o_0].[ProductID])
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [y.Elements]
 FROM (
     SELECT [o_1].[OrderID] AS [OrderID], [o_1].[ProductID] AS [ProductID], [o_1].[UnitPrice] AS [UnitPrice], [o_1].[Quantity] AS [Quantity], [o_1].[Discount] AS [Discount], [o_1].[OrderID] AS [Key.OrderID], [o_1].[ProductID] AS [Key.ProductID], [o_1].[UnitPrice] AS [Key.UnitPrice], [o_1].[Quantity] AS [Key.Quantity], [o_1].[Discount] AS [Key.Discount]
@@ -1360,7 +1360,7 @@ INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
     INNER JOIN [dbo].[Orders] AS [o_0] ON [d].[OrderID] = [o_0].[OrderID]
     INNER JOIN [dbo].[Customers] AS [c] ON [o_0].[CustomerID] = [c].[CustomerID]
     WHERE [o].[OrderID] = [o_0].[OrderID]
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [y.Elements]
 FROM [dbo].[Order Details] AS [d_0]
 INNER JOIN [dbo].[Orders] AS [o] ON [d_0].[OrderID] = [o].[OrderID]
@@ -1387,7 +1387,7 @@ GROUP BY [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate], [o]
     FROM [dbo].[Order Details] AS [d]
     INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
     WHERE [t].[Key.OrderID] = [o].[OrderID]
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [y.Elements]
 FROM (
     SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [o_0].[OrderID] AS [Key.OrderID], [o_0].[CustomerID] AS [Key.CustomerID], [o_0].[EmployeeID] AS [Key.EmployeeID], [o_0].[OrderDate] AS [Key.OrderDate], [o_0].[RequiredDate] AS [Key.RequiredDate], [o_0].[ShippedDate] AS [Key.ShippedDate], [o_0].[ShipVia] AS [Key.ShipVia], [o_0].[Freight] AS [Key.Freight], [o_0].[ShipName] AS [Key.ShipName], [o_0].[ShipAddress] AS [Key.ShipAddress], [o_0].[ShipCity] AS [Key.ShipCity], [o_0].[ShipRegion] AS [Key.ShipRegion], [o_0].[ShipPostalCode] AS [Key.ShipPostalCode], [o_0].[ShipCountry] AS [Key.ShipCountry]
@@ -1418,7 +1418,7 @@ INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
     INNER JOIN [dbo].[Orders] AS [o_0] ON [d].[OrderID] = [o_0].[OrderID]
     INNER JOIN [dbo].[Customers] AS [c] ON [o_0].[CustomerID] = [c].[CustomerID]
     WHERE ([t].[Key.OrderID] = [d].[OrderID]) AND ([t].[Key.ProductID] = [d].[ProductID])
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [y.Elements]
 FROM (
     SELECT [d_0].[OrderID] AS [OrderID], [d_0].[ProductID] AS [ProductID], [d_0].[UnitPrice] AS [UnitPrice], [d_0].[Quantity] AS [Quantity], [d_0].[Discount] AS [Discount], [d_0].[OrderID] AS [Key.OrderID], [d_0].[ProductID] AS [Key.ProductID], [d_0].[UnitPrice] AS [Key.UnitPrice], [d_0].[Quantity] AS [Key.Quantity], [d_0].[Discount] AS [Key.Discount]
@@ -1450,7 +1450,7 @@ INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
     INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
     INNER JOIN [dbo].[Customers] AS [c_0] ON [o].[CustomerID] = [c_0].[CustomerID]
     WHERE [t].[Key.OrderID] = [o].[OrderID]
-    FOR JSON PATH
+    FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [y.Elements]
 FROM (
     SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [o_0].[OrderID] AS [Key.OrderID], [o_0].[CustomerID] AS [Key.CustomerID], [o_0].[EmployeeID] AS [Key.EmployeeID], [o_0].[OrderDate] AS [Key.OrderDate], [o_0].[RequiredDate] AS [Key.RequiredDate], [o_0].[ShippedDate] AS [Key.ShippedDate], [o_0].[ShipVia] AS [Key.ShipVia], [o_0].[Freight] AS [Key.Freight], [o_0].[ShipName] AS [Key.ShipName], [o_0].[ShipAddress] AS [Key.ShipAddress], [o_0].[ShipCity] AS [Key.ShipCity], [o_0].[ShipRegion] AS [Key.ShipRegion], [o_0].[ShipPostalCode] AS [Key.ShipPostalCode], [o_0].[ShipCountry] AS [Key.ShipCountry]

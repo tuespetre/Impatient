@@ -22,6 +22,18 @@ namespace Impatient.Query.ExpressionVisitors
             return CurrentPath.Select(m => m.GetPathSegmentName()).Where(n => n != null && !n.StartsWith("<>"));
         }
 
+        protected bool IsNotLeaf(NewExpression node)
+        {
+            return node.Members != null;
+        }
+
+        protected bool IsNotLeaf(MemberInitExpression node)
+        {
+            return node.Bindings.Iterate().All(b => b is MemberAssignment)
+                && (node.NewExpression.Arguments.Count == 0
+                    || node.NewExpression.Members != null);
+        }
+
         public override Expression Visit(Expression node)
         {
             if (InLeaf)
@@ -31,8 +43,7 @@ namespace Impatient.Query.ExpressionVisitors
 
             switch (node)
             {
-                case NewExpression newExpression
-                when newExpression.Members != null:
+                case NewExpression newExpression when IsNotLeaf(newExpression):
                 {
                     var arguments = new Expression[newExpression.Arguments.Count];
 
@@ -48,8 +59,23 @@ namespace Impatient.Query.ExpressionVisitors
                     return newExpression.Update(arguments);
                 }
 
-                case MemberInitExpression memberInitExpression:
+                case MemberInitExpression memberInitExpression when IsNotLeaf(memberInitExpression):
                 {
+                    var newExpression = memberInitExpression.NewExpression;
+                    
+                    var arguments = new Expression[newExpression.Arguments.Count];
+
+                    for (var i = 0; i < newExpression.Arguments.Count; i++)
+                    {
+                        memberStack.Push(newExpression.Members[i]);
+
+                        arguments[i] = Visit(newExpression.Arguments[i]);
+
+                        memberStack.Pop();
+                    }
+
+                    newExpression = newExpression.Update(arguments);
+
                     var bindings = new MemberBinding[memberInitExpression.Bindings.Count];
 
                     for (var i = 0; i < memberInitExpression.Bindings.Count; i++)
@@ -61,7 +87,7 @@ namespace Impatient.Query.ExpressionVisitors
                         memberStack.Pop();
                     }
 
-                    return memberInitExpression.Update(memberInitExpression.NewExpression, bindings);
+                    return memberInitExpression.Update(newExpression, bindings);
                 }
 
                 case PolymorphicExpression polymorphicExpression:

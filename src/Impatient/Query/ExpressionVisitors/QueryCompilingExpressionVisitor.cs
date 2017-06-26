@@ -223,7 +223,7 @@ namespace Impatient.Query.ExpressionVisitors
                 if (expressionVisitorProvider.TranslatabilityAnalyzingExpressionVisitor.Visit(node) is TranslatableExpression)
                 {
                     return readValueExpressionFactories
-                        .First(f => f.CanReadType(node.Type))
+                        .First(f => f.CanReadExpression(node))
                         .CreateExpression(node, readerParameter, readerIndex++);
                 }
 

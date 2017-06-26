@@ -73,38 +73,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                 return node.Update(left, node.Conversion, right);
             }
-
-            IEnumerable<Expression> IterateBindings(IEnumerable<MemberBinding> bindings)
-            {
-                foreach (var binding in bindings)
-                {
-                    switch (binding)
-                    {
-                        case MemberAssignment memberAssignment:
-                        {
-                            yield return memberAssignment.Expression;
-
-                            break;
-                        }
-
-                        case MemberMemberBinding memberMemberBinding:
-                        {
-                            foreach (var yielded in IterateBindings(memberMemberBinding.Bindings))
-                            {
-                                yield return yielded;
-                            }
-
-                            break;
-                        }
-
-                        default:
-                        {
-                            throw new NotSupportedException();
-                        }
-                    }
-                }
-            }
-
+            
             switch (node.NodeType)
             {
                 case ExpressionType.Coalesce:
@@ -148,11 +117,13 @@ namespace Impatient.Query.ExpressionVisitors
                     {
                         var leftBindings
                             = leftMemberInitExpression.NewExpression.Arguments.Concat(
-                                IterateBindings(leftMemberInitExpression.Bindings));
+                                leftMemberInitExpression.Bindings.Iterate()
+                                    .Cast<MemberAssignment>().Select(m => m.Expression));
 
                         var rightBindings
                             = rightMemberInitExpression.NewExpression.Arguments.Concat(
-                                IterateBindings(rightMemberInitExpression.Bindings));
+                                rightMemberInitExpression.Bindings.Iterate()
+                                    .Cast<MemberAssignment>().Select(m => m.Expression));
 
                         return Visit(
                             leftBindings
@@ -220,11 +191,13 @@ namespace Impatient.Query.ExpressionVisitors
                     {
                         var leftBindings
                             = leftMemberInitExpression.NewExpression.Arguments.Concat(
-                                IterateBindings(leftMemberInitExpression.Bindings));
+                                leftMemberInitExpression.Bindings.Iterate()
+                                    .Cast<MemberAssignment>().Select(m => m.Expression));
 
                         var rightBindings
                             = rightMemberInitExpression.NewExpression.Arguments.Concat(
-                                IterateBindings(rightMemberInitExpression.Bindings));
+                                rightMemberInitExpression.Bindings.Iterate()
+                                    .Cast<MemberAssignment>().Select(m => m.Expression));
 
                         return Visit(
                             leftBindings

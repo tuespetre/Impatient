@@ -17,9 +17,9 @@ namespace Impatient.Query.Infrastructure
         private static readonly MethodInfo isDBNullMethodInfo
             = dbDataReaderTypeInfo.GetDeclaredMethod(nameof(DbDataReader.IsDBNull));
 
-        public bool CanReadType(Type type)
+        public bool CanReadExpression(Expression expression)
         {
-            return type.IsScalarType();
+            return expression.Type.IsScalarType();
         }
 
         public Expression CreateExpression(Expression source, Expression reader, int index)
