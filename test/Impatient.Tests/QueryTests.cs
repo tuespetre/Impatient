@@ -1043,6 +1043,27 @@ WHERE 1 = 1",
         }
 
         [TestMethod]
+        public void Where_true2()
+        {
+            var query =
+                from z in (from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                           select new { x = a.Prop1, y = a.Prop2 < 9000 }).Take(10)
+                where z.x != null && z.y
+                select z;
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [z].[x] AS [x], [z].[y] AS [y]
+FROM (
+    SELECT TOP (10) [a].[Prop1] AS [x], CAST((CASE WHEN [a].[Prop2] < 9000 THEN 1 ELSE 0 END) AS BIT) AS [y]
+    FROM [dbo].[MyClass1] AS [a]
+) AS [z]
+WHERE ([z].[x] IS NOT NULL) AND ([z].[y] = 1)",
+                SqlLog);
+        }
+
+        [TestMethod]
         public void Where_false()
         {
             var query =
@@ -1055,7 +1076,7 @@ WHERE 1 = 1",
             Assert.AreEqual(
                 @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [a]
-WHERE 1 = 0",
+WHERE 0 = 1",
                 SqlLog);
         }
 

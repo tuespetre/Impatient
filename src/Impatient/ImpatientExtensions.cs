@@ -1,4 +1,5 @@
 ﻿using Impatient.Query;
+using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System;
@@ -44,6 +45,63 @@ namespace Impatient
         }
 
         #endregion
+
+        public static Expression AsSqlBooleanExpression(this Expression expression)
+        {
+            if (expression == null || expression.IsSqlBooleanExpression())
+            {
+                return expression;
+            }
+
+            return Expression.Equal(expression, Expression.Constant(true));
+        }
+
+        public static bool IsSqlBooleanExpression(this Expression expression)
+        {
+            switch (expression)
+            {
+                case null:
+                {
+                    return false;
+                }
+
+                case SqlExistsExpression _:
+                case SqlInExpression _:
+                // TODO: Include SqlLikeExpression case here
+                {
+                    return true;
+                }
+
+                case BinaryExpression _:
+                {
+                    switch (expression.NodeType)
+                    {
+                        case ExpressionType.Constant:
+                        case ExpressionType.Equal:
+                        case ExpressionType.NotEqual:
+                        case ExpressionType.AndAlso:
+                        case ExpressionType.OrElse:
+                        case ExpressionType.LessThan:
+                        case ExpressionType.LessThanOrEqual:
+                        case ExpressionType.GreaterThan:
+                        case ExpressionType.GreaterThanOrEqual:
+                        {
+                            return true;
+                        }
+
+                        default:
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                default:
+                {
+                    return false;
+                }
+            }
+        }
 
         public static IEnumerable<MemberBinding> Iterate(this IEnumerable<MemberBinding> bindings)
         {

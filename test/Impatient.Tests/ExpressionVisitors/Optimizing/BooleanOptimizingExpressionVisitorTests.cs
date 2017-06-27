@@ -131,6 +131,14 @@ namespace Impatient.Tests.ExpressionVisitors.Optimizing
                 output: x => ((!x.Prop && !x.Prop) || number1 > number2) || (number3 >= number4 && x.Prop));
         }
 
+        [TestMethod]
+        public void True_eq_true_eq_boolean()
+        {
+            AssertTransformation(
+                input: x => true == (true == (x.Prop)),
+                output: x => x.Prop);
+        }
+
         private static void AssertTransformation(
             Expression<Func<TestClass, bool>> input,
             Expression<Func<TestClass, bool>> output)

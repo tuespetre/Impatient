@@ -859,7 +859,7 @@ namespace Impatient.Query.ExpressionVisitors
                                     new ServerProjectionExpression(
                                         new DefaultIfEmptyExpression(
                                             projectionBody,
-                                            new SqlColumnExpression(innerSubquery, "$empty", typeof(bool?), true))),
+                                            new SqlColumnExpression(innerSubquery, "$empty", typeof(int?), true))),
                                     joinExpression);
 
                             return new EnumerableRelationalQueryExpression(selectExpression);

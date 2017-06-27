@@ -143,18 +143,19 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
                     case ExpressionType.Equal:
                     {
-                        if (leftConstant != null && rightConstant != null)
+                        if (leftConstant != null 
+                            && rightConstant != null
+                            && leftConstant.Type.IsBooleanType()
+                            && rightConstant.Type.IsBooleanType())
                         {
-                            break;
-
-                            /*if (leftConstant.Value == rightConstant.Value)
+                            if (leftConstant.Value == rightConstant.Value)
                             {
                                 return Expression.Constant(true);
                             }
                             else
                             {
                                 return Expression.Constant(false);
-                            }*/
+                            }
                         }
                         else if (leftConstant != null)
                         {
@@ -184,18 +185,19 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
                     case ExpressionType.NotEqual:
                     {
-                        if (leftConstant != null && rightConstant != null)
+                        if (leftConstant != null 
+                            && rightConstant != null 
+                            && leftConstant.Type.IsBooleanType() 
+                            && rightConstant.Type.IsBooleanType())
                         {
-                            break;
-
-                            /*if (leftConstant.Value == rightConstant.Value)
+                            if (leftConstant.Value == rightConstant.Value)
                             {
                                 return Expression.Constant(false);
                             }
                             else
                             {
                                 return Expression.Constant(true);
-                            }*/
+                            }
                         }
                         else if (leftConstant != null)
                         {

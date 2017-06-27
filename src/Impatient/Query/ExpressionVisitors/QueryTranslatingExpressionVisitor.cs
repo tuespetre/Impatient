@@ -28,7 +28,7 @@ namespace Impatient.Query.ExpressionVisitors
         
         public LambdaExpression Translate(SelectExpression selectExpression)
         {
-            selectExpression = VisitSelectExpression(selectExpression, true) as SelectExpression;
+            Visit(selectExpression);
 
             return Builder.Build();
         }
@@ -93,12 +93,24 @@ namespace Impatient.Query.ExpressionVisitors
 
                 case ExpressionType.AndAlso:
                 {
-                    return VisitSimple(" AND ");
+                    var left = VisitBinaryOperand(node.Left.AsSqlBooleanExpression());
+
+                    Builder.Append(" AND ");
+
+                    var right = VisitBinaryOperand(node.Right.AsSqlBooleanExpression());
+
+                    return node.Update(left, node.Conversion, right);
                 }
 
                 case ExpressionType.OrElse:
                 {
-                    return VisitSimple(" OR ");
+                    var left = VisitBinaryOperand(node.Left.AsSqlBooleanExpression());
+
+                    Builder.Append(" OR ");
+
+                    var right = VisitBinaryOperand(node.Right.AsSqlBooleanExpression());
+
+                    return node.Update(left, node.Conversion, right);
                 }
 
                 case ExpressionType.Equal:
@@ -348,7 +360,7 @@ namespace Impatient.Query.ExpressionVisitors
         {
             Builder.Append("(CASE WHEN ");
 
-            var test = Visit(node.Test);
+            var test = Visit(node.Test.AsSqlBooleanExpression());
 
             Builder.Append(" THEN ");
 
@@ -415,7 +427,7 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 case SelectExpression selectExpression:
                 {
-                    return VisitSelectExpression(selectExpression, false);
+                    return VisitSelectExpression(selectExpression);
                 }
 
                 case SingleValueRelationalQueryExpression singleValueRelationalQueryExpression:
@@ -587,7 +599,7 @@ namespace Impatient.Query.ExpressionVisitors
 
         #region Extension Expression visiting methods
 
-        protected virtual Expression VisitSelectExpression(SelectExpression selectExpression, bool isTopLevel)
+        protected virtual Expression VisitSelectExpression(SelectExpression selectExpression)
         {
             Builder.Append("SELECT ");
 
@@ -616,8 +628,7 @@ namespace Impatient.Query.ExpressionVisitors
                     Builder.Append(", ");
                 }
 
-                if (isTopLevel
-                    && expression.Type.IsBooleanType()
+                if (expression.Type.IsBooleanType()
                     && !(expression is SqlAliasExpression
                        || expression is SqlColumnExpression
                        || expression is SqlCastExpression))
@@ -652,13 +663,8 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 Builder.AppendLine();
                 Builder.Append("WHERE ");
-                
-                if (!(selectExpression.Predicate is BinaryExpression))
-                {
-                    Builder.Append("1 = ");
-                }
 
-                Visit(selectExpression.Predicate);
+                Visit(selectExpression.Predicate.AsSqlBooleanExpression());
             }
 
             if (selectExpression.Grouping != null)

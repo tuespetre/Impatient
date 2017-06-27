@@ -7,7 +7,7 @@ namespace Impatient.Query.Expressions
     {
         public DefaultIfEmptyExpression(Expression expression) : base(expression)
         {
-            Flag = Constant(false, typeof(bool?));
+            Flag = Constant(0, typeof(int?));
         }
 
         public DefaultIfEmptyExpression(Expression expression, Expression flag) : base(expression)
