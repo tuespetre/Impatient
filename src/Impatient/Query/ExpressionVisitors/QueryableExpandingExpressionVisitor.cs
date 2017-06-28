@@ -1,4 +1,5 @@
 ﻿using Impatient.Query.ExpressionVisitors.Optimizing;
+using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,19 +8,27 @@ using System.Reflection;
 
 namespace Impatient.Query.ExpressionVisitors
 {
-    public class QueryableExpandingExpressionVisitor : ExpressionVisitor
+    public class QueryableExpandingExpressionVisitor : PartialEvaluatingExpressionVisitor
     {
-        private readonly QueryableExpandingPartialEvaluatingExpressionVisitor visitor;
+        private readonly ImpatientQueryProvider provider;
+        private readonly ExpressionVisitor replacingVisitor;
 
-        public QueryableExpandingExpressionVisitor(IDictionary<object, ParameterExpression> mapping)
+        public QueryableExpandingExpressionVisitor(
+            ImpatientQueryProvider provider,
+            IDictionary<object, ParameterExpression> mapping)
         {
+            this.provider = provider ?? throw new ArgumentNullException(nameof(provider));
+
             if (mapping == null)
             {
                 throw new ArgumentNullException(nameof(mapping));
             }
 
-            visitor = new QueryableExpandingPartialEvaluatingExpressionVisitor(
-                mapping.ToDictionary(kvp => kvp.Value, kvp => kvp.Key));
+            replacingVisitor 
+                = new ExpressionReplacingExpressionVisitor(
+                    mapping.ToDictionary(
+                        kvp => kvp.Value as Expression, 
+                        kvp => Expression.Constant(kvp.Key) as Expression));
         }
 
         public override Expression Visit(Expression node)
@@ -31,41 +40,15 @@ namespace Impatient.Query.ExpressionVisitors
 
             if (typeof(IQueryable).IsAssignableFrom(node.Type))
             {
-                switch (node)
-                {
-                    case MethodCallExpression methodCallExpression:
-                    {
-                        return visitor.Visit(methodCallExpression) as ConstantExpression ?? base.Visit(node);
-                    }
+                var evaluated = base.Visit(replacingVisitor.Visit(node)) as ConstantExpression;
 
-                    case MemberExpression memberExpression:
-                    {
-                        return visitor.Visit(memberExpression) as ConstantExpression ?? base.Visit(node);
-                    }
+                if (evaluated?.Value is IQueryable queryable && queryable.Provider == provider)
+                {
+                    return queryable.Expression;
                 }
             }
 
             return base.Visit(node);
-        }
-
-        private class QueryableExpandingPartialEvaluatingExpressionVisitor : PartialEvaluatingExpressionVisitor
-        {
-            private readonly IDictionary<ParameterExpression, object> mapping;
-
-            public QueryableExpandingPartialEvaluatingExpressionVisitor(IDictionary<ParameterExpression, object> mapping)
-            {
-                this.mapping = mapping;
-            }
-
-            protected override Expression VisitParameter(ParameterExpression node)
-            {
-                if (mapping.TryGetValue(node, out var value))
-                {
-                    return Expression.Constant(value);
-                }
-
-                return base.VisitParameter(node);
-            }
         }
     }
 }

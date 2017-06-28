@@ -1,6 +1,5 @@
 ﻿using Impatient.Query;
 using Impatient.Query.ExpressionVisitors;
-using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
@@ -81,43 +80,48 @@ namespace Impatient
         {
             try
             {
-                var hashingVisitor = new HashingExpressionVisitor();
-                expression = hashingVisitor.Visit(expression);
+                // Parameterize the expression by substituting any ConstantExpression
+                // that is not a literal constant (such as a closure instance) with a ParameterExpression.
 
                 var constantParameterizingVisitor = new ConstantParameterizingExpressionVisitor();
                 expression = constantParameterizingVisitor.Visit(expression);
+
+                // Generate a hash code for the parameterized expression.
+                // Because the expression is parameterized, the hash code will be identical
+                // for expressions that are structurally equivalent apart from any closure instances.
+
+                var hashingVisitor = new HashingExpressionVisitor();
+                expression = hashingVisitor.Visit(expression);
 
                 var parameterMapping = constantParameterizingVisitor.Mapping;
 
                 if (!QueryCache.TryGetValue(hashingVisitor.HashCode, out var compiled))
                 {
-                    expression = new QueryableExpandingExpressionVisitor(parameterMapping).Visit(expression);
+                    // Partially evaluate the expression. In addition to reducing evaluable nodes such 
+                    // as `new DateTime(2000, 01, 01)` down to ConstantExpressions, this visitor also expands 
+                    // IQueryable-producing expressions such as those found within calls to SelectMany
+                    // so that the resulting IQueryable's expression tree will be integrated into the 
+                    // current expression tree.
 
-                    expression = new PartialEvaluatingExpressionVisitor().Visit(expression);
+                    expression = new QueryableExpandingExpressionVisitor(this, parameterMapping).Visit(expression);
 
-                    var preCompositionVisitors = new[]
-                    {
-                        ExpressionVisitorProvider.OptimizingExpressionVisitors,
-                        ExpressionVisitorProvider.MidOptimizationExpressionVisitors,
-                        ExpressionVisitorProvider.OptimizingExpressionVisitors,
-                    };
+                    // Apply all optimizing visitors before each composing visitor and then apply all
+                    // optimizing visitors one last time.
 
-                    expression = preCompositionVisitors.SelectMany(vs => vs).Aggregate(expression, (e, v) => v.Visit(e));
+                    expression
+                        = ExpressionVisitorProvider.ComposingExpressionVisitors
+                            .SelectMany(c => ExpressionVisitorProvider.OptimizingExpressionVisitors.Append(c))
+                            .Concat(ExpressionVisitorProvider.OptimizingExpressionVisitors)
+                            .Aggregate(expression, (e, v) => v.Visit(e));
 
-                    expression = new QueryActivatingExpressionVisitor(this).Visit(expression);
-
-                    expression = new QueryComposingExpressionVisitor(ExpressionVisitorProvider).Visit(expression);
-
-                    var postCompositionVisitors = new[]
-                    {
-                        ExpressionVisitorProvider.OptimizingExpressionVisitors,
-                    };
-
-                    expression = postCompositionVisitors.SelectMany(vs => vs).Aggregate(expression, (e, v) => v.Visit(e));
+                    // Transform the expression by rewriting all composed query expressions into 
+                    // executable expressions that make database calls and perform result materialization.
 
                     var queryProviderParameter = Expression.Parameter(typeof(ImpatientQueryProvider), "queryProvider");
                     
                     expression = new QueryCompilingExpressionVisitor(ExpressionVisitorProvider, queryProviderParameter).Visit(expression);
+
+                    // Compile the resulting expression into an executable delegate.
 
                     var parameters = new ParameterExpression[parameterMapping.Count + 1];
 
@@ -127,8 +131,12 @@ namespace Impatient
 
                     compiled = Expression.Lambda(expression, parameters).Compile();
 
+                    // Cache the compiled delegate.
+
                     QueryCache.Add(hashingVisitor.HashCode, compiled);
                 }
+
+                // Invoke the compiled delegate.
 
                 var arguments = new object[parameterMapping.Count + 1];
 

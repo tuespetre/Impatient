@@ -32,6 +32,17 @@ namespace Impatient.Query
             }
         }
 
+        public IEnumerable<ExpressionVisitor> ComposingExpressionVisitors
+        {
+            get
+            {
+                yield return new NavigationRewritingExpressionVisitor(navigationDescriptors);
+                // TODO: See about merging QueryActivatingExpressionVisitor with QueryComposingExpressionVisitor
+                yield return new QueryActivatingExpressionVisitor();
+                yield return new QueryComposingExpressionVisitor(this);
+            }
+        }
+
         public QueryTranslatingExpressionVisitor QueryTranslatingExpressionVisitor
             => new QueryTranslatingExpressionVisitor(this);
 
@@ -55,14 +66,6 @@ namespace Impatient.Query
             this.navigationDescriptors.AddRange(navigationDescriptors);
 
             return this;
-        }
-
-        public IEnumerable<ExpressionVisitor> MidOptimizationExpressionVisitors
-        {
-            get
-            {
-                yield return new NavigationRewritingExpressionVisitor(navigationDescriptors);
-            }
         }
     }
 }

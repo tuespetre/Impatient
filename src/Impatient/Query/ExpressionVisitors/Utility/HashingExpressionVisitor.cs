@@ -1,180 +1,139 @@
-﻿using System;
-using System.Linq;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 namespace Impatient.Query.ExpressionVisitors.Utility
 {
     public class HashingExpressionVisitor : ExpressionVisitor
     {
-        private const int InitialHashCode = 17;
+        private const int InitialHashCode = unchecked((int)2166136261);
 
         public int HashCode { get; private set; } = InitialHashCode;
 
-        public void Reset()
-        {
-            HashCode = InitialHashCode;
-        }
+        public void Reset() => HashCode = InitialHashCode;
 
-        private void Hash<T>(T value)
-        {
-            unchecked
-            {
-                if (ReferenceEquals(value, null))
-                {
-                    HashCode = HashCode * 23 + 0;
-                }
-                else
-                {
-                    HashCode = HashCode * 23 + value.GetHashCode();
-                }
-            }
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Combine(int hashCode) => HashCode = unchecked((HashCode * 16777619) ^ hashCode);
 
         public override Expression Visit(Expression node)
         {
-            if (node is null)
-            {
-                Hash(node);
-                return node;
-            }
-
-            Hash(node.NodeType);
-            Hash(node.Type);
+            Combine(node == null ? 0 : node.NodeType.GetHashCode());
+            Combine(node == null ? 0 : node.Type.GetHashCode());
 
             return base.Visit(node);
         }
 
         protected override Expression VisitBinary(BinaryExpression node)
         {
-            Hash(node.IsLifted);
-            Hash(node.IsLiftedToNull);
-            Hash(node.Method);
+            Combine(node.IsLifted.GetHashCode());
+            Combine(node.IsLiftedToNull.GetHashCode());
+            Combine(node.Method == null ? 0 : node.Method.GetHashCode());
 
             return base.VisitBinary(node);
         }
 
         protected override CatchBlock VisitCatchBlock(CatchBlock node)
         {
-            Hash(node.Test);
+            Combine(node.Test.GetHashCode());
 
             return base.VisitCatchBlock(node);
         }
-        
-        // This is different than checking whether the type is scalar or not.
-        // These are all of the possible literal expression types (at least in C#).
-        private static Type[] constantLiteralTypes = new[]
-        {
-            typeof(sbyte),
-            typeof(byte),
-            typeof(short),
-            typeof(ushort),
-            typeof(int),
-            typeof(uint),
-            typeof(long),
-            typeof(ulong),
-            typeof(char),
-            typeof(float),
-            typeof(double),
-            typeof(decimal),
-            typeof(bool),
-            typeof(string),
-        };
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            if (constantLiteralTypes.Contains(node.Type))
-            {
-                Hash(node.Value);
-            }
+            Combine(node.Value == null ? 0 : node.Value.GetHashCode());
 
             return base.VisitConstant(node);
         }
 
         protected override Expression VisitDebugInfo(DebugInfoExpression node)
         {
-            Hash(node.Document.DocumentType);
-            Hash(node.Document.FileName);
-            Hash(node.Document.Language);
-            Hash(node.Document.LanguageVendor);
-            Hash(node.EndColumn);
-            Hash(node.EndLine);
-            Hash(node.IsClear);
-            Hash(node.StartColumn);
-            Hash(node.StartLine);
+            Combine(node.Document.DocumentType.GetHashCode());
+            Combine(node.Document.FileName == null ? 0 : node.Document.FileName.GetHashCode());
+            Combine(node.Document.Language.GetHashCode());
+            Combine(node.Document.LanguageVendor.GetHashCode());
+            Combine(node.EndColumn);
+            Combine(node.EndLine);
+            Combine(node.IsClear.GetHashCode());
+            Combine(node.StartColumn);
+            Combine(node.StartLine);
 
             return base.VisitDebugInfo(node);
         }
 
         protected override ElementInit VisitElementInit(ElementInit node)
         {
-            Hash(node.AddMethod);
+            Combine(node.AddMethod.GetHashCode());
 
             return base.VisitElementInit(node);
         }
 
         protected override Expression VisitExtension(Expression node)
         {
-            Hash(node);
+            Combine(node.GetHashCode());
 
             return base.VisitExtension(node);
         }
 
         protected override Expression VisitIndex(IndexExpression node)
         {
-            Hash(node.Indexer);
+            Combine(node.Indexer == null ? 0 : node.Indexer.GetHashCode());
 
             return base.VisitIndex(node);
         }
 
         protected override LabelTarget VisitLabelTarget(LabelTarget node)
         {
-            Hash(node.Name);
-            Hash(node.Type);
+            Combine(node.Name == null ? 0 : node.Name.GetHashCode());
+            Combine(node.Type.GetHashCode());
 
             return base.VisitLabelTarget(node);
         }
 
         protected override Expression VisitLambda<T>(Expression<T> node)
         {
-            Hash(node.Name);
-            Hash(node.ReturnType);
-            Hash(node.TailCall);
+            Combine(node.Name == null ? 0 : node.Name.GetHashCode());
+            Combine(node.ReturnType.GetHashCode());
+            Combine(node.TailCall.GetHashCode());
 
             return base.VisitLambda(node);
         }
 
         protected override Expression VisitMember(MemberExpression node)
         {
-            Hash(node.Member);
+            Combine(node.Member.GetHashCode());
 
             return base.VisitMember(node);
         }
 
         protected override MemberBinding VisitMemberBinding(MemberBinding node)
         {
-            Hash(node.BindingType);
-            Hash(node.Member);
+            Combine(node.BindingType.GetHashCode());
+            Combine(node.Member.GetHashCode());
 
             return base.VisitMemberBinding(node);
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            Hash(node.Method);
+            Combine(node.Method.GetHashCode());
 
             return base.VisitMethodCall(node);
         }
 
         protected override Expression VisitNew(NewExpression node)
         {
-            Hash(node.Constructor);
+            Combine(node.Constructor == null ? 0 : node.Constructor.GetHashCode());
 
             if (node.Members != null)
             {
-                foreach (var member in node.Members)
+                for (var i = 0; i < node.Members.Count; i++)
                 {
-                    Hash(member);
+                    Combine(node.Members[i].GetHashCode());
                 }
+            }
+            else
+            {
+                Combine(0);
             }
 
             return base.VisitNew(node);
@@ -182,31 +141,31 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
         protected override Expression VisitParameter(ParameterExpression node)
         {
-            Hash(node.IsByRef);
-            Hash(node.Name);
+            Combine(node.IsByRef.GetHashCode());
+            Combine(node.Name == null ? 0 : node.Name.GetHashCode());
 
             return base.VisitParameter(node);
         }
 
         protected override Expression VisitSwitch(SwitchExpression node)
         {
-            Hash(node.Comparison);
+            Combine(node.Comparison == null ? 0 : node.Comparison.GetHashCode());
 
             return base.VisitSwitch(node);
         }
 
         protected override Expression VisitTypeBinary(TypeBinaryExpression node)
         {
-            Hash(node.TypeOperand);
+            Combine(node.TypeOperand.GetHashCode());
 
             return base.VisitTypeBinary(node);
         }
 
         protected override Expression VisitUnary(UnaryExpression node)
         {
-            Hash(node.IsLifted);
-            Hash(node.IsLiftedToNull);
-            Hash(node.Method);
+            Combine(node.IsLifted.GetHashCode());
+            Combine(node.IsLiftedToNull.GetHashCode());
+            Combine(node.Method == null ? 0 : node.Method.GetHashCode());
 
             return base.VisitUnary(node);
         }

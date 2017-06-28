@@ -356,5 +356,28 @@ namespace Impatient
             // - long
             // - string (explicitly)
         };
+
+        public static bool IsConstantLiteralType(this Type type)
+        {
+            return Array.IndexOf(constantLiteralTypes, type) > -1;
+        }
+
+        private static readonly Type[] constantLiteralTypes =
+        {
+            typeof(sbyte),
+            typeof(byte),
+            typeof(short),
+            typeof(ushort),
+            typeof(int),
+            typeof(uint),
+            typeof(long),
+            typeof(ulong),
+            typeof(char),
+            typeof(float),
+            typeof(double),
+            typeof(decimal),
+            typeof(bool),
+            typeof(string),
+        };
     }
 }

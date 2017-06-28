@@ -6,14 +6,7 @@ namespace Impatient.Query.ExpressionVisitors
 {
     public class QueryActivatingExpressionVisitor : ExpressionVisitor
     {
-        private readonly ImpatientQueryProvider provider;
-
         private string alias;
-
-        public QueryActivatingExpressionVisitor(ImpatientQueryProvider provider)
-        {
-            this.provider = provider;
-        }
 
         protected override Expression VisitExtension(Expression node)
         {
@@ -33,16 +26,6 @@ namespace Impatient.Query.ExpressionVisitors
             }
 
             return base.VisitExtension(node);
-        }
-
-        protected override Expression VisitConstant(ConstantExpression node)
-        {
-            if (node.Value is IQueryable queryable && queryable.Provider == provider)
-            {
-                return Visit(queryable.Expression);
-            }
-
-            return base.VisitConstant(node);
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node)

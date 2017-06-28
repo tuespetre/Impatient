@@ -124,9 +124,7 @@ namespace Impatient.Tests
                 where a.Prop2 == localVariable
                 select a;
 
-            var results1 = query1.ToList();
-
-            Assert.AreEqual(1, results1.Count);
+            query1.ToList();
 
             localVariable = 9;
 
@@ -135,9 +133,7 @@ namespace Impatient.Tests
                 where a.Prop2 == localVariable
                 select a;
 
-            var results2 = query1.ToList();
-
-            Assert.AreEqual(1, results2.Count);
+            query2.ToList();
 
             Assert.AreEqual(
                 @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
@@ -147,6 +143,46 @@ WHERE [a].[Prop2] = @p0
 SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
 FROM [dbo].[MyClass1] AS [a]
 WHERE [a].[Prop2] = @p0",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void SelectMany_parameterized_from_closure()
+        {
+            var localVariable = 77;
+
+            var query1 =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                from b in impatient.CreateQuery<MyClass2>(MyClass2QueryExpression).Where(b => b.Prop2 == localVariable)
+                select b;
+
+            query1.ToList();
+
+            localVariable = 9;
+
+            var query2 =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                from b in impatient.CreateQuery<MyClass2>(MyClass2QueryExpression).Where(b => b.Prop2 == localVariable)
+                select b;
+
+            query2.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [b].[Prop1] AS [Prop1], [b].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [a]
+CROSS JOIN (
+    SELECT [b_0].[Prop1] AS [Prop1], [b_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass2] AS [b_0]
+    WHERE [b_0].[Prop2] = @p0
+) AS [b]
+
+SELECT [b].[Prop1] AS [Prop1], [b].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [a]
+CROSS JOIN (
+    SELECT [b_0].[Prop1] AS [Prop1], [b_0].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass2] AS [b_0]
+    WHERE [b_0].[Prop2] = @p0
+) AS [b]",
                 SqlLog);
         }
 

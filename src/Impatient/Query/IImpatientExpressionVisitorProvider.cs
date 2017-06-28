@@ -14,6 +14,6 @@ namespace Impatient.Query
 
         IEnumerable<ExpressionVisitor> OptimizingExpressionVisitors { get; }
 
-        IEnumerable<ExpressionVisitor> MidOptimizationExpressionVisitors { get; }
+        IEnumerable<ExpressionVisitor> ComposingExpressionVisitors { get; }
     }
 }
