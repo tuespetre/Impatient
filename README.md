@@ -106,6 +106,23 @@ modelling API, a change tracker, migrations, or other similar ORM features.
   seed value.) The operators with `IComparer` and `IEqualityComparer` overloads
   are also interesting as it is unclear how they were ever intended to be
   translatable to a remote data source of any kind.
+
+- Currently unsupported `Enumerable` operators (in a subquery context):
+
+    - `Empty`
+    - `Range`
+    - `Repeat`
+    - `ToDictionary`
+    - `ToLookup`
+
+- Upcoming and tentative operators from dotnet/corefx:
+    
+    - `Append` [#15668](https://github.com/dotnet/corefx/pull/15668)
+    - `Prepend` [#15668](https://github.com/dotnet/corefx/pull/15668)
+    - `SkipLast` [#14186](https://github.com/dotnet/corefx/pull/14186)
+    - `TakeLast` [#14186](https://github.com/dotnet/corefx/pull/14186)
+    - `ToHashSet` [#13726](https://github.com/dotnet/corefx/pull/13726)
+    - `Yield` [#3093](https://github.com/dotnet/corefx/issues/3093)
   
 ### Examples and explanations
 

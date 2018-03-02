@@ -1,4 +1,5 @@
-﻿using Impatient.Query;
+﻿using Impatient.Metadata;
+using Impatient.Query;
 using Impatient.Query.ExpressionVisitors;
 using Impatient.Tests.Northwind;
 using Impatient.Tests.Utilities;
@@ -72,7 +73,7 @@ namespace Impatient.Tests
                         },
                     });
 
-            var impatient 
+            var impatient
                 = new ImpatientQueryProvider(
                     new TestImpatientConnectionFactory(
                         @"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True"),
@@ -315,7 +316,7 @@ LEFT JOIN (
                         select new { c.CustomerID, o.OrderID };
 
             query.ToList();
-            
+
             Assert.AreEqual(
                 @"SELECT [c].[CustomerID] AS [CustomerID], [o].[OrderID] AS [OrderID]
 FROM [dbo].[Customers] AS [c]
@@ -912,7 +913,7 @@ GROUP BY [c].[City]",
         [TestMethod]
         public void GroupBy1_navigation_aggregate_key()
         {
-            var query 
+            var query
                 = context.Orders
                     .GroupBy(o => o.Customer.City)
                     .Select(g => new
@@ -1434,11 +1435,11 @@ INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
         [TestMethod]
         public void GroupBy4_navigation_intact_key_element_result()
         {
-            var query 
+            var query
                 = context.OrderDetails
                     .GroupBy(
-                        d => d.Order, 
-                        d => d.Order.Customer, 
+                        d => d.Order,
+                        d => d.Order.Customer,
                         (x, y) => new { x.Customer, y });
 
             query.ToList();
@@ -1677,11 +1678,11 @@ GROUP BY [c].[City]",
         [TestMethod]
         public void Zip_navigation()
         {
-            var query 
+            var query
                 = context.OrderDetails
                     .Take(10)
                     .Zip(
-                        context.Orders.Take(10), 
+                        context.Orders.Take(10),
                         (d, o) => new
                         {
                             c1 = d.Order.Customer.City,

@@ -9,9 +9,9 @@ namespace Impatient.Query.Expressions
     public abstract class PredicateJoinExpression : JoinExpression
     {
         public PredicateJoinExpression(
-            TableExpression outerTable, 
-            AliasedTableExpression innerTable, 
-            Expression predicate, 
+            TableExpression outerTable,
+            AliasedTableExpression innerTable,
+            Expression predicate,
             Type type)
             : base(outerTable, innerTable, type)
         {

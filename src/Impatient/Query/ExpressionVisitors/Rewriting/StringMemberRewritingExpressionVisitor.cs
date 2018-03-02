@@ -89,15 +89,15 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
                     case nameof(string.Substring):
                     {
-                        var startIndex 
+                        var startIndex
                             = arguments[0] is ConstantExpression constantStartIndex
                                 ? Expression.Constant((int)constantStartIndex.Value + 1)
                                 : Expression.Add(arguments[0], Expression.Constant(1)) as Expression;
 
-                        var length 
-                            = arguments.ElementAtOrDefault(1) 
+                        var length
+                            = arguments.ElementAtOrDefault(1)
                                 ?? new SqlFunctionExpression("LEN", typeof(int), @object);
-                        
+
                         return new SqlFunctionExpression("SUBSTRING", typeof(string), @object, startIndex, length);
                     }
 

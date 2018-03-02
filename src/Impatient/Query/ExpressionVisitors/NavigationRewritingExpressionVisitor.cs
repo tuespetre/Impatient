@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Impatient.Metadata;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -6,16 +7,6 @@ using System.Reflection;
 
 namespace Impatient.Query.ExpressionVisitors
 {
-    public class NavigationDescriptor
-    {
-        public Type Type;
-        public MemberInfo Member;
-        public LambdaExpression OuterKeySelector;
-        public LambdaExpression InnerKeySelector;
-        public bool IsNullable;
-        public Expression Expansion;
-    }
-
     public class NavigationRewritingExpressionVisitor : ExpressionVisitor
     {
         private readonly IEnumerable<NavigationDescriptor> navigationDescriptors;
@@ -56,7 +47,7 @@ namespace Impatient.Query.ExpressionVisitors
 
             protected override Expression VisitMethodCall(MethodCallExpression node)
             {
-                if ((node.Method.DeclaringType != typeof(Queryable) 
+                if ((node.Method.DeclaringType != typeof(Queryable)
                         && node.Method.DeclaringType != typeof(Enumerable))
                     || node.ContainsNonLambdaDelegates())
                 {
@@ -1228,7 +1219,7 @@ namespace Impatient.Query.ExpressionVisitors
             private List<MemberInfo> terminalPath = new List<MemberInfo>();
 
             public NavigationExpansionContext(
-                ParameterExpression parameter, 
+                ParameterExpression parameter,
                 IEnumerable<NavigationDescriptor> descriptors)
             {
                 currentParameter = parameter ?? throw new ArgumentNullException(nameof(parameter));

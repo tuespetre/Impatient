@@ -4,7 +4,7 @@ namespace Impatient.Query.Expressions
 {
     public class ExceptExpression : SetOperatorExpression
     {
-        public ExceptExpression(SelectExpression set1, SelectExpression set2) 
+        public ExceptExpression(SelectExpression set1, SelectExpression set2)
             : base(set1, set2)
         {
         }

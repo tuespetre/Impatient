@@ -255,7 +255,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                 else if (!visitedExpression.Type.IsAssignableFrom(node.TypeOperand))
                 {
                     return Expression.Constant(false);
-                }                       
+                }
             }
 
             return node.Update(visitedExpression);

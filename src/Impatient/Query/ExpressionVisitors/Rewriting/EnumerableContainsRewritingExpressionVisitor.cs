@@ -27,8 +27,8 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
         {
             var @object = Visit(node.Object);
             var arguments = Visit(node.Arguments);
-            
-            if (node.Method.IsGenericMethod 
+
+            if (node.Method.IsGenericMethod
                 && node.Method.GetGenericMethodDefinition() == enumerableContainsMethodInfo
                 && arguments[0].Type.GetSequenceType().IsScalarType()
                 && translatabilityAnalyzingExpressionVisitor.Visit(arguments[1]) is TranslatableExpression)

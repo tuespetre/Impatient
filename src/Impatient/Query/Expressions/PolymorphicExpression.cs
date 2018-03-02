@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Impatient.Metadata;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -8,34 +9,10 @@ namespace Impatient.Query.Expressions
 {
     public class PolymorphicExpression : Expression
     {
-        public sealed class TypeDescriptor : IEquatable<TypeDescriptor>
-        {
-            public TypeDescriptor(Type type, LambdaExpression test, LambdaExpression materializer)
-            {
-                Type = type ?? throw new ArgumentNullException(nameof(type));
-                Test = test ?? throw new ArgumentNullException(nameof(test));
-                Materializer = materializer ?? throw new ArgumentNullException(nameof(materializer));
-            }
-
-            public Type Type { get; }
-
-            public LambdaExpression Test { get; }
-
-            public LambdaExpression Materializer { get; }
-
-            public bool Equals(TypeDescriptor other)
-            {
-                return other != null
-                    && other.Type == Type
-                    && other.Test == Test
-                    && other.Materializer == Materializer;
-            }
-        }
-
         public PolymorphicExpression(
             Type type,
             Expression row,
-            IEnumerable<TypeDescriptor> descriptors)
+            IEnumerable<PolymorphicTypeDescriptor> descriptors)
         {
             Type = type ?? throw new ArgumentNullException(nameof(type));
             Row = row ?? throw new ArgumentNullException(nameof(row));
@@ -44,7 +21,7 @@ namespace Impatient.Query.Expressions
 
         public Expression Row { get; }
 
-        public IEnumerable<TypeDescriptor> Descriptors { get; }
+        public IEnumerable<PolymorphicTypeDescriptor> Descriptors { get; }
 
         public PolymorphicExpression Upcast(Type type)
         {
@@ -58,7 +35,7 @@ namespace Impatient.Query.Expressions
                 return new PolymorphicExpression(
                     type,
                     Row,
-                    Enumerable.Empty<TypeDescriptor>());
+                    Enumerable.Empty<PolymorphicTypeDescriptor>());
             }
 
             return new PolymorphicExpression(
@@ -93,7 +70,7 @@ namespace Impatient.Query.Expressions
             var descriptors = (from d in Descriptors
                                let test = visitor.VisitAndConvert(d.Test, nameof(VisitChildren))
                                let materializer = visitor.VisitAndConvert(d.Materializer, nameof(VisitChildren))
-                               select new TypeDescriptor(d.Type, test, materializer)).ToArray();
+                               select new PolymorphicTypeDescriptor(d.Type, test, materializer)).ToArray();
 
             if (row != Row || !Descriptors.SequenceEqual(descriptors))
             {

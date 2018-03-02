@@ -70,7 +70,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                 if (!body.Type.IsGenericType(typeof(IQueryable<>)))
                 {
-                    body 
+                    body
                         = Expression.Call(
                             GetGenericMethodDefinition((IEnumerable<object> o) => o.AsQueryable())
                                 .MakeGenericMethod(body.Type.GetSequenceType()),
@@ -95,7 +95,7 @@ namespace Impatient.Query.ExpressionVisitors
                     = node.Method
                         .GetParameters()
                         .Select(p => p.ParameterType)
-                        .Any(t => t.IsGenericType(typeof(IEqualityComparer<>)) 
+                        .Any(t => t.IsGenericType(typeof(IEqualityComparer<>))
                             || t.IsGenericType(typeof(IComparer<>)));
 
                 if (outerSource is EnumerableRelationalQueryExpression outerQuery
@@ -1448,6 +1448,7 @@ namespace Impatient.Query.ExpressionVisitors
                                 .UpdateSelectExpression(outerSelectExpression
                                     .UpdateOffset(count));
                         }
+
                         case nameof(Queryable.TakeWhile):
                         {
                             var outerSelectExpression = outerQuery.SelectExpression;
@@ -1778,7 +1779,7 @@ namespace Impatient.Query.ExpressionVisitors
                             var resultSelectorLambda = node.Arguments[2].UnwrapLambda();
 
                             var outerSelectExpression = outerQuery.SelectExpression;
-                            
+
                             var outerProjection
                                 = CreateRowNumberTuple(
                                     outerSelectExpression.Projection.Flatten().Body,
@@ -1799,7 +1800,7 @@ namespace Impatient.Query.ExpressionVisitors
                             }
 
                             var innerSelectExpression = innerQuery.SelectExpression;
-                            
+
                             var innerProjection
                                 = CreateRowNumberTuple(
                                     innerSelectExpression.Projection.Flatten().Body,
@@ -2230,7 +2231,7 @@ namespace Impatient.Query.ExpressionVisitors
             {
                 return false;
             }
-            
+
             if (selectExpression.Limit == null && selectExpression.Offset == null)
             {
                 selectExpression = selectExpression.UpdateOrderBy(null);
@@ -2244,11 +2245,11 @@ namespace Impatient.Query.ExpressionVisitors
                 = selectExpression
                     .UpdateProjection(new ServerProjectionExpression(projection));
 
-            var table 
+            var table
                 = new SubqueryTableExpression(
                     keyPlaceholderGroupingInjector.VisitAndConvert(
                         selectExpression,
-                        nameof(VisitMethodCall)), 
+                        nameof(VisitMethodCall)),
                     alias == null || alias.StartsWith("<>") ? "t" : alias);
 
             projection
@@ -2283,7 +2284,7 @@ namespace Impatient.Query.ExpressionVisitors
                         groupedRelationalQueryExpression.SelectExpression
                             .AddToPredicate(
                                 Expression.Equal(
-                                    outerKeySelector, 
+                                    outerKeySelector,
                                     innerKeySelector)));
                 }
 

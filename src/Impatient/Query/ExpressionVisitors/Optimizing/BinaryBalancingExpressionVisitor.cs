@@ -15,7 +15,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             }
 
             var splitNodes = node.SplitNodes(node.NodeType).Select(Visit).ToArray();
-            
+
             while (splitNodes.Length > 1)
             {
                 splitNodes

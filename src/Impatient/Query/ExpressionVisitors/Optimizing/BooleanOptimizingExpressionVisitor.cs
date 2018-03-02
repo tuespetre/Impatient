@@ -8,7 +8,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
         private static readonly ExpressionVisitor binaryExpressionReducingExpressionVisitor
             = new BinaryExpressionReducingExpressionVisitor();
 
-        private static readonly ExpressionVisitor unaryNotDistributingExpressionVisitor 
+        private static readonly ExpressionVisitor unaryNotDistributingExpressionVisitor
             = new UnaryNotDistributingExpressionVisitor();
 
         public override Expression Visit(Expression node)
@@ -18,7 +18,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
             return node;
         }
-        
+
         // false && false -> false
         // true && false -> false
         // false && true -> false
@@ -143,7 +143,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
                     case ExpressionType.Equal:
                     {
-                        if (leftConstant != null 
+                        if (leftConstant != null
                             && rightConstant != null
                             && leftConstant.Type.IsBooleanType()
                             && rightConstant.Type.IsBooleanType())
@@ -185,9 +185,9 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
                     case ExpressionType.NotEqual:
                     {
-                        if (leftConstant != null 
-                            && rightConstant != null 
-                            && leftConstant.Type.IsBooleanType() 
+                        if (leftConstant != null
+                            && rightConstant != null
+                            && leftConstant.Type.IsBooleanType()
                             && rightConstant.Type.IsBooleanType())
                         {
                             if (leftConstant.Value == rightConstant.Value)

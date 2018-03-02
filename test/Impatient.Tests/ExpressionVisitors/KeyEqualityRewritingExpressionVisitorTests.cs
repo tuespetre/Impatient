@@ -1,4 +1,5 @@
-﻿using Impatient.Query.ExpressionVisitors;
+﻿using Impatient.Metadata;
+using Impatient.Query.ExpressionVisitors;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
@@ -202,7 +203,7 @@ namespace Impatient.Tests.ExpressionVisitors
                 {
                     Type = typeof(MyClass1),
                     Member = typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Nav1)),
-                    OuterKeySelector 
+                    OuterKeySelector
                         = Expression.Lambda(
                             Expression.MakeMemberAccess(
                                 myClass1KeyParameter,
@@ -211,14 +212,14 @@ namespace Impatient.Tests.ExpressionVisitors
                     InnerKeySelector = myClass2KeyDescriptor.KeySelector,
                 };
 
-            var visitor 
+            var visitor
                 = new KeyEqualityRewritingExpressionVisitor(
-                    primaryKeyDescriptors: new[] 
+                    primaryKeyDescriptors: new[]
                     {
                         myClass1KeyDescriptor,
                         myClass2KeyDescriptor,
                     },
-                    navigationDescriptors: new[] 
+                    navigationDescriptors: new[]
                     {
                         myClass1NavigationDescriptor,
                     });

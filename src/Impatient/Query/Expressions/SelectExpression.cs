@@ -48,7 +48,7 @@ namespace Impatient.Query.Expressions
             Grouping = grouping;
             IsWindowed = isWindowed;
         }
-        
+
         public ProjectionExpression Projection { get; }
 
         public TableExpression Table { get; }

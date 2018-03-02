@@ -20,10 +20,10 @@ namespace Impatient.Query
 
         public IQueryProvider Provider { get; }
 
-        IEnumerator<TElement> IEnumerable<TElement>.GetEnumerator() 
+        IEnumerator<TElement> IEnumerable<TElement>.GetEnumerator()
             => Provider.Execute<IEnumerable<TElement>>(Expression).GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator() 
+        IEnumerator IEnumerable.GetEnumerator()
             => Provider.Execute<IEnumerable>(Expression).GetEnumerator();
     }
 }

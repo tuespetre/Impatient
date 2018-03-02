@@ -24,7 +24,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                         return Expression.NotEqual(
                             node.Expression,
                             Expression.Constant(
-                                null, 
+                                null,
                                 node.Expression.Type));
                     }
                 }
@@ -44,13 +44,13 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                         if (node.Arguments.Count == 1)
                         {
                             return Expression.Coalesce(
-                                node.Object, 
+                                node.Object,
                                 node.Arguments[0]);
                         }
                         else
                         {
                             return Expression.Coalesce(
-                                node.Object, 
+                                node.Object,
                                 Expression.Constant(
                                     Activator.CreateInstance(
                                         Nullable.GetUnderlyingType(

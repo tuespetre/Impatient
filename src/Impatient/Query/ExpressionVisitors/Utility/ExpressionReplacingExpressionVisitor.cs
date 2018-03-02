@@ -24,11 +24,11 @@ namespace Impatient.Query.ExpressionVisitors.Utility
             this.mapping = mapping ?? throw new ArgumentNullException(nameof(mapping));
         }
 
-        public override Expression Visit(Expression node) 
-            => node is null 
-                ? node 
-                : mapping.TryGetValue(node, out var replacement) 
-                    ? replacement 
+        public override Expression Visit(Expression node)
+            => node is null
+                ? node
+                : mapping.TryGetValue(node, out var replacement)
+                    ? replacement
                     : base.Visit(node);
     }
 }

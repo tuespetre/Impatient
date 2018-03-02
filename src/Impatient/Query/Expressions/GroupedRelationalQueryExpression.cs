@@ -13,7 +13,7 @@ namespace Impatient.Query.Expressions
             Expression innerKeySelector,
             LambdaExpression innerKeyLambda,
             bool requiresDenullification,
-            Type type) 
+            Type type)
             : base(selectExpression)
         {
             OuterKeySelector = outerKeySelector ?? throw new ArgumentNullException(nameof(outerKeySelector));

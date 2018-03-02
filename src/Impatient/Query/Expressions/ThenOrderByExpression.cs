@@ -6,7 +6,7 @@ namespace Impatient.Query.Expressions
 {
     public class ThenOrderByExpression : OrderByExpression
     {
-        public ThenOrderByExpression(OrderByExpression previous, Expression expression, bool descending) 
+        public ThenOrderByExpression(OrderByExpression previous, Expression expression, bool descending)
             : base(expression, descending)
         {
             Previous = previous ?? throw new ArgumentNullException(nameof(previous));

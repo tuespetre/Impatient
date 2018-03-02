@@ -24,10 +24,10 @@ namespace Impatient.Query.ExpressionVisitors
                 throw new ArgumentNullException(nameof(mapping));
             }
 
-            replacingVisitor 
+            replacingVisitor
                 = new ExpressionReplacingExpressionVisitor(
                     mapping.ToDictionary(
-                        kvp => kvp.Value as Expression, 
+                        kvp => kvp.Value as Expression,
                         kvp => Expression.Constant(kvp.Key) as Expression));
         }
 

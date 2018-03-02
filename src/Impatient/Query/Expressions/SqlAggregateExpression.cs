@@ -5,7 +5,7 @@ namespace Impatient.Query.Expressions
 {
     public class SqlAggregateExpression : SqlExpression
     {
-        public SqlAggregateExpression(string functionName, Expression expression, Type type) 
+        public SqlAggregateExpression(string functionName, Expression expression, Type type)
             : this(functionName, expression, type, false)
         {
         }

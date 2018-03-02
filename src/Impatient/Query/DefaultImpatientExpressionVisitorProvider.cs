@@ -1,4 +1,5 @@
-﻿using Impatient.Query.ExpressionVisitors;
+﻿using Impatient.Metadata;
+using Impatient.Query.ExpressionVisitors;
 using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.ExpressionVisitors.Rewriting;
 using System.Collections.Generic;

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Impatient.Metadata;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -6,12 +7,6 @@ using System.Reflection;
 
 namespace Impatient.Query.ExpressionVisitors
 {
-    public class PrimaryKeyDescriptor
-    {
-        public Type TargetType;
-        public LambdaExpression KeySelector;
-    }
-
     public class KeyEqualityRewritingExpressionVisitor : ExpressionVisitor
     {
         private readonly PrimaryKeyDescriptor[] primaryKeyDescriptors;
@@ -51,7 +46,7 @@ namespace Impatient.Query.ExpressionVisitors
                 {
                     goto Finish;
                 }
-                
+
                 var primaryKeyDescriptor
                     = primaryKeyDescriptors
                         .FirstOrDefault(d => d.TargetType.IsAssignableFrom(node.Left.Type));
@@ -60,7 +55,7 @@ namespace Impatient.Query.ExpressionVisitors
                 {
                     goto Finish;
                 }
-                
+
                 if (!rewroteLeft && canRewriteLeft)
                 {
                     left = primaryKeyDescriptor.KeySelector.ExpandParameters(left);
@@ -82,9 +77,9 @@ namespace Impatient.Query.ExpressionVisitors
 
                     if (nonNullExpression.Type.GetTypeInfo().IsValueType)
                     {
-                        nonNullExpression 
+                        nonNullExpression
                             = Expression.Convert(
-                                nonNullExpression, 
+                                nonNullExpression,
                                 typeof(Nullable<>).MakeGenericType(nonNullExpression.Type));
                     }
 

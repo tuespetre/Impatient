@@ -56,7 +56,7 @@ namespace Impatient.Query.ExpressionVisitors
                             groupedRelationalQueryExpression.SelectExpression
                                 .AddToPredicate(
                                     Expression.Equal(
-                                        outerKeySelector, 
+                                        outerKeySelector,
                                         innerKeySelector)));
 
                     return ExpandGroup(visited, groupedRelationalQueryExpression.OuterKeySelector, elements);
@@ -70,7 +70,7 @@ namespace Impatient.Query.ExpressionVisitors
         }
 
         private static Expression ExpandGroup(
-            Expression expression, 
+            Expression expression,
             Expression keyExpression,
             EnumerableRelationalQueryExpression elementsExpression)
         {
@@ -103,10 +103,10 @@ namespace Impatient.Query.ExpressionVisitors
 
             public IEnumerable<TElement> Elements { get; }
 
-            public IEnumerator<TElement> GetEnumerator() 
+            public IEnumerator<TElement> GetEnumerator()
                 => Elements?.GetEnumerator() ?? Enumerable.Empty<TElement>().GetEnumerator();
 
-            IEnumerator IEnumerable.GetEnumerator() 
+            IEnumerator IEnumerable.GetEnumerator()
                 => Elements?.GetEnumerator() ?? Enumerable.Empty<TElement>().GetEnumerator();
         }
     }

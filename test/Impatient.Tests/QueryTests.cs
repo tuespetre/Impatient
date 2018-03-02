@@ -1626,7 +1626,7 @@ ORDER BY [m].[Prop1] ASC, [m].[Prop2] DESC",
         [TestMethod]
         public void OrderBy_ThenBy_with_untranslatable_selector()
         {
-            var query 
+            var query
                 = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
                     .OrderBy(m => m.Prop1)
                     .ThenBy(m => m.Unmapped);

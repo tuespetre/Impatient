@@ -15,7 +15,7 @@ namespace Impatient.Query.Infrastructure
     public class SqlServerForJsonReadValueExpressionFactory : IReadValueExpressionFactory
     {
         #region reflection
-        
+
         private static readonly MethodInfo dbDataReaderGetFieldValueMethodInfo
             = typeof(DbDataReader).GetTypeInfo().GetDeclaredMethod(nameof(DbDataReader.GetFieldValue));
 
@@ -81,7 +81,7 @@ namespace Impatient.Query.Infrastructure
 
             var deserializerExpression
                 = Expression.Block(
-                    variables: new[] 
+                    variables: new[]
                     {
                         jsonTextReaderVariable
                     },
@@ -181,8 +181,8 @@ namespace Impatient.Query.Infrastructure
             Expression DefaultOrValue(Expression otherwise)
             {
                 return Expression.Condition(
-                    Expression.Equal(readerValue, Expression.Constant(null, typeof(object))), 
-                    Expression.Default(type), 
+                    Expression.Equal(readerValue, Expression.Constant(null, typeof(object))),
+                    Expression.Default(type),
                     Expression.Convert(otherwise, type));
             }
 
@@ -273,7 +273,7 @@ namespace Impatient.Query.Infrastructure
                     var temporaryVariableExpression = Expression.Variable(node.Type);
 
                     return Expression.Block(
-                        variables: new[] 
+                        variables: new[]
                         {
                             temporaryVariableExpression
                         },
@@ -281,7 +281,7 @@ namespace Impatient.Query.Infrastructure
                         {
                             readExpression, // Value
                             Expression.Assign(
-                                temporaryVariableExpression, 
+                                temporaryVariableExpression,
                                 CreateScalarTypeReadExpression(node.Type, jsonTextReader)),
                             readExpression, // PropertyName | EndObject
                             temporaryVariableExpression,
@@ -310,7 +310,7 @@ namespace Impatient.Query.Infrastructure
 
                         materializerExpression
                             = Expression.Block(
-                                variables: new[] 
+                                variables: new[]
                                 {
                                     temporaryVariableExpression
                                 },
@@ -342,7 +342,7 @@ namespace Impatient.Query.Infrastructure
                                 }));
 
                     return Expression.Block(
-                        variables: new[] 
+                        variables: new[]
                         {
                             listVariable
                         },
@@ -355,11 +355,11 @@ namespace Impatient.Query.Infrastructure
                             readExpression, // EndObject | PropertyName
                             node.Type.IsArray
                                 ? Expression.Call(
-                                    enumerableToArrayMethodInfo.MakeGenericMethod(sequenceType), 
+                                    enumerableToArrayMethodInfo.MakeGenericMethod(sequenceType),
                                     listVariable)
                                 : node.Type.IsGenericType(typeof(IQueryable<>))
                                     ? Expression.Call(
-                                        queryableAsQueryableMethodInfo.MakeGenericMethod(sequenceType), 
+                                        queryableAsQueryableMethodInfo.MakeGenericMethod(sequenceType),
                                         listVariable)
                                     : listVariable as Expression,
                         });
@@ -389,10 +389,10 @@ namespace Impatient.Query.Infrastructure
                         if (depth > 0)
                         {
                             return Expression.Block(
-                                variables: new[] 
+                                variables: new[]
                                 {
                                     temporaryVariableExpression
-                                }, 
+                                },
                                 expressions: new[]
                                 {
                                     readExpression, // StartObject

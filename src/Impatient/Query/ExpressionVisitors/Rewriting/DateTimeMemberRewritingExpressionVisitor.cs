@@ -44,9 +44,9 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     case nameof(DateTime.Year):
                     {
                         return new SqlFunctionExpression(
-                            "DATEPART", 
-                            typeof(int), 
-                            new SqlFragmentExpression(node.Member.Name.ToLower()), 
+                            "DATEPART",
+                            typeof(int),
+                            new SqlFragmentExpression(node.Member.Name.ToLower()),
                             expression);
                     }
                 }

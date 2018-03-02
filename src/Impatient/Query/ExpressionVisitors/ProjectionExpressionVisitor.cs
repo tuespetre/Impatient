@@ -62,7 +62,7 @@ namespace Impatient.Query.ExpressionVisitors
                 case MemberInitExpression memberInitExpression when IsNotLeaf(memberInitExpression):
                 {
                     var newExpression = memberInitExpression.NewExpression;
-                    
+
                     var arguments = new Expression[newExpression.Arguments.Count];
 
                     for (var i = 0; i < newExpression.Arguments.Count; i++)

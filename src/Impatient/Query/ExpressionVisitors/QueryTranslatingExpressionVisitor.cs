@@ -12,10 +12,10 @@ namespace Impatient.Query.ExpressionVisitors
     {
         private static readonly IComplexTypeSubqueryFormatter complexTypeSubqueryFormatter
             = new SqlServerForJsonComplexTypeSubqueryFormatter();
-        
+
         private readonly HashSet<string> tableAliases = new HashSet<string>();
         private readonly IDictionary<AliasedTableExpression, string> aliasLookup = new Dictionary<AliasedTableExpression, string>();
-        
+
         public QueryTranslatingExpressionVisitor(IImpatientExpressionVisitorProvider expressionVisitorProvider)
         {
             ExpressionVisitorProvider = expressionVisitorProvider ?? throw new ArgumentNullException(nameof(expressionVisitorProvider));
@@ -25,7 +25,7 @@ namespace Impatient.Query.ExpressionVisitors
         protected IImpatientExpressionVisitorProvider ExpressionVisitorProvider { get; }
 
         protected IDbCommandExpressionBuilder Builder { get; }
-        
+
         public LambdaExpression Translate(SelectExpression selectExpression)
         {
             Visit(selectExpression);
@@ -73,7 +73,7 @@ namespace Impatient.Query.ExpressionVisitors
 
                 return node.Update(left, node.Conversion, right);
             }
-            
+
             switch (node.NodeType)
             {
                 case ExpressionType.Coalesce:
@@ -617,7 +617,7 @@ namespace Impatient.Query.ExpressionVisitors
                 Builder.Append(") ");
             }
 
-            var projectionExpressions 
+            var projectionExpressions
                 = FlattenProjection(selectExpression.Projection)
                     .Select((e, i) => (i, e.alias, e.expression));
 

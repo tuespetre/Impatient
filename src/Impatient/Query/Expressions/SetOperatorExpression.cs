@@ -6,7 +6,7 @@ namespace Impatient.Query.Expressions
     {
         private const string SetOperatorAlias = "set";
 
-        public SetOperatorExpression(SelectExpression set1, SelectExpression set2) 
+        public SetOperatorExpression(SelectExpression set1, SelectExpression set2)
             : base(SetOperatorAlias, set1?.Type ?? typeof(object))
         {
             Set1 = set1 ?? throw new ArgumentNullException(nameof(set1));

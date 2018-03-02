@@ -4,7 +4,7 @@ namespace Impatient.Query.Expressions
 {
     public class UnionAllExpression : SetOperatorExpression
     {
-        public UnionAllExpression(SelectExpression set1, SelectExpression set2) 
+        public UnionAllExpression(SelectExpression set1, SelectExpression set2)
             : base(set1, set2)
         {
         }

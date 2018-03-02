@@ -30,12 +30,12 @@ namespace Impatient.Query.ExpressionVisitors
                 case EnumerableRelationalQueryExpression enumerableRelationalQueryExpression:
                 {
                     var selectExpression = enumerableRelationalQueryExpression.SelectExpression;
-                    var translator = expressionVisitorProvider.QueryTranslatingExpressionVisitor;                    
+                    var translator = expressionVisitorProvider.QueryTranslatingExpressionVisitor;
                     var commandBuilderLambda = translator.Translate(selectExpression);
                     var sequenceType = node.Type.GetSequenceType();
 
                     return Expression.Call(
-                        (enumerableRelationalQueryExpression.TransformationMethod 
+                        (enumerableRelationalQueryExpression.TransformationMethod
                             ?? asQueryableMethodInfo.MakeGenericMethod(sequenceType)),
                         Expression.Call(
                             executeEnumerableMethodInfo.MakeGenericMethod(sequenceType),
@@ -191,7 +191,7 @@ namespace Impatient.Query.ExpressionVisitors
             return Expression.Lambda(
                 MaterializeProjection(
                     selectExpression.Projection,
-                    new MaterializerBuildingExpressionVisitor(expressionVisitorProvider, readerParameter)), 
+                    new MaterializerBuildingExpressionVisitor(expressionVisitorProvider, readerParameter)),
                 readerParameter);
         }
 

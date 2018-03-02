@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Impatient.Metadata;
 using Impatient.Query;
 using Impatient.Query.Expressions;
 using Impatient.Tests.Utilities;
@@ -298,7 +299,7 @@ namespace Impatient.Tests
                 = (from node in hierarchyRoot.Flatten()
                    where !node.Type.GetTypeInfo().IsAbstract
                    let testMember = node.TableDescriptor.PrimaryKeyMembers.First()
-                   select new PolymorphicExpression.TypeDescriptor(
+                   select new PolymorphicTypeDescriptor(
                        node.Type,
                        Expression.Lambda(
                          Expression.NotEqual(

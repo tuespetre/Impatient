@@ -118,7 +118,7 @@ namespace Impatient
                     // executable expressions that make database calls and perform result materialization.
 
                     var queryProviderParameter = Expression.Parameter(typeof(ImpatientQueryProvider), "queryProvider");
-                    
+
                     expression = new QueryCompilingExpressionVisitor(ExpressionVisitorProvider, queryProviderParameter).Visit(expression);
 
                     // Compile the resulting expression into an executable delegate.

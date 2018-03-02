@@ -142,7 +142,7 @@ namespace Impatient.Query.ExpressionVisitors
                 {
                     return new PolymorphicExpression(
                         polymorphicExpression.Type,
-                        Visit(polymorphicExpression.Row), 
+                        Visit(polymorphicExpression.Row),
                         polymorphicExpression.Descriptors);
                 }
 
@@ -173,8 +173,8 @@ namespace Impatient.Query.ExpressionVisitors
                     }
 
                     return new SqlColumnExpression(
-                        targetTable, 
-                        string.Join(".", parts), 
+                        targetTable,
+                        string.Join(".", parts),
                         node.Type,
                         isNullable);
                 }
