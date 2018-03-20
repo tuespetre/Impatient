@@ -11,7 +11,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
         {
             var visitor = new QueryOptionsDiscoveringExpressionVisitor();
 
-            visitor.Visit(node);
+            node = visitor.Visit(node);
 
             var queryTrackingBehavior = default(QueryTrackingBehavior);
             var ignoreQueryFilters = false;
@@ -56,19 +56,22 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                         case nameof(EntityFrameworkQueryableExtensions.AsNoTracking):
                         {
                             FoundAsNoTracking = true;
-                            break;
+
+                            return base.Visit(node.Arguments[0]);
                         }
 
                         case nameof(EntityFrameworkQueryableExtensions.AsTracking):
                         {
                             FoundAsTracking = true;
-                            break;
+
+                            return base.Visit(node.Arguments[0]);
                         }
 
                         case nameof(EntityFrameworkQueryableExtensions.IgnoreQueryFilters):
                         {
                             FoundIgnoreQueryFilters = true;
-                            break;
+
+                            return base.Visit(node.Arguments[0]);
                         }
                     }
                 }

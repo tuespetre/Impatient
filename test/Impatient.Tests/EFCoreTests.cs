@@ -67,13 +67,23 @@ INNER JOIN [dbo].[Customers] AS [t] ON [o].[CustomerID] = [t].[CustomerID]
         {
             EfCoreTestCase((context, log) =>
             {
-                var order1 = context.Set<Order>().AsNoTracking().FirstOrDefault();
-                var order2 = context.Set<Order>().AsNoTracking().FirstOrDefault();
+                var order1 = context.Set<Order>().AsNoTracking().Where(o => o.OrderID == 10252).FirstOrDefault();
+                var order2 = context.Set<Order>().AsNoTracking().Where(o => o.OrderID == 10252).FirstOrDefault();
 
                 Assert.AreEqual(0, context.ChangeTracker.Entries().Count());
                 Assert.IsNotNull(order1);
                 Assert.IsNotNull(order2);
                 Assert.AreEqual(order1, order2);
+
+                Assert.AreEqual(@"
+SELECT TOP (1) [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate]
+FROM [dbo].[Orders] AS [o]
+WHERE [o].[OrderID] = 10252
+
+SELECT TOP (1) [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate]
+FROM [dbo].[Orders] AS [o]
+WHERE [o].[OrderID] = 10252
+".Trim(), log.ToString().Trim());
             });
         }
 
@@ -274,7 +284,7 @@ WHERE [o].[OrderID] = 10252
         {
             EfCoreTestCase((context, log) =>
             {
-                var results = context.Set<OrderDetail>().Where(d => d.OrderID == 10252).IgnoreQueryFilters().ToList();
+                var results = context.Set<OrderDetail>().IgnoreQueryFilters().Where(d => d.OrderID == 10252).ToList();
 
                 Assert.IsTrue(results.Any(r => r.UnitPrice < 5.00m));
                 Assert.AreEqual(3, results.Count);
