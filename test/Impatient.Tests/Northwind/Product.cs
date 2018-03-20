@@ -16,6 +16,17 @@ namespace Impatient.Tests.Northwind
 
         public int? CategoryID { get; set; }
 
+        public ProductStats ProductStats { get; set; }
+
+        public bool Discontinued { get; set; }
+    }
+
+    public class DiscontinuedProduct : Product
+    {
+    }
+
+    public class ProductStats
+    {
         public string QuantityPerUnit { get; set; }
 
         public decimal? UnitPrice { get; set; }
@@ -25,11 +36,5 @@ namespace Impatient.Tests.Northwind
         public short? UnitsOnOrder { get; set; }
 
         public short? ReorderLevel { get; set; }
-
-        public bool Discontinued { get; set; }
-    }
-
-    public class DiscontinuedProduct : Product
-    {
     }
 }

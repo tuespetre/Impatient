@@ -191,7 +191,7 @@ WHERE [t].[UnitPrice] >= 5.00
                 Assert.IsNotNull(result.Product);
 
                 Assert.AreEqual(@"
-SELECT TOP (1) [t].[OrderID] AS [OrderID], [t].[ProductID] AS [ProductID], [t].[Discount] AS [Discount], [t].[Quantity] AS [Quantity], [t].[UnitPrice] AS [UnitPrice], [t_0].[OrderID] AS [Order.OrderID], [t_0].[CustomerID] AS [Order.CustomerID], [t_0].[EmployeeID] AS [Order.EmployeeID], [t_0].[Freight] AS [Order.Freight], [t_0].[OrderDate] AS [Order.OrderDate], [t_0].[RequiredDate] AS [Order.RequiredDate], [t_0].[ShipAddress] AS [Order.ShipAddress], [t_0].[ShipCity] AS [Order.ShipCity], [t_0].[ShipCountry] AS [Order.ShipCountry], [t_0].[ShipName] AS [Order.ShipName], [t_0].[ShipPostalCode] AS [Order.ShipPostalCode], [t_0].[ShipRegion] AS [Order.ShipRegion], [t_0].[ShipVia] AS [Order.ShipVia], [t_0].[ShippedDate] AS [Order.ShippedDate], [t_1].[ProductID] AS [Product.Item1], [t_1].[CategoryID] AS [Product.Item2], [t_1].[Discontinued] AS [Product.Item3], [t_1].[ProductName] AS [Product.Item4], [t_1].[QuantityPerUnit] AS [Product.Item5], [t_1].[ReorderLevel] AS [Product.Item6], [t_1].[SupplierID] AS [Product.Item7], [t_1].[UnitPrice] AS [Product.Rest.Item1], [t_1].[UnitsInStock] AS [Product.Rest.Item2], [t_1].[UnitsOnOrder] AS [Product.Rest.Item3]
+SELECT TOP (1) [t].[OrderID] AS [OrderID], [t].[ProductID] AS [ProductID], [t].[Discount] AS [Discount], [t].[Quantity] AS [Quantity], [t].[UnitPrice] AS [UnitPrice], [t_0].[OrderID] AS [Order.OrderID], [t_0].[CustomerID] AS [Order.CustomerID], [t_0].[EmployeeID] AS [Order.EmployeeID], [t_0].[Freight] AS [Order.Freight], [t_0].[OrderDate] AS [Order.OrderDate], [t_0].[RequiredDate] AS [Order.RequiredDate], [t_0].[ShipAddress] AS [Order.ShipAddress], [t_0].[ShipCity] AS [Order.ShipCity], [t_0].[ShipCountry] AS [Order.ShipCountry], [t_0].[ShipName] AS [Order.ShipName], [t_0].[ShipPostalCode] AS [Order.ShipPostalCode], [t_0].[ShipRegion] AS [Order.ShipRegion], [t_0].[ShipVia] AS [Order.ShipVia], [t_0].[ShippedDate] AS [Order.ShippedDate], [t_1].[ProductID] AS [Product.Item1], [t_1].[CategoryID] AS [Product.Item2], [t_1].[Discontinued] AS [Product.Item3], [t_1].[ProductName] AS [Product.Item4], [t_1].[SupplierID] AS [Product.Item5], [t_1].[QuantityPerUnit] AS [Product.Item6], [t_1].[ReorderLevel] AS [Product.Item7], [t_1].[UnitPrice] AS [Product.Rest.Item1], [t_1].[UnitsInStock] AS [Product.Rest.Item2], [t_1].[UnitsOnOrder] AS [Product.Rest.Item3]
 FROM [dbo].[Order Details] AS [t]
 INNER JOIN [dbo].[Orders] AS [t_0] ON [t].[OrderID] = [t_0].[OrderID]
 INNER JOIN [dbo].[Products] AS [t_1] ON [t].[ProductID] = [t_1].[ProductID]
@@ -384,7 +384,7 @@ WHERE [o].[OrderID] = 10252
                 Assert.IsTrue(results.Where(r => r.Discontinued).All(r => r is DiscontinuedProduct));
 
                 Assert.AreEqual(@"
-SELECT [t].[ProductID] AS [Item1], [t].[CategoryID] AS [Item2], [t].[Discontinued] AS [Item3], [t].[ProductName] AS [Item4], [t].[QuantityPerUnit] AS [Item5], [t].[ReorderLevel] AS [Item6], [t].[SupplierID] AS [Item7], [t].[UnitPrice] AS [Rest.Item1], [t].[UnitsInStock] AS [Rest.Item2], [t].[UnitsOnOrder] AS [Rest.Item3]
+SELECT [t].[ProductID] AS [Item1], [t].[CategoryID] AS [Item2], [t].[Discontinued] AS [Item3], [t].[ProductName] AS [Item4], [t].[SupplierID] AS [Item5], [t].[QuantityPerUnit] AS [Item6], [t].[ReorderLevel] AS [Item7], [t].[UnitPrice] AS [Rest.Item1], [t].[UnitsInStock] AS [Rest.Item2], [t].[UnitsOnOrder] AS [Rest.Item3]
 FROM [dbo].[Products] AS [t]
 ".Trim(), log.ToString().Trim());
             });
@@ -400,9 +400,25 @@ FROM [dbo].[Products] AS [t]
                 Assert.IsTrue(results.All(r => r is DiscontinuedProduct && r.Discontinued));
 
                 Assert.AreEqual(@"
-SELECT [t].[ProductID] AS [Item1], [t].[CategoryID] AS [Item2], [t].[Discontinued] AS [Item3], [t].[ProductName] AS [Item4], [t].[QuantityPerUnit] AS [Item5], [t].[ReorderLevel] AS [Item6], [t].[SupplierID] AS [Item7], [t].[UnitPrice] AS [Rest.Item1], [t].[UnitsInStock] AS [Rest.Item2], [t].[UnitsOnOrder] AS [Rest.Item3]
+SELECT [t].[ProductID] AS [Item1], [t].[CategoryID] AS [Item2], [t].[Discontinued] AS [Item3], [t].[ProductName] AS [Item4], [t].[SupplierID] AS [Item5], [t].[QuantityPerUnit] AS [Item6], [t].[ReorderLevel] AS [Item7], [t].[UnitPrice] AS [Rest.Item1], [t].[UnitsInStock] AS [Rest.Item2], [t].[UnitsOnOrder] AS [Rest.Item3]
 FROM [dbo].[Products] AS [t]
 WHERE [t].[Discontinued] = 1
+".Trim(), log.ToString().Trim());
+            });
+        }
+
+        [TestMethod]
+        public void OwnedEntity_OneLevelDeep()
+        {
+            EfCoreTestCase((context, log) =>
+            {
+                var product = context.Set<Product>().First();
+
+                Assert.IsNotNull(product.ProductStats);
+
+                Assert.AreEqual(@"
+SELECT TOP (1) [t].[ProductID] AS [Item1], [t].[CategoryID] AS [Item2], [t].[Discontinued] AS [Item3], [t].[ProductName] AS [Item4], [t].[SupplierID] AS [Item5], [t].[QuantityPerUnit] AS [Item6], [t].[ReorderLevel] AS [Item7], [t].[UnitPrice] AS [Rest.Item1], [t].[UnitsInStock] AS [Rest.Item2], [t].[UnitsOnOrder] AS [Rest.Item3]
+FROM [dbo].[Products] AS [t]
 ".Trim(), log.ToString().Trim());
             });
         }
@@ -534,6 +550,15 @@ WHERE [t].[Discontinued] = 1
             modelBuilder.Entity<Product>(e =>
             {
                 e.HasKey(d => d.ProductID);
+
+                e.OwnsOne(d => d.ProductStats, d =>
+                {
+                    d.Property(f => f.QuantityPerUnit).HasColumnName(nameof(ProductStats.QuantityPerUnit));
+                    d.Property(f => f.ReorderLevel).HasColumnName(nameof(ProductStats.ReorderLevel));
+                    d.Property(f => f.UnitPrice).HasColumnName(nameof(ProductStats.UnitPrice));
+                    d.Property(f => f.UnitsInStock).HasColumnName(nameof(ProductStats.UnitsInStock));
+                    d.Property(f => f.UnitsOnOrder).HasColumnName(nameof(ProductStats.UnitsOnOrder));
+                });
 
                 e.HasDiscriminator(p => p.Discontinued).HasValue(false);
             });
