@@ -2,6 +2,7 @@
 using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.ExpressionVisitors.Utility;
+using Impatient.Query.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq;

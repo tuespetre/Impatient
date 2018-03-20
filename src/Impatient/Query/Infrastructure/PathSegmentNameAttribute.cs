@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Impatient.Query
+namespace Impatient.Query.Infrastructure
 {
     [AttributeUsage(AttributeTargets.Field)]
     internal class PathSegmentNameAttribute : Attribute
