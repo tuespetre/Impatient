@@ -13,8 +13,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             var expression = Visit(node.Expression);
 
             if (expression is MethodCallExpression methodCallExpression
-                && (methodCallExpression.Method.DeclaringType == typeof(Queryable)
-                    || methodCallExpression.Method.DeclaringType == typeof(Enumerable)))
+                && methodCallExpression.Method.IsQueryableOrEnumerableMethod())
             {
                 switch (methodCallExpression.Method.Name)
                 {
@@ -40,7 +39,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
                             targetSequence
                                 = Expression.Call(
-                                    methodCallExpression.Method.DeclaringType == typeof(Queryable)
+                                    methodCallExpression.Method.IsQueryableMethod()
                                         ? queryableWhere.MakeGenericMethod(targetSequenceType)
                                         : enumerableWhere.MakeGenericMethod(targetSequenceType),
                                     targetSequence,
@@ -49,7 +48,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
                         var selectCall
                             = Expression.Call(
-                                methodCallExpression.Method.DeclaringType == typeof(Queryable)
+                                methodCallExpression.Method.IsQueryableMethod()
                                     ? queryableSelect.MakeGenericMethod(targetSequenceType, node.Type)
                                     : enumerableSelect.MakeGenericMethod(targetSequenceType, node.Type),
                                 targetSequence,
@@ -73,7 +72,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                         return Expression.Call(
                             methodCallExpression.Method.GetGenericMethodDefinition().MakeGenericMethod(node.Type),
                             Expression.Call(
-                                methodCallExpression.Method.DeclaringType == typeof(Queryable)
+                                methodCallExpression.Method.IsQueryableMethod()
                                     ? queryableSelect.MakeGenericMethod(sequenceType, node.Type)
                                     : enumerableSelect.MakeGenericMethod(sequenceType, node.Type),
                                 methodCallExpression.Arguments[0],

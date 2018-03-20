@@ -86,21 +86,14 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            if (node.Method.DeclaringType == typeof(Queryable) || node.Method.DeclaringType == typeof(Enumerable))
+            if (node.Method.IsQueryableOrEnumerableMethod())
             {
                 var visitedArguments = new Expression[node.Arguments.Count];
 
                 var outerSource = visitedArguments[0] = ProcessQuerySource(Visit(node.Arguments[0]));
 
-                var isComparerOverload
-                    = node.Method
-                        .GetParameters()
-                        .Select(p => p.ParameterType)
-                        .Any(t => t.IsGenericType(typeof(IEqualityComparer<>))
-                            || t.IsGenericType(typeof(IComparer<>)));
-
                 if (outerSource is EnumerableRelationalQueryExpression outerQuery
-                    && !isComparerOverload
+                    && !node.Method.HasComparerArgument()
                     && !node.ContainsNonLambdaDelegates())
                 {
                     switch (node.Method.Name)
@@ -246,8 +239,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                             var defaultIfEmpty = false;
 
                             if (innerSource is MethodCallExpression innerSourceMethodCall
-                                && (innerSourceMethodCall.Method.DeclaringType == typeof(Queryable)
-                                    || innerSourceMethodCall.Method.DeclaringType == typeof(Enumerable))
+                                && innerSourceMethodCall.Method.IsQueryableOrEnumerableMethod()
                                 && innerSourceMethodCall.Method.Name == nameof(Queryable.DefaultIfEmpty)
                                 && innerSourceMethodCall.Arguments.Count == 1)
                             {
@@ -1327,12 +1319,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                 var currentNode = node.Arguments[0];
 
                                 while (currentNode is MethodCallExpression methodCall
-                                    && (methodCall.Method.DeclaringType == typeof(Enumerable)
-                                        || methodCall.Method.DeclaringType == typeof(Queryable))
-                                    && (methodCall.Method.Name == nameof(Queryable.OrderBy)
-                                        || methodCall.Method.Name == nameof(Queryable.OrderByDescending)
-                                        || methodCall.Method.Name == nameof(Queryable.ThenBy)
-                                        || methodCall.Method.Name == nameof(Queryable.ThenByDescending)))
+                                    && methodCall.Method.IsOrderingMethod())
                                 {
                                     resultNode = methodCall.Update(null, methodCall.Arguments.Skip(1).Prepend(resultNode));
 
@@ -2313,85 +2300,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     return node;
                 }
             }
-        }
-
-        private static MethodInfo MatchQueryableMethod(MethodInfo method)
-        {
-            if (method.DeclaringType == typeof(Enumerable))
-            {
-                return method;
-            }
-
-            var genericMethodDefinition = method.GetGenericMethodDefinition();
-
-            var genericArguments = genericMethodDefinition.GetGenericArguments();
-
-            var parameterTypes
-                = genericMethodDefinition.GetParameters()
-                    .Select(p =>
-                    {
-                        if (p.ParameterType.IsConstructedGenericType)
-                        {
-                            var genericTypeDefinition = p.ParameterType.GetGenericTypeDefinition();
-
-                            if (genericTypeDefinition == typeof(Expression<>))
-                            {
-                                return p.ParameterType.GenericTypeArguments[0];
-                            }
-                            else if (genericTypeDefinition == typeof(IQueryable<>))
-                            {
-                                return typeof(IEnumerable<>).MakeGenericType(p.ParameterType.GenericTypeArguments[0]);
-                            }
-                            else if (genericTypeDefinition == typeof(IOrderedQueryable<>))
-                            {
-                                return typeof(IOrderedEnumerable<>).MakeGenericType(p.ParameterType.GenericTypeArguments[0]);
-                            }
-                        }
-
-                        return p.ParameterType;
-                    })
-                    .ToArray();
-
-            bool TypesMatch(Type type1, Type type2)
-            {
-                if (type1 == type2)
-                {
-                    return true;
-                }
-                else if (type1.IsConstructedGenericType && type2.IsConstructedGenericType)
-                {
-                    var genericType1 = type1.GetGenericTypeDefinition();
-                    var genericType2 = type2.GetGenericTypeDefinition();
-
-                    return genericType1 == genericType2
-                        && type1.GenericTypeArguments.Zip(type2.GenericTypeArguments, TypesMatch).All(b => b);
-                }
-                else if (type1.IsGenericParameter && type2.IsGenericParameter)
-                {
-                    return type1.Name == type2.Name
-                        && type1.GenericParameterPosition == type2.GenericParameterPosition;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            var matching = (from m in typeof(Enumerable).GetTypeInfo().DeclaredMethods
-
-                            where m.Name == method.Name
-
-                            let parameters = m.GetParameters()
-                            where parameters.Length == parameterTypes.Length
-                            where m.GetParameters().Select(p => p.ParameterType).Zip(parameterTypes, TypesMatch).All(b => b)
-
-                            let arguments = m.GetGenericArguments()
-                            where arguments.Length == genericArguments.Length
-                            where arguments.Zip(genericArguments, TypesMatch).All(b => b)
-
-                            select m).ToList();
-
-            return matching.Single().MakeGenericMethod(method.GetGenericArguments());
         }
 
         protected virtual Expression CreateRowNumberExpression(SelectExpression selectExpression)

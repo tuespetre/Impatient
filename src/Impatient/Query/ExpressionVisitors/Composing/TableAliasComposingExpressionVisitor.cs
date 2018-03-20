@@ -30,8 +30,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            if (node.Method.DeclaringType == typeof(Queryable)
-                || node.Method.DeclaringType == typeof(Enumerable))
+            if (node.Method.IsQueryableOrEnumerableMethod())
             {
                 switch (node.Method.Name)
                 {

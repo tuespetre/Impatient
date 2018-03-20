@@ -104,9 +104,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            if ((node.Method.DeclaringType == typeof(Queryable)
-                    || node.Method.DeclaringType == typeof(Enumerable))
-                && !node.ContainsNonLambdaDelegates())
+            if (node.Method.IsQueryableOrEnumerableMethod() && !node.ContainsNonLambdaDelegates())
             {
                 switch (node.Method.Name)
                 {
@@ -156,7 +154,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                                 }
                             }
 
-                            if (node.Method.DeclaringType == typeof(Queryable))
+                            if (node.Method.IsQueryableMethod())
                             {
                                 arguments[2] = Expression.Quote(arguments[2]);
                                 arguments[3] = Expression.Quote(arguments[3]);

@@ -23,8 +23,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
             var @object = Visit(node.Object);
             var arguments = Visit(node.Arguments);
 
-            if ((node.Method.DeclaringType == typeof(Queryable)
-                    || node.Method.DeclaringType == typeof(Enumerable))
+            if (node.Method.IsQueryableOrEnumerableMethod()
                 && !node.ContainsNonLambdaDelegates()
                 && arguments[0] is GroupByResultExpression relationalGrouping)
             {

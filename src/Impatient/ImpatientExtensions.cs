@@ -1,9 +1,9 @@
-﻿using Impatient.Query;
-using Impatient.Query.Expressions;
+﻿using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -11,7 +11,7 @@ using System.Reflection;
 
 namespace Impatient
 {
-    public static class ImpatientExtensions
+    internal static class ImpatientExtensions
     {
         #region Naive implementations of Enumerable operators from .NET Core 2.0
 
@@ -137,6 +137,39 @@ namespace Impatient
             }
         }
 
+        public static bool IsQueryableMethod(this MethodInfo methodInfo)
+        {
+            return methodInfo.DeclaringType == typeof(Queryable);
+        }
+
+        public static bool IsEnumerableMethod(this MethodInfo methodInfo)
+        {
+            return methodInfo.DeclaringType == typeof(Enumerable);
+        }
+
+        public static bool IsQueryableOrEnumerableMethod(this MethodInfo methodInfo)
+        {
+            return methodInfo.IsQueryableMethod() || methodInfo.IsEnumerableMethod();
+        }
+
+        public static bool IsOrderingMethod(this MethodInfo methodInfo)
+        {
+            return methodInfo.IsQueryableOrEnumerableMethod()
+                && (methodInfo.Name == nameof(Queryable.OrderBy)
+                    || methodInfo.Name == nameof(Queryable.OrderByDescending)
+                    || methodInfo.Name == nameof(Queryable.ThenBy)
+                    || methodInfo.Name == nameof(Queryable.ThenByDescending));
+        }
+
+        public static bool HasComparerArgument(this MethodInfo methodInfo)
+        {
+            return methodInfo
+                .GetParameters()
+                .Select(p => p.ParameterType)
+                .Any(t => t.IsGenericType(typeof(IEqualityComparer<>))
+                    || t.IsGenericType(typeof(IComparer<>)));
+        }
+
         public static bool ContainsNonLambdaDelegates(this MethodCallExpression methodCallExpression)
         {
             return methodCallExpression.Arguments
@@ -243,6 +276,16 @@ namespace Impatient
                 && type.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
 
+        public static Type MakeNullableType(this Type type)
+        {
+            if (type.GetTypeInfo().IsValueType)
+            {
+                return typeof(Nullable<>).MakeGenericType(type);
+            }
+
+            return type;
+        }
+
         public static bool IsBooleanType(this Type type)
         {
             return type == typeof(bool) || type == typeof(bool?);
@@ -326,6 +369,27 @@ namespace Impatient
             return false;
         }
 
+        public static Type GetMemberType(this MemberInfo memberInfo)
+        {
+            switch (memberInfo)
+            {
+                case PropertyInfo propertyInfo:
+                {
+                    return propertyInfo.PropertyType;
+                }
+
+                case FieldInfo fieldInfo:
+                {
+                    return fieldInfo.FieldType;
+                }
+
+                default:
+                {
+                    return typeof(void);
+                }
+            }
+        }
+
         private static readonly Type[] scalarTypes =
         {
             // Value types
@@ -380,5 +444,97 @@ namespace Impatient
             typeof(bool),
             typeof(string),
         };
+
+        public static MethodInfo MatchQueryableMethod(MethodInfo method)
+        {
+            if (method.IsEnumerableMethod())
+            {
+                return method;
+            }
+
+            var genericMethodDefinition = method.GetGenericMethodDefinition();
+
+            var genericArguments = genericMethodDefinition.GetGenericArguments();
+
+            var parameterTypes
+                = genericMethodDefinition.GetParameters()
+                    .Select(p =>
+                    {
+                        if (p.ParameterType.IsConstructedGenericType)
+                        {
+                            var genericTypeDefinition = p.ParameterType.GetGenericTypeDefinition();
+
+                            if (genericTypeDefinition == typeof(Expression<>))
+                            {
+                                return p.ParameterType.GenericTypeArguments[0];
+                            }
+                            else if (genericTypeDefinition == typeof(IQueryable<>))
+                            {
+                                return typeof(IEnumerable<>).MakeGenericType(p.ParameterType.GenericTypeArguments[0]);
+                            }
+                            else if (genericTypeDefinition == typeof(IOrderedQueryable<>))
+                            {
+                                return typeof(IOrderedEnumerable<>).MakeGenericType(p.ParameterType.GenericTypeArguments[0]);
+                            }
+                            else
+                            {
+                                return p.ParameterType;
+                            }
+                        }
+                        else if (p.ParameterType == typeof(IQueryable))
+                        {
+                            return typeof(IEnumerable);
+                        }
+                        else
+                        {
+                            return p.ParameterType;
+                        }
+                    })
+                    .ToArray();
+
+            bool TypesMatch(Type type1, Type type2)
+            {
+                if (type1 == type2)
+                {
+                    return true;
+                }
+                else if (type1.IsConstructedGenericType && type2.IsConstructedGenericType)
+                {
+                    var genericType1 = type1.GetGenericTypeDefinition();
+                    var genericType2 = type2.GetGenericTypeDefinition();
+
+                    return genericType1 == genericType2
+                        && type1.GenericTypeArguments.Zip(type2.GenericTypeArguments, TypesMatch).All(b => b);
+                }
+                else if (type1.IsGenericParameter && type2.IsGenericParameter)
+                {
+                    return type1.Name == type2.Name
+                        && type1.GenericParameterPosition == type2.GenericParameterPosition;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            var matching = (from m in enumerableMethods
+
+                            where m.Name == method.Name
+
+                            let parameters = m.GetParameters()
+                            where parameters.Length == parameterTypes.Length
+                            where m.GetParameters().Select(p => p.ParameterType).Zip(parameterTypes, TypesMatch).All(b => b)
+
+                            let arguments = m.GetGenericArguments()
+                            where arguments.Length == genericArguments.Length
+                            where arguments.Zip(genericArguments, TypesMatch).All(b => b)
+
+                            select m).ToList();
+            
+            return matching.Single().MakeGenericMethod(method.GetGenericArguments());
+        }
+
+        private static readonly IEnumerable<MethodInfo> enumerableMethods
+            = typeof(Enumerable).GetTypeInfo().DeclaredMethods;
     }
 }

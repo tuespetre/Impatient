@@ -57,7 +57,7 @@ namespace Impatient.Tests
             public string ColumnName;
             public bool IsNullable;
 
-            public Type Type => GetMemberType(SourceMember);
+            public Type Type => SourceMember.GetMemberType();
         }
 
         public struct TreeNode<TValue>
@@ -120,42 +120,6 @@ namespace Impatient.Tests
                        select new TreeNode<TValue>(
                            value: sg.Key,
                            children: Treeify(sg));
-            }
-        }
-
-        private static bool IsNullableType(Type type)
-        {
-            return !type.GetTypeInfo().IsValueType;
-        }
-
-        private static Type MakeNullableType(Type type)
-        {
-            if (type.GetTypeInfo().IsValueType)
-            {
-                return typeof(Nullable<>).MakeGenericType(type);
-            }
-
-            return type;
-        }
-
-        private static Type GetMemberType(MemberInfo memberInfo)
-        {
-            switch (memberInfo)
-            {
-                case PropertyInfo propertyInfo:
-                {
-                    return propertyInfo.PropertyType;
-                }
-
-                case FieldInfo fieldInfo:
-                {
-                    return fieldInfo.FieldType;
-                }
-
-                default:
-                {
-                    return typeof(void);
-                }
             }
         }
 
@@ -252,7 +216,7 @@ namespace Impatient.Tests
                        var columns
                            = from cd in descriptor.ColumnDescriptors
                              let nullable = cd.SourceType != rootType
-                             let type = nullable ? MakeNullableType(cd.Type) : cd.Type
+                             let type = nullable ? cd.Type.MakeNullableType() : cd.Type
                              select new SqlColumnExpression(
                                  table,
                                  cd.ColumnName,
@@ -309,7 +273,7 @@ namespace Impatient.Tests
                                  (from x in columnDescriptors
                                   where x.c.SourceMember == testMember
                                   select x.i).Single()),
-                             Expression.Constant(null, MakeNullableType(GetMemberType(testMember)))),
+                             Expression.Constant(null, testMember.GetMemberType().MakeNullableType())),
                          tupleParameter),
                        Expression.Lambda(
                          Expression.MemberInit(
@@ -322,7 +286,7 @@ namespace Impatient.Tests
                                  x.c.SourceMember,
                                  Expression.Convert(
                                      ValueTupleHelper.CreateMemberExpression(tupleType, tupleParameter, x.i),
-                                     GetMemberType(x.c.SourceMember))))),
+                                     x.c.SourceMember.GetMemberType())))),
                          tupleParameter))).ToArray();
 
             // TODO: Use ExpandParameters instead
@@ -395,7 +359,7 @@ namespace Impatient.Tests
                                                 SourceType = type,
                                                 SourceMember = member,
                                                 ColumnName = member.Name,
-                                                IsNullable = IsNullableType(GetMemberType(member))
+                                                IsNullable = member.GetMemberType().IsNullableType()
                                             }).ToArray()
                    }).ToArray();
 

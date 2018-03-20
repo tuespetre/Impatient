@@ -49,14 +49,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
             protected override Expression VisitMethodCall(MethodCallExpression node)
             {
-                if ((node.Method.DeclaringType != typeof(Queryable)
-                        && node.Method.DeclaringType != typeof(Enumerable))
-                    || node.ContainsNonLambdaDelegates())
+                if (!node.Method.IsQueryableOrEnumerableMethod() || node.ContainsNonLambdaDelegates())
                 {
                     return base.VisitMethodCall(node);
                 }
 
-                var isQueryable = node.Method.DeclaringType == typeof(Queryable);
+                var isQueryable = node.Method.IsQueryableMethod();
 
                 var terminalSelectMethod = isQueryable ? queryableSelectMethodInfo : enumerableSelectMethodInfo;
 
