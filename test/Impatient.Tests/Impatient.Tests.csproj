@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Impatient\Impatient.csproj" />
+    <ProjectReference Include="..\..\src\Impatient.EntityFrameworkCore.SqlServer\Impatient.EntityFrameworkCore.SqlServer.csproj" />
   </ItemGroup>
 
   <ItemGroup>

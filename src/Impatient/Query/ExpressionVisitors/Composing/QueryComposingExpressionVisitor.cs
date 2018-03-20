@@ -1,5 +1,4 @@
 ﻿using Impatient.Query.Expressions;
-using Impatient.Query.ExpressionVisitors.Rewriting;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using System;
@@ -14,36 +13,38 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 {
     public class QueryComposingExpressionVisitor : ExpressionVisitor
     {
-        private static readonly KeyPlaceholderGroupingInjectingExpressionVisitor keyPlaceholderGroupingInjector
-            = new KeyPlaceholderGroupingInjectingExpressionVisitor();
+        private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor;
+        private readonly IEnumerable<ExpressionVisitor> rewritingExpressionVisitors;
 
-        private static readonly GroupExpandingExpressionVisitor groupExpander
-            = new GroupExpandingExpressionVisitor();
+        // TODO: Use separate visitors to be stateless/remove the topLevel condition.
+        private bool topLevel = true;
+
+        public QueryComposingExpressionVisitor(
+            TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor,
+            IEnumerable<ExpressionVisitor> rewritingExpressionVisitors)
+        {
+            this.translatabilityVisitor = translatabilityVisitor ?? throw new ArgumentNullException(nameof(translatabilityVisitor));
+            this.rewritingExpressionVisitors = rewritingExpressionVisitors ?? throw new ArgumentNullException(nameof(rewritingExpressionVisitors));
+        }
 
         private IEnumerable<ExpressionVisitor> PostExpansionVisitors
         {
             get
             {
-                yield return new GroupingAggregationRewritingExpressionVisitor(
-                    expressionVisitorProvider.TranslatabilityAnalyzingExpressionVisitor);
-
-                yield return this;
-
-                foreach (var rewritingVisitor in expressionVisitorProvider.RewritingExpressionVisitors)
+                // First we apply any other rewrites given to us by the provider. For a reminder, these
+                // rewrites should all be simple components that rewrite certain types of expressions into 
+                // expressions that can be translated.
+                foreach (var rewritingVisitor in rewritingExpressionVisitors)
                 {
                     yield return rewritingVisitor;
                 }
+
+                // Finally, we recursively apply the query composing expression visitor to ensure that we
+                // have properly interpreted/activated/optimized everything possible in the subtree.
+                // Failing to do this could result in a completely useless expression tree with lingering
+                // extension nodes.
+                yield return this;
             }
-        }
-
-        private readonly IImpatientExpressionVisitorProvider expressionVisitorProvider;
-
-        private bool topLevel = true;
-
-        public QueryComposingExpressionVisitor(IImpatientExpressionVisitorProvider expressionVisitorProvider)
-        {
-            this.expressionVisitorProvider = expressionVisitorProvider
-                ?? throw new ArgumentNullException(nameof(expressionVisitorProvider));
         }
 
         public override Expression Visit(Expression node)
@@ -56,7 +57,18 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                 topLevel = true;
 
-                return groupExpander.Visit(visited);
+                // Expand any lingering groupings.
+
+                visited = new GroupExpandingExpressionVisitor().Visit(visited);
+
+                // Give any provider-specific rewrites a chance to happen at the top level.
+
+                foreach (var rewritingVisitor in rewritingExpressionVisitors)
+                {
+                    visited = rewritingVisitor.Visit(visited);
+                }
+
+                return visited;
             }
 
             return base.Visit(node);
@@ -326,6 +338,8 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                         outerKeyExpression,
                                         innerKeyLambda.ExpandParameters(innerProjection))
                                     : null;
+
+                            // TODO: Figure out a way to handle providers that do not support correlated subqueries
 
                             var joinExpression
                                 = handleAsJoin
@@ -633,7 +647,8 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                 return outerQuery;
                             }
 
-                            if (outerProjection is PolymorphicExpression)
+                            // TODO: Test polymorphism in a nested complex subquery
+                            if (outerProjection.UnwrapAnnotations() is PolymorphicExpression originalPolymorphicExpression)
                             {
                                 if (!HandlePushdown(
                                     s => s.RequiresPushdownForPredicate(),
@@ -644,13 +659,18 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                     return FallbackToEnumerable();
                                 }
 
-                                var polymorphicExpression = (outerProjection as PolymorphicExpression).Filter(outType);
+                                var polymorphicExpression 
+                                    = (outerProjection.UnwrapAnnotations() as PolymorphicExpression)
+                                        .Filter(outType);
 
                                 var predicate
                                     = polymorphicExpression
                                         .Descriptors
                                         .Select(d => d.Test.ExpandParameters(polymorphicExpression.Row))
                                         .Aggregate(Expression.OrElse);
+
+                                var newProjectionExpression
+                                    = outerProjection.Replace(originalPolymorphicExpression, polymorphicExpression);
 
                                 return outerQuery
                                     .UpdateSelectExpression(outerSelectExpression
@@ -2095,6 +2115,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                                 case ConstantExpression constantExpression:
                                 {
+                                    // TODO: Consider special rewriters for boolean types/casts for different providers (e.g. pgsql 'bool')
                                     return new SingleValueRelationalQueryExpression(
                                         new SelectExpression(
                                             new ServerProjectionExpression(
@@ -2250,9 +2271,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                 outerSelectExpression
                                     .UpdateOrderBy(null)
                                     .UpdateProjection(new ServerProjectionExpression(
-                                        node.Method.Name == nameof(Queryable.Count)
-                                            ? new SqlAggregateExpression("COUNT", starFragment, typeof(int))
-                                            : new SqlAggregateExpression("COUNT_BIG", starFragment, typeof(long)))));
+                                        new SqlAggregateExpression("COUNT", starFragment, node.Method.ReturnType))));
                         }
 
                         case nameof(Queryable.Aggregate):
@@ -2280,9 +2299,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             return base.VisitMethodCall(node);
         }
 
-        private bool IsTranslatable(Expression node)
-            => expressionVisitorProvider.TranslatabilityAnalyzingExpressionVisitor
-                .Visit(node) is TranslatableExpression;
+        private bool IsTranslatable(Expression node) => translatabilityVisitor.Visit(node) is TranslatableExpression;
 
         private bool HandlePushdown(
             Func<SelectExpression, bool> condition,
@@ -2315,7 +2332,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
             var table
                 = new SubqueryTableExpression(
-                    keyPlaceholderGroupingInjector.VisitAndConvert(
+                    new KeyPlaceholderGroupingInjectingExpressionVisitor().VisitAndConvert(
                         selectExpression,
                         nameof(VisitMethodCall)),
                     alias == null || alias.StartsWith("<>") ? "t" : alias);
@@ -2350,10 +2367,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                     return new EnumerableRelationalQueryExpression(
                         groupedRelationalQueryExpression.SelectExpression
-                            .AddToPredicate(
-                                Expression.Equal(
-                                    outerKeySelector,
-                                    innerKeySelector)));
+                            .AddToPredicate(Expression.Equal(outerKeySelector, innerKeySelector)));
                 }
 
                 case GroupByResultExpression groupByResultExpression:
@@ -2410,6 +2424,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
         private static bool ContainsAggregateOrSubquery(Expression expression)
         {
             var visitor = new AggregateOrSubqueryFindingExpressionVisitor();
+
             visitor.Visit(expression);
 
             return visitor.FoundAggregateOrSubquery;

@@ -1,7 +1,12 @@
+using Impatient.Metadata;
 using Impatient.Query;
 using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors;
 using Impatient.Query.ExpressionVisitors.Composing;
+using Impatient.Query.ExpressionVisitors.Utility;
+using Impatient.Query.Infrastructure;
+using Impatient.Tests.Utilities;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
@@ -19,11 +24,11 @@ namespace Impatient.Tests
     [TestClass]
     public class QueryTests
     {
-        private string SqlLog => commandLog.ToString();
+        private string SqlLog => services.GetService<TestDbCommandExecutor>().Log.ToString();
 
-        private readonly StringBuilder commandLog = new StringBuilder();
+        private readonly IServiceProvider services;
 
-        private readonly ImpatientQueryProvider impatient;
+        private ImpatientQueryProvider impatient => services.GetService<ImpatientQueryProvider>();
 
         public Expression MyClass1QueryExpression { get; }
 
@@ -58,21 +63,7 @@ namespace Impatient.Tests
 
         public QueryTests()
         {
-            impatient = new ImpatientQueryProvider(
-                new TestImpatientConnectionFactory(),
-                new DefaultImpatientQueryCache(),
-                new DefaultImpatientExpressionVisitorProvider())
-            {
-                DbCommandInterceptor = command =>
-                {
-                    if (commandLog.Length > 0)
-                    {
-                        commandLog.AppendLine().AppendLine();
-                    }
-
-                    commandLog.Append(command.CommandText);
-                }
-            };
+            services = ExtensionMethods.CreateServiceProvider();
 
             var myClass1Table = new BaseTableExpression("dbo", "MyClass1", "m", typeof(MyClass1));
 
@@ -112,7 +103,7 @@ namespace Impatient.Tests
         [TestCleanup]
         public void Cleanup()
         {
-            commandLog.Clear();
+            services.GetService<TestDbCommandExecutor>().Log.Clear();
         }
 
         [TestMethod]
@@ -1706,10 +1697,20 @@ ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
                         let derp = int.MaxValue
                         select m;
 
-            var expression = impatient.ExpressionVisitorProvider.OptimizingExpressionVisitors
-                .Aggregate(query.Expression, (e, v) => v.Visit(e));
+            var provider = services.GetService<IOptimizingExpressionVisitorProvider>();
 
-            expression = new QueryComposingExpressionVisitor(impatient.ExpressionVisitorProvider).Visit(expression);
+            var context = new QueryProcessingContext(impatient, DescriptorSet.Empty, new Dictionary<object, ParameterExpression>(), null);
+
+            var expression 
+                = provider
+                    .CreateExpressionVisitors(context)
+                    .Aggregate(query.Expression, (e, v) => v.Visit(e));
+
+            expression 
+                = new QueryComposingExpressionVisitor(
+                    services.GetService<TranslatabilityAnalyzingExpressionVisitor>(),
+                    services.GetService<IRewritingExpressionVisitorProvider>().CreateExpressionVisitors(context))
+                    .Visit(expression);
 
             Assert.IsInstanceOfType(expression, typeof(EnumerableRelationalQueryExpression));
 
@@ -1742,10 +1743,20 @@ FROM [dbo].[MyClass1] AS [m_0]",
             var query = from m in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).OfType<MyClass1>()
                         select m;
 
-            var expression = impatient.ExpressionVisitorProvider.OptimizingExpressionVisitors
-                .Aggregate(query.Expression, (e, v) => v.Visit(e));
+            var provider = services.GetService<IOptimizingExpressionVisitorProvider>();
 
-            expression = new QueryComposingExpressionVisitor(impatient.ExpressionVisitorProvider).Visit(expression);
+            var context = new QueryProcessingContext(impatient, DescriptorSet.Empty, new Dictionary<object,ParameterExpression>(), null);
+
+            var expression
+                = provider
+                    .CreateExpressionVisitors(context)
+                    .Aggregate(query.Expression, (e, v) => v.Visit(e));
+
+            expression
+                = new QueryComposingExpressionVisitor(
+                    services.GetService<TranslatabilityAnalyzingExpressionVisitor>(),
+                    services.GetService<IRewritingExpressionVisitorProvider>().CreateExpressionVisitors(context))
+                    .Visit(expression);
 
             Assert.IsInstanceOfType(expression, typeof(EnumerableRelationalQueryExpression));
 
@@ -2657,23 +2668,8 @@ INNER JOIN [dbo].[MyClass2] AS [m2_1] ON [m1].[Prop1] = [m2_1].[Prop1]",
         [TestMethod]
         public void GroupJoin_floated_up_from_subquery()
         {
-            var sqlLog = new StringBuilder();
-
-            var impatient = new ImpatientQueryProvider(
-                new TestImpatientConnectionFactory(@"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True"),
-                new DefaultImpatientQueryCache(),
-                new DefaultImpatientExpressionVisitorProvider())
-            {
-                DbCommandInterceptor = command =>
-                {
-                    if (sqlLog.Length > 0)
-                    {
-                        sqlLog.AppendLine().AppendLine();
-                    }
-
-                    sqlLog.Append(command.CommandText);
-                }
-            };
+            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True");
+            var impatient = services.GetRequiredService<ImpatientQueryProvider>();
 
             var customers = CreateQueryExpression(typeof(Northwind.Customer));
             var orders = CreateQueryExpression(typeof(Northwind.Order));
@@ -2693,7 +2689,7 @@ INNER JOIN [dbo].[MyClass2] AS [m2_1] ON [m1].[Prop1] = [m2_1].[Prop1]",
             query.ToList();
 
             Assert.IsTrue(
-                sqlLog.ToString().StartsWith(
+                services.GetService<TestDbCommandExecutor>().Log.ToString().StartsWith(
                     @"SELECT [c].[CustomerID] AS [CustomerID], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Address] AS [Address], [c].[City] AS [City], [c].[Region] AS [Region], [c].[PostalCode] AS [PostalCode], [c].[Country] AS [Country], [c].[Phone] AS [Phone], [c].[Fax] AS [Fax]
 FROM [dbo].[Customers] AS [c]
 
@@ -4425,26 +4421,6 @@ FROM [dbo].[MyClass1] AS [a]",
 )
 FROM [dbo].[MyClass1] AS [a]",
                 SqlLog);
-        }
-
-        private class TestImpatientConnectionFactory : IImpatientDbConnectionFactory
-        {
-            private readonly string connectionString;
-
-            public TestImpatientConnectionFactory()
-            {
-                connectionString = @"Server=.\sqlexpress; Database=Impatient; Trusted_Connection=True";
-            }
-
-            public TestImpatientConnectionFactory(string connectionString)
-            {
-                this.connectionString = connectionString;
-            }
-
-            public DbConnection CreateConnection()
-            {
-                return new SqlConnection(connectionString);
-            }
         }
 
         private class MyKeyObject

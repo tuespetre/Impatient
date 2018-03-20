@@ -236,6 +236,16 @@ namespace Impatient
             }
         }
 
+        public static Expression UnwrapAnnotations(this Expression expression)
+        {
+            while (expression is AnnotationExpression annotationExpression)
+            {
+                expression = annotationExpression.Expression;
+            }
+
+            return expression;
+        }
+
         public static Expression Replace(this Expression expression, Expression target, Expression replacement)
         {
             return new ExpressionReplacingExpressionVisitor(target, replacement).Visit(expression);

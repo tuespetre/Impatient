@@ -37,9 +37,9 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                     return Visit(groupedRelationalQueryExpression.OuterKeySelector);
                 }
 
-                case DefaultIfEmptyExpression defaultIfEmptyExpression:
+                case AnnotationExpression annotationExpression:
                 {
-                    return Visit(node.Update(defaultIfEmptyExpression.Expression));
+                    return Visit(node.Update(annotationExpression.Expression));
                 }
 
                 case PolymorphicExpression polymorphicExpression:

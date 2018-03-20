@@ -47,9 +47,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                         }
 
                         return new SqlAggregateExpression(
-                            node.Method.Name == nameof(Queryable.Average)
-                                ? "AVG"
-                                : node.Method.Name.ToUpperInvariant(),
+                            node.Method.Name == nameof(Queryable.Average) ? "AVG" : node.Method.Name.ToUpperInvariant(),
                             selector,
                             node.Method.ReturnType,
                             relationalGrouping.IsDistinct && node.Arguments.Count == 1);
@@ -75,14 +73,10 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                                     Expression.Constant(1, typeof(int?)),
                                     Expression.Constant(null, typeof(int?)));
                         }
-
+                        
                         return new SqlAggregateExpression(
-                            node.Method.Name == nameof(Queryable.Count)
-                                ? "COUNT"
-                                : "COUNT_BIG",
-                            selector.Type.IsScalarType()
-                                ? selector
-                                : new SqlFragmentExpression("*", selector.Type),
+                            "COUNT",
+                            selector.Type.IsScalarType() ? selector : new SqlFragmentExpression("*", selector.Type),
                             node.Method.ReturnType,
                             relationalGrouping.IsDistinct && node.Arguments.Count == 1);
                     }

@@ -1,6 +1,5 @@
 ﻿using Impatient.Metadata;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -9,15 +8,16 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 {
     public class KeyEqualityRewritingExpressionVisitor : ExpressionVisitor
     {
-        private readonly PrimaryKeyDescriptor[] primaryKeyDescriptors;
-        private readonly NavigationDescriptor[] navigationDescriptors;
+        private readonly DescriptorSet descriptorSet;
 
-        public KeyEqualityRewritingExpressionVisitor(
-            IEnumerable<PrimaryKeyDescriptor> primaryKeyDescriptors,
-            IEnumerable<NavigationDescriptor> navigationDescriptors)
+        public KeyEqualityRewritingExpressionVisitor(DescriptorSet descriptorSet)
         {
-            this.primaryKeyDescriptors = primaryKeyDescriptors?.ToArray() ?? throw new ArgumentNullException(nameof(primaryKeyDescriptors));
-            this.navigationDescriptors = navigationDescriptors?.ToArray() ?? throw new ArgumentNullException(nameof(navigationDescriptors));
+            this.descriptorSet = descriptorSet ?? throw new ArgumentNullException(nameof(descriptorSet));
+        }
+
+        public override Expression Visit(Expression node)
+        {
+            return base.Visit(node);
         }
 
         protected override Expression VisitBinary(BinaryExpression node)
@@ -48,7 +48,8 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                 }
 
                 var primaryKeyDescriptor
-                    = primaryKeyDescriptors
+                    = descriptorSet
+                        .PrimaryKeyDescriptors
                         .FirstOrDefault(d => d.TargetType.IsAssignableFrom(node.Left.Type));
 
                 if (primaryKeyDescriptor == null)
@@ -131,7 +132,8 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                             if (!rewroteOuter || !rewroteInner)
                             {
                                 var primaryKeyDescriptor
-                                    = primaryKeyDescriptors
+                                    = descriptorSet
+                                        .PrimaryKeyDescriptors
                                         .FirstOrDefault(d => d.TargetType.IsAssignableFrom(genericArguments[2]));
 
                                 if (primaryKeyDescriptor != null)
@@ -202,7 +204,10 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
         {
             if (expression is MemberExpression memberExpression)
             {
-                var navigationDescriptor = navigationDescriptors.FirstOrDefault(n => n.Member == memberExpression.Member);
+                var navigationDescriptor 
+                    = descriptorSet
+                        .NavigationDescriptors
+                        .FirstOrDefault(n => n.Member == memberExpression.Member);
 
                 if (navigationDescriptor != null)
                 {

@@ -4,6 +4,11 @@ using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Composing
 {
+    /// <summary>
+    ///     An <see cref="ExpressionVisitor"/> that discovers the nearest lambda parameter name
+    ///     to a query expression in order to apply that name as the alias to be used to refer 
+    ///     to the table during SQL generation.
+    /// </summary>
     public class TableAliasComposingExpressionVisitor : ExpressionVisitor
     {
         private string alias;

@@ -1,4 +1,5 @@
 ﻿using Impatient.Metadata;
+using Impatient.Query.ExpressionVisitors;
 using Impatient.Query.ExpressionVisitors.Rewriting;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -7,7 +8,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.Tests.ExpressionVisitors
+namespace Impatient.Tests.ExpressionVisitors.Rewriting
 {
     [TestClass]
     public class KeyEqualityRewritingExpressionVisitorTests
@@ -42,6 +43,7 @@ namespace Impatient.Tests.ExpressionVisitors
                              select true);
         }
 
+#pragma warning disable CS0472 // The result of the expression is always the same since a value of this type is never equal to 'null'
         [TestMethod]
         public void Key_equality_Where_from_parameter_to_null()
         {
@@ -53,6 +55,7 @@ namespace Impatient.Tests.ExpressionVisitors
                              where ((int?)x1.Id) == null
                              select true);
         }
+#pragma warning restore CS0472 // The result of the expression is always the same since a value of this type is never equal to 'null'
 
         [TestMethod]
         public void Key_equality_Where_from_member_from_parameter()
@@ -214,15 +217,16 @@ namespace Impatient.Tests.ExpressionVisitors
 
             var visitor
                 = new KeyEqualityRewritingExpressionVisitor(
-                    primaryKeyDescriptors: new[]
-                    {
-                        myClass1KeyDescriptor,
-                        myClass2KeyDescriptor,
-                    },
-                    navigationDescriptors: new[]
-                    {
-                        myClass1NavigationDescriptor,
-                    });
+                    new DescriptorSet(
+                        primaryKeyDescriptors: new[]
+                        {
+                            myClass1KeyDescriptor,
+                            myClass2KeyDescriptor,
+                        },
+                        navigationDescriptors: new[]
+                        {
+                            myClass1NavigationDescriptor,
+                        }));
 
             var result = visitor.Visit(input.Body);
 

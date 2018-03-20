@@ -8,7 +8,7 @@ using static System.Math;
 
 namespace Impatient
 {
-    public static class ValueTupleHelper
+    internal static class ValueTupleHelper
     {
         public static Type CreateTupleType(IEnumerable<Type> types)
         {

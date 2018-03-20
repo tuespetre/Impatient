@@ -11,19 +11,17 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 {
     public class QueryTranslatingExpressionVisitor : ExpressionVisitor
     {
-        private static readonly IComplexTypeSubqueryFormatter complexTypeSubqueryFormatter
-            = new SqlServerForJsonComplexTypeSubqueryFormatter();
-
+        private readonly IComplexTypeSubqueryFormatter complexTypeSubqueryFormatter;
         private readonly HashSet<string> tableAliases = new HashSet<string>();
         private readonly IDictionary<AliasedTableExpression, string> aliasLookup = new Dictionary<AliasedTableExpression, string>();
-
-        public QueryTranslatingExpressionVisitor(IImpatientExpressionVisitorProvider expressionVisitorProvider)
+        
+        public QueryTranslatingExpressionVisitor(
+            IDbCommandExpressionBuilder dbCommandExpressionBuilder,
+            IComplexTypeSubqueryFormatter complexTypeSubqueryFormatter)
         {
-            ExpressionVisitorProvider = expressionVisitorProvider ?? throw new ArgumentNullException(nameof(expressionVisitorProvider));
-            Builder = new DefaultDbCommandExpressionBuilder();
+            Builder = dbCommandExpressionBuilder;
+            this.complexTypeSubqueryFormatter = complexTypeSubqueryFormatter;
         }
-
-        protected IImpatientExpressionVisitorProvider ExpressionVisitorProvider { get; }
 
         protected IDbCommandExpressionBuilder Builder { get; }
 
@@ -548,7 +546,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                 default:
                 {
-                    throw new NotSupportedException();
+                    return base.VisitExtension(node);
                 }
             }
         }

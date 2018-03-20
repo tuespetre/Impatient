@@ -3,25 +3,26 @@ using Impatient.Metadata;
 using Impatient.Query;
 using Impatient.Query.Expressions;
 using Impatient.Tests.Utilities;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 using static System.Linq.Enumerable;
-using static System.Math;
 
 namespace Impatient.Tests
 {
     [TestClass]
     public class TablePerTypeInheritanceTests
     {
-        private readonly StringBuilder commandLog = new StringBuilder();
-        private readonly ImpatientQueryProvider impatient;
+        private ImpatientQueryProvider impatient => services.GetService<ImpatientQueryProvider>();
 
-        private string SqlLog => commandLog.ToString();
+        private readonly IServiceProvider services;
+
+        private string SqlLog => services.GetService<TestDbCommandExecutor>().Log.ToString();
 
         private static readonly IDictionary<Type, Expression> QueryExpressions;
 
@@ -368,23 +369,11 @@ namespace Impatient.Tests
 
         public TablePerTypeInheritanceTests()
         {
-            impatient = new ImpatientQueryProvider(
-                new TestImpatientConnectionFactory(@"Server=.\sqlexpress; Database=tempdb; Trusted_Connection=true"),
-                new DefaultImpatientQueryCache(),
-                new DefaultImpatientExpressionVisitorProvider())
-            {
-                DbCommandInterceptor = command =>
-                {
-                    if (commandLog.Length > 0)
-                    {
-                        commandLog.AppendLine().AppendLine();
-                    }
+            var connectionString = @"Server=.\sqlexpress; Database=tempdb; Trusted_Connection=true";
 
-                    commandLog.Append(command.CommandText);
-                }
-            };
+            services = ExtensionMethods.CreateServiceProvider(connectionString: connectionString);
 
-            using (var connection = impatient.ConnectionFactory.CreateConnection())
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Execute(@"
 DROP TABLE IF EXISTS DerivedConcreteType3;
@@ -476,7 +465,7 @@ VALUES
         [TestCleanup]
         public void Cleanup()
         {
-            commandLog.Clear();
+            services.GetService<TestDbCommandExecutor>().Log.Clear();
         }
 
         [TestMethod]

@@ -107,7 +107,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                     result,
                                     Quote(nece.Context.OuterTerminalSelector));
 
-                            return new NavigationExpansionContextExpression(result, terminator, nece.Context);
+                            return new NavigationExpansionContextExpression(terminator, nece.Context);
                         }
                         else
                         {
@@ -194,7 +194,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                     result,
                                     Quote(resultContext.OuterTerminalSelector));
 
-                            return new NavigationExpansionContextExpression(result, terminator, resultContext);
+                            return new NavigationExpansionContextExpression(terminator, resultContext);
                         }
                         else
                         {
@@ -334,7 +334,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                         result,
                                         Quote(newContext.OuterTerminalSelector));
 
-                                return new NavigationExpansionContextExpression(result, terminator, newContext);
+                                return new NavigationExpansionContextExpression(terminator, newContext);
                             }
                             else if (expandedAny)
                             {
@@ -516,7 +516,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                         result,
                                         Quote(newContext.OuterTerminalSelector));
 
-                                return new NavigationExpansionContextExpression(result, terminator, newContext);
+                                return new NavigationExpansionContextExpression(terminator, newContext);
                             }
                             else if (expandedKeySelector)
                             {
@@ -687,7 +687,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                     result,
                                     Quote(outerContext.OuterTerminalSelector));
 
-                            return new NavigationExpansionContextExpression(result, terminator, outerContext);
+                            return new NavigationExpansionContextExpression(terminator, outerContext);
                         }
                         else
                         {
@@ -784,7 +784,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                     result,
                                     Quote(resultContext.OuterTerminalSelector));
 
-                            return new NavigationExpansionContextExpression(result, terminator, resultContext);
+                            return new NavigationExpansionContextExpression(terminator, resultContext);
                         }
                         else
                         {
@@ -834,7 +834,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                     result,
                                     Quote(context.OuterTerminalSelector));
 
-                            return new NavigationExpansionContextExpression(result, terminator, context);
+                            return new NavigationExpansionContextExpression(terminator, context);
                         }
                         else
                         {
@@ -916,7 +916,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                     result,
                                     Quote(context.OuterTerminalSelector));
 
-                            return new NavigationExpansionContextExpression(result, terminator, context);
+                            return new NavigationExpansionContextExpression(terminator, context);
                         }
                         else
                         {
@@ -963,7 +963,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                     result,
                                     Quote(context.OuterTerminalSelector));
 
-                            return new NavigationExpansionContextExpression(result, terminator, context);
+                            return new NavigationExpansionContextExpression(terminator, context);
                         }
                         else
                         {
@@ -1128,7 +1128,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                     result,
                                     Quote(context.OuterTerminalSelector));
 
-                            return new NavigationExpansionContextExpression(result, terminator, context);
+                            return new NavigationExpansionContextExpression(terminator, context);
                         }
                         else
                         {
@@ -1141,6 +1141,10 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             }
         }
 
+        /// <summary>
+        /// This expression visitor finds all <see cref="NavigationExpansionContextExpression"/> instances
+        /// and collapses them to their terminal expression.
+        /// </summary>
         private sealed class NavigationContextTerminatingExpressionVisitor : ExpressionVisitor
         {
             public override Expression Visit(Expression node)
@@ -1149,7 +1153,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 {
                     case NavigationExpansionContextExpression nece:
                     {
-                        return Visit(nece.Terminator ?? nece.Source);
+                        return Visit(nece.Result);
                     }
 
                     default:
@@ -1160,28 +1164,47 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             }
         }
 
+        /// <summary>
+        /// This expression represents a subtree that is currently being expanded by the navigation
+        /// rewriting expression visitor. 
+        /// </summary>
         private sealed class NavigationExpansionContextExpression : Expression
         {
-            public NavigationExpansionContextExpression(Expression source, Expression terminator, NavigationExpansionContext context)
+            public NavigationExpansionContextExpression(
+                MethodCallExpression result,
+                NavigationExpansionContext context)
             {
-                Source = source ?? throw new ArgumentNullException(nameof(source));
-                Terminator = terminator;
+                Result = result ?? throw new ArgumentNullException(nameof(result));
                 Context = context ?? throw new ArgumentNullException(nameof(context));
             }
 
-            public Expression Source { get; }
+            public Expression Source => Result.Arguments[0];
 
-            public Expression Terminator { get; }
+            public MethodCallExpression Result { get; }
 
             public NavigationExpansionContext Context { get; }
 
             public override ExpressionType NodeType => ExpressionType.Extension;
 
-            public override Type Type => Terminator?.Type ?? Source.Type;
+            public override Type Type => Result.Type;
 
-            protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
+            protected override Expression VisitChildren(ExpressionVisitor visitor)
+            {
+                var result = visitor.VisitAndConvert(Result, nameof(VisitChildren));
+
+                if (result != Result)
+                {
+                    return new NavigationExpansionContextExpression(result, Context);
+                }
+
+                return this;
+            }
         }
 
+        /// <summary>
+        /// This struct represent the anonymous 'transparent identifier' type
+        /// to be used within the injected result selectors to Join, GroupJoin, etc.
+        /// </summary>
         private struct NavigationTransparentIdentifier<TOuter, TInner>
         {
             public NavigationTransparentIdentifier(TOuter outer, TInner inner)
@@ -1243,27 +1266,32 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                             Expression.MakeMemberAccess),
                     currentParameter);
 
+            /// <summary>
+            /// Expands navigations within an 'intermediate lambda' such as 
+            /// the 'collectionSelector' parameter to SelectMany or the predicate
+            /// to Where.
+            /// </summary>
+            /// <param name="source">The source query expression.</param>
+            /// <param name="lambda">The <see cref="LambdaExpression"/>.</param>
+            /// <param name="parameter">The parameter to the intermediate lambda, typically the first or only parameter.</param>
+            /// <param name="foundNavigations">Whether or not any navigations were found in the <paramref name="lambda"/>.</param>
+            /// <returns>Whether or not the <paramref name="lambda"/> was expanded.</returns>
             public bool ExpandIntermediateLambda(
                 ref Expression source,
                 ref LambdaExpression lambda,
                 ref ParameterExpression parameter,
                 out bool foundNavigations)
             {
-                if (!(foundNavigations = ProcessNavigations(ref source, ref lambda, ref parameter))
-                    && terminalPath.Count == 0)
+                foundNavigations = ProcessNavigations(ref source, ref lambda, ref parameter);
+
+                if (!foundNavigations && terminalPath.Count == 0)
                 {
                     return false;
                 }
 
-                var lambdaBody = lambda.Body;
-
-                lambdaBody
-                    = new NavigationExpandingExpressionVisitor(parameter, currentParameter, mappings)
-                        .Visit(lambdaBody);
-
                 lambda
                     = Expression.Lambda(
-                        lambdaBody,
+                        ExpandLambdaBody(lambda.Body, parameter, currentParameter, mappings),
                         SwapParameter(lambda.Parameters, parameter, currentParameter));
 
                 parameter = currentParameter;
@@ -1271,6 +1299,14 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 return true;
             }
 
+            /// <summary>
+            /// Expands navigations within a 'result lambda' such as the 'resultSelector'
+            /// parameters to Select, SelectMany, GroupJoin, or GroupBy.
+            /// </summary>
+            /// <param name="source">The source query expression.</param>
+            /// <param name="lambda">The <see cref="LambdaExpression"/>.</param>
+            /// <param name="outerParameter"></param>
+            /// <returns>Whether or not the <paramref name="lambda"/> was expanded.</returns>
             public bool ExpandResultLambda(
                 ref Expression source,
                 ref LambdaExpression lambda,
@@ -1292,11 +1328,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                 var newMappings = Remap(lambda, parameter, mappings);
 
-                var lambdaBody = lambda.Body;
-
-                lambdaBody
-                    = new NavigationExpandingExpressionVisitor(parameter, currentParameter, mappings)
-                        .Visit(lambdaBody);
+                var lambdaBody = ExpandLambdaBody(lambda.Body, parameter, currentParameter, mappings);
 
                 lambda
                     = Expression.Lambda(
@@ -1342,28 +1374,33 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     return false;
                 }
 
-                var operatorType
-                    = source.Type.GetInterfaces().Contains(typeof(IQueryable))
-                        ? typeof(Queryable)
-                        : typeof(Enumerable);
+                var operatorType = source.Type.GetInterfaces().Contains(typeof(IQueryable)) ? typeof(Queryable) : typeof(Enumerable);
 
                 foreach (var navigation in findingVisitor.FoundNavigations.OrderBy(f => f.Path.Count()))
                 {
                     var outerType = source.Type.GetSequenceType();
                     var innerType = navigation.DestinationType.FindGenericType(typeof(IEnumerable<>)) ?? navigation.DestinationType;
-
-                    var scopeType
-                        = typeof(NavigationTransparentIdentifier<,>)
-                            .MakeGenericType(outerType, innerType);
+                    var scopeType = typeof(NavigationTransparentIdentifier<,>).MakeGenericType(outerType, innerType);
 
                     var outerField = scopeType.GetRuntimeField("Outer");
                     var innerField = scopeType.GetRuntimeField("Inner");
 
-                    var lastMapping = mappings.Last();
+                    // Take the closest mapping. Ideally we would not rely on this.
+                    // This is done instead of mappings.Last() for those cases where
+                    // multiple n-to-1 mappings are made at the same level
+                    // (e.g. od.Order and od.Product.)
+
+                    var targetMapping
+                        = (from m in mappings
+                           let z = m.OldPath.Zip(navigation.Path, ValueTuple.Create)
+                           orderby z.TakeWhile(t => t.Item1 == t.Item2).Count() descending
+                           select m).FirstOrDefault();
 
                     var outerKeyPath
-                        = lastMapping.NewPath.Concat(
-                            navigation.Path.Except(lastMapping.OldPath).SkipLast(1));
+                        = targetMapping.NewPath.Concat(
+                            navigation.Path.Except(targetMapping.OldPath).SkipLast(1));
+
+                    var outerKeyTemplate = navigation.Descriptor.OuterKeySelector;
 
                     if (navigation.DestinationType.IsSequenceType())
                     {
@@ -1371,20 +1408,14 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                             = operatorType
                                 .GetRuntimeMethods()
                                 .Single(m => m.Name == nameof(Queryable.GroupJoin) && m.GetParameters().Length == 5)
-                                .MakeGenericMethod(
-                                    currentParameter.Type,
-                                    innerType.GetSequenceType(),
-                                    navigation.Descriptor.OuterKeySelector.ReturnType,
-                                    scopeType);
+                                .MakeGenericMethod(currentParameter.Type, innerType.GetSequenceType(), outerKeyTemplate.ReturnType, scopeType);
 
                         // Expand mappings into the outer key selector
                         var outerKeySelector
                             = Expression.Lambda(
-                                navigation.Descriptor.OuterKeySelector.Body.Replace(
-                                    navigation.Descriptor.OuterKeySelector.Parameters.Single(),
-                                    outerKeyPath.Aggregate(
-                                        currentParameter as Expression,
-                                        Expression.MakeMemberAccess)),
+                                outerKeyTemplate.Body.Replace(
+                                    outerKeyTemplate.Parameters.Single(),
+                                    outerKeyPath.Aggregate(currentParameter as Expression, Expression.MakeMemberAccess)),
                                 currentParameter);
 
                         var innerKeySelector
@@ -1422,20 +1453,14 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                             = operatorType
                                 .GetRuntimeMethods()
                                 .Single(m => m.Name == nameof(Queryable.Join) && m.GetParameters().Length == 5)
-                                .MakeGenericMethod(
-                                    currentParameter.Type,
-                                    innerType,
-                                    navigation.Descriptor.OuterKeySelector.ReturnType,
-                                    scopeType);
+                                .MakeGenericMethod(currentParameter.Type, innerType, outerKeyTemplate.ReturnType, scopeType);
 
                         // Expand mappings into the outer key selector
                         var outerKeySelector
                             = Expression.Lambda(
-                                navigation.Descriptor.OuterKeySelector.Body.Replace(
-                                    navigation.Descriptor.OuterKeySelector.Parameters.Single(),
-                                    outerKeyPath.Aggregate(
-                                        currentParameter as Expression,
-                                        Expression.MakeMemberAccess)),
+                                outerKeyTemplate.Body.Replace(
+                                    outerKeyTemplate.Parameters.Single(),
+                                    outerKeyPath.Aggregate(currentParameter as Expression, Expression.MakeMemberAccess)),
                                 currentParameter);
 
                         var innerKeySelector
@@ -1477,6 +1502,17 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 }
 
                 return true;
+            }
+
+            private static Expression ExpandLambdaBody(
+                Expression lambdaBody,
+                ParameterExpression oldParameter,
+                ParameterExpression newParameter,
+                IList<ExpansionMapping> mappings)
+            {
+                var visitor = new NavigationExpandingExpressionVisitor(oldParameter, newParameter, mappings);
+
+                return visitor.Visit(lambdaBody);
             }
 
             private static IEnumerable<ParameterExpression> SwapParameter(
@@ -1560,15 +1596,8 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                 if (applyExpansions)
                 {
-                    lambdaBody
-                        = new NavigationExpandingExpressionVisitor(
-                            lambda.Parameters[0], outerParameter, outerContext.mappings)
-                                .Visit(lambdaBody);
-
-                    lambdaBody
-                        = new NavigationExpandingExpressionVisitor(
-                            lambda.Parameters[1], innerParameter, innerContext.mappings)
-                                .Visit(lambdaBody);
+                    lambdaBody = ExpandLambdaBody(lambdaBody, lambda.Parameters[0], outerParameter, outerContext.mappings);
+                    lambdaBody = ExpandLambdaBody(lambdaBody, lambda.Parameters[1], innerParameter, innerContext.mappings);
                 }
 
                 lambda
@@ -1617,7 +1646,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             while (innerExpression is MemberExpression innerMemberExpression)
             {
                 path.Add(innerMemberExpression.Member);
-                innerExpression = innerMemberExpression.Expression;
+                innerExpression = innerMemberExpression.Expression.UnwrapAnnotations();
             }
 
             path.Reverse();
@@ -1643,7 +1672,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
             protected override Expression VisitMember(MemberExpression node)
             {
-                var descriptor = descriptors.Cast<NavigationDescriptor>().SingleOrDefault(d => d.Member == node.Member);
+                var descriptor = descriptors.SingleOrDefault(d => d.Member == node.Member);
 
                 if (descriptor == null)
                 {

@@ -3,7 +3,6 @@ using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
@@ -13,15 +12,30 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 {
     public class QueryCompilingExpressionVisitor : ExpressionVisitor
     {
-        private readonly IImpatientExpressionVisitorProvider expressionVisitorProvider;
-        private readonly ParameterExpression queryProviderParameter;
+        private static readonly MethodInfo asQueryableMethodInfo
+            = ImpatientExtensions.GetGenericMethodDefinition((IEnumerable<object> e) => e.AsQueryable());
+
+        private static readonly MethodInfo executeEnumerableMethodInfo
+            = typeof(IDbCommandExecutor).GetTypeInfo().GetDeclaredMethod(nameof(IDbCommandExecutor.ExecuteEnumerable));
+
+        private static readonly MethodInfo executeComplexMethodInfo
+            = typeof(IDbCommandExecutor).GetTypeInfo().GetDeclaredMethod(nameof(IDbCommandExecutor.ExecuteComplex));
+
+        private static readonly MethodInfo executeScalarMethodInfo
+            = typeof(IDbCommandExecutor).GetTypeInfo().GetDeclaredMethod(nameof(IDbCommandExecutor.ExecuteScalar));
+
+        private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor;
+        private readonly IQueryTranslatingExpressionVisitorFactory queryTranslatingExpressionVisitorFactory;
+        private readonly ParameterExpression executorParameter;
 
         public QueryCompilingExpressionVisitor(
-            IImpatientExpressionVisitorProvider expressionVisitorProvider,
-            ParameterExpression queryProviderParameter)
+            TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor,
+            IQueryTranslatingExpressionVisitorFactory queryTranslatingExpressionVisitorFactory,
+            ParameterExpression executionContextParameter)
         {
-            this.expressionVisitorProvider = expressionVisitorProvider ?? throw new ArgumentNullException(nameof(expressionVisitorProvider));
-            this.queryProviderParameter = queryProviderParameter ?? throw new ArgumentNullException(nameof(queryProviderParameter));
+            this.translatabilityVisitor = translatabilityVisitor ?? throw new ArgumentNullException(nameof(translatabilityVisitor));
+            this.queryTranslatingExpressionVisitorFactory = queryTranslatingExpressionVisitorFactory ?? throw new ArgumentNullException(nameof(queryTranslatingExpressionVisitorFactory));
+            this.executorParameter = executionContextParameter ?? throw new ArgumentNullException(nameof(executionContextParameter));
         }
 
         public override Expression Visit(Expression node)
@@ -31,16 +45,15 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 case EnumerableRelationalQueryExpression enumerableRelationalQueryExpression:
                 {
                     var selectExpression = enumerableRelationalQueryExpression.SelectExpression;
-                    var translator = expressionVisitorProvider.QueryTranslatingExpressionVisitor;
-                    var commandBuilderLambda = translator.Translate(selectExpression);
+                    var commandBuilderLambda = queryTranslatingExpressionVisitorFactory.Create().Translate(selectExpression);
                     var sequenceType = node.Type.GetSequenceType();
 
                     return Expression.Call(
                         (enumerableRelationalQueryExpression.TransformationMethod
                             ?? asQueryableMethodInfo.MakeGenericMethod(sequenceType)),
                         Expression.Call(
+                            executorParameter,
                             executeEnumerableMethodInfo.MakeGenericMethod(sequenceType),
-                            queryProviderParameter,
                             commandBuilderLambda,
                             Visit(GenerateMaterializer(selectExpression))));
                 }
@@ -48,17 +61,16 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 case SingleValueRelationalQueryExpression singleValueRelationalQueryExpression:
                 {
                     var selectExpression = singleValueRelationalQueryExpression.SelectExpression;
-                    var translator = expressionVisitorProvider.QueryTranslatingExpressionVisitor;
-                    var commandBuilderLambda = translator.Translate(selectExpression);
+                    var commandBuilderLambda = queryTranslatingExpressionVisitorFactory.Create().Translate(selectExpression);
 
                     return singleValueRelationalQueryExpression.Type.IsScalarType()
                         ? Expression.Call(
+                            executorParameter,
                             executeScalarMethodInfo.MakeGenericMethod(node.Type),
-                            queryProviderParameter,
                             commandBuilderLambda)
                         : Expression.Call(
+                            executorParameter,
                             executeComplexMethodInfo.MakeGenericMethod(node.Type),
-                            queryProviderParameter,
                             commandBuilderLambda,
                             Visit(GenerateMaterializer(selectExpression)));
                 }
@@ -70,87 +82,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             }
         }
 
-        private static readonly MethodInfo asQueryableMethodInfo
-            = ImpatientExtensions.GetGenericMethodDefinition((IEnumerable<object> e) => e.AsQueryable());
-
-        private static readonly MethodInfo executeEnumerableMethodInfo
-            = typeof(QueryCompilingExpressionVisitor).GetTypeInfo().GetDeclaredMethod(nameof(ExecuteEnumerable));
-
-        private static readonly MethodInfo executeComplexMethodInfo
-            = typeof(QueryCompilingExpressionVisitor).GetTypeInfo().GetDeclaredMethod(nameof(ExecuteComplex));
-
-        private static readonly MethodInfo executeScalarMethodInfo
-            = typeof(QueryCompilingExpressionVisitor).GetTypeInfo().GetDeclaredMethod(nameof(ExecuteScalar));
-
-        private static IEnumerable<TElement> ExecuteEnumerable<TElement>(
-            ImpatientQueryProvider queryProvider,
-            Action<DbCommand> commandBuilder,
-            Func<DbDataReader, TElement> materializer)
-        {
-            using (var connection = queryProvider.ConnectionFactory.CreateConnection())
-            using (var command = connection.CreateCommand())
-            {
-                commandBuilder(command);
-
-                queryProvider.DbCommandInterceptor?.Invoke(command);
-
-                connection.Open();
-
-                using (var reader = command.ExecuteReader(CommandBehavior.CloseConnection))
-                {
-                    while (reader.Read())
-                    {
-                        yield return materializer(reader);
-                    }
-                }
-            }
-        }
-
-        private static TResult ExecuteComplex<TResult>(
-            ImpatientQueryProvider queryProvider,
-            Action<DbCommand> commandBuilder,
-            Func<DbDataReader, TResult> materializer)
-        {
-            using (var connection = queryProvider.ConnectionFactory.CreateConnection())
-            using (var command = connection.CreateCommand())
-            {
-                commandBuilder(command);
-
-                queryProvider.DbCommandInterceptor?.Invoke(command);
-
-                connection.Open();
-
-                using (var reader = command.ExecuteReader(CommandBehavior.CloseConnection))
-                {
-                    // TODO: Can the logic really be this simple?
-                    // - Related to 'DefaultIfEmpty' and '___OrDefault' behavior
-                    // - Currently relying on the queries themselves to supply:
-                    //   - The default value, through the materializer
-                    //   - Exceptions for First/Single/SingleOrDefault/Last/ElementAt
-
-                    reader.Read();
-
-                    return materializer(reader);
-                }
-            }
-        }
-
-        private static TResult ExecuteScalar<TResult>(
-            ImpatientQueryProvider queryProvider,
-            Action<DbCommand> commandBuilder)
-        {
-            using (var connection = queryProvider.ConnectionFactory.CreateConnection())
-            using (var command = connection.CreateCommand())
-            {
-                commandBuilder(command);
-
-                queryProvider.DbCommandInterceptor?.Invoke(command);
-
-                connection.Open();
-
-                return (TResult)command.ExecuteScalar();
-            }
-        }
+        #region Materializer generation
 
         private LambdaExpression GenerateMaterializer(SelectExpression selectExpression)
         {
@@ -187,13 +119,12 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 }
             }
 
-            var readerParameter = Expression.Parameter(typeof(DbDataReader));
+            {
+                var readerParameter = Expression.Parameter(typeof(DbDataReader));
+                var visitor = new MaterializerBuildingExpressionVisitor(translatabilityVisitor, readerParameter);
 
-            return Expression.Lambda(
-                MaterializeProjection(
-                    selectExpression.Projection,
-                    new MaterializerBuildingExpressionVisitor(expressionVisitorProvider, readerParameter)),
-                readerParameter);
+                return Expression.Lambda(MaterializeProjection(selectExpression.Projection, visitor), readerParameter);
+            }
         }
 
         private class MaterializerBuildingExpressionVisitor : ProjectionExpressionVisitor
@@ -201,7 +132,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             private static readonly MethodInfo isDBNullMethodInfo
                 = typeof(DbDataReader).GetTypeInfo().GetDeclaredMethod(nameof(DbDataReader.IsDBNull));
 
-            private readonly IImpatientExpressionVisitorProvider expressionVisitorProvider;
+            private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor;
             private readonly ParameterExpression readerParameter;
             private int readerIndex;
 
@@ -212,16 +143,16 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             };
 
             public MaterializerBuildingExpressionVisitor(
-                IImpatientExpressionVisitorProvider expressionVisitorProvider,
+                TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor,
                 ParameterExpression readerParameter)
             {
-                this.expressionVisitorProvider = expressionVisitorProvider;
+                this.translatabilityVisitor = translatabilityVisitor;
                 this.readerParameter = readerParameter;
             }
 
             protected override Expression VisitLeaf(Expression node)
             {
-                if (expressionVisitorProvider.TranslatabilityAnalyzingExpressionVisitor.Visit(node) is TranslatableExpression)
+                if (translatabilityVisitor.Visit(node) is TranslatableExpression)
                 {
                     return readValueExpressionFactories
                         .First(f => f.CanReadExpression(node))
@@ -277,5 +208,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 }
             }
         }
+
+        #endregion
     }
 }

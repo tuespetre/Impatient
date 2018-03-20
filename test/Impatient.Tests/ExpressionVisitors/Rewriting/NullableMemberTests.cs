@@ -1,5 +1,5 @@
-﻿using Impatient.Query;
-using Impatient.Tests.Utilities;
+﻿using Impatient.Tests.Utilities;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
 
@@ -12,14 +12,11 @@ namespace Impatient.Tests.ExpressionVisitors.Rewriting
 
         static NullableMemberTests()
         {
-            var impatient
-                = new ImpatientQueryProvider(
-                    new TestImpatientConnectionFactory(
-                        @"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True"),
-                    new DefaultImpatientQueryCache(),
-                    new DefaultImpatientExpressionVisitorProvider());
-
-            context = new NorthwindQueryContext(impatient);
+            context
+                = ExtensionMethods
+                    .CreateServiceProvider(
+                        connectionString: @"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True")
+                    .GetService<NorthwindQueryContext>();
         }
 
         [TestCleanup]

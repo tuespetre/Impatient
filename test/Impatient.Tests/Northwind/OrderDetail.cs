@@ -6,7 +6,7 @@ namespace Impatient.Tests.Northwind
     public class OrderDetail
     {
         public int OrderID { get; set; }
-
+        
         public int ProductID { get; set; }
 
         public decimal UnitPrice { get; set; }
@@ -16,5 +16,7 @@ namespace Impatient.Tests.Northwind
         public float Discount { get; set; }
 
         public Order Order { get; set; }
+
+        public Product Product { get; set; }
     }
 }

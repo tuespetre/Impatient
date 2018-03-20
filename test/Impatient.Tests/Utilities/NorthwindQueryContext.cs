@@ -1,6 +1,5 @@
 ﻿using Impatient.Tests.Northwind;
 using System.Linq;
-using System.Text;
 using static Impatient.Tests.Utilities.QueryExpressionHelper;
 
 namespace Impatient.Tests.Utilities
@@ -8,25 +7,15 @@ namespace Impatient.Tests.Utilities
     public class NorthwindQueryContext
     {
         private readonly ImpatientQueryProvider impatient;
+        private readonly TestDbCommandExecutor executor;
 
-        private readonly StringBuilder commandLog = new StringBuilder();
-
-        public NorthwindQueryContext(ImpatientQueryProvider impatient)
+        public NorthwindQueryContext(ImpatientQueryProvider impatient, TestDbCommandExecutor executor)
         {
             this.impatient = impatient;
-
-            impatient.DbCommandInterceptor = command =>
-            {
-                if (commandLog.Length > 0)
-                {
-                    commandLog.AppendLine().AppendLine();
-                }
-
-                commandLog.Append(command.CommandText);
-            };
+            this.executor = executor;
         }
 
-        public string SqlLog => commandLog.ToString();
+        public string SqlLog => executor.Log.ToString();
 
         public IQueryable<Customer> Customers => impatient.CreateQuery<Customer>(CreateQueryExpression<Customer>());
 
@@ -34,6 +23,6 @@ namespace Impatient.Tests.Utilities
 
         public IQueryable<OrderDetail> OrderDetails => impatient.CreateQuery<OrderDetail>(CreateQueryExpression<OrderDetail>());
 
-        public void ClearLog() => commandLog.Clear();
+        public void ClearLog() => executor.Log.Clear();
     }
 }

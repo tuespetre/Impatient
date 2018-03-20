@@ -1,9 +1,10 @@
 ﻿using Impatient.Metadata;
 using Impatient.Query;
-using Impatient.Query.ExpressionVisitors;
 using Impatient.Tests.Northwind;
 using Impatient.Tests.Utilities;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Linq;
 using System.Reflection;
 using static Impatient.Tests.Utilities.QueryExpressionHelper;
@@ -13,80 +14,77 @@ namespace Impatient.Tests
     [TestClass]
     public class NavigationRewritingExpressionVisitorTests
     {
-        private static NorthwindQueryContext context;
+        private static IServiceProvider services;
+
+        private static NorthwindQueryContext context => services.GetService<NorthwindQueryContext>();
 
         static NavigationRewritingExpressionVisitorTests()
         {
-            var expressionVisitorProvider =
-                new DefaultImpatientExpressionVisitorProvider()
-                    .WithNavigationDescriptors(new[]
-                    {
-                        new NavigationDescriptor
-                        {
-                            Type = typeof(Customer),
-                            Member = typeof(Customer).GetRuntimeProperty(nameof(Customer.Orders)),
-                            OuterKeySelector = GetExpression((Customer c) => c.CustomerID),
-                            InnerKeySelector = GetExpression((Order o) => o.CustomerID),
-                            Expansion = CreateQueryExpression<Order>(),
-                        },
-                        new NavigationDescriptor
-                        {
-                            Type = typeof(Order),
-                            Member = typeof(Order).GetRuntimeProperty(nameof(Order.Customer)),
-                            OuterKeySelector = GetExpression((Order o) => o.CustomerID),
-                            InnerKeySelector = GetExpression((Customer c) => c.CustomerID),
-                            Expansion = CreateQueryExpression<Customer>(),
-                        },
-                        new NavigationDescriptor
-                        {
-                            Type = typeof(Order),
-                            Member = typeof(Order).GetRuntimeProperty(nameof(Order.OrderDetails)),
-                            OuterKeySelector = GetExpression((Order o) => o.OrderID),
-                            InnerKeySelector = GetExpression((OrderDetail d) => d.OrderID),
-                            Expansion = CreateQueryExpression<OrderDetail>(),
-                        },
-                        new NavigationDescriptor
-                        {
-                            Type = typeof(OrderDetail),
-                            Member = typeof(OrderDetail).GetRuntimeProperty(nameof(OrderDetail.Order)),
-                            OuterKeySelector = GetExpression((OrderDetail d) => d.OrderID),
-                            InnerKeySelector = GetExpression((Order o) => o.OrderID),
-                            Expansion = CreateQueryExpression<Order>(),
-                        },
-                    })
-                    .WithPrimaryKeyDescriptors(new[]
-                    {
-                        new PrimaryKeyDescriptor
-                        {
-                            TargetType = typeof(Customer),
-                            KeySelector = GetExpression((Customer c) => c.CustomerID),
-                        },
-                        new PrimaryKeyDescriptor
-                        {
-                            TargetType = typeof(Order),
-                            KeySelector = GetExpression((Order o) => o.OrderID),
-                        },
-                        new PrimaryKeyDescriptor
-                        {
-                            TargetType = typeof(OrderDetail),
-                            KeySelector = GetExpression((OrderDetail d) => new { d.OrderID, d.ProductID }),
-                        },
-                    });
+            var navigationDescriptors = new[]
+            {
+                new NavigationDescriptor
+                {
+                    Type = typeof(Customer),
+                    Member = typeof(Customer).GetRuntimeProperty(nameof(Customer.Orders)),
+                    OuterKeySelector = GetExpression((Customer c) => c.CustomerID),
+                    InnerKeySelector = GetExpression((Order o) => o.CustomerID),
+                    Expansion = CreateQueryExpression<Order>(),
+                },
+                new NavigationDescriptor
+                {
+                    Type = typeof(Order),
+                    Member = typeof(Order).GetRuntimeProperty(nameof(Order.Customer)),
+                    OuterKeySelector = GetExpression((Order o) => o.CustomerID),
+                    InnerKeySelector = GetExpression((Customer c) => c.CustomerID),
+                    Expansion = CreateQueryExpression<Customer>(),
+                },
+                new NavigationDescriptor
+                {
+                    Type = typeof(Order),
+                    Member = typeof(Order).GetRuntimeProperty(nameof(Order.OrderDetails)),
+                    OuterKeySelector = GetExpression((Order o) => o.OrderID),
+                    InnerKeySelector = GetExpression((OrderDetail d) => d.OrderID),
+                    Expansion = CreateQueryExpression<OrderDetail>(),
+                },
+                new NavigationDescriptor
+                {
+                    Type = typeof(OrderDetail),
+                    Member = typeof(OrderDetail).GetRuntimeProperty(nameof(OrderDetail.Order)),
+                    OuterKeySelector = GetExpression((OrderDetail d) => d.OrderID),
+                    InnerKeySelector = GetExpression((Order o) => o.OrderID),
+                    Expansion = CreateQueryExpression<Order>(),
+                },
+            };
 
-            var impatient
-                = new ImpatientQueryProvider(
-                    new TestImpatientConnectionFactory(
-                        @"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True"),
-                    new DefaultImpatientQueryCache(),
-                    expressionVisitorProvider);
+            var primaryKeyDescriptors = new[]
+            {
+                new PrimaryKeyDescriptor
+                {
+                    TargetType = typeof(Customer),
+                    KeySelector = GetExpression((Customer c) => c.CustomerID),
+                },
+                new PrimaryKeyDescriptor
+                {
+                    TargetType = typeof(Order),
+                    KeySelector = GetExpression((Order o) => o.OrderID),
+                },
+                new PrimaryKeyDescriptor
+                {
+                    TargetType = typeof(OrderDetail),
+                    KeySelector = GetExpression((OrderDetail d) => new { d.OrderID, d.ProductID }),
+                },
+            };
 
-            context = new NorthwindQueryContext(impatient);
+            services 
+                = ExtensionMethods.CreateServiceProvider(
+                    descriptorSet: new DescriptorSet(primaryKeyDescriptors, navigationDescriptors),
+                    connectionString: @"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True");
         }
 
         [TestCleanup]
         public void Cleanup()
         {
-            context.ClearLog();
+            services.GetService<TestDbCommandExecutor>().Log.Clear();
         }
 
         [TestMethod]
