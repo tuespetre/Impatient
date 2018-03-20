@@ -1,6 +1,5 @@
 ﻿using Impatient.Query.Expressions;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -172,10 +171,21 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
         private static bool ValidateTrimArguments(IList<Expression> arguments)
         {
-            return arguments.Count == 1
+            if (arguments.Count == 1
                 && arguments[0] is ConstantExpression constantArgument
                 && constantArgument.Value is char[] paramsArgument
-                && paramsArgument.Length == 0;
+                && paramsArgument.Length == 0)
+            {
+                return true;
+            }
+            else if (arguments.Count == 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }
