@@ -1,9 +1,10 @@
 ﻿using Impatient.Query.Expressions;
+using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.ExpressionVisitors
+namespace Impatient.Query.ExpressionVisitors.Rewriting
 {
     public class GroupingAggregationRewritingExpressionVisitor : ExpressionVisitor
     {

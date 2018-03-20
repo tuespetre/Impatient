@@ -5,7 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.Query.ExpressionVisitors
+namespace Impatient.Query.ExpressionVisitors.Utility
 {
     public abstract class ProjectionExpressionVisitor : ExpressionVisitor
     {

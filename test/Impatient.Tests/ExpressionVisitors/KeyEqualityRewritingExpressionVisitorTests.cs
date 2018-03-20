@@ -1,5 +1,5 @@
 ﻿using Impatient.Metadata;
-using Impatient.Query.ExpressionVisitors;
+using Impatient.Query.ExpressionVisitors.Rewriting;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;

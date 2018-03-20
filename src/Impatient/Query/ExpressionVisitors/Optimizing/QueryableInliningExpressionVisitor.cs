@@ -1,19 +1,18 @@
-﻿using Impatient.Query.ExpressionVisitors.Optimizing;
-using Impatient.Query.ExpressionVisitors.Utility;
+﻿using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.Query.ExpressionVisitors
+namespace Impatient.Query.ExpressionVisitors.Optimizing
 {
-    public class QueryableExpandingExpressionVisitor : PartialEvaluatingExpressionVisitor
+    public class QueryableInliningExpressionVisitor : PartialEvaluatingExpressionVisitor
     {
         private readonly ImpatientQueryProvider provider;
         private readonly ExpressionVisitor replacingVisitor;
 
-        public QueryableExpandingExpressionVisitor(
+        public QueryableInliningExpressionVisitor(
             ImpatientQueryProvider provider,
             IDictionary<object, ParameterExpression> mapping)
         {

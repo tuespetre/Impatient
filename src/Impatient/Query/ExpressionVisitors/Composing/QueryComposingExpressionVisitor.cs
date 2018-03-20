@@ -1,4 +1,5 @@
 ﻿using Impatient.Query.Expressions;
+using Impatient.Query.ExpressionVisitors.Rewriting;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using System;
@@ -9,7 +10,7 @@ using System.Reflection;
 using static Impatient.ImpatientExtensions;
 using static System.Linq.Enumerable;
 
-namespace Impatient.Query.ExpressionVisitors
+namespace Impatient.Query.ExpressionVisitors.Composing
 {
     public class QueryComposingExpressionVisitor : ExpressionVisitor
     {
@@ -203,7 +204,7 @@ namespace Impatient.Query.ExpressionVisitors
                             if (referencesIndexParameter)
                             {
                                 outerProjection
-                                    = CreateRowNumberTuple(
+                                    = RowNumberTuple.Create(
                                         outerProjection,
                                         CreateRowNumberExpression(outerSelectExpression));
 
@@ -538,7 +539,7 @@ namespace Impatient.Query.ExpressionVisitors
                             if (referencesIndexParameter)
                             {
                                 outerProjection
-                                    = CreateRowNumberTuple(
+                                    = RowNumberTuple.Create(
                                         outerProjection,
                                         CreateRowNumberExpression(outerSelectExpression));
 
@@ -767,10 +768,7 @@ namespace Impatient.Query.ExpressionVisitors
                                             .UpdateGrouping(keySelector));
                                 }
 
-                                var keyPlaceholderGrouping
-                                    = KeyPlaceholderGroupingInjectingExpressionVisitor.CreateKeyPlaceholderGrouping(
-                                        outerSelectExpression,
-                                        keySelector);
+                                var keyPlaceholderGrouping = KeyPlaceholderGrouping.Create(outerSelectExpression, keySelector);
 
                                 var groupingParameter = Expression.Parameter(keyPlaceholderGrouping.Type, "g");
 
@@ -1456,7 +1454,7 @@ namespace Impatient.Query.ExpressionVisitors
                             var predicateLambda = node.Arguments[1].UnwrapLambda();
 
                             outerProjection
-                                = CreateRowNumberTuple(
+                                = RowNumberTuple.Create(
                                     outerProjection,
                                     new SqlWindowFunctionExpression(
                                         new SqlFunctionExpression("ROW_NUMBER", typeof(int)),
@@ -1489,7 +1487,7 @@ namespace Impatient.Query.ExpressionVisitors
                                         nameof(VisitMethodCall));
 
                             var subqueryProjection
-                                = CreateRowNumberTuple(
+                                = RowNumberTuple.Create(
                                     subquerySelectExpression.Projection.Flatten().Body,
                                     new SqlWindowFunctionExpression(
                                         new SqlFunctionExpression("ROW_NUMBER", typeof(int)),
@@ -1560,7 +1558,7 @@ namespace Impatient.Query.ExpressionVisitors
                             var predicateLambda = node.Arguments[1].UnwrapLambda();
 
                             outerProjection
-                                = CreateRowNumberTuple(
+                                = RowNumberTuple.Create(
                                     outerProjection,
                                     new SqlWindowFunctionExpression(
                                         new SqlFunctionExpression("ROW_NUMBER", typeof(int)),
@@ -1593,7 +1591,7 @@ namespace Impatient.Query.ExpressionVisitors
                                         nameof(VisitMethodCall));
 
                             var subqueryProjection
-                                = CreateRowNumberTuple(
+                                = RowNumberTuple.Create(
                                     subquerySelectExpression.Projection.Flatten().Body,
                                     new SqlWindowFunctionExpression(
                                         new SqlFunctionExpression("ROW_NUMBER", typeof(int)),
@@ -1781,7 +1779,7 @@ namespace Impatient.Query.ExpressionVisitors
                             var outerSelectExpression = outerQuery.SelectExpression;
 
                             var outerProjection
-                                = CreateRowNumberTuple(
+                                = RowNumberTuple.Create(
                                     outerSelectExpression.Projection.Flatten().Body,
                                     new SqlWindowFunctionExpression(
                                         new SqlFunctionExpression("ROW_NUMBER", typeof(int)),
@@ -1802,7 +1800,7 @@ namespace Impatient.Query.ExpressionVisitors
                             var innerSelectExpression = innerQuery.SelectExpression;
 
                             var innerProjection
-                                = CreateRowNumberTuple(
+                                = RowNumberTuple.Create(
                                     innerSelectExpression.Projection.Flatten().Body,
                                     new SqlWindowFunctionExpression(
                                         new SqlFunctionExpression("ROW_NUMBER", typeof(int)),
@@ -1867,7 +1865,7 @@ namespace Impatient.Query.ExpressionVisitors
                             var outerSelectExpression = outerQuery.SelectExpression;
 
                             var outerProjection
-                                = CreateRowNumberTuple(
+                                = RowNumberTuple.Create(
                                     outerSelectExpression.Projection.Flatten().Body,
                                     new SqlWindowFunctionExpression(
                                         new SqlFunctionExpression("ROW_NUMBER", typeof(int)),
@@ -1888,7 +1886,7 @@ namespace Impatient.Query.ExpressionVisitors
                             var innerSelectExpression = innerQuery.SelectExpression;
 
                             var innerProjection
-                                = CreateRowNumberTuple(
+                                = RowNumberTuple.Create(
                                     innerSelectExpression.Projection.Flatten().Body,
                                     new SqlWindowFunctionExpression(
                                         new SqlFunctionExpression("ROW_NUMBER", typeof(int)),
@@ -2418,24 +2416,6 @@ namespace Impatient.Query.ExpressionVisitors
             return new OrderByExpression(SingleValueRelationalQueryExpression.SelectOne, false);
         }
 
-        private static Expression CreateRowNumberTuple(Expression projection, Expression rowNumberExpression)
-        {
-            var rowNumberTupleType = typeof(RowNumberTuple<>).MakeGenericType(projection.Type);
-
-            return Expression.New(
-                rowNumberTupleType.GetTypeInfo().DeclaredConstructors.Single(),
-                new[]
-                {
-                    projection,
-                    rowNumberExpression,
-                },
-                new[]
-                {
-                    rowNumberTupleType.GetRuntimeField("Projection"),
-                    rowNumberTupleType.GetRuntimeField("RowNumber"),
-                });
-        }
-
         private static bool ContainsAggregateOrSubquery(Expression expression)
         {
             var visitor = new AggregateOrSubqueryFindingExpressionVisitor();
@@ -2465,21 +2445,6 @@ namespace Impatient.Query.ExpressionVisitors
                     return base.Visit(node);
                 }
             }
-        }
-
-        private struct RowNumberTuple<TProjection>
-        {
-            public RowNumberTuple(TProjection projection, int rowNumber)
-            {
-                Projection = projection;
-                RowNumber = rowNumber;
-            }
-
-            [PathSegmentName(null)]
-            public readonly TProjection Projection;
-
-            [PathSegmentName("$rownumber")]
-            public readonly int RowNumber;
         }
     }
 }

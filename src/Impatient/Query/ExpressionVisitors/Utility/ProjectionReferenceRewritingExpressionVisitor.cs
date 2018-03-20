@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using static System.Linq.Enumerable;
 
-namespace Impatient.Query.ExpressionVisitors
+namespace Impatient.Query.ExpressionVisitors.Utility
 {
     public class ProjectionReferenceRewritingExpressionVisitor : ExpressionVisitor
     {

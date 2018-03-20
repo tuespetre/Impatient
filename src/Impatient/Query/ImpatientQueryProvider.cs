@@ -1,5 +1,6 @@
 ﻿using Impatient.Query;
-using Impatient.Query.ExpressionVisitors;
+using Impatient.Query.ExpressionVisitors.Generating;
+using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
@@ -103,7 +104,7 @@ namespace Impatient
                     // so that the resulting IQueryable's expression tree will be integrated into the 
                     // current expression tree.
 
-                    expression = new QueryableExpandingExpressionVisitor(this, parameterMapping).Visit(expression);
+                    expression = new QueryableInliningExpressionVisitor(this, parameterMapping).Visit(expression);
 
                     // Apply all optimizing visitors before each composing visitor and then apply all
                     // optimizing visitors one last time.

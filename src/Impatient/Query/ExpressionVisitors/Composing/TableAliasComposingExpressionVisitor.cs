@@ -2,9 +2,9 @@
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.ExpressionVisitors
+namespace Impatient.Query.ExpressionVisitors.Composing
 {
-    public class QueryActivatingExpressionVisitor : ExpressionVisitor
+    public class TableAliasComposingExpressionVisitor : ExpressionVisitor
     {
         private string alias;
 

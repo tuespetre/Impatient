@@ -1,4 +1,5 @@
 ﻿using Impatient.Metadata;
+using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using System;
 using System.Collections.Generic;
@@ -6,13 +7,13 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.Query.ExpressionVisitors
+namespace Impatient.Query.ExpressionVisitors.Composing
 {
-    public class NavigationRewritingExpressionVisitor : ExpressionVisitor
+    public class NavigationComposingExpressionVisitor : ExpressionVisitor
     {
         private readonly IEnumerable<NavigationDescriptor> navigationDescriptors;
 
-        public NavigationRewritingExpressionVisitor(IEnumerable<NavigationDescriptor> navigationDescriptors)
+        public NavigationComposingExpressionVisitor(IEnumerable<NavigationDescriptor> navigationDescriptors)
         {
             this.navigationDescriptors = navigationDescriptors ?? throw new ArgumentNullException(nameof(navigationDescriptors));
         }

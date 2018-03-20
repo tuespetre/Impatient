@@ -1,4 +1,5 @@
 ﻿using Impatient.Query.Expressions;
+using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using System;
 using System.Collections;
@@ -6,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.ExpressionVisitors
+namespace Impatient.Query.ExpressionVisitors.Generating
 {
     public class QueryTranslatingExpressionVisitor : ExpressionVisitor
     {

@@ -1,6 +1,7 @@
 using Impatient.Query;
 using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors;
+using Impatient.Query.ExpressionVisitors.Composing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;

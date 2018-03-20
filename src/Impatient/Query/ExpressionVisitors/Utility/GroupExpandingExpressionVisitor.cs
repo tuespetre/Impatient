@@ -1,11 +1,9 @@
 ﻿using Impatient.Query.Expressions;
-using System.Collections;
-using System.Collections.Generic;
+using Impatient.Query.Infrastructure;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 
-namespace Impatient.Query.ExpressionVisitors
+namespace Impatient.Query.ExpressionVisitors.Utility
 {
     public class GroupExpandingExpressionVisitor : ExpressionVisitor
     {
@@ -37,7 +35,7 @@ namespace Impatient.Query.ExpressionVisitors
                                 .UpdateProjection(new ServerProjectionExpression(elementSelector))
                                 .AddToPredicate(Expression.Equal(outerKeySelector, innerKeySelector)));
 
-                    return ExpandGroup(visited, outerKeySelector, elements);
+                    return ExpandedGrouping.Create(visited, outerKeySelector, elements);
                 }
 
                 case GroupedRelationalQueryExpression groupedRelationalQueryExpression:
@@ -59,7 +57,7 @@ namespace Impatient.Query.ExpressionVisitors
                                         outerKeySelector,
                                         innerKeySelector)));
 
-                    return ExpandGroup(visited, groupedRelationalQueryExpression.OuterKeySelector, elements);
+                    return ExpandedGrouping.Create(visited, groupedRelationalQueryExpression.OuterKeySelector, elements);
                 }
 
                 default:
@@ -67,47 +65,6 @@ namespace Impatient.Query.ExpressionVisitors
                     return visited;
                 }
             }
-        }
-
-        private static Expression ExpandGroup(
-            Expression expression,
-            Expression keyExpression,
-            EnumerableRelationalQueryExpression elementsExpression)
-        {
-            if (expression.Type.IsGenericType(typeof(IGrouping<,>)))
-            {
-                var groupingType
-                    = typeof(ExpandedGrouping<,>)
-                        .MakeGenericType(expression.Type.GenericTypeArguments);
-
-                return Expression.New(
-                    groupingType.GetTypeInfo().DeclaredConstructors.Single(),
-                    new[] { keyExpression, elementsExpression },
-                    new[] { groupingType.GetRuntimeProperty("Key"), groupingType.GetRuntimeProperty("Elements") });
-            }
-            else
-            {
-                return elementsExpression;
-            }
-        }
-
-        private class ExpandedGrouping<TKey, TElement> : IGrouping<TKey, TElement>
-        {
-            public ExpandedGrouping(TKey key, IEnumerable<TElement> elements)
-            {
-                Key = key;
-                Elements = elements;
-            }
-
-            public TKey Key { get; }
-
-            public IEnumerable<TElement> Elements { get; }
-
-            public IEnumerator<TElement> GetEnumerator()
-                => Elements?.GetEnumerator() ?? Enumerable.Empty<TElement>().GetEnumerator();
-
-            IEnumerator IEnumerable.GetEnumerator()
-                => Elements?.GetEnumerator() ?? Enumerable.Empty<TElement>().GetEnumerator();
         }
     }
 }

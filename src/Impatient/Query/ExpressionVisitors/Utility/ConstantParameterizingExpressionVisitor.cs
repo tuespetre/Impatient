@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.ExpressionVisitors
+namespace Impatient.Query.ExpressionVisitors.Utility
 {
     public class ConstantParameterizingExpressionVisitor : ExpressionVisitor
     {

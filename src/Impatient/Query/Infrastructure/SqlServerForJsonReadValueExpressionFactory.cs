@@ -1,5 +1,6 @@
 ﻿using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors;
+using Impatient.Query.ExpressionVisitors.Utility;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

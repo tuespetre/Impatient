@@ -1,7 +1,9 @@
 ﻿using Impatient.Metadata;
-using Impatient.Query.ExpressionVisitors;
+using Impatient.Query.ExpressionVisitors.Composing;
+using Impatient.Query.ExpressionVisitors.Generating;
 using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.ExpressionVisitors.Rewriting;
+using Impatient.Query.ExpressionVisitors.Utility;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
@@ -37,9 +39,9 @@ namespace Impatient.Query
         {
             get
             {
-                yield return new NavigationRewritingExpressionVisitor(navigationDescriptors);
+                yield return new NavigationComposingExpressionVisitor(navigationDescriptors);
                 // TODO: See about merging QueryActivatingExpressionVisitor with QueryComposingExpressionVisitor
-                yield return new QueryActivatingExpressionVisitor();
+                yield return new TableAliasComposingExpressionVisitor();
                 yield return new QueryComposingExpressionVisitor(this);
             }
         }
