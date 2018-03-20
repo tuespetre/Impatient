@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Impatient.Tests
 {
@@ -45,6 +46,59 @@ INNER JOIN [dbo].[Customers] AS [t] ON [o].[CustomerID] = [t].[CustomerID]
                 Assert.IsNotNull(order1);
                 Assert.IsNotNull(order2);
                 Assert.AreEqual(order1, order2);
+            });
+        }
+
+        [TestMethod]
+        public async Task FirstOrDefaultAsync()
+        {
+            await EfCoreTestCaseAsync(async (context, log) =>
+            {
+                var order = await context.Set<Order>().FirstOrDefaultAsync();
+
+                Assert.IsNotNull(order);
+                Assert.AreEqual(1, context.ChangeTracker.Entries().Count());
+
+                Assert.AreEqual(@"
+SELECT TOP (1) [t].[OrderID] AS [OrderID], [t].[CustomerID] AS [CustomerID], [t].[EmployeeID] AS [EmployeeID], [t].[Freight] AS [Freight], [t].[OrderDate] AS [OrderDate], [t].[RequiredDate] AS [RequiredDate], [t].[ShipAddress] AS [ShipAddress], [t].[ShipCity] AS [ShipCity], [t].[ShipCountry] AS [ShipCountry], [t].[ShipName] AS [ShipName], [t].[ShipPostalCode] AS [ShipPostalCode], [t].[ShipRegion] AS [ShipRegion], [t].[ShipVia] AS [ShipVia], [t].[ShippedDate] AS [ShippedDate]
+FROM [dbo].[Orders] AS [t]
+".Trim(), log.ToString().Trim());
+            });
+        }
+
+        [TestMethod]
+        public async Task FirstOrDefaultAsync_Predicate()
+        {
+            await EfCoreTestCaseAsync(async (context, log) =>
+            {
+                var order = await context.Set<Order>().FirstOrDefaultAsync(o => o.OrderID == 10252);
+
+                Assert.IsNotNull(order);
+                Assert.AreEqual(1, context.ChangeTracker.Entries().Count());
+
+                Assert.AreEqual(@"
+SELECT TOP (1) [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate]
+FROM [dbo].[Orders] AS [o]
+WHERE [o].[OrderID] = 10252
+".Trim(), log.ToString().Trim());
+            });
+        }
+
+        [TestMethod]
+        public async Task ToListAsync()
+        {
+            await EfCoreTestCaseAsync(async (context, log) =>
+            {
+                var orders = await context.Set<Order>().Where(o => o.OrderID == 10252).ToListAsync();
+
+                Assert.AreEqual(1, orders.Count);
+                Assert.AreEqual(1, context.ChangeTracker.Entries().Count());
+
+                Assert.AreEqual(@"
+SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate]
+FROM [dbo].[Orders] AS [o]
+WHERE [o].[OrderID] = 10252
+".Trim(), log.ToString().Trim());
             });
         }
 
@@ -376,6 +430,32 @@ WHERE [t].[Discontinued] = 1
             using (var context = scope.ServiceProvider.GetRequiredService<NorthwindDbContext>())
             {
                 action(context, loggerProvider.LoggerInstance.StringBuilder);
+            }
+        }
+
+        private async Task EfCoreTestCaseAsync(Func<NorthwindDbContext, StringBuilder, Task> action)
+        {
+            var services = new ServiceCollection();
+            var loggerProvider = new TestLoggerProvider();
+
+            services.AddLogging(log =>
+            {
+                log.AddProvider(loggerProvider);
+            });
+
+            services.AddDbContext<NorthwindDbContext>(options =>
+            {
+                options
+                    .UseSqlServer(@"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=true; MultipleActiveResultSets=True")
+                    .UseImpatientQueryCompiler();
+            });
+
+            var provider = services.BuildServiceProvider();
+
+            using (var scope = provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetRequiredService<NorthwindDbContext>())
+            {
+                await action(context, loggerProvider.LoggerInstance.StringBuilder);
             }
         }
 

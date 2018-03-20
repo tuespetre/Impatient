@@ -26,22 +26,27 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         public TResult Execute<TResult>(Expression query)
         {
             return (TResult)GetQueryExecutor().Execute(
-                currentDbContext.GetDependencies().QueryProvider, 
+                currentDbContext.GetDependencies().QueryProvider,
                 PrepareQuery(query));
         }
 
         public IAsyncEnumerable<TResult> ExecuteAsync<TResult>(Expression query)
         {
-            // TODO: Support async
+            // TODO: Proper async support
 
-            throw new NotImplementedException();
+            return new BadAsyncEnumerable<TResult>(async () =>
+            {
+                var enumerable = await ExecuteAsync<IEnumerable<TResult>>(query, default(CancellationToken));
+
+                return enumerable.GetEnumerator();
+            });
         }
 
         public Task<TResult> ExecuteAsync<TResult>(Expression query, CancellationToken cancellationToken)
         {
-            // TODO: Support async
+            // TODO: Proper async support
 
-            throw new NotImplementedException();
+            return Task.Run(() => Execute<TResult>(query), cancellationToken);
         }
 
         private Expression PrepareQuery(Expression query)
@@ -53,12 +58,56 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         {
             if (queryExecutor == null)
             {
-                queryExecutor 
+                queryExecutor
                     = ((IInfrastructure<IServiceProvider>)currentDbContext.Context)
                         .Instance.GetRequiredService<IImpatientQueryExecutor>();
             }
 
             return queryExecutor;
+        }
+    }
+
+    internal class BadAsyncEnumerable<TResult> : IAsyncEnumerable<TResult>
+    {
+        private readonly Func<Task<IEnumerator<TResult>>> func;
+
+        public BadAsyncEnumerable(Func<Task<IEnumerator<TResult>>> func)
+        {
+            this.func = func;
+        }
+
+        public IAsyncEnumerator<TResult> GetEnumerator()
+        {
+            return new BadAsyncEnumerator<TResult>(func());
+        }
+    }
+
+    internal class BadAsyncEnumerator<TResult> : IAsyncEnumerator<TResult>
+    {
+        private readonly Task<IEnumerator<TResult>> task;
+        private IEnumerator<TResult> enumerator;
+
+        public BadAsyncEnumerator(Task<IEnumerator<TResult>> task)
+        {
+            this.task = task;
+        }
+
+        public TResult Current => enumerator.Current;
+
+        public void Dispose()
+        {
+            task.Dispose();
+            enumerator?.Dispose();
+        }
+
+        public async Task<bool> MoveNext(CancellationToken cancellationToken)
+        {
+            if (enumerator == null)
+            {
+                enumerator = await task;
+            }
+
+            return enumerator.MoveNext();
         }
     }
 }
