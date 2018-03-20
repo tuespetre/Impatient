@@ -1,30 +1,28 @@
-﻿using Impatient.Metadata;
-using Impatient.Query.ExpressionVisitors;
-using Impatient.Query.ExpressionVisitors.Utility;
+﻿using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
-    public class EFCoreComposingExpressionVisitorProvider : DefaultComposingExpressionVisitorProvider
+    public class EFCoreCompilingExpressionVisitorProvider : DefaultCompilingExpressionVisitorProvider
     {
-        public EFCoreComposingExpressionVisitorProvider(
+        public EFCoreCompilingExpressionVisitorProvider(
             TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor, 
-            IRewritingExpressionVisitorProvider rewritingExpressionVisitorProvider) 
+            IQueryTranslatingExpressionVisitorFactory queryTranslatingExpressionVisitorFactory) 
             : base(translatabilityAnalyzingExpressionVisitor, 
-                  rewritingExpressionVisitorProvider)
+                  queryTranslatingExpressionVisitorFactory)
         {
         }
 
         public override IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
         {
-            yield return new IncludeComposingExpressionVisitor(context.DescriptorSet);
-
             foreach (var visitor in base.CreateExpressionVisitors(context))
             {
                 yield return visitor;
             }
+
+            yield return new ChangeTrackerInjectingExpressionVisitor(context.ExecutionContextParameter);
         }
     }
 }

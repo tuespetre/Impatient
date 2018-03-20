@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using Impatient.Query.Expressions;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
 namespace Impatient.Query.ExpressionVisitors.Utility
@@ -74,7 +75,20 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
         protected override Expression VisitExtension(Expression node)
         {
-            Combine(node.GetHashCode());
+            switch (node)
+            {
+                case AnnotationExpression annotationExpression:
+                {
+                    Combine(annotationExpression.GetAnnotationHashCode());
+                    break;
+                }
+
+                default:
+                {
+                    Combine(node.GetHashCode());
+                    break;
+                }
+            }
 
             return base.VisitExtension(node);
         }

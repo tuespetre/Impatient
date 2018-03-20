@@ -10,17 +10,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
     internal class EFCoreQueryableInliningExpressionVisitor : QueryableInliningExpressionVisitor
     {
         private readonly IModel model;
-        private readonly QueryOptions queryOptions;
 
         public EFCoreQueryableInliningExpressionVisitor(
             IQueryProvider provider,
             IReadOnlyDictionary<object, ParameterExpression> mapping,
-            IModel model,
-            QueryOptions queryOptions)
+            IModel model)
             : base(provider, mapping)
         {
             this.model = model;
-            this.queryOptions = queryOptions;
         }
 
         public override Expression Visit(Expression node)
@@ -31,7 +28,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 var queryable = (IQueryable)constant.Value;
 
-                return ModelHelper.CreateQueryable(queryable.ElementType, model, queryOptions);
+                return ModelHelper.CreateQueryable(queryable.ElementType, model);
             }
 
             return visited;

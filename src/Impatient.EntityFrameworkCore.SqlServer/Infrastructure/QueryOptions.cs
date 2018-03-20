@@ -1,6 +1,6 @@
 ﻿namespace Impatient.EntityFrameworkCore.SqlServer
 {
-    public struct QueryOptions
+    public class QueryOptions
     {
         public QueryOptions(
             bool ignoreQueryFilters, 

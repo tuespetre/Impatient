@@ -49,6 +49,8 @@ namespace Impatient
 
         public static Expression AsSqlBooleanExpression(this Expression expression)
         {
+            expression = expression.UnwrapAnnotations();
+
             if (expression == null || expression.IsSqlBooleanExpression())
             {
                 return expression;

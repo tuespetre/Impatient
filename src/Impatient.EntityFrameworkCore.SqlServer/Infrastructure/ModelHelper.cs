@@ -39,7 +39,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                    };
         }
 
-        public static IEnumerable<NavigationDescriptor> CreateNavigationDescriptors(IModel model, QueryOptions queryOptions)
+        public static IEnumerable<NavigationDescriptor> CreateNavigationDescriptors(IModel model)
         {
             var fks = from t in model.GetEntityTypes()
                       from f in t.GetForeignKeys()
@@ -57,7 +57,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         Type = fk.PrincipalEntityType.ClrType,
                         Member = fk.PrincipalToDependent.PropertyInfo,
                         IsNullable = !fk.IsRequired,
-                        Expansion = CreateQueryable(fk.DeclaringEntityType.ClrType, model, queryOptions),
+                        Expansion = CreateQueryable(fk.DeclaringEntityType.ClrType, model),
                         OuterKeySelector = principal,
                         InnerKeySelector = dependent
                     };
@@ -70,7 +70,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         Type = fk.DeclaringEntityType.ClrType,
                         Member = fk.DependentToPrincipal.PropertyInfo,
                         IsNullable = false,
-                        Expansion = CreateQueryable(fk.PrincipalEntityType.ClrType, model, queryOptions),
+                        Expansion = CreateQueryable(fk.PrincipalEntityType.ClrType, model),
                         OuterKeySelector = dependent,
                         InnerKeySelector = principal
                     };
@@ -78,7 +78,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
         }
 
-        public static Expression CreateQueryable(Type elementType, IModel model, QueryOptions queryOptions)
+        public static Expression CreateQueryable(Type elementType, IModel model)
         {
             var targetType = model.GetEntityTypes().SingleOrDefault(t => t.ClrType == elementType);
             var rootType = targetType.RootType();
@@ -187,15 +187,17 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 = new ServerProjectionExpression(
                     new EntityMaterializationExpression(
                         targetType,
-                        queryOptions.UseTracking ? EntityState.Unchanged : EntityState.Detached,
+                        EntityState.Detached,
                         keyExpression,
                         materializer));
 
             var selectExpression = new SelectExpression(projection, table);
 
-            if (!queryOptions.IgnoreQueryFilters && targetType.QueryFilter != null)
+            if (targetType.QueryFilter != null)
             {
-                selectExpression = selectExpression.AddToPredicate(targetType.QueryFilter.ExpandParameters(materializer));
+                selectExpression 
+                    = selectExpression.AddToPredicate(new QueryFilterExpression(
+                        targetType.QueryFilter.ExpandParameters(materializer)));
             }
 
             return new EnumerableRelationalQueryExpression(selectExpression);

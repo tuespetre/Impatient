@@ -37,5 +37,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             return this;
         }
+
+        public EntityMaterializationExpression UpdateState(EntityState state)
+        {
+            return new EntityMaterializationExpression(EntityType, state, KeyExpression, Expression);
+        }
+
+        public override int GetAnnotationHashCode() => (EntityType, EntityState, KeyExpression).GetHashCode();
     }
 }
