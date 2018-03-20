@@ -114,7 +114,9 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
                     case nameof(string.StartsWith) when arguments.Count == 1:
                     {
-                        // TODO: Use LIKE for StartsWith instead
+                        // TODO: consider LIKE for StartsWith instead
+
+                        // TODO: consider char argument
 
                         return Expression.Equal(
                             new SqlFunctionExpression(
@@ -130,6 +132,8 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                         // Note: 
                         // Don't bother using LIKE, because patterns that contain wildcards
                         // anywhere except the end cannot use an index anyways.
+                        
+                        // TODO: consider char argument
 
                         return Expression.Equal(
                             new SqlFunctionExpression(

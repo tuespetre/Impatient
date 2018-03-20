@@ -5,6 +5,11 @@ using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Utility
 {
+    /// <summary>
+    /// An <see cref="ExpressionVisitor"/> that finds instances of 
+    /// <see cref="GroupByResultExpression"/> and <see cref="GroupedRelationalQueryExpression"/>
+    /// and replaces them with an expanded form that can be compiled.
+    /// </summary>
     public class GroupExpandingExpressionVisitor : ExpressionVisitor
     {
         public override Expression Visit(Expression node)
@@ -52,10 +57,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                     var elements
                         = new EnumerableRelationalQueryExpression(
                             groupedRelationalQueryExpression.SelectExpression
-                                .AddToPredicate(
-                                    Expression.Equal(
-                                        outerKeySelector,
-                                        innerKeySelector)));
+                                .AddToPredicate(Expression.Equal(outerKeySelector, innerKeySelector)));
 
                     return ExpandedGrouping.Create(visited, groupedRelationalQueryExpression.OuterKeySelector, elements);
                 }

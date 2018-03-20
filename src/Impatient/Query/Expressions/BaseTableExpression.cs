@@ -16,5 +16,7 @@ namespace Impatient.Query.Expressions
         public string TableName { get; }
 
         protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
+
+        public BaseTableExpression Clone() => new BaseTableExpression(SchemaName, TableName, Alias, Type);
     }
 }

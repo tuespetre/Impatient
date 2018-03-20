@@ -2,6 +2,9 @@
 
 namespace Impatient.Query.ExpressionVisitors.Utility
 {
+    /// <summary>
+    /// An <see cref="ExpressionVisitor"/> that inverts all boolean expressions it encounters.
+    /// </summary>
     public class BinaryInvertingExpressionVisitor : ExpressionVisitor
     {
         public static BinaryInvertingExpressionVisitor Instance { get; } = new BinaryInvertingExpressionVisitor();

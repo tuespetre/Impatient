@@ -4,6 +4,7 @@ using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
@@ -104,7 +105,11 @@ namespace Impatient
                     // so that the resulting IQueryable's expression tree will be integrated into the 
                     // current expression tree.
 
-                    expression = new QueryableInliningExpressionVisitor(this, parameterMapping).Visit(expression);
+                    expression 
+                        = new QueryableInliningExpressionVisitor(
+                            this, 
+                            new ReadOnlyDictionary<object,ParameterExpression>(parameterMapping))
+                            .Visit(expression);
 
                     // Apply all optimizing visitors before each composing visitor and then apply all
                     // optimizing visitors one last time.

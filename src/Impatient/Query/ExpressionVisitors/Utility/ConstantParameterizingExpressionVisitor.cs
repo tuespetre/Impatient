@@ -4,6 +4,10 @@ using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Utility
 {
+    /// <summary>
+    /// A <see cref="ExpressionVisitor"/> that discovers all non-literal constant
+    /// expressions and replaces them with a <see cref="ParameterExpression"/>.
+    /// </summary>
     public class ConstantParameterizingExpressionVisitor : ExpressionVisitor
     {
         public IDictionary<object, ParameterExpression> Mapping { get; } = new Dictionary<object, ParameterExpression>();

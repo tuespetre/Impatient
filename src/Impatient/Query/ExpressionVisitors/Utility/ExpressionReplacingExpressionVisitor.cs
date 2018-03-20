@@ -4,6 +4,10 @@ using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Utility
 {
+    /// <summary>
+    /// An <see cref="ExpressionVisitor"/> that, given a mapping of target and replacement
+    /// <see cref="Expression"/> instances, replaces each target with its replacement.
+    /// </summary>
     public class ExpressionReplacingExpressionVisitor : ExpressionVisitor
     {
         private readonly IDictionary<Expression, Expression> mapping;
@@ -25,10 +29,19 @@ namespace Impatient.Query.ExpressionVisitors.Utility
         }
 
         public override Expression Visit(Expression node)
-            => node is null
-                ? node
-                : mapping.TryGetValue(node, out var replacement)
-                    ? replacement
-                    : base.Visit(node);
+        {
+            if (node == null)
+            {
+                return node;
+            }
+            else if (mapping.TryGetValue(node, out var replacement))
+            {
+                return replacement;
+            }
+            else
+            {
+                return base.Visit(node);
+            }
+        }
     }
 }

@@ -3,6 +3,11 @@ using System.Runtime.CompilerServices;
 
 namespace Impatient.Query.ExpressionVisitors.Utility
 {
+    /// <summary>
+    /// An <see cref="ExpressionVisitor"/> that walks an expression tree
+    /// to produce a hash code based on the actual 'value' properties of
+    /// each expression which can be used to test for 'equality' of expression trees.
+    /// </summary>
     public class HashingExpressionVisitor : ExpressionVisitor
     {
         private const int InitialHashCode = unchecked((int)2166136261);

@@ -3,6 +3,13 @@ using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Utility
 {
+    /// <summary>
+    /// An <see cref="ExpressionVisitor"/> that marks all instances of
+    /// <see cref="SqlColumnExpression"/> as non-nullable. This avoids the
+    /// overhead of unnecessary null-checking during join operations (if the
+    /// keys are being checked during a join, it means the objects are definitely
+    /// not null.)
+    /// </summary>
     public class JoinKeyDenullifyingExpressionVisitor : ExpressionVisitor
     {
         public static JoinKeyDenullifyingExpressionVisitor Instance { get; }

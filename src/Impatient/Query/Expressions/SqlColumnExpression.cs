@@ -21,16 +21,9 @@ namespace Impatient.Query.Expressions
 
         public override bool IsNullable { get; }
 
-        protected override Expression VisitChildren(ExpressionVisitor visitor)
-        {
-            /*var table = visitor.VisitAndConvert(Table, nameof(VisitChildren));
-
-            if (table != Table)
-            {
-                return new SqlColumnExpression(table, ColumnName, Type, IsNullable);
-            }*/
-
-            return this;
-        }
+        // The SqlColumnExpression holds a reference to a AliasedTableExpression only in
+        // a semantic sense, not a structural one -- that is to say, the table is not a proper
+        // 'child node' of the column and thus should not be visited.
+        protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
     }
 }

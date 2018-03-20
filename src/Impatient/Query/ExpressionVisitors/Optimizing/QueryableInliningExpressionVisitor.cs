@@ -9,23 +9,23 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 {
     public class QueryableInliningExpressionVisitor : PartialEvaluatingExpressionVisitor
     {
-        private readonly ImpatientQueryProvider provider;
+        private readonly IQueryProvider queryProvider;
         private readonly ExpressionVisitor replacingVisitor;
 
         public QueryableInliningExpressionVisitor(
-            ImpatientQueryProvider provider,
-            IDictionary<object, ParameterExpression> mapping)
+            IQueryProvider queryProvider,
+            IReadOnlyDictionary<object, ParameterExpression> parameterMapping)
         {
-            this.provider = provider ?? throw new ArgumentNullException(nameof(provider));
+            this.queryProvider = queryProvider ?? throw new ArgumentNullException(nameof(queryProvider));
 
-            if (mapping == null)
+            if (parameterMapping == null)
             {
-                throw new ArgumentNullException(nameof(mapping));
+                throw new ArgumentNullException(nameof(parameterMapping));
             }
 
             replacingVisitor
                 = new ExpressionReplacingExpressionVisitor(
-                    mapping.ToDictionary(
+                    parameterMapping.ToDictionary(
                         kvp => kvp.Value as Expression,
                         kvp => Expression.Constant(kvp.Key) as Expression));
         }
@@ -37,11 +37,17 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                 return null;
             }
 
+            // The replacing visitor is run on the node only if it is an IQueryable
+            // so that IQueryables coming from a closure can be properly swapped in
+            // and taken for their expressions. If the replacing visitor were run on
+            // all nodes, actual parameters (think `where customer.Id == <closure>.customerId`)
+            // would be replaced, which messes up parameterization and query caching.
+
             if (typeof(IQueryable).IsAssignableFrom(node.Type))
             {
                 var evaluated = base.Visit(replacingVisitor.Visit(node)) as ConstantExpression;
 
-                if (evaluated?.Value is IQueryable queryable && queryable.Provider == provider)
+                if (evaluated?.Value is IQueryable queryable && queryable.Provider == queryProvider)
                 {
                     return queryable.Expression;
                 }

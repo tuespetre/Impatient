@@ -16,11 +16,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
                 case BaseTableExpression baseTableExpression:
                 {
-                    return new BaseTableExpression(
-                        baseTableExpression.SchemaName,
-                        baseTableExpression.TableName,
-                        baseTableExpression.Alias,
-                        baseTableExpression.Type);
+                    return baseTableExpression.Clone();
                 }
 
                 default:
