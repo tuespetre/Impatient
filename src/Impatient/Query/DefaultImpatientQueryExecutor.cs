@@ -71,7 +71,15 @@ namespace Impatient.Query
                 // for expressions that are structurally equivalent apart from any closure instances.
 
                 var hashingVisitor = new HashingExpressionVisitor();
-                expression = hashingVisitor.Visit(expression);
+                hashingVisitor.Visit(expression);
+
+                // Some parameters may have been eliminated during query inlining,
+                // so we need to make sure all of our parameters' types are included
+                // in the hash code to avoid errors related to mismatched closure types.
+                foreach (var parameter in parameterMapping.Values)
+                {
+                    hashingVisitor.Combine(parameter.Type.GetHashCode());
+                }
 
                 if (!QueryCache.TryGetValue(hashingVisitor.HashCode, out var compiled))
                 {

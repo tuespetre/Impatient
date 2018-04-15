@@ -20,7 +20,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
         public void Reset() => HashCode = InitialHashCode;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Combine(int hashCode) => HashCode = unchecked((HashCode * 16777619) ^ hashCode);
+        public void Combine(int hashCode) => HashCode = unchecked((HashCode * 16777619) ^ hashCode);
 
         public override Expression Visit(Expression node)
         {

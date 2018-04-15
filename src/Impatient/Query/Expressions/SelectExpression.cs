@@ -1,12 +1,13 @@
 ﻿using Impatient.Query.ExpressionVisitors;
 using Impatient.Query.ExpressionVisitors.Utility;
+using Impatient.Query.Infrastructure;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public class SelectExpression : Expression
+    public class SelectExpression : Expression, ISemanticallyHashable
     {
         public SelectExpression(ProjectionExpression projection) : this(projection, null)
         {
@@ -218,5 +219,7 @@ namespace Impatient.Query.Expressions
         {
             return new SelectExpression(Projection, Table, Predicate, OrderBy, Offset, Limit, IsDistinct, Grouping, true);
         }
+
+        public int GetSemanticHashCode() => 0;
     }
 }
