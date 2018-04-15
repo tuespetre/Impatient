@@ -37,7 +37,5 @@ namespace Impatient.Query.Expressions
 
             return this;
         }
-
-        public override int GetAnnotationHashCode() => 0;
     }
 }

@@ -17,5 +17,7 @@ namespace Impatient.Query.Expressions
         public string Fragment { get; }
 
         public override Type Type { get; }
+
+        public override int GetSemanticHashCode() => (IsNullable, Fragment).GetHashCode();
     }
 }

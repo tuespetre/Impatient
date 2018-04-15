@@ -1,4 +1,5 @@
 ﻿using Impatient.Metadata;
+using Impatient.Query.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Reflection;
 
 namespace Impatient.Query.Expressions
 {
-    public class PolymorphicExpression : Expression
+    public class PolymorphicExpression : Expression, ISemanticallyHashable
     {
         public PolymorphicExpression(
             Type type,
@@ -88,5 +89,7 @@ namespace Impatient.Query.Expressions
         public override Type Type { get; }
 
         public override ExpressionType NodeType => ExpressionType.Extension;
+
+        public int GetSemanticHashCode() => 0;
     }
 }

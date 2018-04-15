@@ -31,6 +31,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
             return this;
         }
 
-        public override int GetAnnotationHashCode() => (QueryTrackingBehavior, IgnoreQueryFilters).GetHashCode();
+        public override int GetSemanticHashCode() => (QueryTrackingBehavior, IgnoreQueryFilters).GetHashCode();
     }
 }

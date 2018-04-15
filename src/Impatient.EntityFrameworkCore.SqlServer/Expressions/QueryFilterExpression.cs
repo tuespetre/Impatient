@@ -27,6 +27,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return this;
         }
 
-        public override int GetAnnotationHashCode() => 0;//typeof(QueryFilterExpression).GetHashCode();
+        public override int GetSemanticHashCode() => 0;//typeof(QueryFilterExpression).GetHashCode();
     }
 }

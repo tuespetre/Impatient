@@ -86,6 +86,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 IncludedNavigations.Append(navigation).Distinct());
         }
 
-        public override int GetAnnotationHashCode() => EntityType.GetHashCode();
+        public override int GetSemanticHashCode() => EntityType.GetHashCode();
     }
 }

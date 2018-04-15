@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Impatient.Query.Infrastructure;
+using System;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public abstract class RelationalQueryExpression : Expression
+    public abstract class RelationalQueryExpression : Expression, ISemanticallyHashable
     {
         protected RelationalQueryExpression(SelectExpression selectExpression, Type type)
         {
@@ -18,5 +19,7 @@ namespace Impatient.Query.Expressions
         public override ExpressionType NodeType => ExpressionType.Extension;
 
         protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
+
+        public virtual int GetSemanticHashCode() => 0;
     }
 }

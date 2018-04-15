@@ -1,8 +1,9 @@
-﻿using System.Linq.Expressions;
+﻿using Impatient.Query.Infrastructure;
+using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public abstract class ProjectionExpression : Expression
+    public abstract class ProjectionExpression : Expression, ISemanticallyHashable
     {
         public abstract LambdaExpression ResultLambda { get; }
 
@@ -13,5 +14,7 @@ namespace Impatient.Query.Expressions
         public override ExpressionType NodeType => ExpressionType.Extension;
 
         protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
+
+        public int GetSemanticHashCode() => 0;
     }
 }

@@ -67,5 +67,7 @@ namespace Impatient.Query.Expressions
                 SelectExpression, 
                 typeof(IOrderedQueryableEnumerable<>).MakeGenericType(SelectExpression.Type));
         }
+
+        public override int GetSemanticHashCode() => ValueTuple.Create(TransformationMethod).GetHashCode();
     }
 }

@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Impatient.Query.Infrastructure;
+using System;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public abstract class AnnotationExpression : Expression
+    public abstract class AnnotationExpression : Expression, ISemanticallyHashable
     {
         public AnnotationExpression(Expression expression)
         {
@@ -20,6 +21,6 @@ namespace Impatient.Query.Expressions
 
         public override Expression Reduce() => Expression;
 
-        public abstract int GetAnnotationHashCode();
+        public abstract int GetSemanticHashCode();
     }
 }

@@ -38,7 +38,5 @@ namespace Impatient.Query.Expressions
                 Names.Append(name),
                 Properties.Append(expression));
         }
-
-        public override int GetAnnotationHashCode() => 0;
     }
 }

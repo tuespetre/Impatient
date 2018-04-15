@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Impatient.Query.Infrastructure;
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public abstract class AliasedTableExpression : TableExpression
+    public abstract class AliasedTableExpression : TableExpression, ISemanticallyHashable
     {
         public AliasedTableExpression(string alias, Type type) : base(type)
         {
@@ -19,5 +20,7 @@ namespace Impatient.Query.Expressions
         {
             yield return this;
         }
+
+        public virtual int GetSemanticHashCode() => Alias.GetHashCode();
     }
 }

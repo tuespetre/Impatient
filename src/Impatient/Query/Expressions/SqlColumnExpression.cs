@@ -25,5 +25,7 @@ namespace Impatient.Query.Expressions
         // a semantic sense, not a structural one -- that is to say, the table is not a proper
         // 'child node' of the column and thus should not be visited.
         protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
+
+        public override int GetSemanticHashCode() => (IsNullable, ColumnName, Table.Alias).GetHashCode();
     }
 }

@@ -1,11 +1,12 @@
-﻿using System;
+﻿using Impatient.Query.Infrastructure;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public class OrderByExpression : Expression
+    public class OrderByExpression : Expression, ISemanticallyHashable
     {
         public OrderByExpression(Expression expression, bool descending)
         {
@@ -59,5 +60,7 @@ namespace Impatient.Query.Expressions
 
             return result;
         }
+
+        public int GetSemanticHashCode() => Descending.GetHashCode();
     }
 }

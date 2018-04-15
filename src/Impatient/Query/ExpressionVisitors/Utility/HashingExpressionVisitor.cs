@@ -1,4 +1,5 @@
 ﻿using Impatient.Query.Expressions;
+using Impatient.Query.Infrastructure;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
@@ -86,9 +87,9 @@ namespace Impatient.Query.ExpressionVisitors.Utility
         {
             switch (node)
             {
-                case AnnotationExpression annotationExpression:
+                case ISemanticallyHashable semanticallyHashable:
                 {
-                    Combine(annotationExpression.GetAnnotationHashCode());
+                    Combine(semanticallyHashable.GetSemanticHashCode());
                     break;
                 }
 

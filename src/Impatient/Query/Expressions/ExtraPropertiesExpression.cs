@@ -25,5 +25,7 @@ namespace Impatient.Query.Expressions
         }
 
         public abstract ExtraPropertiesExpression Update(Expression expression, IEnumerable<Expression> properties);
+
+        public override int GetSemanticHashCode() => 0;
     }
 }

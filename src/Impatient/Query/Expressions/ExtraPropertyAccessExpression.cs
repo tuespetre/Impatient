@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Impatient.Query.Infrastructure;
+using System;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public class ExtraPropertyAccessExpression : Expression
+    public class ExtraPropertyAccessExpression : Expression, ISemanticallyHashable
     {
         public ExtraPropertyAccessExpression(Expression expression, string property, Type type)
         {
@@ -39,5 +40,7 @@ namespace Impatient.Query.Expressions
             expression = Expression;
             property = Property;
         }
+
+        public int GetSemanticHashCode() => Property.GetHashCode();
     }
 }

@@ -29,5 +29,7 @@ namespace Impatient.Query.Expressions
 
             return this;
         }
+
+        public override int GetSemanticHashCode() => (IsNullable, SqlType).GetHashCode();
     }
 }

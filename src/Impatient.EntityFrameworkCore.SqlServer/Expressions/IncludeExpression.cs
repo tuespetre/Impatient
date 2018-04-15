@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 
 namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
 {
@@ -54,6 +53,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
             return this;
         }
 
-        public override int GetAnnotationHashCode() => 0;
+        public override int GetSemanticHashCode() => 0;
     }
 }

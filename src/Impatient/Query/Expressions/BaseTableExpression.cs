@@ -18,5 +18,7 @@ namespace Impatient.Query.Expressions
         protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
 
         public BaseTableExpression Clone() => new BaseTableExpression(SchemaName, TableName, Alias, Type);
+
+        public override int GetSemanticHashCode() => (SchemaName, TableName, Alias).GetHashCode();
     }
 }
