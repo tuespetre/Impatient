@@ -1,4 +1,6 @@
 ﻿using Impatient.Metadata;
+using Impatient.Query.Expressions;
+using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
@@ -15,18 +17,13 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
             this.descriptorSet = descriptorSet ?? throw new ArgumentNullException(nameof(descriptorSet));
         }
 
-        public override Expression Visit(Expression node)
-        {
-            return base.Visit(node);
-        }
-
         protected override Expression VisitBinary(BinaryExpression node)
         {
-            // TODO: Test with polymorphism
+            // TODO: Write an explicit test case for PolymorphicExpression key comparison
             if (node.NodeType == ExpressionType.Equal || node.NodeType == ExpressionType.NotEqual)
             {
-                var left = Visit(node.Left);
-                var right = Visit(node.Right);
+                var left = Visit(node.Left).UnwrapAnnotations();
+                var right = Visit(node.Right).UnwrapAnnotations();
                 var leftIsNullConstant = left is ConstantExpression leftConstant && leftConstant.Value == null;
                 var rightIsNullConstant = right is ConstantExpression rightConstant && rightConstant.Value == null;
                 var canRewriteLeft = CanRewrite(left);
@@ -36,7 +33,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     || (!canRewriteLeft && !leftIsNullConstant)
                     || (!canRewriteRight && !rightIsNullConstant))
                 {
-                    goto Finish;
+                    return node;
                 }
 
                 left = TryReduceNavigationKey(left, out var rewroteLeft);
@@ -44,7 +41,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
                 if (rewroteLeft && rewroteRight)
                 {
-                    goto Finish;
+                    return Expression.MakeBinary(node.NodeType, left, right);
                 }
 
                 var primaryKeyDescriptor
@@ -54,7 +51,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
                 if (primaryKeyDescriptor == null)
                 {
-                    goto Finish;
+                    return Expression.MakeBinary(node.NodeType, left, right);
                 }
 
                 if (!rewroteLeft && canRewriteLeft)
@@ -95,8 +92,12 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                         right = Expression.Constant(null, nonNullExpression.Type);
                     }
                 }
-
-                Finish:
+                /*else
+                {
+                    left = new SqlColumnNullabilityExpressionVisitor().Visit(left);
+                    right = new SqlColumnNullabilityExpressionVisitor().Visit(right);
+                }*/
+                
                 return Expression.MakeBinary(node.NodeType, left, right);
             }
 
@@ -117,7 +118,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                         var outerKeySelector = arguments[2].UnwrapLambda();
                         var innerKeySelector = arguments[3].UnwrapLambda();
 
-                        if (CanRewrite(outerKeySelector.Body) && CanRewrite(innerKeySelector.Body))
+                        if (CanRewrite(outerKeySelector?.Body) && CanRewrite(innerKeySelector?.Body))
                         {
                             arguments[2] =
                                 Expression.Lambda(
@@ -184,6 +185,8 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                 case NewExpression _:
                 case MemberInitExpression _:
                 case ParameterExpression _:
+                case PolymorphicExpression _:
+                //case ExtraPropertiesExpression _:
                 {
                     return true;
                 }
@@ -213,7 +216,8 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                 {
                     reduced = true;
 
-                    return navigationDescriptor.OuterKeySelector.ExpandParameters(memberExpression.Expression);
+                    return new SqlColumnNullabilityExpressionVisitor()
+                        .Visit(navigationDescriptor.OuterKeySelector.ExpandParameters(memberExpression.Expression));
                 }
             }
 

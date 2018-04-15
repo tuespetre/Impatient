@@ -1,5 +1,5 @@
-﻿using Impatient.Query.Expressions;
-using Impatient.Query.Infrastructure;
+﻿using Impatient.Metadata;
+using Impatient.Query.Expressions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -10,6 +10,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
     public abstract class ProjectionExpressionVisitor : ExpressionVisitor
     {
         private Stack<MemberInfo> memberStack = new Stack<MemberInfo>();
+        private Stack<string> nameStack = new Stack<string>();
 
         protected bool InLeaf { get; private set; }
 
@@ -19,7 +20,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
         protected virtual IEnumerable<string> GetNameParts()
         {
-            return CurrentPath.Select(m => m.GetPathSegmentName()).Where(n => n != null && !n.StartsWith("<>"));
+            return nameStack.Reverse().Where(n => n != null && !n.StartsWith("<>"));
         }
 
         protected bool IsNotLeaf(NewExpression node)
@@ -50,10 +51,12 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                     for (var i = 0; i < newExpression.Arguments.Count; i++)
                     {
                         memberStack.Push(newExpression.Members[i]);
+                        nameStack.Push(newExpression.Members[i].GetPathSegmentName());
 
                         arguments[i] = Visit(newExpression.Arguments[i]);
 
                         memberStack.Pop();
+                        nameStack.Pop();
                     }
 
                     return newExpression.Update(arguments);
@@ -68,10 +71,12 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                     for (var i = 0; i < newExpression.Arguments.Count; i++)
                     {
                         memberStack.Push(newExpression.Members[i]);
+                        nameStack.Push(newExpression.Members[i].GetPathSegmentName());
 
                         arguments[i] = Visit(newExpression.Arguments[i]);
 
                         memberStack.Pop();
+                        nameStack.Pop();
                     }
 
                     newExpression = newExpression.Update(arguments);
@@ -81,41 +86,79 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                     for (var i = 0; i < memberInitExpression.Bindings.Count; i++)
                     {
                         memberStack.Push(memberInitExpression.Bindings[i].Member);
+                        nameStack.Push(memberInitExpression.Bindings[i].Member.GetPathSegmentName());
 
                         bindings[i] = VisitMemberBinding(memberInitExpression.Bindings[i]);
 
                         memberStack.Pop();
+                        nameStack.Pop();
                     }
 
                     return memberInitExpression.Update(newExpression, bindings);
                 }
 
+                case NewArrayExpression newArrayExpression:
+                {
+                    var expressions = new Expression[newArrayExpression.Expressions.Count];
+
+                    for (var i = 0; i < newArrayExpression.Expressions.Count; i++)
+                    {
+                        nameStack.Push($"${i}");
+
+                        expressions[i] = Visit(newArrayExpression.Expressions[i]);
+
+                        nameStack.Pop();
+                    }
+
+                    return newArrayExpression.Update(expressions);
+                }
+
                 case PolymorphicExpression polymorphicExpression:
                 {
                     var row = Visit(polymorphicExpression.Row);
+                    var descriptors = polymorphicExpression.Descriptors.ToArray();
+
+                    for (var i = 0; i < descriptors.Length; i++)
+                    {
+                        var descriptor = descriptors[i];
+
+                        descriptors[i]
+                            = new PolymorphicTypeDescriptor(
+                                descriptor.Type,
+                                descriptor.Test,
+                                Expression.Lambda(
+                                    descriptor.Materializer.Body,
+                                    descriptor.Materializer.Parameters));
+                    }
 
                     return new PolymorphicExpression(
                         polymorphicExpression.Type,
-                        polymorphicExpression.Row,
-                        polymorphicExpression.Descriptors);
+                        row,
+                        descriptors);
                 }
 
-                case DefaultIfEmptyExpression defaultIfEmptyExpression
-                when defaultIfEmptyExpression.Flag != null:
+                case UnaryExpression unaryExpression
+                when unaryExpression.NodeType == ExpressionType.Convert:
                 {
-                    memberStack.Push(EmptyRecord.EmptyFieldInfo);
+                    return unaryExpression.Update(Visit(unaryExpression.Operand));
+                }
 
-                    InLeaf = true;
+                case ExtraPropertiesExpression extraPropertiesExpression:
+                {
+                    var properties = new Expression[extraPropertiesExpression.Properties.Count];
 
-                    var flag = VisitLeaf(defaultIfEmptyExpression.Flag);
+                    for (var i = 0; i < extraPropertiesExpression.Properties.Count; i++)
+                    {
+                        nameStack.Push(extraPropertiesExpression.Names[i]);
 
-                    InLeaf = false;
+                        properties[i] = Visit(extraPropertiesExpression.Properties[i]);
 
-                    memberStack.Pop();
+                        nameStack.Pop();
+                    }
 
-                    var expression = Visit(defaultIfEmptyExpression.Expression);
+                    var expression = Visit(extraPropertiesExpression.Expression);
 
-                    return defaultIfEmptyExpression.Update(expression, flag);
+                    return extraPropertiesExpression.Update(expression, properties);
                 }
 
                 case AnnotationExpression annotationExpression:

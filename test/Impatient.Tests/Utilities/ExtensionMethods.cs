@@ -19,6 +19,8 @@ namespace Impatient.Tests.Utilities
 
             services.AddSingleton<TranslatabilityAnalyzingExpressionVisitor>();
 
+            services.AddScoped<IReadValueExpressionFactoryProvider, DefaultReadValueExpressionFactoryProvider>();
+
             services.AddScoped<IRewritingExpressionVisitorProvider, DefaultRewritingExpressionVisitorProvider>();
 
             services.AddScoped<IOptimizingExpressionVisitorProvider, DefaultOptimizingExpressionVisitorProvider>();
@@ -31,7 +33,7 @@ namespace Impatient.Tests.Utilities
 
             services.AddScoped<IQueryTranslatingExpressionVisitorFactory, DefaultQueryTranslatingExpressionVisitorFactory>();
 
-            services.AddScoped<IDbCommandExecutor>(provider => provider.GetRequiredService<TestDbCommandExecutor>());
+            services.AddScoped<IDbCommandExecutorFactory>(provider => provider.GetRequiredService<TestDbCommandExecutorFactory>());
 
             services.AddScoped<IImpatientQueryExecutor, DefaultImpatientQueryExecutor>();
 
@@ -43,7 +45,7 @@ namespace Impatient.Tests.Utilities
 
             services.AddScoped<NorthwindQueryContext>();
 
-            services.AddScoped(provider => new TestDbCommandExecutor(connectionString));
+            services.AddScoped(provider => new TestDbCommandExecutorFactory(connectionString));
 
             return services.BuildServiceProvider();
         }

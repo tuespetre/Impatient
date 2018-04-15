@@ -34,7 +34,7 @@ namespace Impatient.Tests.ExpressionVisitors.Rewriting
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT LEN([c].[ContactName])
+                @"SELECT CAST(LEN([c].[ContactName]) AS int)
 FROM [dbo].[Customers] AS [c]",
                 context.SqlLog);
         }

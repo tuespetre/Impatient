@@ -38,7 +38,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
                         if (node.Arguments.Count == 2)
                         {
-                            selector = node.Arguments[1].UnwrapLambda().ExpandParameters(selector);
+                            selector = node.Arguments[1].UnwrapLambda()?.ExpandParameters(selector);
                         }
 
                         if (!(translatabilityAnalyzingExpressionVisitor.Visit(selector) is TranslatableExpression))
@@ -46,8 +46,24 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                             break;
                         }
 
+                        if (node.Method.Name == nameof(Queryable.Average))
+                        {
+                            var desiredType = node.Method.ReturnType.UnwrapNullableType();
+
+                            var desiredTypeName
+                                = desiredType == typeof(decimal) ? "decimal"
+                                : desiredType == typeof(double) ? "float"
+                                : "real";
+
+                            return new SqlAggregateExpression(
+                                "AVG",
+                                new SqlCastExpression(selector, desiredTypeName, node.Method.ReturnType),
+                                node.Method.ReturnType,
+                                relationalGrouping.IsDistinct && node.Arguments.Count == 1);
+                        }
+
                         return new SqlAggregateExpression(
-                            node.Method.Name == nameof(Queryable.Average) ? "AVG" : node.Method.Name.ToUpperInvariant(),
+                            node.Method.Name.ToUpperInvariant(),
                             selector,
                             node.Method.ReturnType,
                             relationalGrouping.IsDistinct && node.Arguments.Count == 1);
@@ -60,7 +76,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
                         if (node.Arguments.Count == 2)
                         {
-                            var predicate = node.Arguments[1].UnwrapLambda().ExpandParameters(selector);
+                            var predicate = node.Arguments[1].UnwrapLambda()?.ExpandParameters(selector);
 
                             if (!(translatabilityAnalyzingExpressionVisitor.Visit(predicate) is TranslatableExpression))
                             {
@@ -96,7 +112,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     {
                         var selectorLambda = node.Arguments[1].UnwrapLambda();
 
-                        if (selectorLambda.Parameters.Count == 2)
+                        if (selectorLambda == null || selectorLambda.Parameters.Count == 2)
                         {
                             // index parameter not supported
                             break;

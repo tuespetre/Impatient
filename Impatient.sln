@@ -22,6 +22,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "etc", "etc", "{72BCC91D-502
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Impatient.EntityFrameworkCore.SqlServer", "src\Impatient.EntityFrameworkCore.SqlServer\Impatient.EntityFrameworkCore.SqlServer.csproj", "{E12FDD7B-382F-4E53-83BF-22AD3C06E782}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Impatient.EFCore.Tests", "test\Impatient.EFCore.Tests\Impatient.EFCore.Tests.csproj", "{9B6B4799-D876-4379-8CBD-E7C8595031CB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,6 +42,10 @@ Global
 		{E12FDD7B-382F-4E53-83BF-22AD3C06E782}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E12FDD7B-382F-4E53-83BF-22AD3C06E782}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E12FDD7B-382F-4E53-83BF-22AD3C06E782}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9B6B4799-D876-4379-8CBD-E7C8595031CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B6B4799-D876-4379-8CBD-E7C8595031CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B6B4799-D876-4379-8CBD-E7C8595031CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B6B4799-D876-4379-8CBD-E7C8595031CB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -48,6 +54,7 @@ Global
 		{5BC8F670-3E44-4654-B07F-952B2D9DF02C} = {CF819EA4-E9EF-4864-A221-CA2346F8DA09}
 		{5D590EE1-ACD0-40E6-9B17-F09CDD4D0190} = {249EB7A3-AB3A-4ADF-86EA-51286A9F14F7}
 		{E12FDD7B-382F-4E53-83BF-22AD3C06E782} = {CF819EA4-E9EF-4864-A221-CA2346F8DA09}
+		{9B6B4799-D876-4379-8CBD-E7C8595031CB} = {249EB7A3-AB3A-4ADF-86EA-51286A9F14F7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F88453D6-A29F-43F2-A656-D607ED6E525E}

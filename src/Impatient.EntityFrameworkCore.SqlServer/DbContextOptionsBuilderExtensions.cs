@@ -1,6 +1,5 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Query.Internal;
 
 namespace Microsoft.EntityFrameworkCore
 {
@@ -8,9 +7,10 @@ namespace Microsoft.EntityFrameworkCore
     {
         public static DbContextOptionsBuilder UseImpatientQueryCompiler(this DbContextOptionsBuilder builder)
         {
-            ((IDbContextOptionsBuilderInfrastructure)builder).AddOrUpdateExtension(new ImpatientDbContextOptionsExtension());
+            ((IDbContextOptionsBuilderInfrastructure)builder)
+                .AddOrUpdateExtension(new ImpatientDbContextOptionsExtension());
 
-            return builder.ReplaceService<IQueryCompiler, ImpatientQueryCompiler>();
+            return builder;
         }
     }
 }

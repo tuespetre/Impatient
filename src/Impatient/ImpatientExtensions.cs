@@ -47,16 +47,111 @@ namespace Impatient
 
         #endregion
 
+        public static Expression ReplaceWithConversions(this Expression expression, Func<Expression, Expression> replacer)
+        {
+            var conversionStack = new Stack<UnaryExpression>();
+
+            while (expression is UnaryExpression unaryExpression 
+                && expression.NodeType == ExpressionType.Convert)
+            {
+                conversionStack.Push(unaryExpression);
+
+                expression = unaryExpression.Operand;
+            }
+
+            expression = replacer(expression);
+
+            while (conversionStack.Count != 0)
+            {
+                expression = conversionStack.Pop().Update(expression);
+            }
+
+            return expression;
+        }
+
+        public static bool Is<TExpression>(this Expression expression) where TExpression : Expression
+        {
+            switch (expression)
+            {
+                case TExpression _:
+                {
+                    return true;
+                }
+
+                case UnaryExpression unaryExpression 
+                when unaryExpression.NodeType == ExpressionType.Convert:
+                {
+                    return unaryExpression.Operand.Is<TExpression>();
+                }
+
+                case AnnotationExpression annotationExpression:
+                {
+                    return annotationExpression.Expression.Is<TExpression>();
+                }
+
+                default:
+                {
+                    return false;
+                }
+            }
+        }
+
+        public static bool Is<TExpression>(this Expression expression, out TExpression found) where TExpression : Expression
+        {
+            switch (expression)
+            {
+                case TExpression targetExpression:
+                {
+                    found = targetExpression;
+                    return true;
+                }
+
+                case UnaryExpression unaryExpression
+                when unaryExpression.NodeType == ExpressionType.Convert:
+                {
+                    return unaryExpression.Operand.Is(out found);
+                }
+
+                case AnnotationExpression annotationExpression:
+                {
+                    return annotationExpression.Expression.Is(out found);
+                }
+
+                default:
+                {
+                    found = null;
+                    return false;
+                }
+            }
+        }
+
+        public static bool Contains<TExpression>(this Expression expression) where TExpression : Expression
+        {
+            var visitor = new ExpressionTypeFindingExpressionVisitor<TExpression>();
+
+            visitor.Visit(expression);
+
+            return visitor.FoundExpressionType;
+        }
+
         public static Expression AsSqlBooleanExpression(this Expression expression)
         {
             expression = expression.UnwrapAnnotations();
 
-            if (expression == null || expression.IsSqlBooleanExpression())
+            if (expression.IsSqlBooleanExpression())
             {
                 return expression;
             }
+            
+            var test = true;
 
-            return Expression.Equal(expression, Expression.Constant(true));
+            while (expression.NodeType == ExpressionType.Not)
+            {
+                test = !test;
+                expression = ((UnaryExpression)expression).Operand;
+            }
+
+            return Expression.Equal(expression, Expression.Constant(test));
         }
 
         public static bool IsSqlBooleanExpression(this Expression expression)
@@ -70,7 +165,7 @@ namespace Impatient
 
                 case SqlExistsExpression _:
                 case SqlInExpression _:
-                // TODO: Include SqlLikeExpression case here
+                // TODO: Include SqlLikeExpression
                 {
                     return true;
                 }
@@ -79,7 +174,6 @@ namespace Impatient
                 {
                     switch (expression.NodeType)
                     {
-                        case ExpressionType.Constant:
                         case ExpressionType.Equal:
                         case ExpressionType.NotEqual:
                         case ExpressionType.AndAlso:
@@ -88,8 +182,29 @@ namespace Impatient
                         case ExpressionType.LessThanOrEqual:
                         case ExpressionType.GreaterThan:
                         case ExpressionType.GreaterThanOrEqual:
+                        case ExpressionType.And when expression.Type.IsBooleanType():
+                        case ExpressionType.Or when expression.Type.IsBooleanType():
+                        //case ExpressionType.Coalesce when expression.Type.IsBooleanType():
                         {
                             return true;
+                        }
+
+                        default:
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                case UnaryExpression unaryExpression:
+                {
+                    switch(expression.NodeType)
+                    {
+                        case ExpressionType.Not:
+                        {
+                            // TODO: Include SqlLikeExpression
+                            return unaryExpression.Operand is SqlInExpression
+                                || unaryExpression.Operand is SqlExistsExpression;
                         }
 
                         default:
@@ -139,6 +254,84 @@ namespace Impatient
             }
         }
 
+        private static readonly MethodInfo enumerableToListMethodInfo
+            = GetGenericMethodDefinition((IEnumerable<object> o) => o.ToList());
+
+        public static Expression AsCollectionType(this Expression sequence)
+        {
+            if (!sequence.Type.IsGenericType(typeof(ICollection<>)))
+            {
+                sequence
+                    = Expression.Call(
+                        enumerableToListMethodInfo.MakeGenericMethod(sequence.Type.GetSequenceType()),
+                        sequence);
+            }
+
+            return sequence;
+        }
+
+        public static bool HasSelector(this MethodInfo methodInfo)
+        {
+            switch (methodInfo?.Name)
+            {
+                case nameof(Queryable.Select):
+                case nameof(Queryable.SelectMany):
+                case nameof(Queryable.Join):
+                case nameof(Queryable.GroupJoin):
+                case nameof(Queryable.GroupBy):
+                case nameof(Queryable.Zip):
+                {
+                    return true;
+                }
+
+                default:
+                {
+                    return false;
+                }
+            }
+        }
+
+        public static bool HasResultSelector(this MethodInfo methodInfo)
+        {
+            switch (methodInfo?.Name)
+            {
+                case nameof(Queryable.Select):
+                case nameof(Queryable.Join):
+                case nameof(Queryable.GroupJoin):
+                case nameof(Queryable.Zip):
+                {
+                    return true;
+                }
+
+                case nameof(Queryable.SelectMany):
+                case nameof(Queryable.GroupBy):
+                {
+                    return methodInfo.GetParameters().Any(p => p.Name == "resultSelector");
+                }
+
+                default:
+                {
+                    return false;
+                }
+            }
+        }
+
+        public static bool HasElementSelector(this MethodInfo methodInfo)
+        {
+            switch (methodInfo?.Name)
+            {
+                case nameof(Queryable.GroupBy):
+                {
+                    return methodInfo.GetParameters().Any(p => p.Name == "elementSelector");
+                }
+
+                default:
+                {
+                    return false;
+                }
+            }
+        }
+
         public static bool IsQueryableMethod(this MethodInfo methodInfo)
         {
             return methodInfo.DeclaringType == typeof(Queryable);
@@ -177,6 +370,13 @@ namespace Impatient
             return methodCallExpression.Arguments
                 .Where(a => typeof(Delegate).IsAssignableFrom(a.Type))
                 .Any(a => a.NodeType != ExpressionType.Lambda);
+        }
+
+        public static bool ContainsNonLambdaExpressions(this MethodCallExpression methodCallExpression)
+        {
+            return methodCallExpression.Arguments
+                .Where(a => typeof(Expression).IsAssignableFrom(a.Type))
+                .Any(a => a.NodeType != ExpressionType.Quote);
         }
 
         public static BinaryExpression Balance(this BinaryExpression binaryExpression)
@@ -238,11 +438,37 @@ namespace Impatient
             }
         }
 
+        public static Expression UnwrapAnnotationsAndConversions(this Expression expression)
+        {
+            if (expression is AnnotationExpression annotationExpression)
+            {
+                return annotationExpression.Expression.UnwrapAnnotationsAndConversions();
+            }
+            else if (expression.NodeType == ExpressionType.Convert)
+            {
+                return ((UnaryExpression)expression).Operand.UnwrapAnnotationsAndConversions();
+            }
+            else
+            {
+                return expression;
+            }
+        }
+
         public static Expression UnwrapAnnotations(this Expression expression)
         {
             while (expression is AnnotationExpression annotationExpression)
             {
                 expression = annotationExpression.Expression;
+            }
+
+            return expression;
+        }
+
+        public static Expression UnwrapConversions(this Expression expression)
+        {
+            while (expression.NodeType == ExpressionType.Convert)
+            {
+                expression = ((UnaryExpression)expression).Operand;
             }
 
             return expression;
@@ -288,6 +514,18 @@ namespace Impatient
                 && type.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
 
+        public static Type UnwrapNullableType(this Type type)
+        {
+            if (type.IsNullableType())
+            {
+                return type.GetGenericArguments()[0];
+            }
+            else
+            {
+                return type;
+            }
+        }
+
         public static Type MakeNullableType(this Type type)
         {
             if (type.GetTypeInfo().IsValueType)
@@ -303,14 +541,24 @@ namespace Impatient
             return type == typeof(bool) || type == typeof(bool?);
         }
 
+        public static bool IsCollectionType(this Type type)
+        {
+            return type.IsGenericType(typeof(ICollection<>));
+        }
+
         public static bool IsSequenceType(this Type type)
         {
-            return type.IsGenericType(typeof(IEnumerable<>));
+            return type != typeof(string) && type.IsGenericType(typeof(IEnumerable<>));
         }
 
         public static Type GetSequenceType(this Type type)
         {
             return type.FindGenericType(typeof(IEnumerable<>))?.GenericTypeArguments[0];
+        }
+
+        public static Type MakeEnumerableType(this Type elementType)
+        {
+            return typeof(IEnumerable<>).MakeGenericType(elementType);
         }
 
         public static bool IsGenericType(this Type type, Type definition)
@@ -366,7 +614,7 @@ namespace Impatient
 
         public static bool IsScalarType(this Type type)
         {
-            if (scalarTypes.Contains(type))
+            if (scalarTypes.Contains(type) || type.GetTypeInfo().IsEnum)
             {
                 return true;
             }
@@ -375,7 +623,7 @@ namespace Impatient
             {
                 var underlyingType = Nullable.GetUnderlyingType(type);
 
-                return scalarTypes.Contains(underlyingType);
+                return scalarTypes.Contains(underlyingType) || underlyingType.GetTypeInfo().IsEnum;
             }
 
             return false;
@@ -417,6 +665,8 @@ namespace Impatient
             typeof(DateTime), // datetime2, datetime, date, smalldatetime
             typeof(DateTimeOffset), // datetimeoffset
             typeof(Guid), // uniqueidentifer
+
+            typeof(char), // TODO: should this be here?
 
             // Reference types
             typeof(string), // nvarchar, varchar, nchar, char, ntext, text
@@ -462,6 +712,16 @@ namespace Impatient
             if (method.IsEnumerableMethod())
             {
                 return method;
+            }
+            else if (!method.IsGenericMethod)
+            {
+                return (from m in typeof(Enumerable).GetTypeInfo().DeclaredMethods
+                        where m.Name == method.Name
+                            && m.ReturnType == method.ReturnType
+                        let p1 = method.GetParameters()
+                        let p2 = m.GetParameters()
+                        where p1.Length == p2.Length
+                        select m).FirstOrDefault();
             }
 
             var genericMethodDefinition = method.GetGenericMethodDefinition();
@@ -548,5 +808,11 @@ namespace Impatient
 
         private static readonly IEnumerable<MethodInfo> enumerableMethods
             = typeof(Enumerable).GetTypeInfo().DeclaredMethods;
+
+        public static void Deconstruct<TKey,TValue>(this KeyValuePair<TKey,TValue> kvp, out TKey key, out TValue value)
+        {
+            key = kvp.Key;
+            value = kvp.Value;
+        }
     }
 }

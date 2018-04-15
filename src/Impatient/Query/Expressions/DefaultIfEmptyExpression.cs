@@ -1,46 +1,43 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public class DefaultIfEmptyExpression : AnnotationExpression
+    public class DefaultIfEmptyExpression : ExtraPropertiesExpression
     {
-        public DefaultIfEmptyExpression(Expression expression) : base(expression)
+        public DefaultIfEmptyExpression(Expression expression) : this(expression, Constant(0, typeof(int?)))
         {
-            Flag = Constant(0, typeof(int?));
         }
 
         public DefaultIfEmptyExpression(Expression expression, Expression flag) : base(expression)
         {
-            Flag = flag ?? throw new ArgumentNullException(nameof(flag));
+            if (flag == null)
+            {
+                throw new ArgumentNullException(nameof(flag));
+            }
+
+            Properties = new ReadOnlyCollection<Expression>(new[] { flag });
         }
 
-        public Expression Flag { get; }
+        public Expression Flag => Properties[0];
 
-        protected override Expression VisitChildren(ExpressionVisitor visitor)
+        public override IReadOnlyList<string> Names => new[] { "$empty" };
+
+        public override ReadOnlyCollection<Expression> Properties { get; }
+
+        public override ExtraPropertiesExpression Update(Expression expression, IEnumerable<Expression> properties)
         {
-            var expression = visitor.Visit(Expression);
-            var flag = visitor.Visit(Flag);
-
-            if (expression != Expression || flag != Flag)
+            if (expression != Expression || !properties.SequenceEqual(Properties))
             {
-                return new DefaultIfEmptyExpression(expression, flag);
+                return new DefaultIfEmptyExpression(expression, properties.ElementAtOrDefault(0));
             }
 
             return this;
         }
 
-        public DefaultIfEmptyExpression Update(Expression expression, Expression flag)
-        {
-            expression = expression ?? throw new ArgumentNullException(nameof(expression));
-            flag = flag ?? throw new ArgumentNullException(nameof(flag));
-
-            if (expression != Expression || flag != Flag)
-            {
-                return new DefaultIfEmptyExpression(expression, flag);
-            }
-
-            return this;
-        }
+        public override int GetAnnotationHashCode() => 0;
     }
 }

@@ -82,6 +82,27 @@ namespace Impatient.Query.Infrastructure
             indentationLevel--;
         }
 
+        private static Expression SetParameterValue(Expression parameter, Expression value)
+        {
+            var valueToSet = (Expression)Expression.Convert(value, typeof(object));
+
+            if (value.Type.IsNullableType())
+            {
+                valueToSet
+                    = Expression.Coalesce(
+                        valueToSet,
+                        Expression.Convert(
+                            Expression.Constant(DBNull.Value),
+                            typeof(object)));
+            }
+
+            return Expression.Assign(
+                Expression.MakeMemberAccess(
+                    parameter,
+                    dbParameterValuePropertyInfo),
+                valueToSet);
+        }
+
         public void AddParameter(Expression node, Func<string, string> formatter)
         {
             var parameterName = formatter($"p{parameterIndex}");
@@ -102,13 +123,9 @@ namespace Impatient.Query.Infrastructure
                         dbParameterVariable,
                         dbParameterParameterNamePropertyInfo),
                     Expression.Constant(parameterName)),
-                Expression.Assign(
-                    Expression.MakeMemberAccess(
-                        dbParameterVariable,
-                        dbParameterValuePropertyInfo),
-                    node.Type.GetTypeInfo().IsValueType
-                        ? Expression.Convert(node, typeof(object))
-                        : node),
+                SetParameterValue(
+                    dbParameterVariable, 
+                    node),
                 Expression.Call(
                     Expression.MakeMemberAccess(
                         dbCommandVariable,
@@ -126,6 +143,7 @@ namespace Impatient.Query.Infrastructure
         public void AddParameterList(Expression node, Func<string, string> formatter)
         {
             var enumeratorVariable = Expression.Parameter(typeof(IEnumerator), "enumerator");
+            var enumeratedVariable = Expression.Parameter(typeof(bool), "enumerated");
             var indexVariable = Expression.Parameter(typeof(int), "index");
             var parameterPrefixVariable = Expression.Parameter(typeof(string), "parameterPrefix");
             var parameterNameVariable = Expression.Parameter(typeof(string), "parameterName");
@@ -136,6 +154,7 @@ namespace Impatient.Query.Infrastructure
                     new[]
                     {
                         enumeratorVariable,
+                        enumeratedVariable,
                         indexVariable,
                         parameterPrefixVariable,
                         parameterNameVariable
@@ -161,14 +180,19 @@ namespace Impatient.Query.Infrastructure
                                             Expression.Convert(indexVariable, typeof(object)))),
                                     Expression.IfThenElse(
                                         Expression.Call(enumeratorVariable, enumeratorMoveNextMethodInfo),
-                                        Expression.Increment(indexVariable),
+                                        Expression.Assign(enumeratedVariable, Expression.Constant(true)),
                                         Expression.Break(breakLabel)),
                                     Expression.IfThen(
-                                        Expression.GreaterThan(indexVariable, Expression.Constant(0)),
+                                        Expression.GreaterThan(
+                                            indexVariable, 
+                                            Expression.Constant(0)),
                                         Expression.Call(
                                             stringBuilderVariable,
                                             stringBuilderAppendMethodInfo,
                                             Expression.Constant(", "))),
+                                    Expression.Assign(
+                                        indexVariable, 
+                                        Expression.Increment(indexVariable)),
                                     Expression.Call(
                                         stringBuilderVariable,
                                         stringBuilderAppendMethodInfo,
@@ -183,10 +207,8 @@ namespace Impatient.Query.Infrastructure
                                             dbParameterVariable,
                                             dbParameterParameterNamePropertyInfo),
                                         parameterNameVariable),
-                                    Expression.Assign(
-                                        Expression.MakeMemberAccess(
-                                            dbParameterVariable,
-                                            dbParameterValuePropertyInfo),
+                                    SetParameterValue(
+                                        dbParameterVariable,
                                         Expression.MakeMemberAccess(
                                             enumeratorVariable,
                                             enumeratorCurrentPropertyInfo)),
@@ -196,15 +218,22 @@ namespace Impatient.Query.Infrastructure
                                             dbCommandParametersPropertyInfo),
                                         dbParameterCollectionAddMethodInfo,
                                         dbParameterVariable)))),
-                            @finally: Expression.IfThen(
-                                Expression.TypeIs(
-                                    enumeratorVariable,
-                                    typeof(IDisposable)),
-                                Expression.Call(
-                                    Expression.Convert(
+                            @finally: Expression.Block(
+                                Expression.IfThen(
+                                    Expression.IsFalse(enumeratedVariable),
+                                    Expression.Call(
+                                        stringBuilderVariable,
+                                        stringBuilderAppendMethodInfo,
+                                        Expression.Constant("SELECT 1 WHERE 1 = 0"))),
+                                Expression.IfThen(
+                                    Expression.TypeIs(
                                         enumeratorVariable,
                                         typeof(IDisposable)),
-                                    disposableDisposeMethodInfo))));
+                                    Expression.Call(
+                                        Expression.Convert(
+                                            enumeratorVariable,
+                                            typeof(IDisposable)),
+                                        disposableDisposeMethodInfo)))));
 
             EmitSql();
             blockExpressions.Add(parameterListBlock);
@@ -259,7 +288,8 @@ namespace Impatient.Query.Infrastructure
             return Expression.Lambda(
                 typeof(Action<DbCommand>),
                 Expression.Block(blockVariables, blockExpressions),
-                dbCommandVariable);
+                "PrepareDbCommand",
+                new[] { dbCommandVariable });
         }
 
         private void EmitSql()

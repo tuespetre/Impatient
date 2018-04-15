@@ -46,20 +46,25 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                                     methodCallExpression.Arguments[1]);
                         }
 
-                        var selectCall
-                            = Expression.Call(
-                                methodCallExpression.Method.IsQueryableMethod()
-                                    ? queryableSelect.MakeGenericMethod(targetSequenceType, node.Type)
-                                    : enumerableSelect.MakeGenericMethod(targetSequenceType, node.Type),
-                                targetSequence,
-                                Expression.Quote(
-                                    Expression.Lambda(
-                                        Expression.MakeMemberAccess(selectorParameter, node.Member),
-                                        selectorParameter)));
+                        var selectMethod = enumerableSelect;
+
+                        var selector 
+                            = (Expression)Expression.Lambda(
+                                Expression.MakeMemberAccess(selectorParameter, node.Member),
+                                selectorParameter);
+
+                        if (methodCallExpression.Method.IsQueryableMethod())
+                        {
+                            selectMethod = queryableSelect;
+                            selector = Expression.Quote(selector);
+                        }
 
                         return Expression.Call(
                             targetMethod.MakeGenericMethod(node.Type),
-                            selectCall);
+                            Expression.Call(
+                                selectMethod.MakeGenericMethod(targetSequenceType, node.Type),
+                                targetSequence,
+                                selector));
                     }
 
                     case nameof(Queryable.ElementAt):
@@ -69,17 +74,25 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
                         var parameter = Expression.Parameter(sequenceType, "x");
 
+                        var selectMethod = enumerableSelect;
+
+                        var selector
+                            = (Expression)Expression.Lambda(
+                                Expression.MakeMemberAccess(parameter, node.Member),
+                                parameter);
+
+                        if (methodCallExpression.Method.IsQueryableMethod())
+                        {
+                            selectMethod = queryableSelect;
+                            selector = Expression.Quote(selector);
+                        }
+
                         return Expression.Call(
                             methodCallExpression.Method.GetGenericMethodDefinition().MakeGenericMethod(node.Type),
                             Expression.Call(
-                                methodCallExpression.Method.IsQueryableMethod()
-                                    ? queryableSelect.MakeGenericMethod(sequenceType, node.Type)
-                                    : enumerableSelect.MakeGenericMethod(sequenceType, node.Type),
+                                selectMethod.MakeGenericMethod(sequenceType, node.Type),
                                 methodCallExpression.Arguments[0],
-                                Expression.Quote(
-                                    Expression.Lambda(
-                                        Expression.MakeMemberAccess(parameter, node.Member),
-                                        parameter))),
+                                selector),
                             methodCallExpression.Arguments[1]);
                     }
                 }

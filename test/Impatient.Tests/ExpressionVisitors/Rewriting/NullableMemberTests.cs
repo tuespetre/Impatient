@@ -64,7 +64,7 @@ WHERE [o].[OrderDate] IS NULL",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT COALESCE([o].[Freight], 0)
+                @"SELECT COALESCE([o].[Freight], 0.0)
 FROM [dbo].[Orders] AS [o]",
                 context.SqlLog);
         }

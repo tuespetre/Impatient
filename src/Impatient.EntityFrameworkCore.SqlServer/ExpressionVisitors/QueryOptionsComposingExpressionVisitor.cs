@@ -1,6 +1,8 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Expressions;
+using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 using Impatient.Query.Expressions;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
@@ -18,7 +20,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                             queryOptionsExpression.QueryTrackingBehavior,
                             queryOptionsExpression.IgnoreQueryFilters);
 
-                    return visitor.Visit(queryOptionsExpression.Expression);
+                    return visitor.Visit(queryOptionsExpression);
                 }
 
                 default:
@@ -62,14 +64,26 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                         return base.Visit(binaryExpression.Left);
                     }
 
+                    case MethodCallExpression methodCallExpression
+                    when ignoreQueryFilters
+                        && methodCallExpression.Method.Name == nameof(Queryable.Where)
+                        && methodCallExpression.Arguments[1] is UnaryExpression unaryExpression
+                        && unaryExpression.Operand is LambdaExpression lambdaExpression
+                        && lambdaExpression.Body is QueryFilterExpression:
+                    {
+                        return base.Visit(methodCallExpression.Arguments[0]);
+                    }
+
                     case EntityMaterializationExpression entityMaterializationExpression:
                     {
-                        var state 
+                        var identityMapMode 
                             = queryTrackingBehavior == QueryTrackingBehavior.TrackAll 
-                                ? EntityState.Unchanged 
-                                : EntityState.Detached;
+                                ? IdentityMapMode.StateManager
+                                : IdentityMapMode.IdentityMapWithFixup;
 
-                        return entityMaterializationExpression.UpdateState(state);
+                        return base.Visit(
+                            entityMaterializationExpression
+                                .UpdateIdentityMapMode(identityMapMode));
                     }
 
                     default:

@@ -52,18 +52,6 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                     return sqlColumnExpression;
                 }
 
-                case AliasedTableExpression aliasedTableExpression:
-                {
-                    var index = Array.IndexOf(oldTables, aliasedTableExpression);
-
-                    if (index > -1)
-                    {
-                        return newTables[index];
-                    }
-
-                    return aliasedTableExpression;
-                }
-
                 default:
                 {
                     return base.Visit(node);

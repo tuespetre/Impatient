@@ -28,6 +28,18 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                         isNullable: false);
                 }
 
+                case BinaryExpression binaryExpression
+                when node.NodeType == ExpressionType.Equal || node.NodeType == ExpressionType.NotEqual:
+                {
+                    return base.VisitBinary(binaryExpression);
+                }
+                
+                case NewArrayExpression _:
+                case UnaryExpression _ when node.NodeType == ExpressionType.Convert:
+                {
+                    return base.Visit(node);
+                }
+
                 default:
                 {
                     return node;

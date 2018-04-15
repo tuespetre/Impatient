@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Impatient.Query.ExpressionVisitors.Utility
 {
@@ -42,6 +43,28 @@ namespace Impatient.Query.ExpressionVisitors.Utility
             {
                 return base.Visit(node);
             }
+        }
+
+        protected override Expression VisitMember(MemberExpression node)
+        {
+            var expression = Visit(node.Expression);
+
+            if (expression == null)
+            {
+                return node;
+            }
+
+            if (node.Member.DeclaringType.IsAssignableFrom(expression.Type))
+            {
+                return node.Update(expression);
+            }
+
+            if (expression.Type.IsAssignableFrom(node.Member.DeclaringType))
+            {
+                return node.Update(Expression.Convert(expression, node.Member.DeclaringType));
+            }
+
+            return node.Update(expression);
         }
     }
 }

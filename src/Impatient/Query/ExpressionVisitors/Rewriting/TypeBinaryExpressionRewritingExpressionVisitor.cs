@@ -14,7 +14,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                 case ExpressionType.TypeEqual:
                 case ExpressionType.TypeIs:
                 {
-                    if (node.Expression is PolymorphicExpression polymorphicExpression)
+                    if (node.Expression.UnwrapAnnotations() is PolymorphicExpression polymorphicExpression)
                     {
                         return Visit(
                             polymorphicExpression

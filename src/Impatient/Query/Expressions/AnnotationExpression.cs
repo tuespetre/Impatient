@@ -20,6 +20,6 @@ namespace Impatient.Query.Expressions
 
         public override Expression Reduce() => Expression;
 
-        public virtual int GetAnnotationHashCode() => GetHashCode();
+        public abstract int GetAnnotationHashCode();
     }
 }

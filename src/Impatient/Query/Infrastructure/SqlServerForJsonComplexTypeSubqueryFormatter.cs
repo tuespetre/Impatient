@@ -12,6 +12,16 @@ namespace Impatient.Query.Infrastructure
             builder.IncreaseIndent();
             builder.AppendLine();
 
+            if (subquery.Projection.Type.IsSequenceType())
+            {
+                subquery
+                    = subquery.UpdateProjection(
+                        new ServerProjectionExpression(
+                            new SqlAliasExpression(
+                                subquery.Projection.ResultLambda.Body,
+                                "$c")));
+            }
+
             subquery = visitor.VisitAndConvert(subquery, nameof(Format));
 
             builder.AppendLine();

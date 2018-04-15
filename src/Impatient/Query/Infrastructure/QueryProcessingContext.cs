@@ -1,7 +1,6 @@
 ﻿using Impatient.Metadata;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -13,21 +12,19 @@ namespace Impatient.Query.Infrastructure
 
         public QueryProcessingContext(
             IQueryProvider queryProvider,
-            DescriptorSet descriptorSet,
-            IDictionary<object, ParameterExpression> parameterMapping,
-            ParameterExpression executionContextParameter)
+            DescriptorSet descriptorSet)
         {
             QueryProvider = queryProvider;
             DescriptorSet = descriptorSet;
-            ParameterMapping = new ReadOnlyDictionary<object, ParameterExpression>(parameterMapping);
-            ExecutionContextParameter = executionContextParameter;
+            ParameterMapping = new Dictionary<object, ParameterExpression>();
+            ExecutionContextParameter = Expression.Parameter(typeof(IDbCommandExecutor), "executor");
         }
 
         public IQueryProvider QueryProvider { get; }
 
         public DescriptorSet DescriptorSet { get; }
 
-        public IReadOnlyDictionary<object, ParameterExpression> ParameterMapping { get; }
+        public IDictionary<object, ParameterExpression> ParameterMapping { get; }
 
         public ParameterExpression ExecutionContextParameter { get; }
 

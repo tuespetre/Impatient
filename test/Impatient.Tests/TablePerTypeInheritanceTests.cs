@@ -22,7 +22,7 @@ namespace Impatient.Tests
 
         private readonly IServiceProvider services;
 
-        private string SqlLog => services.GetService<TestDbCommandExecutor>().Log.ToString();
+        private string SqlLog => services.GetService<TestDbCommandExecutorFactory>().Log.ToString();
 
         private static readonly IDictionary<Type, Expression> QueryExpressions;
 
@@ -465,7 +465,7 @@ VALUES
         [TestCleanup]
         public void Cleanup()
         {
-            services.GetService<TestDbCommandExecutor>().Log.Clear();
+            services.GetService<TestDbCommandExecutorFactory>().Log.Clear();
         }
 
         [TestMethod]

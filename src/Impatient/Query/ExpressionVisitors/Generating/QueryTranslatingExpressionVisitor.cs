@@ -14,7 +14,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
         private readonly IComplexTypeSubqueryFormatter complexTypeSubqueryFormatter;
         private readonly HashSet<string> tableAliases = new HashSet<string>();
         private readonly IDictionary<AliasedTableExpression, string> aliasLookup = new Dictionary<AliasedTableExpression, string>();
-        
+
         public QueryTranslatingExpressionVisitor(
             IDbCommandExpressionBuilder dbCommandExpressionBuilder,
             IComplexTypeSubqueryFormatter complexTypeSubqueryFormatter)
@@ -32,7 +32,43 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return Builder.Build();
         }
 
-        #region ExpressionVisitor overrides
+        #region Logical overrides
+
+        public override Expression Visit(Expression node)
+        {
+            switch (node)
+            {
+                case BinaryExpression binaryExpression:
+                {
+                    return VisitBinary(binaryExpression);
+                }
+
+                case ConditionalExpression conditionalExpression:
+                {
+                    return VisitConditional(conditionalExpression);
+                }
+
+                case ConstantExpression constantExpression:
+                {
+                    return VisitConstant(constantExpression);
+                }
+
+                case UnaryExpression unaryExpression:
+                {
+                    return VisitUnary(unaryExpression);
+                }
+
+                default:
+                {
+                    if (node.NodeType == ExpressionType.Extension)
+                    {
+                        return VisitExtension(node);
+                    }
+
+                    throw new NotSupportedException();
+                }
+            }
+        }
 
         protected override Expression VisitBinary(BinaryExpression node)
         {
@@ -73,6 +109,49 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 return node.Update(left, node.Conversion, right);
             }
 
+            Expression PrepareEqualityOperand(Expression operand)
+            {
+                return operand.ReplaceWithConversions(inner =>
+                {
+                    switch (inner.NodeType)
+                    {
+                        case ExpressionType.Not when inner.Type.IsBooleanType():
+                        {
+                            inner = ((UnaryExpression)inner).Operand;
+
+                            if (inner.Type.IsNullableType())
+                            {
+                                inner = Expression.Coalesce(inner, Expression.Constant(true));
+                            }
+
+                            return Expression.Condition(inner, Expression.Constant(false), Expression.Constant(true));
+                        }
+
+                        case ExpressionType.Equal:
+                        case ExpressionType.NotEqual:
+                        case ExpressionType.GreaterThan:
+                        case ExpressionType.GreaterThanOrEqual:
+                        case ExpressionType.LessThan:
+                        case ExpressionType.LessThanOrEqual:
+                        case ExpressionType.And when inner.Type.IsBooleanType():
+                        case ExpressionType.Or when inner.Type.IsBooleanType():
+                        {
+                            if (inner.Type.IsNullableType())
+                            {
+                                inner = Expression.Coalesce(inner, Expression.Constant(false));
+                            }
+
+                            return Expression.Condition(inner, Expression.Constant(true), Expression.Constant(false));
+                        }
+
+                        default:
+                        {
+                            return inner;
+                        }
+                    }
+                });
+            }
+
             switch (node.NodeType)
             {
                 case ExpressionType.Coalesce:
@@ -91,6 +170,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 }
 
                 case ExpressionType.AndAlso:
+                case ExpressionType.And when node.Type.IsBooleanType():
                 {
                     var left = VisitBinaryOperand(node.Left.AsSqlBooleanExpression());
 
@@ -102,6 +182,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 }
 
                 case ExpressionType.OrElse:
+                case ExpressionType.Or when node.Type.IsBooleanType():
                 {
                     var left = VisitBinaryOperand(node.Left.AsSqlBooleanExpression());
 
@@ -114,8 +195,11 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                 case ExpressionType.Equal:
                 {
-                    if (node.Left is NewExpression leftNewExpression
-                        && node.Right is NewExpression rightNewExpression)
+                    var left = PrepareEqualityOperand(node.Left);
+                    var right = PrepareEqualityOperand(node.Right);
+
+                    if (left is NewExpression leftNewExpression
+                        && right is NewExpression rightNewExpression)
                     {
                         return Visit(
                             leftNewExpression.Arguments
@@ -123,8 +207,8 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                                 .Aggregate(Expression.AndAlso)
                                 .Balance());
                     }
-                    else if (node.Left is MemberInitExpression leftMemberInitExpression
-                        && node.Right is MemberInitExpression rightMemberInitExpression)
+                    else if (left is MemberInitExpression leftMemberInitExpression
+                        && right is MemberInitExpression rightMemberInitExpression)
                     {
                         var leftBindings
                             = leftMemberInitExpression.NewExpression.Arguments.Concat(
@@ -142,63 +226,81 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                                 .Aggregate(Expression.AndAlso)
                                 .Balance());
                     }
-                    else if (node.Left is ConstantExpression leftConstantExpression
+                    else if (left is NewArrayExpression leftNewArrayExpression
+                        && right is NewArrayExpression rightNewArrayExpression)
+                    {
+                        return Visit(
+                            leftNewArrayExpression.Expressions
+                                .Zip(rightNewArrayExpression.Expressions, Expression.Equal)
+                                .Aggregate(Expression.AndAlso)
+                                .Balance());
+                    }
+                    else if (left is ConstantExpression leftConstantExpression
                         && leftConstantExpression.Value is null)
                     {
-                        var visitedRight = Visit(node.Right);
+                        right = Visit(right);
 
                         Builder.Append(" IS NULL");
 
-                        return node.Update(node.Left, node.Conversion, visitedRight);
+                        return node.Update(left, node.Conversion, right);
                     }
-                    else if (node.Right is ConstantExpression rightConstantExpression
+                    else if (right is ConstantExpression rightConstantExpression
                         && rightConstantExpression.Value is null)
                     {
-                        var visitedLeft = Visit(node.Left);
+                        left = Visit(left);
 
                         Builder.Append(" IS NULL");
 
-                        return node.Update(visitedLeft, node.Conversion, node.Right);
+                        return node.Update(left, node.Conversion, right);
                     }
 
                     var leftIsNullable
-                        = node.Left is SqlExpression leftSqlExpression
+                        = left.UnwrapAnnotationsAndConversions() is SqlExpression leftSqlExpression
                             && leftSqlExpression.IsNullable;
 
                     var rightIsNullable
-                        = node.Right is SqlExpression rightSqlExpression
+                        = right.UnwrapAnnotationsAndConversions() is SqlExpression rightSqlExpression
                             && rightSqlExpression.IsNullable;
 
                     if (leftIsNullable && rightIsNullable)
                     {
                         Builder.Append("((");
-                        Visit(node.Left);
+                        Visit(left);
                         Builder.Append(" IS NULL AND ");
-                        Visit(node.Right);
+                        Visit(right);
                         Builder.Append(" IS NULL) OR (");
-                        var visitedLeft = Visit(node.Left);
+                        left = Visit(left);
                         Builder.Append(" = ");
-                        var visitedRight = Visit(node.Right);
+                        right = Visit(right);
                         Builder.Append("))");
 
-                        return node.Update(visitedLeft, node.Conversion, visitedRight);
+                        return node.Update(left, node.Conversion, right);
                     }
 
-                    return VisitSimple(" = ");
+                    left = VisitBinaryOperand(left);
+
+                    Builder.Append(" = ");
+
+                    right = VisitBinaryOperand(right);
+
+                    return node.Update(left, node.Conversion, right);
                 }
 
                 case ExpressionType.NotEqual:
                 {
-                    if (node.Left is NewExpression leftNewExpression
-                        && node.Right is NewExpression rightNewExpression)
+                    var left = PrepareEqualityOperand(node.Left);
+                    var right = PrepareEqualityOperand(node.Right);
+
+                    if (left is NewExpression leftNewExpression
+                        && right is NewExpression rightNewExpression)
                     {
                         return Visit(
                             leftNewExpression.Arguments
                                 .Zip(rightNewExpression.Arguments, Expression.NotEqual)
                                 .Aggregate(Expression.OrElse));
                     }
-                    else if (node.Left is MemberInitExpression leftMemberInitExpression
-                        && node.Right is MemberInitExpression rightMemberInitExpression)
+                    else if (left is MemberInitExpression leftMemberInitExpression
+                        && right is MemberInitExpression rightMemberInitExpression)
                     {
                         var leftBindings
                             = leftMemberInitExpression.NewExpression.Arguments.Concat(
@@ -215,77 +317,92 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                                 .Zip(rightBindings, Expression.NotEqual)
                                 .Aggregate(Expression.OrElse));
                     }
-                    else if (node.Left is ConstantExpression leftConstantExpression
+                    else if (left is NewArrayExpression leftNewArrayExpression
+                        && right is NewArrayExpression rightNewArrayExpression)
+                    {
+                        return Visit(
+                            leftNewArrayExpression.Expressions
+                                .Zip(rightNewArrayExpression.Expressions, Expression.NotEqual)
+                                .Aggregate(Expression.OrElse)
+                                .Balance());
+                    }
+                    else if (left is ConstantExpression leftConstantExpression
                         && leftConstantExpression.Value is null)
                     {
-                        var visitedRight = Visit(node.Right);
+                        right = Visit(right);
 
                         Builder.Append(" IS NOT NULL");
 
-                        return node.Update(node.Left, node.Conversion, visitedRight);
+                        return node.Update(left, node.Conversion, right);
                     }
-                    else if (node.Right is ConstantExpression rightConstantExpression
+                    else if (right is ConstantExpression rightConstantExpression
                         && rightConstantExpression.Value is null)
                     {
-                        var visitedLeft = Visit(node.Left);
+                        left = Visit(left);
 
                         Builder.Append(" IS NOT NULL");
 
-                        return node.Update(visitedLeft, node.Conversion, node.Right);
+                        return node.Update(left, node.Conversion, right);
                     }
 
                     var leftIsNullable
-                        = node.Left is SqlExpression leftSqlExpression
+                        = left.UnwrapAnnotationsAndConversions() is SqlExpression leftSqlExpression
                             && leftSqlExpression.IsNullable;
 
                     var rightIsNullable
-                        = node.Right is SqlExpression rightSqlExpression
+                        = right.UnwrapAnnotationsAndConversions() is SqlExpression rightSqlExpression
                             && rightSqlExpression.IsNullable;
 
                     if (leftIsNullable && rightIsNullable)
                     {
                         Builder.Append("((");
-                        Visit(node.Left);
+                        Visit(left);
                         Builder.Append(" IS NULL AND ");
-                        Visit(node.Right);
+                        Visit(right);
                         Builder.Append(" IS NOT NULL) OR (");
-                        Visit(node.Left);
+                        Visit(left);
                         Builder.Append(" IS NOT NULL AND ");
-                        Visit(node.Right);
+                        Visit(right);
                         Builder.Append(" IS NULL) OR (");
-                        var visitedLeft = Visit(node.Left);
+                        left = Visit(left);
                         Builder.Append(" <> ");
-                        var visitedRight = Visit(node.Right);
+                        right = Visit(right);
                         Builder.Append("))");
 
-                        return node.Update(visitedLeft, node.Conversion, visitedRight);
+                        return node.Update(left, node.Conversion, right);
                     }
                     else if (leftIsNullable)
                     {
                         Builder.Append("(");
-                        Visit(node.Left);
+                        Visit(left);
                         Builder.Append(" IS NULL OR (");
-                        var visitedLeft = Visit(node.Left);
+                        left = Visit(left);
                         Builder.Append(" <> ");
-                        var visitedRight = Visit(node.Right);
+                        right = Visit(right);
                         Builder.Append("))");
 
-                        return node.Update(visitedLeft, node.Conversion, visitedRight);
+                        return node.Update(left, node.Conversion, right);
                     }
                     else if (rightIsNullable)
                     {
                         Builder.Append("(");
-                        Visit(node.Right);
+                        Visit(right);
                         Builder.Append(" IS NULL OR (");
-                        var visitedLeft = Visit(node.Left);
+                        left = Visit(left);
                         Builder.Append(" <> ");
-                        var visitedRight = Visit(node.Right);
+                        right = Visit(right);
                         Builder.Append("))");
 
-                        return node.Update(visitedLeft, node.Conversion, visitedRight);
+                        return node.Update(left, node.Conversion, right);
                     }
 
-                    return VisitSimple(" <> ");
+                    left = VisitBinaryOperand(left);
+
+                    Builder.Append(" <> ");
+
+                    right = VisitBinaryOperand(right);
+
+                    return node.Update(left, node.Conversion, right);
                 }
 
                 case ExpressionType.GreaterThan:
@@ -363,11 +480,29 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
             Builder.Append(" THEN ");
 
-            var ifTrue = Visit(node.IfTrue);
+            var ifTrue = node.IfTrue;
+
+            if (ifTrue is BinaryExpression && ifTrue.Type.IsBooleanType())
+            {
+                ifTrue = Visit(Expression.Condition(ifTrue, Expression.Constant(true), Expression.Constant(false)));
+            }
+            else
+            {
+                ifTrue = Visit(ifTrue);
+            }
 
             Builder.Append(" ELSE ");
 
-            var ifFalse = Visit(node.IfFalse);
+            var ifFalse = node.IfFalse;
+
+            if (ifFalse is BinaryExpression && ifFalse.Type.IsBooleanType())
+            {
+                ifFalse = Visit(Expression.Condition(ifFalse, Expression.Constant(true), Expression.Constant(false)));
+            }
+            else
+            {
+                ifFalse = Visit(ifFalse);
+            }
 
             Builder.Append(" END)");
 
@@ -395,6 +530,34 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 case bool value:
                 {
                     Builder.Append(value ? "1" : "0");
+
+                    return node;
+                }
+
+                case double value:
+                {
+                    Builder.Append(value.ToString("G17"));
+
+                    return node;
+                }
+
+                case decimal value:
+                {
+                    Builder.Append(value.ToString("0.0###########################"));
+
+                    return node;
+                }
+
+                case DateTime value:
+                {
+                    Builder.Append($"'{value.ToString("yyyy-MM-ddTHH:mm:ss.fffK")}'");
+
+                    return node;
+                }
+
+                case Enum value:
+                {
+                    Builder.Append(Convert.ChangeType(value, Enum.GetUnderlyingType(value.GetType())).ToString());
 
                     return node;
                 }
@@ -556,7 +719,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             switch (node.NodeType)
             {
                 case ExpressionType.Not
-                when node.Type == typeof(bool):
+                when node.Type.IsBooleanType():
                 {
                     switch (node.Operand)
                     {
@@ -570,6 +733,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                         default:
                         {
+                            // TODO: Handle nullable operand
                             return base.Visit(Expression.Equal(Expression.Constant(false), node.Operand));
                         }
                     }
@@ -756,8 +920,12 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
         protected virtual Expression VisitBaseTableExpression(BaseTableExpression baseTableExpression)
         {
-            Builder.Append(FormatIdentifier(baseTableExpression.SchemaName));
-            Builder.Append(".");
+            if (!string.IsNullOrEmpty(baseTableExpression.SchemaName))
+            {
+                Builder.Append(FormatIdentifier(baseTableExpression.SchemaName));
+                Builder.Append(".");
+            }
+
             Builder.Append(FormatIdentifier(baseTableExpression.TableName));
             Builder.Append(" AS ");
             Builder.Append(FormatIdentifier(GetTableAlias(baseTableExpression)));
@@ -794,7 +962,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
             Builder.Append(" ON ");
 
-            Visit(innerJoinExpression.Predicate);
+            Visit(innerJoinExpression.Predicate.AsSqlBooleanExpression());
 
             return innerJoinExpression;
         }
@@ -810,7 +978,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
             Builder.Append(" ON ");
 
-            Visit(leftJoinExpression.Predicate);
+            Visit(leftJoinExpression.Predicate.AsSqlBooleanExpression());
 
             return leftJoinExpression;
         }
@@ -826,7 +994,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
             Builder.Append(" ON ");
 
-            Visit(fullJoinExpression.Predicate);
+            Visit(fullJoinExpression.Predicate.AsSqlBooleanExpression());
 
             return fullJoinExpression;
         }
@@ -1036,8 +1204,25 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
             Builder.Append(" IN (");
 
+            var handled = false;
+
             switch (sqlInExpression.Values)
             {
+                case RelationalQueryExpression relationalQueryExpression:
+                {
+                    Builder.IncreaseIndent();
+                    Builder.AppendLine();
+
+                    Visit(relationalQueryExpression.SelectExpression);
+
+                    Builder.DecreaseIndent();
+                    Builder.AppendLine();
+
+                    handled = true;
+
+                    break;
+                }
+
                 case SelectExpression selectExpression:
                 {
                     Builder.IncreaseIndent();
@@ -1048,6 +1233,8 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                     Builder.DecreaseIndent();
                     Builder.AppendLine();
 
+                    handled = true;
+
                     break;
                 }
 
@@ -1055,6 +1242,8 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 {
                     foreach (var (expression, index) in newArrayExpression.Expressions.Select((e, i) => (e, i)))
                     {
+                        handled = true;
+
                         if (index > 0)
                         {
                             Builder.Append(", ");
@@ -1070,6 +1259,8 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 {
                     foreach (var (elementInit, index) in listInitExpression.Initializers.Select((e, i) => (e, i)))
                     {
+                        handled = true;
+
                         if (index > 0)
                         {
                             Builder.Append(", ");
@@ -1088,6 +1279,8 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                     foreach (var (value, index) in values.Select((v, i) => (v, i)))
                     {
+                        handled = true;
+
                         if (index > 0)
                         {
                             Builder.Append(", ");
@@ -1101,10 +1294,17 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                 case Expression expression:
                 {
+                    handled = true;
+
                     Builder.AddParameterList(expression, FormatParameterName);
 
                     break;
                 }
+            }
+
+            if (!handled)
+            {
+                Builder.Append("SELECT 1 WHERE 1 = 0");
             }
 
             Builder.Append(")");
@@ -1137,17 +1337,51 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
         protected virtual Expression VisitOrderByExpression(OrderByExpression orderByExpression)
         {
-            if (orderByExpression is ThenOrderByExpression thenOrderBy)
+            var orderings = orderByExpression.Iterate().Reverse().ToArray();
+            var hashes = new HashSet<int>();
+
+            for (var i = 0; i < orderings.Length; i++)
             {
-                Visit(thenOrderBy.Previous);
+                if (i > 0)
+                {
+                    Builder.Append(", ");
+                }
 
-                Builder.Append(", ");
+                var ordering = orderings[i];
+
+                var detector = new SqlParameterDetectingExpressionVisitor();
+
+                detector.Visit(ordering.Expression);
+
+                var needsWrapping = detector.ParameterDetected;
+
+                if (!needsWrapping)
+                {
+                    var hasher = new HashingExpressionVisitor();
+
+                    hasher.Visit(ordering.Expression);
+
+                    needsWrapping = !hashes.Add(hasher.HashCode) && !(ordering.Expression is RelationalQueryExpression);
+                }
+
+                if (needsWrapping)
+                {
+                    var wrapped
+                        = new SingleValueRelationalQueryExpression(
+                            new SelectExpression(
+                                new ServerProjectionExpression(
+                                    ordering.Expression)));
+
+                    EmitExpressionListExpression(wrapped);
+                }
+                else
+                {
+                    EmitExpressionListExpression(ordering.Expression);
+                }
+
+                Builder.Append(" ");
+                Builder.Append(ordering.Descending ? "DESC" : "ASC");
             }
-
-            EmitExpressionListExpression(orderByExpression.Expression);
-
-            Builder.Append(" ");
-            Builder.Append(orderByExpression.Descending ? "DESC" : "ASC");
 
             return orderByExpression;
         }
@@ -1162,18 +1396,36 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 && !(expression is ConditionalExpression
                     || expression is ConstantExpression
                     || expression is SqlColumnExpression
-                    || expression is SqlCastExpression))
+                    || expression is SqlCastExpression
+                    || expression is SqlParameterExpression
+                    || expression is SingleValueRelationalQueryExpression))
             {
                 Builder.Append("(CASE WHEN ");
 
-                Visit(expression);
+                Visit(expression.AsSqlBooleanExpression());
 
                 Builder.Append(" THEN 1 ELSE 0 END)");
+
+                return;
             }
-            else
+
+            if (expression is SqlAggregateExpression)
             {
-                Visit(expression);
+                var type = expression.Type.UnwrapNullableType();
+
+                if (type == typeof(float))
+                {
+                    Builder.Append("CAST(");
+
+                    Visit(expression);
+
+                    Builder.Append(" AS real)");
+
+                    return;
+                }
             }
+
+            Visit(expression);
         }
 
         protected virtual string FormatIdentifier(string identifier)
@@ -1279,6 +1531,34 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                     foreach (var p in visitor.GatheredExpressions)
                     {
                         yield return ($"${i}." + p.Key, p.Value);
+                    }
+                }
+            }
+        }
+
+        private class SqlParameterDetectingExpressionVisitor : ExpressionVisitor
+        {
+            public bool ParameterDetected { get; private set; }
+
+            protected override Expression VisitExtension(Expression node)
+            {
+                switch (node)
+                {
+                    case SqlParameterExpression _ when !ParameterDetected:
+                    {
+                        ParameterDetected = true;
+
+                        return node;
+                    }
+
+                    case RelationalQueryExpression _:
+                    {
+                        return node;
+                    }
+
+                    default:
+                    {
+                        return base.VisitExtension(node);
                     }
                 }
             }

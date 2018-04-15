@@ -1,4 +1,5 @@
 ﻿using Impatient.Query.ExpressionVisitors.Optimizing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System.Collections.Generic;
@@ -9,15 +10,15 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 {
     internal class EFCoreQueryableInliningExpressionVisitor : QueryableInliningExpressionVisitor
     {
-        private readonly IModel model;
+        private readonly ICurrentDbContext currentDbContext;
 
         public EFCoreQueryableInliningExpressionVisitor(
             IQueryProvider provider,
-            IReadOnlyDictionary<object, ParameterExpression> mapping,
-            IModel model)
-            : base(provider, mapping)
+            IDictionary<object, ParameterExpression> parameterMapping,
+            ICurrentDbContext currentDbContext)
+            : base(provider, parameterMapping)
         {
-            this.model = model;
+            this.currentDbContext = currentDbContext;
         }
 
         public override Expression Visit(Expression node)
@@ -28,10 +29,45 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 var queryable = (IQueryable)constant.Value;
 
-                return ModelHelper.CreateQueryable(queryable.ElementType, model);
+                try
+                {
+                    var query = ModelHelper.CreateQueryExpression(queryable.ElementType, currentDbContext.Context.Model);
+
+                    var repointer = new QueryFilterRepointingExpressionVisitor(currentDbContext);
+
+                    query = repointer.Visit(query);
+
+                    return Visit(Reparameterize(query));
+                }
+                catch
+                {
+                    PropagateExceptions();
+
+                    throw;
+                }
             }
 
             return visited;
+        }
+
+        private class QueryFilterRepointingExpressionVisitor : ExpressionVisitor
+        {
+            private readonly ICurrentDbContext currentDbContext;
+
+            public QueryFilterRepointingExpressionVisitor(ICurrentDbContext currentDbContext)
+            {
+                this.currentDbContext = currentDbContext;
+            }
+
+            protected override Expression VisitConstant(ConstantExpression node)
+            {
+                if (node.Type.IsAssignableFrom(currentDbContext.Context.GetType()))
+                {
+                    return Expression.Constant(currentDbContext.Context);
+                }
+
+                return base.VisitConstant(node);
+            }
         }
     }
 }

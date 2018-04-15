@@ -14,7 +14,7 @@ namespace Impatient.Query.Infrastructure
             var typeArguments
                 = expression.Type.IsGenericType(typeof(IGrouping<,>))
                     ? expression.Type.GenericTypeArguments
-                    : new[] { keySelector.Type, typeof(object) };
+                    : new[] { keySelector.Type, expression.Type.GetSequenceType() };
 
             var groupingType
                 = typeof(KeyPlaceholderGrouping<,>)

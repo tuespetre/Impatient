@@ -1,7 +1,9 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
 using Impatient.Query.ExpressionVisitors.Composing;
+using Impatient.Query.ExpressionVisitors.Rewriting;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
+using Microsoft.EntityFrameworkCore.Internal;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
@@ -9,13 +11,16 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 {
     public class EFCoreComposingExpressionVisitorProvider : IComposingExpressionVisitorProvider
     {
+        private readonly ICurrentDbContext currentDbContext;
         private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
         private readonly IRewritingExpressionVisitorProvider rewritingExpressionVisitorProvider;
 
         public EFCoreComposingExpressionVisitorProvider(
+            ICurrentDbContext currentDbContext,
             TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor, 
             IRewritingExpressionVisitorProvider rewritingExpressionVisitorProvider)
         {
+            this.currentDbContext = currentDbContext;
             this.translatabilityAnalyzingExpressionVisitor = translatabilityAnalyzingExpressionVisitor;
             this.rewritingExpressionVisitorProvider = rewritingExpressionVisitorProvider;
         }
@@ -27,12 +32,19 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             yield return new QueryOptionsAnnotatingExpressionVisitor();
 
+            // This visitor ensures that EF.Property calls to non-shadow properties/navigations
+            // are rewritten into plain member accesses that the navigation visitor can rewrite.
+
+            yield return new ShadowPropertyRewritingExpressionVisitor(currentDbContext.Context.Model);
+
             // The include composing visitor rewrites the calls to Include
             // into calls to Select that re-materialize the entity while assigning
             // a navigation property to themselves, so that the navigation composing
             // visitor can then rewrite those into appropriate joins/etc.
 
-            yield return new IncludeComposingExpressionVisitor(context.DescriptorSet);
+            yield return new NavigationComposingExpressionVisitor(context.DescriptorSet.NavigationDescriptors);
+
+            yield return new IncludeComposingExpressionVisitor(currentDbContext.Context.Model, context.DescriptorSet);
 
             yield return new NavigationComposingExpressionVisitor(context.DescriptorSet.NavigationDescriptors);
 
@@ -49,7 +61,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             yield return new QueryComposingExpressionVisitor(
                 translatabilityAnalyzingExpressionVisitor,
-                rewritingExpressionVisitorProvider.CreateExpressionVisitors(context));
+                rewritingExpressionVisitorProvider.CreateExpressionVisitors(context),
+                new SqlParameterRewritingExpressionVisitor(context.ParameterMapping.Values));
+
+            yield return new ResultTrackingComposingExpressionVisitor(
+                currentDbContext.Context.Model,
+                context.ExecutionContextParameter);
         }
     }
 }

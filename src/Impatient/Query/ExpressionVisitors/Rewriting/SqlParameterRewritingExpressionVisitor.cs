@@ -3,62 +3,60 @@ using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Rewriting
 {
-    public class SqlParameterRewritingExpressionVisitor : ExpressionVisitor
+    public class SqlParameterRewritingExpressionVisitor2 : ExpressionVisitor
     {
-        private readonly ParameterAndExtensionCountingExpressionVisitor countingVisitor
-            = new ParameterAndExtensionCountingExpressionVisitor();
-
         public override Expression Visit(Expression node)
         {
-            if (node is null || node is LambdaExpression)
+            switch (node)
             {
-                return node;
-            }
-
-            if (node.Type.IsScalarType())
-            {
-                countingVisitor.Visit(node);
-
-                if (countingVisitor.ParameterCount > 0 && countingVisitor.ExtensionCount == 0)
-                {
-                    return new SqlParameterExpression(node);
-                }
-
-                countingVisitor.ParameterCount = 0;
-                countingVisitor.ExtensionCount = 0;
-            }
-
-            return base.Visit(node);
-        }
-
-        private class ParameterAndExtensionCountingExpressionVisitor : ExpressionVisitor
-        {
-            public int ParameterCount;
-            public int ExtensionCount;
-
-            public override Expression Visit(Expression node)
-            {
-                if (node == null)
+                case null:
+                case LambdaExpression _:
                 {
                     return node;
                 }
 
-                switch (node.NodeType)
+                default:
                 {
-                    case ExpressionType.Parameter:
+                    if (node.Type.IsScalarType())
                     {
-                        ParameterCount++;
-                        break;
+                        var countingVisitor = new CountingExpressionVisitor();
+
+                        countingVisitor.Visit(node);
+
+                        if (countingVisitor.IsClear)
+                        {
+                            return new SqlParameterExpression(node);
+                        }
                     }
 
-                    case ExpressionType.Extension:
-                    {
-                        ExtensionCount++;
-                        break;
-                    }
+                    return base.Visit(node);
+                }
+            }
+        }
+
+        private class CountingExpressionVisitor : ExpressionVisitor
+        {
+            private bool foundStaticReference;
+
+            private bool foundExtension;
+
+            public bool IsClear => foundStaticReference && !foundExtension;
+
+            protected override Expression VisitMember(MemberExpression node)
+            {
+                if (node.Expression == null)
+                {
+                    foundStaticReference = true;
                 }
 
-                return base.Visit(node);
+                return base.VisitMember(node);
+            }
+
+            protected override Expression VisitExtension(Expression node)
+            {
+                foundExtension = true;
+
+                return base.VisitExtension(node);
             }
         }
     }

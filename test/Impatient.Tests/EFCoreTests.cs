@@ -27,9 +27,9 @@ namespace Impatient.Tests
                 Assert.IsNotNull(result.Customer);
 
                 Assert.AreEqual(@"
-SELECT TOP (1) [o].[OrderID] AS [o.OrderID], [o].[CustomerID] AS [o.CustomerID], [o].[EmployeeID] AS [o.EmployeeID], [o].[Freight] AS [o.Freight], [o].[OrderDate] AS [o.OrderDate], [o].[RequiredDate] AS [o.RequiredDate], [o].[ShipAddress] AS [o.ShipAddress], [o].[ShipCity] AS [o.ShipCity], [o].[ShipCountry] AS [o.ShipCountry], [o].[ShipName] AS [o.ShipName], [o].[ShipPostalCode] AS [o.ShipPostalCode], [o].[ShipRegion] AS [o.ShipRegion], [o].[ShipVia] AS [o.ShipVia], [o].[ShippedDate] AS [o.ShippedDate], [t].[CustomerID] AS [Customer.CustomerID], [t].[Address] AS [Customer.Address], [t].[City] AS [Customer.City], [t].[CompanyName] AS [Customer.CompanyName], [t].[ContactName] AS [Customer.ContactName], [t].[ContactTitle] AS [Customer.ContactTitle], [t].[Country] AS [Customer.Country], [t].[Fax] AS [Customer.Fax], [t].[Phone] AS [Customer.Phone], [t].[PostalCode] AS [Customer.PostalCode], [t].[Region] AS [Customer.Region]
+SELECT TOP (1) [o].[OrderID] AS [o.OrderID], [o].[CustomerID] AS [o.CustomerID], [o].[EmployeeID] AS [o.EmployeeID], [o].[Freight] AS [o.Freight], [o].[OrderDate] AS [o.OrderDate], [o].[RequiredDate] AS [o.RequiredDate], [o].[ShipAddress] AS [o.ShipAddress], [o].[ShipCity] AS [o.ShipCity], [o].[ShipCountry] AS [o.ShipCountry], [o].[ShipName] AS [o.ShipName], [o].[ShipPostalCode] AS [o.ShipPostalCode], [o].[ShipRegion] AS [o.ShipRegion], [o].[ShipVia] AS [o.ShipVia], [o].[ShippedDate] AS [o.ShippedDate], [c].[CustomerID] AS [Customer.CustomerID], [c].[Address] AS [Customer.Address], [c].[City] AS [Customer.City], [c].[CompanyName] AS [Customer.CompanyName], [c].[ContactName] AS [Customer.ContactName], [c].[ContactTitle] AS [Customer.ContactTitle], [c].[Country] AS [Customer.Country], [c].[Fax] AS [Customer.Fax], [c].[Phone] AS [Customer.Phone], [c].[PostalCode] AS [Customer.PostalCode], [c].[Region] AS [Customer.Region]
 FROM [dbo].[Orders] AS [o]
-INNER JOIN [dbo].[Customers] AS [t] ON [o].[CustomerID] = [t].[CustomerID]
+INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 ".Trim(), log.ToString().Trim());
             });
         }
@@ -42,7 +42,9 @@ INNER JOIN [dbo].[Customers] AS [t] ON [o].[CustomerID] = [t].[CustomerID]
                 var order1 = context.Set<Order>().FirstOrDefault();
                 var order2 = context.Set<Order>().FirstOrDefault();
 
-                Assert.AreEqual(1, context.ChangeTracker.Entries().Count());
+                var entries = context.ChangeTracker.Entries();
+
+                Assert.AreEqual(1, entries.Count());
                 Assert.IsNotNull(order1);
                 Assert.IsNotNull(order2);
                 Assert.AreEqual(order1, order2);
@@ -60,8 +62,8 @@ INNER JOIN [dbo].[Customers] AS [t] ON [o].[CustomerID] = [t].[CustomerID]
                 Assert.AreEqual(1, context.ChangeTracker.Entries().Count());
 
                 Assert.AreEqual(@"
-SELECT TOP (1) [t].[OrderID] AS [OrderID], [t].[CustomerID] AS [CustomerID], [t].[EmployeeID] AS [EmployeeID], [t].[Freight] AS [Freight], [t].[OrderDate] AS [OrderDate], [t].[RequiredDate] AS [RequiredDate], [t].[ShipAddress] AS [ShipAddress], [t].[ShipCity] AS [ShipCity], [t].[ShipCountry] AS [ShipCountry], [t].[ShipName] AS [ShipName], [t].[ShipPostalCode] AS [ShipPostalCode], [t].[ShipRegion] AS [ShipRegion], [t].[ShipVia] AS [ShipVia], [t].[ShippedDate] AS [ShippedDate]
-FROM [dbo].[Orders] AS [t]
+SELECT TOP (1) [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate]
+FROM [dbo].[Orders] AS [o]
 ".Trim(), log.ToString().Trim());
             });
         }
@@ -121,22 +123,25 @@ WHERE [o].[OrderID] = 10252
         {
             EfCoreTestCase((context, log) =>
             {
-                var order1 = context.Set<Order>().AsNoTracking().Where(o => o.OrderID == 10252).FirstOrDefault();
-                var order2 = context.Set<Order>().AsNoTracking().Where(o => o.OrderID == 10252).FirstOrDefault();
+                var details
+                    = (from d in context.Set<OrderDetail>().AsNoTracking()
+                       where d.OrderID == 10252
+                       from d2 in d.Order.OrderDetails
+                       select d2).ToList();
 
                 Assert.AreEqual(0, context.ChangeTracker.Entries().Count());
-                Assert.IsNotNull(order1);
-                Assert.IsNotNull(order2);
-                Assert.AreEqual(order1, order2);
+                Assert.AreNotEqual(details.Count, details.Distinct().Count());
 
                 Assert.AreEqual(@"
-SELECT TOP (1) [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate]
-FROM [dbo].[Orders] AS [o]
-WHERE [o].[OrderID] = 10252
-
-SELECT TOP (1) [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate]
-FROM [dbo].[Orders] AS [o]
-WHERE [o].[OrderID] = 10252
+SELECT [d2].[OrderID] AS [OrderID], [d2].[ProductID] AS [ProductID], [d2].[Discount] AS [Discount], [d2].[Quantity] AS [Quantity], [d2].[UnitPrice] AS [UnitPrice]
+FROM [dbo].[Order Details] AS [d]
+INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
+INNER JOIN (
+    SELECT [d_0].[OrderID] AS [OrderID], [d_0].[ProductID] AS [ProductID], [d_0].[Discount] AS [Discount], [d_0].[Quantity] AS [Quantity], [d_0].[UnitPrice] AS [UnitPrice]
+    FROM [dbo].[Order Details] AS [d_0]
+    WHERE [d_0].[UnitPrice] >= 5.0
+) AS [d2] ON [o].[OrderID] = [d2].[OrderID]
+WHERE ([d].[UnitPrice] >= 5.0) AND ([d].[OrderID] = 10252)
 ".Trim(), log.ToString().Trim());
             });
         }
@@ -152,9 +157,9 @@ WHERE [o].[OrderID] = 10252
                 Assert.IsNotNull(result.Customer);
 
                 Assert.AreEqual(@"
-SELECT TOP (1) [t].[OrderID] AS [OrderID], [t].[CustomerID] AS [CustomerID], [t].[EmployeeID] AS [EmployeeID], [t].[Freight] AS [Freight], [t].[OrderDate] AS [OrderDate], [t].[RequiredDate] AS [RequiredDate], [t].[ShipAddress] AS [ShipAddress], [t].[ShipCity] AS [ShipCity], [t].[ShipCountry] AS [ShipCountry], [t].[ShipName] AS [ShipName], [t].[ShipPostalCode] AS [ShipPostalCode], [t].[ShipRegion] AS [ShipRegion], [t].[ShipVia] AS [ShipVia], [t].[ShippedDate] AS [ShippedDate], [t_0].[CustomerID] AS [Customer.CustomerID], [t_0].[Address] AS [Customer.Address], [t_0].[City] AS [Customer.City], [t_0].[CompanyName] AS [Customer.CompanyName], [t_0].[ContactName] AS [Customer.ContactName], [t_0].[ContactTitle] AS [Customer.ContactTitle], [t_0].[Country] AS [Customer.Country], [t_0].[Fax] AS [Customer.Fax], [t_0].[Phone] AS [Customer.Phone], [t_0].[PostalCode] AS [Customer.PostalCode], [t_0].[Region] AS [Customer.Region]
-FROM [dbo].[Orders] AS [t]
-INNER JOIN [dbo].[Customers] AS [t_0] ON [t].[CustomerID] = [t_0].[CustomerID]
+SELECT TOP (1) [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate], [c].[CustomerID] AS [Customer.CustomerID], [c].[Address] AS [Customer.Address], [c].[City] AS [Customer.City], [c].[CompanyName] AS [Customer.CompanyName], [c].[ContactName] AS [Customer.ContactName], [c].[ContactTitle] AS [Customer.ContactTitle], [c].[Country] AS [Customer.Country], [c].[Fax] AS [Customer.Fax], [c].[Phone] AS [Customer.Phone], [c].[PostalCode] AS [Customer.PostalCode], [c].[Region] AS [Customer.Region]
+FROM [dbo].[Orders] AS [o]
+INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 ".Trim(), log.ToString().Trim());
             });
         }
@@ -170,11 +175,11 @@ INNER JOIN [dbo].[Customers] AS [t_0] ON [t].[CustomerID] = [t_0].[CustomerID]
                 Assert.IsNotNull(result.Order?.Customer);
 
                 Assert.AreEqual(@"
-SELECT TOP (1) [t].[OrderID] AS [OrderID], [t].[ProductID] AS [ProductID], [t].[Discount] AS [Discount], [t].[Quantity] AS [Quantity], [t].[UnitPrice] AS [UnitPrice], [t_0].[OrderID] AS [Order.OrderID], [t_0].[CustomerID] AS [Order.CustomerID], [t_0].[EmployeeID] AS [Order.EmployeeID], [t_0].[Freight] AS [Order.Freight], [t_0].[OrderDate] AS [Order.OrderDate], [t_0].[RequiredDate] AS [Order.RequiredDate], [t_0].[ShipAddress] AS [Order.ShipAddress], [t_0].[ShipCity] AS [Order.ShipCity], [t_0].[ShipCountry] AS [Order.ShipCountry], [t_0].[ShipName] AS [Order.ShipName], [t_0].[ShipPostalCode] AS [Order.ShipPostalCode], [t_0].[ShipRegion] AS [Order.ShipRegion], [t_0].[ShipVia] AS [Order.ShipVia], [t_0].[ShippedDate] AS [Order.ShippedDate], [t_1].[CustomerID] AS [Order.Customer.CustomerID], [t_1].[Address] AS [Order.Customer.Address], [t_1].[City] AS [Order.Customer.City], [t_1].[CompanyName] AS [Order.Customer.CompanyName], [t_1].[ContactName] AS [Order.Customer.ContactName], [t_1].[ContactTitle] AS [Order.Customer.ContactTitle], [t_1].[Country] AS [Order.Customer.Country], [t_1].[Fax] AS [Order.Customer.Fax], [t_1].[Phone] AS [Order.Customer.Phone], [t_1].[PostalCode] AS [Order.Customer.PostalCode], [t_1].[Region] AS [Order.Customer.Region]
-FROM [dbo].[Order Details] AS [t]
-INNER JOIN [dbo].[Orders] AS [t_0] ON [t].[OrderID] = [t_0].[OrderID]
-INNER JOIN [dbo].[Customers] AS [t_1] ON [t_0].[CustomerID] = [t_1].[CustomerID]
-WHERE [t].[UnitPrice] >= 5.00
+SELECT TOP (1) [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[Discount] AS [Discount], [d].[Quantity] AS [Quantity], [d].[UnitPrice] AS [UnitPrice], [o].[OrderID] AS [Order.OrderID], [o].[CustomerID] AS [Order.CustomerID], [o].[EmployeeID] AS [Order.EmployeeID], [o].[Freight] AS [Order.Freight], [o].[OrderDate] AS [Order.OrderDate], [o].[RequiredDate] AS [Order.RequiredDate], [o].[ShipAddress] AS [Order.ShipAddress], [o].[ShipCity] AS [Order.ShipCity], [o].[ShipCountry] AS [Order.ShipCountry], [o].[ShipName] AS [Order.ShipName], [o].[ShipPostalCode] AS [Order.ShipPostalCode], [o].[ShipRegion] AS [Order.ShipRegion], [o].[ShipVia] AS [Order.ShipVia], [o].[ShippedDate] AS [Order.ShippedDate], [c].[CustomerID] AS [Order.Customer.CustomerID], [c].[Address] AS [Order.Customer.Address], [c].[City] AS [Order.Customer.City], [c].[CompanyName] AS [Order.Customer.CompanyName], [c].[ContactName] AS [Order.Customer.ContactName], [c].[ContactTitle] AS [Order.Customer.ContactTitle], [c].[Country] AS [Order.Customer.Country], [c].[Fax] AS [Order.Customer.Fax], [c].[Phone] AS [Order.Customer.Phone], [c].[PostalCode] AS [Order.Customer.PostalCode], [c].[Region] AS [Order.Customer.Region]
+FROM [dbo].[Order Details] AS [d]
+INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
+INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
+WHERE [d].[UnitPrice] >= 5.0
 ".Trim(), log.ToString().Trim());
             });
         }
@@ -191,11 +196,11 @@ WHERE [t].[UnitPrice] >= 5.00
                 Assert.IsNotNull(result.Product);
 
                 Assert.AreEqual(@"
-SELECT TOP (1) [t].[OrderID] AS [OrderID], [t].[ProductID] AS [ProductID], [t].[Discount] AS [Discount], [t].[Quantity] AS [Quantity], [t].[UnitPrice] AS [UnitPrice], [t_0].[OrderID] AS [Order.OrderID], [t_0].[CustomerID] AS [Order.CustomerID], [t_0].[EmployeeID] AS [Order.EmployeeID], [t_0].[Freight] AS [Order.Freight], [t_0].[OrderDate] AS [Order.OrderDate], [t_0].[RequiredDate] AS [Order.RequiredDate], [t_0].[ShipAddress] AS [Order.ShipAddress], [t_0].[ShipCity] AS [Order.ShipCity], [t_0].[ShipCountry] AS [Order.ShipCountry], [t_0].[ShipName] AS [Order.ShipName], [t_0].[ShipPostalCode] AS [Order.ShipPostalCode], [t_0].[ShipRegion] AS [Order.ShipRegion], [t_0].[ShipVia] AS [Order.ShipVia], [t_0].[ShippedDate] AS [Order.ShippedDate], [t_1].[ProductID] AS [Product.Item1], [t_1].[CategoryID] AS [Product.Item2], [t_1].[Discontinued] AS [Product.Item3], [t_1].[ProductName] AS [Product.Item4], [t_1].[SupplierID] AS [Product.Item5], [t_1].[QuantityPerUnit] AS [Product.Item6], [t_1].[ReorderLevel] AS [Product.Item7], [t_1].[UnitPrice] AS [Product.Rest.Item1], [t_1].[UnitsInStock] AS [Product.Rest.Item2], [t_1].[UnitsOnOrder] AS [Product.Rest.Item3]
-FROM [dbo].[Order Details] AS [t]
-INNER JOIN [dbo].[Orders] AS [t_0] ON [t].[OrderID] = [t_0].[OrderID]
-INNER JOIN [dbo].[Products] AS [t_1] ON [t].[ProductID] = [t_1].[ProductID]
-WHERE [t].[UnitPrice] >= 5.00
+SELECT TOP (1) [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[Discount] AS [Discount], [d].[Quantity] AS [Quantity], [d].[UnitPrice] AS [UnitPrice], [o].[OrderID] AS [Order.OrderID], [o].[CustomerID] AS [Order.CustomerID], [o].[EmployeeID] AS [Order.EmployeeID], [o].[Freight] AS [Order.Freight], [o].[OrderDate] AS [Order.OrderDate], [o].[RequiredDate] AS [Order.RequiredDate], [o].[ShipAddress] AS [Order.ShipAddress], [o].[ShipCity] AS [Order.ShipCity], [o].[ShipCountry] AS [Order.ShipCountry], [o].[ShipName] AS [Order.ShipName], [o].[ShipPostalCode] AS [Order.ShipPostalCode], [o].[ShipRegion] AS [Order.ShipRegion], [o].[ShipVia] AS [Order.ShipVia], [o].[ShippedDate] AS [Order.ShippedDate], [p].[ProductID] AS [Product.Item1], [p].[CategoryID] AS [Product.Item2], [p].[Discontinued] AS [Product.Item3], [p].[ProductName] AS [Product.Item4], [p].[SupplierID] AS [Product.Item5], [p].[QuantityPerUnit] AS [Product.Item6], [p].[ReorderLevel] AS [Product.Item7], [p].[UnitPrice] AS [Product.Rest.Item1], [p].[UnitsInStock] AS [Product.Rest.Item2], [p].[UnitsOnOrder] AS [Product.Rest.Item3]
+FROM [dbo].[Order Details] AS [d]
+INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
+INNER JOIN [dbo].[Products] AS [p] ON [d].[ProductID] = [p].[ProductID]
+WHERE [d].[UnitPrice] >= 5.0
 ".Trim(), log.ToString().Trim());
             });
         }
@@ -211,13 +216,13 @@ WHERE [t].[UnitPrice] >= 5.00
                 Assert.IsTrue(result.Orders.Any());
 
                 Assert.AreEqual(@"
-SELECT TOP (1) [t].[CustomerID] AS [CustomerID], [t].[Address] AS [Address], [t].[City] AS [City], [t].[CompanyName] AS [CompanyName], [t].[ContactName] AS [ContactName], [t].[ContactTitle] AS [ContactTitle], [t].[Country] AS [Country], [t].[Fax] AS [Fax], [t].[Phone] AS [Phone], [t].[PostalCode] AS [PostalCode], [t].[Region] AS [Region], (
-    SELECT [t_0].[OrderID] AS [OrderID], [t_0].[CustomerID] AS [CustomerID], [t_0].[EmployeeID] AS [EmployeeID], [t_0].[Freight] AS [Freight], [t_0].[OrderDate] AS [OrderDate], [t_0].[RequiredDate] AS [RequiredDate], [t_0].[ShipAddress] AS [ShipAddress], [t_0].[ShipCity] AS [ShipCity], [t_0].[ShipCountry] AS [ShipCountry], [t_0].[ShipName] AS [ShipName], [t_0].[ShipPostalCode] AS [ShipPostalCode], [t_0].[ShipRegion] AS [ShipRegion], [t_0].[ShipVia] AS [ShipVia], [t_0].[ShippedDate] AS [ShippedDate]
-    FROM [dbo].[Orders] AS [t_0]
-    WHERE [t].[CustomerID] = [t_0].[CustomerID]
+SELECT TOP (1) [c].[CustomerID] AS [CustomerID], [c].[Address] AS [Address], [c].[City] AS [City], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Country] AS [Country], [c].[Fax] AS [Fax], [c].[Phone] AS [Phone], [c].[PostalCode] AS [PostalCode], [c].[Region] AS [Region], (
+    SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate]
+    FROM [dbo].[Orders] AS [o]
+    WHERE [c].[CustomerID] = [o].[CustomerID]
     FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [Orders]
-FROM [dbo].[Customers] AS [t]
+FROM [dbo].[Customers] AS [c]
 ".Trim(), log.ToString().Trim());
             });
         }
@@ -233,18 +238,18 @@ FROM [dbo].[Customers] AS [t]
                 Assert.IsTrue(result.Orders.Any());
 
                 Assert.AreEqual(@"
-SELECT TOP (1) [t].[CustomerID] AS [CustomerID], [t].[Address] AS [Address], [t].[City] AS [City], [t].[CompanyName] AS [CompanyName], [t].[ContactName] AS [ContactName], [t].[ContactTitle] AS [ContactTitle], [t].[Country] AS [Country], [t].[Fax] AS [Fax], [t].[Phone] AS [Phone], [t].[PostalCode] AS [PostalCode], [t].[Region] AS [Region], (
-    SELECT [t_0].[OrderID] AS [OrderID], [t_0].[CustomerID] AS [CustomerID], [t_0].[EmployeeID] AS [EmployeeID], [t_0].[Freight] AS [Freight], [t_0].[OrderDate] AS [OrderDate], [t_0].[RequiredDate] AS [RequiredDate], [t_0].[ShipAddress] AS [ShipAddress], [t_0].[ShipCity] AS [ShipCity], [t_0].[ShipCountry] AS [ShipCountry], [t_0].[ShipName] AS [ShipName], [t_0].[ShipPostalCode] AS [ShipPostalCode], [t_0].[ShipRegion] AS [ShipRegion], [t_0].[ShipVia] AS [ShipVia], [t_0].[ShippedDate] AS [ShippedDate], (
-        SELECT [t_1].[OrderID] AS [OrderID], [t_1].[ProductID] AS [ProductID], [t_1].[Discount] AS [Discount], [t_1].[Quantity] AS [Quantity], [t_1].[UnitPrice] AS [UnitPrice]
-        FROM [dbo].[Order Details] AS [t_1]
-        WHERE ([t_1].[UnitPrice] >= 5.00) AND ([t_0].[OrderID] = [t_1].[OrderID])
+SELECT TOP (1) [c].[CustomerID] AS [CustomerID], [c].[Address] AS [Address], [c].[City] AS [City], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Country] AS [Country], [c].[Fax] AS [Fax], [c].[Phone] AS [Phone], [c].[PostalCode] AS [PostalCode], [c].[Region] AS [Region], (
+    SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate], (
+        SELECT [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[Discount] AS [Discount], [d].[Quantity] AS [Quantity], [d].[UnitPrice] AS [UnitPrice]
+        FROM [dbo].[Order Details] AS [d]
+        WHERE ([d].[UnitPrice] >= 5.0) AND ([o].[OrderID] = [d].[OrderID])
         FOR JSON PATH, INCLUDE_NULL_VALUES
     ) AS [OrderDetails]
-    FROM [dbo].[Orders] AS [t_0]
-    WHERE [t].[CustomerID] = [t_0].[CustomerID]
+    FROM [dbo].[Orders] AS [o]
+    WHERE [c].[CustomerID] = [o].[CustomerID]
     FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [Orders]
-FROM [dbo].[Customers] AS [t]
+FROM [dbo].[Customers] AS [c]
 ".Trim(), log.ToString().Trim());
             });
         }
@@ -302,7 +307,7 @@ WHERE [c].[CustomerID] = @p0
                 Assert.AreEqual(@"
 SELECT [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[Discount] AS [Discount], [d].[Quantity] AS [Quantity], [d].[UnitPrice] AS [UnitPrice]
 FROM [dbo].[Order Details] AS [d]
-WHERE ([d].[UnitPrice] >= 5.00) AND ([d].[OrderID] = 10252)
+WHERE ([d].[UnitPrice] >= 5.0) AND ([d].[OrderID] = 10252)
 ".Trim(), log.ToString().Trim());
             });
         }
@@ -317,19 +322,19 @@ WHERE ([d].[UnitPrice] >= 5.00) AND ([d].[OrderID] = 10252)
                                from d in o.OrderDetails
                                select d).ToList();
 
-                Assert.IsFalse(results.Any(r => r.UnitPrice < 5.00m));
-                Assert.AreEqual(2, results.Count);
-
                 Assert.AreEqual(@"
 SELECT [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[Discount] AS [Discount], [d].[Quantity] AS [Quantity], [d].[UnitPrice] AS [UnitPrice]
 FROM [dbo].[Orders] AS [o]
 INNER JOIN (
-    SELECT [t].[OrderID] AS [OrderID], [t].[ProductID] AS [ProductID], [t].[Discount] AS [Discount], [t].[Quantity] AS [Quantity], [t].[UnitPrice] AS [UnitPrice]
-    FROM [dbo].[Order Details] AS [t]
-    WHERE [t].[UnitPrice] >= 5.00
+    SELECT [d_0].[OrderID] AS [OrderID], [d_0].[ProductID] AS [ProductID], [d_0].[Discount] AS [Discount], [d_0].[Quantity] AS [Quantity], [d_0].[UnitPrice] AS [UnitPrice]
+    FROM [dbo].[Order Details] AS [d_0]
+    WHERE [d_0].[UnitPrice] >= 5.0
 ) AS [d] ON [o].[OrderID] = [d].[OrderID]
 WHERE [o].[OrderID] = 10252
 ".Trim(), log.ToString().Trim());
+
+                Assert.IsFalse(results.Any(r => r.UnitPrice < 5.00m));
+                Assert.AreEqual(2, results.Count);
             });
         }
 
@@ -365,9 +370,9 @@ WHERE [d].[OrderID] = 10252
                 Assert.AreEqual(3, results.Count);
 
                 Assert.AreEqual(@"
-SELECT [t].[OrderID] AS [OrderID], [t].[ProductID] AS [ProductID], [t].[Discount] AS [Discount], [t].[Quantity] AS [Quantity], [t].[UnitPrice] AS [UnitPrice]
+SELECT [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[Discount] AS [Discount], [d].[Quantity] AS [Quantity], [d].[UnitPrice] AS [UnitPrice]
 FROM [dbo].[Orders] AS [o]
-INNER JOIN [dbo].[Order Details] AS [t] ON [o].[OrderID] = [t].[OrderID]
+INNER JOIN [dbo].[Order Details] AS [d] ON [o].[OrderID] = [d].[OrderID]
 WHERE [o].[OrderID] = 10252
 ".Trim(), log.ToString().Trim());
             });
@@ -384,8 +389,8 @@ WHERE [o].[OrderID] = 10252
                 Assert.IsTrue(results.Where(r => r.Discontinued).All(r => r is DiscontinuedProduct));
 
                 Assert.AreEqual(@"
-SELECT [t].[ProductID] AS [Item1], [t].[CategoryID] AS [Item2], [t].[Discontinued] AS [Item3], [t].[ProductName] AS [Item4], [t].[SupplierID] AS [Item5], [t].[QuantityPerUnit] AS [Item6], [t].[ReorderLevel] AS [Item7], [t].[UnitPrice] AS [Rest.Item1], [t].[UnitsInStock] AS [Rest.Item2], [t].[UnitsOnOrder] AS [Rest.Item3]
-FROM [dbo].[Products] AS [t]
+SELECT [p].[ProductID] AS [Item1], [p].[CategoryID] AS [Item2], [p].[Discontinued] AS [Item3], [p].[ProductName] AS [Item4], [p].[SupplierID] AS [Item5], [p].[QuantityPerUnit] AS [Item6], [p].[ReorderLevel] AS [Item7], [p].[UnitPrice] AS [Rest.Item1], [p].[UnitsInStock] AS [Rest.Item2], [p].[UnitsOnOrder] AS [Rest.Item3]
+FROM [dbo].[Products] AS [p]
 ".Trim(), log.ToString().Trim());
             });
         }
@@ -400,9 +405,9 @@ FROM [dbo].[Products] AS [t]
                 Assert.IsTrue(results.All(r => r is DiscontinuedProduct && r.Discontinued));
 
                 Assert.AreEqual(@"
-SELECT [t].[ProductID] AS [Item1], [t].[CategoryID] AS [Item2], [t].[Discontinued] AS [Item3], [t].[ProductName] AS [Item4], [t].[SupplierID] AS [Item5], [t].[QuantityPerUnit] AS [Item6], [t].[ReorderLevel] AS [Item7], [t].[UnitPrice] AS [Rest.Item1], [t].[UnitsInStock] AS [Rest.Item2], [t].[UnitsOnOrder] AS [Rest.Item3]
-FROM [dbo].[Products] AS [t]
-WHERE [t].[Discontinued] = 1
+SELECT [p].[ProductID] AS [Item1], [p].[CategoryID] AS [Item2], [p].[Discontinued] AS [Item3], [p].[ProductName] AS [Item4], [p].[SupplierID] AS [Item5], [p].[QuantityPerUnit] AS [Item6], [p].[ReorderLevel] AS [Item7], [p].[UnitPrice] AS [Rest.Item1], [p].[UnitsInStock] AS [Rest.Item2], [p].[UnitsOnOrder] AS [Rest.Item3]
+FROM [dbo].[Products] AS [p]
+WHERE [p].[Discontinued] = 1
 ".Trim(), log.ToString().Trim());
             });
         }
@@ -417,8 +422,44 @@ WHERE [t].[Discontinued] = 1
                 Assert.IsNotNull(product.ProductStats);
 
                 Assert.AreEqual(@"
-SELECT TOP (1) [t].[ProductID] AS [Item1], [t].[CategoryID] AS [Item2], [t].[Discontinued] AS [Item3], [t].[ProductName] AS [Item4], [t].[SupplierID] AS [Item5], [t].[QuantityPerUnit] AS [Item6], [t].[ReorderLevel] AS [Item7], [t].[UnitPrice] AS [Rest.Item1], [t].[UnitsInStock] AS [Rest.Item2], [t].[UnitsOnOrder] AS [Rest.Item3]
-FROM [dbo].[Products] AS [t]
+SELECT TOP (1) [p].[ProductID] AS [Item1], [p].[CategoryID] AS [Item2], [p].[Discontinued] AS [Item3], [p].[ProductName] AS [Item4], [p].[SupplierID] AS [Item5], [p].[QuantityPerUnit] AS [Item6], [p].[ReorderLevel] AS [Item7], [p].[UnitPrice] AS [Rest.Item1], [p].[UnitsInStock] AS [Rest.Item2], [p].[UnitsOnOrder] AS [Rest.Item3]
+FROM [dbo].[Products] AS [p]
+".Trim(), log.ToString().Trim());
+            });
+        }
+
+        [TestMethod]
+        public void EFProperty_translated()
+        {
+            EfCoreTestCase((context, log) =>
+            {
+                var result = (from p in context.Set<Product>()
+                              select EF.Property<short?>(p.ProductStats, "ReorderLevel")).FirstOrDefault();
+
+                Assert.AreEqual(@"
+SELECT TOP (1) [p].[ReorderLevel]
+FROM [dbo].[Products] AS [p]
+".Trim(), log.ToString().Trim());
+            });
+        }
+
+        private static bool ClientPredicate<TArg>(TArg arg)
+        {
+            return true;
+        }
+
+        [TestMethod]
+        public void EFProperty_at_client()
+        {
+            EfCoreTestCase((context, log) =>
+            {
+                var result = (from p in context.Set<Product>()
+                              where ClientPredicate(p)
+                              select EF.Property<short?>(p.ProductStats, "ReorderLevel")).FirstOrDefault();
+
+                Assert.AreEqual(@"
+SELECT [p].[ProductID] AS [Item1], [p].[CategoryID] AS [Item2], [p].[Discontinued] AS [Item3], [p].[ProductName] AS [Item4], [p].[SupplierID] AS [Item5], [p].[QuantityPerUnit] AS [Item6], [p].[ReorderLevel] AS [Item7], [p].[UnitPrice] AS [Rest.Item1], [p].[UnitsInStock] AS [Rest.Item2], [p].[UnitsOnOrder] AS [Rest.Item3]
+FROM [dbo].[Products] AS [p]
 ".Trim(), log.ToString().Trim());
             });
         }
@@ -525,9 +566,6 @@ FROM [dbo].[Products] AS [t]
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // TODO: Document that a default schema is required.
-            modelBuilder.HasDefaultSchema("dbo");
-
             modelBuilder.Entity<Customer>(e =>
             {
                 e.HasKey(d => d.CustomerID);
@@ -536,6 +574,8 @@ FROM [dbo].[Products] AS [t]
             modelBuilder.Entity<Order>(e =>
             {
                 e.HasKey(d => d.OrderID);
+
+                e.HasOne(o => o.Customer).WithMany(c => c.Orders).IsRequired();
             });
 
             modelBuilder.Entity<OrderDetail>(e =>
@@ -554,10 +594,11 @@ FROM [dbo].[Products] AS [t]
                 e.OwnsOne(d => d.ProductStats, d =>
                 {
                     d.Property(f => f.QuantityPerUnit).HasColumnName(nameof(ProductStats.QuantityPerUnit));
-                    d.Property(f => f.ReorderLevel).HasColumnName(nameof(ProductStats.ReorderLevel));
                     d.Property(f => f.UnitPrice).HasColumnName(nameof(ProductStats.UnitPrice));
                     d.Property(f => f.UnitsInStock).HasColumnName(nameof(ProductStats.UnitsInStock));
                     d.Property(f => f.UnitsOnOrder).HasColumnName(nameof(ProductStats.UnitsOnOrder));
+
+                    d.Property<short?>("ReorderLevel").HasColumnName("ReorderLevel");
                 });
 
                 e.HasDiscriminator(p => p.Discontinued).HasValue(false);

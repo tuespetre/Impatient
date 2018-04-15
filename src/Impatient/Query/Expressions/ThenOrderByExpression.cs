@@ -14,6 +14,19 @@ namespace Impatient.Query.Expressions
 
         public OrderByExpression Previous { get; }
 
+        protected override Expression VisitChildren(ExpressionVisitor visitor)
+        {
+            var previous = visitor.VisitAndConvert(Previous, nameof(VisitChildren));
+            var expression = visitor.VisitAndConvert(Expression, nameof(VisitChildren));
+
+            if (previous != Previous || expression != Expression)
+            {
+                return new ThenOrderByExpression(previous, expression, Descending);
+            }
+
+            return this;
+        }
+
         public override OrderByExpression Reverse()
         {
             return new ThenOrderByExpression(Previous.Reverse(), Expression, !Descending);

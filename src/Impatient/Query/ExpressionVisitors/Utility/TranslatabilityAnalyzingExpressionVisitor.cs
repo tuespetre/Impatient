@@ -10,6 +10,8 @@ namespace Impatient.Query.ExpressionVisitors.Utility
         {
         }
 
+        // TODO: Refer to registered or supplied services' existence and
+        // analyses instead of using a simple boolean.
         public virtual bool ComplexNestedQueriesSupported => true;
 
         protected override Expression VisitBinary(BinaryExpression node)
@@ -98,14 +100,16 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                     return new TranslatableExpression(node);
                 }
 
-                case GroupByResultExpression _
-                when ComplexNestedQueriesSupported:
+                case GroupByResultExpression query
+                when ComplexNestedQueriesSupported
+                    && !(query.SelectExpression.Projection is ClientProjectionExpression):
                 {
                     return new TranslatableExpression(node);
                 }
 
-                case GroupedRelationalQueryExpression _
-                when ComplexNestedQueriesSupported:
+                case GroupedRelationalQueryExpression query
+                when ComplexNestedQueriesSupported
+                    && !(query.SelectExpression.Projection is ClientProjectionExpression):
                 {
                     return new TranslatableExpression(node);
                 }
@@ -116,8 +120,9 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                     return new TranslatableExpression(node);
                 }
 
-                case EnumerableRelationalQueryExpression _
-                when ComplexNestedQueriesSupported:
+                case EnumerableRelationalQueryExpression query
+                when ComplexNestedQueriesSupported
+                    && !(query.SelectExpression.Projection is ClientProjectionExpression):
                 {
                     return new TranslatableExpression(node);
                 }
@@ -157,6 +162,26 @@ namespace Impatient.Query.ExpressionVisitors.Utility
             }
 
             return node;
+        }
+
+        protected override Expression VisitNewArray(NewArrayExpression node)
+        {
+            if (node.Expressions.All(IsTranslatable))
+            {
+                return new TranslatableExpression(node);
+            }
+
+            return node;
+        }
+
+        protected override Expression VisitListInit(ListInitExpression node)
+        {
+            return node;
+        }
+
+        private bool IsTranslatable(Expression node)
+        {
+            return Visit(node) is TranslatableExpression;
         }
 
         private bool IsTranslatable(MemberBinding memberBinding)

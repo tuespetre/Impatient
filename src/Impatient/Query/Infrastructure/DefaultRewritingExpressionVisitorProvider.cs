@@ -1,5 +1,4 @@
-﻿using Impatient.Metadata;
-using Impatient.Query.ExpressionVisitors.Rewriting;
+﻿using Impatient.Query.ExpressionVisitors.Rewriting;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
@@ -19,13 +18,13 @@ namespace Impatient.Query.Infrastructure
                     ?? throw new ArgumentNullException(nameof(translatabilityAnalyzingExpressionVisitor));
         }
 
-        public IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
+        public virtual IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
         {
+            yield return new EqualsMethodRewritingExpressionVisitor();
+
             yield return new KeyEqualityRewritingExpressionVisitor(context.DescriptorSet);
 
             yield return new GroupingAggregationRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor);
-
-            yield return new SqlParameterRewritingExpressionVisitor();
 
             yield return new TypeBinaryExpressionRewritingExpressionVisitor();
 
@@ -33,12 +32,13 @@ namespace Impatient.Query.Infrastructure
 
             yield return new DateTimeMemberRewritingExpressionVisitor();
 
-            yield return new StringMemberRewritingExpressionVisitor();
+            yield return new StringMemberRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor);
 
             yield return new CollectionContainsRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor);
 
             yield return new EnumerableContainsRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor);
 
+            // TODO: Pull this from the Default provider.
             yield return new SqlServerCountRewritingExpressionVisitor();
         }
     }

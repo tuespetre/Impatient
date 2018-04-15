@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Impatient.Query.Infrastructure;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -13,6 +14,7 @@ namespace Impatient.Query.Expressions
                   typeof(IQueryable<>).MakeGenericType(selectExpression.Projection.Type))
         {
         }
+
         public EnumerableRelationalQueryExpression(
             SelectExpression selectExpression,
             MethodInfo transformationMethod)
@@ -36,9 +38,14 @@ namespace Impatient.Query.Expressions
 
             if (selectExpression != SelectExpression)
             {
-                return TransformationMethod != null
-                    ? UpdateSelectExpression(selectExpression).WithTransformationMethod(TransformationMethod)
-                    : UpdateSelectExpression(selectExpression);
+                if (TransformationMethod != null)
+                {
+                    return new EnumerableRelationalQueryExpression(selectExpression, TransformationMethod);
+                }
+                else
+                {
+                    return new EnumerableRelationalQueryExpression(selectExpression, Type);
+                }
             }
 
             return this;
@@ -54,11 +61,11 @@ namespace Impatient.Query.Expressions
             return new EnumerableRelationalQueryExpression(SelectExpression, transformationMethod);
         }
 
-        public EnumerableRelationalQueryExpression AsOrderedQueryable()
+        public EnumerableRelationalQueryExpression AsOrdered()
         {
-            var orderedType = typeof(IOrderedQueryable<>).MakeGenericType(SelectExpression.Type);
-
-            return new EnumerableRelationalQueryExpression(SelectExpression, orderedType);
+            return new EnumerableRelationalQueryExpression(
+                SelectExpression, 
+                typeof(IOrderedQueryableEnumerable<>).MakeGenericType(SelectExpression.Type));
         }
     }
 }

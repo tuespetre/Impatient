@@ -100,12 +100,13 @@ namespace Impatient.Tests
                         where s1 == localVariable
                         select s1;
 
-            var visitor = new ConstantParameterizingExpressionVisitor();
+            var mapping = new Dictionary<object, ParameterExpression>();
+            var visitor = new ConstantParameterizingExpressionVisitor(mapping);
 
             visitor.Visit(query.Expression);
 
-            Assert.AreEqual(1, visitor.Mapping.Count);
-            Assert.IsTrue(visitor.Mapping.Keys.Single().GetType().GetTypeInfo().GetCustomAttribute<CompilerGeneratedAttribute>() != null);
+            Assert.AreEqual(1, mapping.Count);
+            Assert.IsTrue(mapping.Keys.Single().GetType().GetTypeInfo().GetCustomAttribute<CompilerGeneratedAttribute>() != null);
         }
     }
 }

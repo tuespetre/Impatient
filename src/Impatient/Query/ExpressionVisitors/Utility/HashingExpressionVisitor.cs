@@ -1,4 +1,5 @@
 ﻿using Impatient.Query.Expressions;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
@@ -46,7 +47,15 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            Combine(node.Value == null ? 0 : node.Value.GetHashCode());
+            if (node.Value is IQueryable queryable)
+            {
+                Combine(queryable.ElementType.GetHashCode());
+                Combine(queryable.Provider.GetType().GetHashCode());
+            }
+            else
+            {
+                Combine(node.Value == null ? 0 : node.Value.GetHashCode());
+            }
 
             return base.VisitConstant(node);
         }

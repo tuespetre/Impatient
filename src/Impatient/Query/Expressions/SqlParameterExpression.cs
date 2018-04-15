@@ -12,6 +12,8 @@ namespace Impatient.Query.Expressions
 
         public override Type Type => Expression.Type;
 
+        public override bool IsNullable => Expression.Type.IsNullableType();
+
         public Expression Expression { get; }
     }
 }

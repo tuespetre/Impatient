@@ -26,7 +26,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
                 case GroupedRelationalQueryExpression groupedRelationalQueryExpression:
                 {
-                    return KeyPlaceholderGrouping.Create(node, groupedRelationalQueryExpression.InnerKeySelector);
+                    return KeyPlaceholderGrouping.Create(node, groupedRelationalQueryExpression.OuterKeySelector);
                 }
 
                 default:

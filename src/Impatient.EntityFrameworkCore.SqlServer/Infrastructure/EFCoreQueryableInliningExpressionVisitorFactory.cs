@@ -18,7 +18,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return new EFCoreQueryableInliningExpressionVisitor(
                 context.QueryProvider,
                 context.ParameterMapping,
-                currentDbContext.Context.Model);
+                currentDbContext);
         }
     }
 }

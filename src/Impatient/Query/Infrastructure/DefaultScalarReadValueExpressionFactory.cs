@@ -6,16 +6,60 @@ using System.Reflection;
 
 namespace Impatient.Query.Infrastructure
 {
+    public static class DefaultScalarValueReader
+    {
+        public static TValue ReadNonNullable<TValue>(DbDataReader reader, int index)
+        {
+            return reader.GetFieldValue<TValue>(index);
+        }
+
+        public static TValue ReadNullable<TValue>(DbDataReader reader, int index)
+        {
+            if (reader.IsDBNull(index))
+            {
+                return default;
+            }
+            else
+            {
+                return reader.GetFieldValue<TValue>(index);
+            }
+        }
+
+        public static TValue ReadNonNullableEnum<TValue>(DbDataReader reader, int index)
+        {
+            return (TValue)Enum.ToObject(typeof(TValue), reader.GetValue(index));
+        }
+
+        public static TNullable ReadNullableEnum<TNullable, TValue>(DbDataReader reader, int index)
+        {
+            if (reader.IsDBNull(index))
+            {
+                return default;
+            }
+            else
+            {
+                return (TNullable)Enum.ToObject(typeof(TValue), reader.GetValue(index));
+            }
+        }
+    }
+
     public class DefaultScalarReadValueExpressionFactory : IReadValueExpressionFactory
     {
-        private static readonly TypeInfo dbDataReaderTypeInfo
-            = typeof(DbDataReader).GetTypeInfo();
+        private static readonly MethodInfo readNonNullableMethodInfo
+            = typeof(DefaultScalarValueReader).GetTypeInfo()
+                .GetDeclaredMethod(nameof(DefaultScalarValueReader.ReadNonNullable));
 
-        private static readonly MethodInfo getFieldValueMethodInfo
-            = dbDataReaderTypeInfo.GetDeclaredMethod(nameof(DbDataReader.GetFieldValue));
+        private static readonly MethodInfo readNullableMethodInfo
+            = typeof(DefaultScalarValueReader).GetTypeInfo()
+                .GetDeclaredMethod(nameof(DefaultScalarValueReader.ReadNullable));
 
-        private static readonly MethodInfo isDBNullMethodInfo
-            = dbDataReaderTypeInfo.GetDeclaredMethod(nameof(DbDataReader.IsDBNull));
+        private static readonly MethodInfo readNonNullableEnumMethodInfo
+            = typeof(DefaultScalarValueReader).GetTypeInfo()
+                .GetDeclaredMethod(nameof(DefaultScalarValueReader.ReadNonNullableEnum));
+
+        private static readonly MethodInfo readNullableEnumMethodInfo
+            = typeof(DefaultScalarValueReader).GetTypeInfo()
+                .GetDeclaredMethod(nameof(DefaultScalarValueReader.ReadNullableEnum));
 
         public bool CanReadExpression(Expression expression)
         {
@@ -24,25 +68,26 @@ namespace Impatient.Query.Infrastructure
 
         public Expression CreateExpression(Expression source, Expression reader, int index)
         {
-            var readValueExpression
-                = Expression.Call(
-                    reader,
-                    getFieldValueMethodInfo.MakeGenericMethod(source.Type),
-                    Expression.Constant(index));
+            var unwrappedType = source.Type.UnwrapNullableType();
 
-            if (source is SqlColumnExpression sqlColumnExpression
-                && !sqlColumnExpression.IsNullable)
+            if (unwrappedType.GetTypeInfo().IsEnum)
             {
-                return readValueExpression;
-            }
-
-            return Expression.Condition(
-                Expression.Call(
+                return Expression.Call(
+                    source is SqlColumnExpression column && !column.IsNullable
+                        ? readNonNullableEnumMethodInfo.MakeGenericMethod(unwrappedType)
+                        : readNullableEnumMethodInfo.MakeGenericMethod(source.Type, unwrappedType),
                     reader,
-                    isDBNullMethodInfo,
-                    Expression.Constant(index)),
-                Expression.Default(source.Type),
-                readValueExpression);
+                    Expression.Constant(index));
+            }
+            else
+            {
+                return Expression.Call(
+                    source is SqlColumnExpression column && !column.IsNullable
+                        ? readNonNullableMethodInfo.MakeGenericMethod(source.Type)
+                        : readNullableMethodInfo.MakeGenericMethod(source.Type),
+                    reader,
+                    Expression.Constant(index));
+            }
         }
     }
 }

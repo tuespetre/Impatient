@@ -2,17 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using static System.Linq.Enumerable;
 
 namespace Impatient.Query.ExpressionVisitors.Utility
 {
     public class ProjectionReferenceRewritingExpressionVisitor : ExpressionVisitor
     {
-        private static readonly SqlColumnNullabilityExpressionVisitor sqlColumnNullabilityExpressionVisitor
-            = new SqlColumnNullabilityExpressionVisitor();
-
-        private readonly Stack<string> currentPath = new Stack<string>();
+        private readonly Stack<string> nameStack = new Stack<string>();
         private readonly AliasedTableExpression targetTable;
 
         public ProjectionReferenceRewritingExpressionVisitor(AliasedTableExpression targetTable)
@@ -24,7 +20,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
         {
             IEnumerable<string> GetNameParts()
             {
-                return currentPath.Reverse().Where(n => n != null && !n.StartsWith("<>"));
+                return nameStack.Reverse().Where(n => n != null && !n.StartsWith("<>"));
             }
 
             switch (node)
@@ -45,9 +41,9 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
                     for (var i = 0; i < newExpression.Members.Count; i++)
                     {
-                        currentPath.Push(newExpression.Members[i].GetPathSegmentName());
+                        nameStack.Push(newExpression.Members[i].GetPathSegmentName());
                         arguments[i] = Visit(arguments[i]);
-                        currentPath.Pop();
+                        nameStack.Pop();
                     }
 
                     return newExpression.Update(arguments);
@@ -60,9 +56,9 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
                     for (var i = 0; i < bindings.Length; i++)
                     {
-                        currentPath.Push(bindings[i].Member.GetPathSegmentName());
+                        nameStack.Push(bindings[i].Member.GetPathSegmentName());
                         bindings[i] = VisitMemberBinding(bindings[i]);
-                        currentPath.Pop();
+                        nameStack.Pop();
                     }
 
                     return memberInitExpression.Update(newExpression, bindings);
@@ -80,13 +76,13 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
                     var updater = new TableUpdatingExpressionVisitor(oldTables, newTables);
 
-                    currentPath.Push("Key");
+                    nameStack.Push("Key");
 
                     var outerKeySelector = Visit(groupByResultExpression.OuterKeySelector);
                     var innerKeySelector = updater.Visit(groupByResultExpression.InnerKeySelector);
                     var elementSelector = updater.Visit(groupByResultExpression.ElementSelector);
 
-                    currentPath.Pop();
+                    nameStack.Pop();
 
                     return new GroupedRelationalQueryExpression(
                         newSelectExpression.UpdateProjection(new ServerProjectionExpression(elementSelector)),
@@ -109,12 +105,12 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
                     var updater = new TableUpdatingExpressionVisitor(oldTables, newTables);
 
-                    currentPath.Push("Key");
+                    nameStack.Push("Key");
 
                     var outerKeySelector = Visit(groupedRelationalQueryExpression.OuterKeySelector);
                     var innerKeySelector = updater.Visit(groupedRelationalQueryExpression.InnerKeySelector);
 
-                    currentPath.Pop();
+                    nameStack.Pop();
 
                     return new GroupedRelationalQueryExpression(
                         newSelectExpression,
@@ -127,11 +123,11 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
                 case DefaultIfEmptyExpression defaultIfEmptyExpression:
                 {
-                    var expression = sqlColumnNullabilityExpressionVisitor.Visit(Visit(defaultIfEmptyExpression.Expression));
+                    var expression
+                        = new SqlColumnNullabilityExpressionVisitor()
+                            .Visit(Visit(defaultIfEmptyExpression.Expression));
 
-                    var parts = GetNameParts().Append("$empty");
-
-                    var name = string.Join(".", parts);
+                    var name = string.Join(".", GetNameParts().Append("$empty"));
 
                     var flag = new SqlColumnExpression(targetTable, name, typeof(bool?), true);
 
@@ -140,21 +136,48 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
                 case PolymorphicExpression polymorphicExpression:
                 {
+                    var row = Visit(polymorphicExpression.Row);
+
+                    // TODO: Visit nested polymorphic expressions.
                     return new PolymorphicExpression(
                         polymorphicExpression.Type,
-                        Visit(polymorphicExpression.Row),
+                        row,
                         polymorphicExpression.Descriptors);
+                }
+
+                case ExtraPropertiesExpression extraPropertiesExpression:
+                {
+                    var properties = new Expression[extraPropertiesExpression.Properties.Count];
+
+                    for (var i = 0; i < extraPropertiesExpression.Properties.Count; i++)
+                    {
+                        nameStack.Push(extraPropertiesExpression.Names[i]);
+
+                        properties[i] = Visit(extraPropertiesExpression.Properties[i]);
+
+                        nameStack.Pop();
+                    }
+
+                    var expression = Visit(extraPropertiesExpression.Expression);
+
+                    return extraPropertiesExpression.Update(expression, properties);
                 }
 
                 case AnnotationExpression annotationExpression:
                 {
-                    return VisitExtension(annotationExpression);
+                    return base.Visit(annotationExpression);
+                }
+
+                case UnaryExpression unaryExpression
+                when unaryExpression.NodeType == ExpressionType.Convert:
+                {
+                    return unaryExpression.Update(Visit(unaryExpression.Operand));
                 }
 
                 default:
                 {
                     var parts = GetNameParts();
-                    var isNullable = !node.Type.GetTypeInfo().IsValueType;
+                    var isNullable = node.Type.IsNullableType();
 
                     switch (node)
                     {
@@ -177,29 +200,6 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                         string.Join(".", parts),
                         node.Type,
                         isNullable);
-                }
-            }
-        }
-
-        private class SqlColumnNullabilityExpressionVisitor : ProjectionExpressionVisitor
-        {
-            protected override Expression VisitLeaf(Expression node)
-            {
-                switch (node)
-                {
-                    case SqlColumnExpression sqlColumnExpression:
-                    {
-                        return new SqlColumnExpression(
-                            sqlColumnExpression.Table,
-                            sqlColumnExpression.ColumnName,
-                            sqlColumnExpression.Type,
-                            isNullable: true);
-                    }
-
-                    default:
-                    {
-                        return node;
-                    }
                 }
             }
         }

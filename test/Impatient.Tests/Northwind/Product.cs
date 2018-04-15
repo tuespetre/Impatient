@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Impatient.Tests.Northwind
 {
-    [Table("Products")]
+    [Table("Products", Schema = "dbo")]
     public class Product
     {
         public int ProductID { get; set; }
@@ -35,6 +32,6 @@ namespace Impatient.Tests.Northwind
 
         public short? UnitsOnOrder { get; set; }
 
-        public short? ReorderLevel { get; set; }
+        //public short? ReorderLevel { get; set; }
     }
 }

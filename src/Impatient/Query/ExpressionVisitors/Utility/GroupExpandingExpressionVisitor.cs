@@ -1,7 +1,11 @@
 ﻿using Impatient.Query.Expressions;
 using Impatient.Query.Infrastructure;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
+using static Impatient.ImpatientExtensions;
 
 namespace Impatient.Query.ExpressionVisitors.Utility
 {
@@ -12,6 +16,19 @@ namespace Impatient.Query.ExpressionVisitors.Utility
     /// </summary>
     public class GroupExpandingExpressionVisitor : ExpressionVisitor
     {
+        private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
+        private readonly IEnumerable<ExpressionVisitor> postExpansionVisitors;
+
+        public GroupExpandingExpressionVisitor(
+            TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor,
+            IEnumerable<ExpressionVisitor> postExpansionVisitors)
+        {
+            this.translatabilityAnalyzingExpressionVisitor = translatabilityAnalyzingExpressionVisitor;
+            this.postExpansionVisitors = postExpansionVisitors;
+        }
+
+        private bool IsTranslatable(Expression node) => translatabilityAnalyzingExpressionVisitor.Visit(node) is TranslatableExpression;
+
         public override Expression Visit(Expression node)
         {
             var visited = base.Visit(node);
@@ -34,13 +51,29 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                     var innerKeySelector = updater.Visit(groupByResultExpression.InnerKeySelector);
                     var elementSelector = updater.Visit(groupByResultExpression.ElementSelector);
 
-                    var elements
-                        = new EnumerableRelationalQueryExpression(
-                            newSelectExpression
-                                .UpdateProjection(new ServerProjectionExpression(elementSelector))
-                                .AddToPredicate(Expression.Equal(outerKeySelector, innerKeySelector)));
+                    if (IsTranslatable(outerKeySelector) && IsTranslatable(innerKeySelector) && IsTranslatable(elementSelector))
+                    {
+                        var projection 
+                            = elementSelector
+                                .VisitWith(postExpansionVisitors);
 
-                    return ExpandedGrouping.Create(visited, outerKeySelector, elements);
+                        var predicate
+                            = Expression
+                                .Equal(outerKeySelector, innerKeySelector)
+                                .VisitWith(postExpansionVisitors);
+
+                        return ExpandedGrouping.Create(
+                            visited, 
+                            groupByResultExpression.OuterKeySelector,
+                            new EnumerableRelationalQueryExpression(
+                                newSelectExpression
+                                    .UpdateProjection(new ServerProjectionExpression(projection))
+                                    .AddToPredicate(predicate)));
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
                 }
 
                 case GroupedRelationalQueryExpression groupedRelationalQueryExpression:
@@ -48,18 +81,40 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                     var outerKeySelector = groupedRelationalQueryExpression.OuterKeySelector;
                     var innerKeySelector = groupedRelationalQueryExpression.InnerKeySelector;
 
-                    if (groupedRelationalQueryExpression.RequiresDenullification)
+                    if (IsTranslatable(outerKeySelector) && IsTranslatable(innerKeySelector))
                     {
-                        outerKeySelector = JoinKeyDenullifyingExpressionVisitor.Instance.Visit(outerKeySelector);
-                        innerKeySelector = JoinKeyDenullifyingExpressionVisitor.Instance.Visit(innerKeySelector);
+                        if (groupedRelationalQueryExpression.RequiresDenullification)
+                        {
+                            outerKeySelector = JoinKeyDenullifyingExpressionVisitor.Instance.Visit(outerKeySelector);
+                            innerKeySelector = JoinKeyDenullifyingExpressionVisitor.Instance.Visit(innerKeySelector);
+                        }
+
+                        var predicate
+                            = Expression
+                                .Equal(outerKeySelector, innerKeySelector)
+                                .VisitWith(postExpansionVisitors);
+
+                        return ExpandedGrouping.Create(
+                            visited, 
+                            groupedRelationalQueryExpression.OuterKeySelector,
+                            new EnumerableRelationalQueryExpression(
+                                groupedRelationalQueryExpression.SelectExpression
+                                    .AddToPredicate(predicate)));
                     }
+                    else
+                    {
+                        var predicate
+                            = Expression.Lambda(
+                                Expression.Equal(
+                                    outerKeySelector,
+                                    groupedRelationalQueryExpression.InnerKeyLambda.Body),
+                                groupedRelationalQueryExpression.InnerKeyLambda.Parameters);
 
-                    var elements
-                        = new EnumerableRelationalQueryExpression(
-                            groupedRelationalQueryExpression.SelectExpression
-                                .AddToPredicate(Expression.Equal(outerKeySelector, innerKeySelector)));
-
-                    return ExpandedGrouping.Create(visited, groupedRelationalQueryExpression.OuterKeySelector, elements);
+                        return Expression.Call(
+                            queryableWhere.MakeGenericMethod(groupedRelationalQueryExpression.Type.GetSequenceType()),
+                            new EnumerableRelationalQueryExpression(groupedRelationalQueryExpression.SelectExpression),
+                            Expression.Quote(predicate));
+                    }
                 }
 
                 default:
@@ -68,5 +123,17 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                 }
             }
         }
+
+        private static readonly MethodInfo enumerableSelect
+            = GetGenericMethodDefinition((IEnumerable<object> e) => e.Select(x => x));
+
+        private static readonly MethodInfo enumerableWhere
+            = GetGenericMethodDefinition((IEnumerable<bool> e) => e.Where(x => x));
+
+        private static readonly MethodInfo queryableSelect
+            = GetGenericMethodDefinition((IQueryable<object> e) => e.Select(x => x));
+
+        private static readonly MethodInfo queryableWhere
+            = GetGenericMethodDefinition((IQueryable<bool> e) => e.Where(x => x));
     }
 }

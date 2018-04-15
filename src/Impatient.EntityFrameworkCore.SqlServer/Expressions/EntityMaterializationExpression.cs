@@ -1,48 +1,91 @@
-﻿using Impatient.Query.Expressions;
-using Microsoft.EntityFrameworkCore;
+﻿using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
+using Impatient.Query.Expressions;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
-    public class EntityMaterializationExpression : AnnotationExpression
+    public class EntityMaterializationExpression : ExtraPropertiesExpression
     {
         public EntityMaterializationExpression(
             IEntityType entityType, 
-            EntityState entityState,
+            IdentityMapMode identityMapMode,
             Expression keyExpression,
-            Expression expression) 
+            IEnumerable<IProperty> shadowProperties,
+            IEnumerable<Expression> shadowPropertyExpressions,
+            Expression expression,
+            IEnumerable<INavigation> includedNavigations = null) 
             : base(expression)
         {
             EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
-            EntityState = entityState;
+            IdentityMapMode = identityMapMode;
             KeyExpression = keyExpression ?? throw new ArgumentNullException(nameof(keyExpression));
+            ShadowProperties = shadowProperties.ToArray();
+            IncludedNavigations = includedNavigations?.ToArray() ?? new INavigation[0];
+            Names = shadowProperties.Select(p => p.Name).ToArray();
+            Properties = new ReadOnlyCollection<Expression>(shadowPropertyExpressions.ToArray());
         }
 
         public IEntityType EntityType { get; }
 
-        public EntityState EntityState { get; }
+        public IdentityMapMode IdentityMapMode { get; }
 
         public Expression KeyExpression { get; }
 
-        protected override Expression VisitChildren(ExpressionVisitor visitor)
-        {
-            var expression = visitor.Visit(Expression);
+        public IReadOnlyList<IProperty> ShadowProperties { get; }
 
-            if (expression != Expression)
+        public IReadOnlyList<INavigation> IncludedNavigations { get; }
+
+        public override IReadOnlyList<string> Names { get; }
+
+        public override ReadOnlyCollection<Expression> Properties { get; }
+
+        public override ExtraPropertiesExpression Update(Expression expression, IEnumerable<Expression> properties)
+        {
+            if (expression != Expression
+                || !properties.SequenceEqual(Properties))
             {
-                return new EntityMaterializationExpression(EntityType, EntityState, KeyExpression, expression);
+                return new EntityMaterializationExpression(
+                    EntityType,
+                    IdentityMapMode,
+                    KeyExpression,
+                    ShadowProperties,
+                    properties,
+                    expression,
+                    IncludedNavigations);
             }
 
             return this;
         }
 
-        public EntityMaterializationExpression UpdateState(EntityState state)
+        public EntityMaterializationExpression UpdateIdentityMapMode(IdentityMapMode identityMapMode)
         {
-            return new EntityMaterializationExpression(EntityType, state, KeyExpression, Expression);
+            return new EntityMaterializationExpression(
+                EntityType, 
+                identityMapMode, 
+                KeyExpression, 
+                ShadowProperties, 
+                Properties,
+                Expression,
+                IncludedNavigations);
         }
 
-        public override int GetAnnotationHashCode() => (EntityType, EntityState, KeyExpression).GetHashCode();
+        public EntityMaterializationExpression IncludeNavigation(INavigation navigation)
+        {
+            return new EntityMaterializationExpression(
+                EntityType,
+                IdentityMapMode,
+                KeyExpression,
+                ShadowProperties,
+                Properties,
+                Expression,
+                IncludedNavigations.Append(navigation).Distinct());
+        }
+
+        public override int GetAnnotationHashCode() => EntityType.GetHashCode();
     }
 }

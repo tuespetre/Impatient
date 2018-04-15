@@ -2,6 +2,7 @@
 using Impatient.Query;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -36,7 +37,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             return new BadAsyncEnumerable<TResult>(async () =>
             {
-                var enumerable = await ExecuteAsync<IEnumerable<TResult>>(query, default(CancellationToken));
+                var enumerable = await ExecuteAsync<IEnumerable<TResult>>(query, default);
 
                 return enumerable.GetEnumerator();
             });
@@ -47,6 +48,29 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             // TODO: Proper async support
 
             return Task.Run(() => Execute<TResult>(query), cancellationToken);
+        }
+
+        public Func<QueryContext, IAsyncEnumerable<TResult>> CreateCompiledAsyncEnumerableQuery<TResult>(Expression query)
+        {
+            ThrowCompiledQueryNotSupported();
+            return default;
+        }
+
+        public Func<QueryContext, Task<TResult>> CreateCompiledAsyncTaskQuery<TResult>(Expression query)
+        {
+            ThrowCompiledQueryNotSupported();
+            return default;
+        }
+
+        public Func<QueryContext, TResult> CreateCompiledQuery<TResult>(Expression query)
+        {
+            ThrowCompiledQueryNotSupported();
+            return default;
+        }
+
+        private static void ThrowCompiledQueryNotSupported()
+        {
+            throw new NotSupportedException("Impatient does not currently support ad-hoc compiled queries.");
         }
 
         private Expression PrepareQuery(Expression query)

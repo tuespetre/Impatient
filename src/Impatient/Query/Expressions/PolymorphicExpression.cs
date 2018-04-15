@@ -72,6 +72,11 @@ namespace Impatient.Query.Expressions
                                let materializer = visitor.VisitAndConvert(d.Materializer, nameof(VisitChildren))
                                select new PolymorphicTypeDescriptor(d.Type, test, materializer)).ToArray();
 
+            return Update(row, descriptors);
+        }
+
+        public PolymorphicExpression Update(Expression row, IEnumerable<PolymorphicTypeDescriptor> descriptors)
+        {
             if (row != Row || !Descriptors.SequenceEqual(descriptors))
             {
                 return new PolymorphicExpression(Type, row, descriptors);

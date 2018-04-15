@@ -1,4 +1,5 @@
-﻿using Impatient.Query.ExpressionVisitors.Utility;
+﻿using Impatient.Query.Expressions;
+using Impatient.Query.ExpressionVisitors.Utility;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Optimizing
@@ -57,6 +58,17 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             {
                 var left = Visit(node.Left);
                 var right = Visit(node.Right);
+
+                if (node.NodeType == ExpressionType.Equal || node.NodeType == ExpressionType.NotEqual)
+                {
+                    if (left is UnaryExpression leftUnaryExpression && left.NodeType == ExpressionType.Not)
+                    {
+                        if (right is UnaryExpression rightUnaryExpression && right.NodeType == ExpressionType.Not)
+                        {
+                            return node.Update(leftUnaryExpression.Operand, node.Conversion, rightUnaryExpression.Operand);
+                        }
+                    }
+                }
 
                 var leftConstant = left as ConstantExpression;
                 var rightConstant = right as ConstantExpression;
@@ -148,7 +160,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                             && leftConstant.Type.IsBooleanType()
                             && rightConstant.Type.IsBooleanType())
                         {
-                            if (leftConstant.Value == rightConstant.Value)
+                            if (leftConstant.Value.Equals(rightConstant.Value))
                             {
                                 return Expression.Constant(true);
                             }

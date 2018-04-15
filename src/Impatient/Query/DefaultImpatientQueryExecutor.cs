@@ -1,7 +1,7 @@
 ﻿using Impatient.Metadata;
-using Impatient.Query.ExpressionVisitors.Generating;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -13,32 +13,26 @@ namespace Impatient.Query
         public DefaultImpatientQueryExecutor(
             DescriptorSet descriptorSet,
             IImpatientQueryCache queryCache,
-            IDbCommandExecutor dbCommandExecutor,
-            TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor,
+            IDbCommandExecutorFactory dbCommandExecutorFactory,
             IOptimizingExpressionVisitorProvider optimizingExpressionVisitorProvider,
             IComposingExpressionVisitorProvider composingExpressionVisitorProvider,
             ICompilingExpressionVisitorProvider compilingExpressionVisitorProvider,
-            IQueryableInliningExpressionVisitorFactory queryInliningExpressionVisitorFactory,
-            IQueryTranslatingExpressionVisitorFactory queryTranslatingExpressionVisitorFactory)
+            IQueryableInliningExpressionVisitorFactory queryInliningExpressionVisitorFactory)
         {
             DescriptorSet = descriptorSet;
             QueryCache = queryCache;
-            DbCommandExecutor = dbCommandExecutor;
-            TranslatabilityAnalyzingExpressionVisitor = translatabilityAnalyzingExpressionVisitor;
+            DbCommandExecutorFactory = dbCommandExecutorFactory;
             OptimizingExpressionVisitorProvider = optimizingExpressionVisitorProvider;
             ComposingExpressionVisitorProvider = composingExpressionVisitorProvider;
             CompilingExpressionVisitorProvider = compilingExpressionVisitorProvider;
             QueryInliningExpressionVisitorFactory = queryInliningExpressionVisitorFactory;
-            QueryTranslatingExpressionVisitorFactory = queryTranslatingExpressionVisitorFactory;
         }
 
         public DescriptorSet DescriptorSet { get; }
 
         public IImpatientQueryCache QueryCache { get; }
 
-        public IDbCommandExecutor DbCommandExecutor { get; }
-
-        public TranslatabilityAnalyzingExpressionVisitor TranslatabilityAnalyzingExpressionVisitor { get; }
+        public IDbCommandExecutorFactory DbCommandExecutorFactory { get; }
 
         public IOptimizingExpressionVisitorProvider OptimizingExpressionVisitorProvider { get; }
 
@@ -48,17 +42,29 @@ namespace Impatient.Query
 
         public IQueryableInliningExpressionVisitorFactory QueryInliningExpressionVisitorFactory { get; }
 
-        public IQueryTranslatingExpressionVisitorFactory QueryTranslatingExpressionVisitorFactory { get; }
-
         public object Execute(IQueryProvider provider, Expression expression)
         {
             try
             {
+                var processingContext = new QueryProcessingContext(provider, DescriptorSet);
+                var parameterMapping = processingContext.ParameterMapping;
+
                 // Parameterize the expression by substituting any ConstantExpression
                 // that is not a literal constant (such as a closure instance) with a ParameterExpression.
 
-                var constantParameterizingVisitor = new ConstantParameterizingExpressionVisitor();
+                var constantParameterizingVisitor = new ConstantParameterizingExpressionVisitor(parameterMapping);
                 expression = constantParameterizingVisitor.Visit(expression);
+
+                // Partially evaluate the expression. In addition to reducing evaluable nodes such 
+                // as `new DateTime(2000, 01, 01)` down to ConstantExpressions, this visitor also expands 
+                // IQueryable-producing expressions such as those found within calls to SelectMany
+                // so that the resulting IQueryable's expression tree will be integrated into the 
+                // current expression tree.
+
+                expression 
+                    = QueryInliningExpressionVisitorFactory
+                        .Create(processingContext)
+                        .Visit(expression);
 
                 // Generate a hash code for the parameterized expression.
                 // Because the expression is parameterized, the hash code will be identical
@@ -67,30 +73,8 @@ namespace Impatient.Query
                 var hashingVisitor = new HashingExpressionVisitor();
                 expression = hashingVisitor.Visit(expression);
 
-                var parameterMapping = constantParameterizingVisitor.Mapping;
-
                 if (!QueryCache.TryGetValue(hashingVisitor.HashCode, out var compiled))
                 {
-                    var executionContextParameter = Expression.Parameter(typeof(IDbCommandExecutor), "executor");
-
-                    var processingContext
-                        = new QueryProcessingContext(
-                            provider,
-                            DescriptorSet,
-                            parameterMapping,
-                            executionContextParameter);
-
-                    // Partially evaluate the expression. In addition to reducing evaluable nodes such 
-                    // as `new DateTime(2000, 01, 01)` down to ConstantExpressions, this visitor also expands 
-                    // IQueryable-producing expressions such as those found within calls to SelectMany
-                    // so that the resulting IQueryable's expression tree will be integrated into the 
-                    // current expression tree.
-
-                    expression 
-                        = QueryInliningExpressionVisitorFactory
-                            .Create(processingContext)
-                            .Visit(expression);
-
                     // Apply all optimizing visitors before each composing visitor and then apply all
                     // optimizing visitors one last time.
 
@@ -122,7 +106,7 @@ namespace Impatient.Query
 
                     var parameters = new ParameterExpression[parameterMapping.Count + 1];
 
-                    parameters[0] = executionContextParameter;
+                    parameters[0] = processingContext.ExecutionContextParameter;
 
                     parameterMapping.Values.CopyTo(parameters, 1);
 
@@ -137,7 +121,7 @@ namespace Impatient.Query
 
                 var arguments = new object[parameterMapping.Count + 1];
 
-                arguments[0] = DbCommandExecutor;
+                arguments[0] = DbCommandExecutorFactory.Create();
 
                 parameterMapping.Keys.CopyTo(arguments, 1);
 

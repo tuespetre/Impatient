@@ -7,9 +7,9 @@ namespace Impatient.Tests.Utilities
     public class NorthwindQueryContext
     {
         private readonly ImpatientQueryProvider impatient;
-        private readonly TestDbCommandExecutor executor;
+        private readonly TestDbCommandExecutorFactory executor;
 
-        public NorthwindQueryContext(ImpatientQueryProvider impatient, TestDbCommandExecutor executor)
+        public NorthwindQueryContext(ImpatientQueryProvider impatient, TestDbCommandExecutorFactory executor)
         {
             this.impatient = impatient;
             this.executor = executor;

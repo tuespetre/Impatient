@@ -1,8 +1,10 @@
+using Impatient.EntityFrameworkCore.SqlServer;
 using Impatient.Metadata;
 using Impatient.Query;
 using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors;
 using Impatient.Query.ExpressionVisitors.Composing;
+using Impatient.Query.ExpressionVisitors.Rewriting;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using Impatient.Tests.Utilities;
@@ -24,7 +26,7 @@ namespace Impatient.Tests
     [TestClass]
     public class QueryTests
     {
-        private string SqlLog => services.GetService<TestDbCommandExecutor>().Log.ToString();
+        private string SqlLog => services.GetService<TestDbCommandExecutorFactory>().Log.ToString();
 
         private readonly IServiceProvider services;
 
@@ -103,7 +105,7 @@ namespace Impatient.Tests
         [TestCleanup]
         public void Cleanup()
         {
-            services.GetService<TestDbCommandExecutor>().Log.Clear();
+            services.GetService<TestDbCommandExecutorFactory>().Log?.Clear();
         }
 
         [TestMethod]
@@ -1528,14 +1530,14 @@ FROM [dbo].[MyClass1] AS [m]",
         [TestMethod]
         public void Contains_expression_in_array_closured()
         {
-            var array = new[] { 77 };
+            var array = new[] { 77, 88 };
 
             var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => array.Contains(m.Prop2));
 
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN [m].[Prop2] IN (@p0_0) THEN 1 ELSE 0 END) AS BIT)
+                @"SELECT CAST((CASE WHEN [m].[Prop2] IN (@p0_0, @p0_1) THEN 1 ELSE 0 END) AS BIT)
 FROM [dbo].[MyClass1] AS [m]",
                 SqlLog);
         }
@@ -1699,7 +1701,7 @@ ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
 
             var provider = services.GetService<IOptimizingExpressionVisitorProvider>();
 
-            var context = new QueryProcessingContext(impatient, DescriptorSet.Empty, new Dictionary<object, ParameterExpression>(), null);
+            var context = new QueryProcessingContext(impatient, DescriptorSet.Empty);
 
             var expression 
                 = provider
@@ -1709,7 +1711,8 @@ ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
             expression 
                 = new QueryComposingExpressionVisitor(
                     services.GetService<TranslatabilityAnalyzingExpressionVisitor>(),
-                    services.GetService<IRewritingExpressionVisitorProvider>().CreateExpressionVisitors(context))
+                    services.GetService<IRewritingExpressionVisitorProvider>().CreateExpressionVisitors(context),
+                    new SqlParameterRewritingExpressionVisitor(context.ParameterMapping.Values))
                     .Visit(expression);
 
             Assert.IsInstanceOfType(expression, typeof(EnumerableRelationalQueryExpression));
@@ -1745,7 +1748,7 @@ FROM [dbo].[MyClass1] AS [m_0]",
 
             var provider = services.GetService<IOptimizingExpressionVisitorProvider>();
 
-            var context = new QueryProcessingContext(impatient, DescriptorSet.Empty, new Dictionary<object,ParameterExpression>(), null);
+            var context = new QueryProcessingContext(impatient, DescriptorSet.Empty);
 
             var expression
                 = provider
@@ -1755,7 +1758,8 @@ FROM [dbo].[MyClass1] AS [m_0]",
             expression
                 = new QueryComposingExpressionVisitor(
                     services.GetService<TranslatabilityAnalyzingExpressionVisitor>(),
-                    services.GetService<IRewritingExpressionVisitorProvider>().CreateExpressionVisitors(context))
+                    services.GetService<IRewritingExpressionVisitorProvider>().CreateExpressionVisitors(context),
+                    new SqlParameterRewritingExpressionVisitor(context.ParameterMapping.Values))
                     .Visit(expression);
 
             Assert.IsInstanceOfType(expression, typeof(EnumerableRelationalQueryExpression));
@@ -2688,8 +2692,10 @@ INNER JOIN [dbo].[MyClass2] AS [m2_1] ON [m1].[Prop1] = [m2_1].[Prop1]",
 
             query.ToList();
 
+            var log = services.GetService<TestDbCommandExecutorFactory>().Log.ToString();
+
             Assert.IsTrue(
-                services.GetService<TestDbCommandExecutor>().Log.ToString().StartsWith(
+                log.StartsWith(
                     @"SELECT [c].[CustomerID] AS [CustomerID], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Address] AS [Address], [c].[City] AS [City], [c].[Region] AS [Region], [c].[PostalCode] AS [PostalCode], [c].[Country] AS [Country], [c].[Phone] AS [Phone], [c].[Fax] AS [Fax]
 FROM [dbo].[Customers] AS [c]
 

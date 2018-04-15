@@ -30,6 +30,26 @@ namespace Impatient.Query.Infrastructure
                 return elementsExpression;
             }
         }
+
+        public static bool IsExpandedGrouping(
+            Expression expression,
+            out Expression keyExpression,
+            out EnumerableRelationalQueryExpression elementsExpression)
+        {
+            keyExpression = default;
+            elementsExpression = default;
+
+            if (expression is NewExpression newExpression 
+                && newExpression.Constructor.DeclaringType.IsGenericType(typeof(ExpandedGrouping<,>)))
+            {
+                keyExpression = newExpression.Arguments[0];
+                elementsExpression = (EnumerableRelationalQueryExpression)newExpression.Arguments[1];
+
+                return true;
+            }
+
+            return false;
+        }
     }
 
     internal class ExpandedGrouping<TKey, TElement> : IGrouping<TKey, TElement>

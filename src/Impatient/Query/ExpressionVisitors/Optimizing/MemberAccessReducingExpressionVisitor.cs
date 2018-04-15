@@ -1,4 +1,6 @@
-﻿using Impatient.Query.Expressions;
+﻿using Impatient.Extensions;
+using Impatient.Query.Expressions;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -7,6 +9,29 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 {
     public class MemberAccessReducingExpressionVisitor : ExpressionVisitor
     {
+        protected override Expression VisitExtension(Expression node)
+        {
+            switch (node)
+            {
+                case ExtraPropertyAccessExpression extraPropertyAccessExpression:
+                {
+                    var (expression, property) = extraPropertyAccessExpression;
+
+                    if (Visit(expression).TryResolvePath(property, out var resolved))
+                    {
+                        return Visit(resolved);
+                    }
+
+                    goto default;
+                }
+
+                default:
+                {
+                    return base.VisitExtension(node);
+                }
+            }
+        }
+
         protected override Expression VisitMember(MemberExpression node)
         {
             var expression = Visit(node.Expression);
@@ -37,14 +62,22 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                     return Visit(groupedRelationalQueryExpression.OuterKeySelector);
                 }
 
-                case AnnotationExpression annotationExpression:
-                {
-                    return Visit(node.Update(annotationExpression.Expression));
-                }
-
                 case PolymorphicExpression polymorphicExpression:
                 {
-                    return Visit(node.Update(polymorphicExpression.Unwrap(node.Member.DeclaringType)));
+                    foreach (var descriptor in polymorphicExpression.Descriptors)
+                    {
+                        if (node.Member.DeclaringType.IsAssignableFrom(descriptor.Type))
+                        {
+                            return Visit(node.Update(descriptor.Materializer.ExpandParameters(polymorphicExpression.Row)));
+                        }
+                    }
+
+                    return node;
+                }
+
+                case ExtraPropertiesExpression extraPropertiesExpression:
+                {
+                    return Visit(node.Update(extraPropertiesExpression.Expression));
                 }
 
                 default:
@@ -57,6 +90,13 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
         protected override Expression VisitUnary(UnaryExpression node)
         {
             var operand = Visit(node.Operand);
+
+            if (operand is UnaryExpression unnecessaryConvert
+                && operand.NodeType == ExpressionType.Convert
+                && operand.Type == unnecessaryConvert.Operand.Type)
+            {
+                operand = unnecessaryConvert.Operand;
+            }
 
             switch (node.NodeType)
             {
@@ -76,7 +116,9 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                 case ExpressionType.Convert
                 when operand is UnaryExpression unaryExpression
                     && unaryExpression.NodeType == ExpressionType.Convert
-                    && node.Type.IsAssignableFrom(unaryExpression.Operand.Type):
+                    && node.Type.IsAssignableFrom(unaryExpression.Operand.Type)
+                    && node.Type != typeof(object)
+                    && node.Type != typeof(Enum):
                 {
                     return unaryExpression.Operand;
                 }

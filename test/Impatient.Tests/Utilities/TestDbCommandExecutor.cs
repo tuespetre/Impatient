@@ -6,7 +6,26 @@ using System.Text;
 
 namespace Impatient.Tests.Utilities
 {
-    public class TestDbCommandExecutor : DefaultDbCommandExecutor
+    public class TestDbCommandExecutorFactory : IDbCommandExecutorFactory
+    {
+        private readonly string connectionString;
+
+        private TestDbCommandExecutor instance;
+
+        public TestDbCommandExecutorFactory(string connectionString)
+        {
+            this.connectionString = connectionString;
+        }
+
+        public IDbCommandExecutor Create()
+        {
+            return instance ?? (instance = new TestDbCommandExecutor(connectionString));
+        }
+
+        public StringBuilder Log => instance?.Log;
+    }
+
+    public class TestDbCommandExecutor : BaseDbCommandExecutor
     {
         private const string DefaultConnectionString = @"Server=.\sqlexpress; Database=Impatient; Trusted_Connection=True";
 

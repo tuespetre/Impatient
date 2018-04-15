@@ -7,7 +7,7 @@ namespace Impatient.Query.Expressions
     {
         public BaseTableExpression(string schemaName, string tableName, string alias, Type type) : base(alias, type)
         {
-            SchemaName = schemaName ?? throw new ArgumentNullException(nameof(schemaName));
+            SchemaName = schemaName;
             TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
         }
 

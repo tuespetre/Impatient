@@ -8,6 +8,13 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 {
     public class PartialEvaluatingExpressionVisitor : ExpressionVisitor
     {
+        private bool propagate;
+
+        protected void PropagateExceptions()
+        {
+            propagate = true;
+        }
+
         public override Expression Visit(Expression node)
         {
             try
@@ -16,6 +23,11 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             }
             catch
             {
+                if (propagate)
+                {
+                    throw;
+                }
+
                 return node;
             }
         }
@@ -101,25 +113,41 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
         {
             var visitedExpression = Visit(node.Expression);
 
-            if (!unevaluableMembers.Contains(node.Member)
-                && (visitedExpression is null || visitedExpression is ConstantExpression))
+            if (visitedExpression == null)
             {
-                var @object = (visitedExpression as ConstantExpression)?.Value;
-
-                switch (node.Member)
+                if (node.Member is FieldInfo field && (field.IsInitOnly || !field.IsLiteral))
                 {
-                    case PropertyInfo propertyInfo:
-                    {
-                        return Expression.Constant(propertyInfo.GetValue(@object));
-                    }
+                    goto Finish;
+                }
 
-                    case FieldInfo fieldInfo:
+                if (node.Member is PropertyInfo)
+                {
+                    goto Finish;
+                }
+            }
+
+            if (!unevaluableMembers.Contains(node.Member))
+            {
+                if (visitedExpression == null || visitedExpression is ConstantExpression)
+                {
+                    var @object = (visitedExpression as ConstantExpression)?.Value;
+
+                    switch (node.Member)
                     {
-                        return Expression.Constant(fieldInfo.GetValue(@object));
+                        case PropertyInfo propertyInfo:
+                        {
+                            return Expression.Constant(propertyInfo.GetValue(@object));
+                        }
+
+                        case FieldInfo fieldInfo:
+                        {
+                            return Expression.Constant(fieldInfo.GetValue(@object));
+                        }
                     }
                 }
             }
 
+            Finish:
             return node.Update(visitedExpression);
         }
 
@@ -155,14 +183,16 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             if (visitedArguments.Any(a => typeof(IQueryable).IsAssignableFrom(a.Type)))
             {
                 // If it's a method call that takes a queryable as an argument, we (for the most part)
-                // can't guarantee that evaluating the method call won't trigger a query.
+                // can't guarantee that evaluating the method call won't trigger a query. One would
+                // at first think that if the return type is also IQueryable it might be OK to evaluate,
+                // but the truth is that methods like Single() could still return an IQueryable.
                 // Calls like Queryable.Where and Queryable.Select and so forth may be ok, but 
                 // we would end up re-parsing the resulting expression trees anyways so it is pointless
                 // to evaluate them.
                 goto Finish;
             }
 
-            if ((visitedObject is null || visitedObject is ConstantExpression)
+            if (((visitedObject is null && visitedArguments.Any()) || visitedObject is ConstantExpression)
                 && visitedArguments.All(a => a is ConstantExpression))
             {
                 var @object = (visitedObject as ConstantExpression)?.Value;
@@ -188,6 +218,11 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
             if (visitedArguments.All(a => a is ConstantExpression))
             {
+                if (node.Constructor == null)
+                {
+                    return Expression.Constant(Activator.CreateInstance(node.Type));
+                }
+
                 return Expression.Constant(
                     node.Constructor.Invoke(
                         visitedArguments
@@ -265,7 +300,8 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
         {
             var visitedOperand = Visit(node.Operand);
 
-            if (visitedOperand is ConstantExpression)
+            if (visitedOperand is ConstantExpression 
+                && node.NodeType != ExpressionType.Convert)
             {
                 return TryEvaluateExpression(node.Update(visitedOperand));
             }

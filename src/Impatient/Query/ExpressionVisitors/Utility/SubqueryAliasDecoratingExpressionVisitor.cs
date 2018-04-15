@@ -21,12 +21,13 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                 case null:
                 case NewExpression _:
                 case MemberInitExpression _:
-                case GroupByResultExpression _:
-                case GroupedRelationalQueryExpression _:
                 case PolymorphicExpression _:
                 case SqlColumnExpression _:
                 case SqlAliasExpression _:
-                case DefaultIfEmptyExpression _:
+                case ExtraPropertiesExpression _:
+                // TODO: Can these two cases be eliminated?
+                case GroupByResultExpression _:
+                case GroupedRelationalQueryExpression _:
                 {
                     return node;
                 }

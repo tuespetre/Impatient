@@ -21,7 +21,17 @@ namespace Impatient.Query.Expressions
 
         public override ExpressionType NodeType => ExpressionType.Extension;
 
-        protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
+        protected override Expression VisitChildren(ExpressionVisitor visitor)
+        {
+            var expression = visitor.VisitAndConvert(Expression, nameof(VisitChildren));
+
+            if (expression != Expression)
+            {
+                return new OrderByExpression(expression, Descending);
+            }
+
+            return this;
+        }
 
         public virtual OrderByExpression Reverse()
         {

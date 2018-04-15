@@ -1,4 +1,5 @@
 ﻿using Impatient.Query.ExpressionVisitors.Composing;
+using Impatient.Query.ExpressionVisitors.Rewriting;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -26,7 +27,8 @@ namespace Impatient.Query.Infrastructure
 
             yield return new QueryComposingExpressionVisitor(
                 translatabilityAnalyzingExpressionVisitor, 
-                rewritingExpressionVisitorProvider.CreateExpressionVisitors(context));
+                rewritingExpressionVisitorProvider.CreateExpressionVisitors(context),
+                new SqlParameterRewritingExpressionVisitor(context.ParameterMapping.Values));
         }
     }
 }

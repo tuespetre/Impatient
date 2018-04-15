@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Impatient.Query.ExpressionVisitors.Utility
 {
@@ -10,20 +12,28 @@ namespace Impatient.Query.ExpressionVisitors.Utility
     /// </summary>
     public class ConstantParameterizingExpressionVisitor : ExpressionVisitor
     {
-        public IDictionary<object, ParameterExpression> Mapping { get; } = new Dictionary<object, ParameterExpression>();
+        private readonly IDictionary<object, ParameterExpression> mapping;
+
+        public ConstantParameterizingExpressionVisitor(IDictionary<object, ParameterExpression> mapping)
+        {
+            this.mapping = mapping ?? throw new ArgumentNullException(nameof(mapping));
+        }
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            if (node.Type.IsConstantLiteralType() || node.Value is null || node.Value is IQueryable)
+            if (node.Type.UnwrapNullableType().IsConstantLiteralType() 
+                || node.Type.GetTypeInfo().IsEnum
+                || node.Value is null 
+                || node.Value is IQueryable)
             {
                 return node;
             }
 
-            if (!Mapping.TryGetValue(node.Value, out var parameter))
+            if (!mapping.TryGetValue(node.Value, out var parameter))
             {
-                parameter = Expression.Parameter(node.Type, $"scope{Mapping.Count}");
+                parameter = Expression.Parameter(node.Type, $"scope{mapping.Count}");
 
-                Mapping.Add(node.Value, parameter);
+                mapping.Add(node.Value, parameter);
             }
 
             return parameter;

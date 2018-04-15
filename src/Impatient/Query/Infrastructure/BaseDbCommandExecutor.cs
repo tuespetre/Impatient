@@ -5,7 +5,7 @@ using System.Data.Common;
 
 namespace Impatient.Query.Infrastructure
 {
-    public abstract class DefaultDbCommandExecutor : IDbCommandExecutor
+    public abstract class BaseDbCommandExecutor : IDbCommandExecutor
     {
         public IEnumerable<TElement> ExecuteEnumerable<TElement>(Action<DbCommand> initializer, Func<DbDataReader, TElement> materializer)
         {

@@ -17,6 +17,8 @@ namespace Impatient.Query.Infrastructure
             yield return new SelectorPushdownExpressionVisitor();
 
             yield return new BooleanOptimizingExpressionVisitor();
+
+            yield return new RedundantConversionStrippingExpressionVisitor();
         }
     }
 }

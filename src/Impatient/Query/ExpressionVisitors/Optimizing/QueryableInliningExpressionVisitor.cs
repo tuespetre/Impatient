@@ -10,24 +10,26 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
     public class QueryableInliningExpressionVisitor : PartialEvaluatingExpressionVisitor
     {
         private readonly IQueryProvider queryProvider;
+        private readonly IDictionary<object, ParameterExpression> parameterMapping;
         private readonly ExpressionVisitor replacingVisitor;
 
         public QueryableInliningExpressionVisitor(
             IQueryProvider queryProvider,
-            IReadOnlyDictionary<object, ParameterExpression> parameterMapping)
+            IDictionary<object, ParameterExpression> parameterMapping)
         {
             this.queryProvider = queryProvider ?? throw new ArgumentNullException(nameof(queryProvider));
-
-            if (parameterMapping == null)
-            {
-                throw new ArgumentNullException(nameof(parameterMapping));
-            }
+            this.parameterMapping = parameterMapping ?? throw new ArgumentNullException(nameof(parameterMapping));
 
             replacingVisitor
                 = new ExpressionReplacingExpressionVisitor(
                     parameterMapping.ToDictionary(
                         kvp => kvp.Value as Expression,
                         kvp => Expression.Constant(kvp.Key) as Expression));
+        }
+
+        protected Expression Reparameterize(Expression expression)
+        {
+            return new ConstantParameterizingExpressionVisitor(parameterMapping).Visit(expression);
         }
 
         public override Expression Visit(Expression node)
@@ -43,17 +45,93 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             // all nodes, actual parameters (think `where customer.Id == <closure>.customerId`)
             // would be replaced, which messes up parameterization and query caching.
 
-            if (typeof(IQueryable).IsAssignableFrom(node.Type))
+            var visited = base.Visit(node);
+
+            if (typeof(IQueryable).IsAssignableFrom(visited.Type))
             {
-                var evaluated = base.Visit(replacingVisitor.Visit(node)) as ConstantExpression;
+                var evaluated = visited as ConstantExpression;
+
+                if (evaluated == null)
+                {
+                    var expanded = replacingVisitor.Visit(visited);
+
+                    if (expanded != visited)
+                    {
+                        evaluated = base.Visit(expanded) as ConstantExpression;
+                    }
+                }
 
                 if (evaluated?.Value is IQueryable queryable && queryable.Provider == queryProvider)
                 {
-                    return queryable.Expression;
+                    return Reparameterize(queryable.Expression);
                 }
             }
 
-            return base.Visit(node);
+            return visited;
+        }
+
+        protected override Expression VisitMember(MemberExpression node)
+        {
+            // This block ensures that IQueryables coming from chained 
+            // member accesses rooted at a static member can be inlined.
+
+            if (typeof(IQueryable).IsAssignableFrom(node.Type))
+            {
+                var memberStack = new Stack<MemberInfo>();
+
+                memberStack.Push(node.Member);
+
+                var expression = node.Expression;
+
+                while (expression is MemberExpression inner)
+                {
+                    memberStack.Push(inner.Member);
+
+                    expression = inner.Expression;
+                }
+
+                if (expression == null || expression is ConstantExpression)
+                {
+                    try
+                    {
+                        var value = (expression as ConstantExpression)?.Value;
+
+                        foreach (var member in memberStack)
+                        {
+                            switch (member)
+                            {
+                                case PropertyInfo propertyInfo:
+                                {
+                                    value = propertyInfo.GetValue(value);
+                                    break;
+                                }
+
+                                case FieldInfo fieldInfo:
+                                {
+                                    value = fieldInfo.GetValue(value);
+                                    break;
+                                }
+                            }
+                        }
+
+                        return Expression.Constant(value);
+                    }
+                    catch
+                    {
+                        return base.VisitMember(node);
+                    }
+                }
+            }
+
+            return base.VisitMember(node);
+        }
+
+        protected override Expression VisitMemberInit(MemberInitExpression node)
+        {
+            var newExpression = VisitAndConvert(node.NewExpression, nameof(VisitMemberInit));
+            var bindings = node.Bindings.Select(VisitMemberBinding);
+
+            return node.Update(newExpression, bindings);
         }
     }
 }

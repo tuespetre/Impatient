@@ -84,7 +84,7 @@ namespace Impatient.Tests
         [TestCleanup]
         public void Cleanup()
         {
-            services.GetService<TestDbCommandExecutor>().Log.Clear();
+            context.ClearLog();
         }
 
         [TestMethod]
@@ -239,6 +239,26 @@ FROM [dbo].[Customers] AS [c]",
         }
 
         [TestMethod]
+        public void SelectMany_cross_join_same_table_Where_same_navigation()
+        {
+            var query = from o1 in context.Orders
+                        from o2 in context.Orders
+                        where o1.Customer.City == o2.Customer.City
+                        select new { x = o1.OrderID, y = o2.OrderID };
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [o1].[OrderID] AS [x], [o].[OrderID] AS [y]
+FROM [dbo].[Orders] AS [o1]
+CROSS JOIN [dbo].[Orders] AS [o]
+INNER JOIN [dbo].[Customers] AS [c] ON [o1].[CustomerID] = [c].[CustomerID]
+INNER JOIN [dbo].[Customers] AS [c_0] ON [o].[CustomerID] = [c_0].[CustomerID]
+WHERE (([c].[City] IS NULL AND [c_0].[City] IS NULL) OR ([c].[City] = [c_0].[City]))",
+                context.SqlLog);
+        }
+
+        [TestMethod]
         public void SelectMany_navigation_12m()
         {
             var query = from c in context.Customers
@@ -325,7 +345,7 @@ LEFT JOIN (
 LEFT JOIN (
     SELECT 0 AS [$empty], [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[UnitPrice] AS [UnitPrice], [d].[Quantity] AS [Quantity], [d].[Discount] AS [Discount]
     FROM [dbo].[Order Details] AS [d]
-) AS [d_0] ON (([o].[OrderID] IS NULL AND [d_0].[OrderID] IS NULL) OR ([o].[OrderID] = [d_0].[OrderID]))",
+) AS [d_0] ON [o].[OrderID] = [d_0].[OrderID]",
                 context.SqlLog);
         }
 
@@ -405,20 +425,20 @@ ORDER BY [c].[City] ASC, [c].[ContactName] DESC",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [t].[OrderID] AS [OrderID], [t].[CustomerID] AS [CustomerID], [t].[EmployeeID] AS [EmployeeID], [t].[OrderDate] AS [OrderDate], [t].[RequiredDate] AS [RequiredDate], [t].[ShippedDate] AS [ShippedDate], [t].[ShipVia] AS [ShipVia], [t].[Freight] AS [Freight], [t].[ShipName] AS [ShipName], [t].[ShipAddress] AS [ShipAddress], [t].[ShipCity] AS [ShipCity], [t].[ShipRegion] AS [ShipRegion], [t].[ShipPostalCode] AS [ShipPostalCode], [t].[ShipCountry] AS [ShipCountry]
+                @"SELECT [t].[$outer.OrderID] AS [OrderID], [t].[$outer.CustomerID] AS [CustomerID], [t].[$outer.EmployeeID] AS [EmployeeID], [t].[$outer.OrderDate] AS [OrderDate], [t].[$outer.RequiredDate] AS [RequiredDate], [t].[$outer.ShippedDate] AS [ShippedDate], [t].[$outer.ShipVia] AS [ShipVia], [t].[$outer.Freight] AS [Freight], [t].[$outer.ShipName] AS [ShipName], [t].[$outer.ShipAddress] AS [ShipAddress], [t].[$outer.ShipCity] AS [ShipCity], [t].[$outer.ShipRegion] AS [ShipRegion], [t].[$outer.ShipPostalCode] AS [ShipPostalCode], [t].[$outer.ShipCountry] AS [ShipCountry]
 FROM (
-    SELECT [o].[OrderID] AS [OrderID], [c].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShippedDate] AS [ShippedDate], [o].[ShipVia] AS [ShipVia], [o].[Freight] AS [Freight], [o].[ShipName] AS [ShipName], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipRegion] AS [ShipRegion], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipCountry] AS [ShipCountry], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Address] AS [Address], [c].[City] AS [City], [c].[Region] AS [Region], [c].[PostalCode] AS [PostalCode], [c].[Country] AS [Country], [c].[Phone] AS [Phone], [c].[Fax] AS [Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    SELECT [o].[OrderID] AS [$outer.OrderID], [o].[CustomerID] AS [$outer.CustomerID], [o].[EmployeeID] AS [$outer.EmployeeID], [o].[OrderDate] AS [$outer.OrderDate], [o].[RequiredDate] AS [$outer.RequiredDate], [o].[ShippedDate] AS [$outer.ShippedDate], [o].[ShipVia] AS [$outer.ShipVia], [o].[Freight] AS [$outer.Freight], [o].[ShipName] AS [$outer.ShipName], [o].[ShipAddress] AS [$outer.ShipAddress], [o].[ShipCity] AS [$outer.ShipCity], [o].[ShipRegion] AS [$outer.ShipRegion], [o].[ShipPostalCode] AS [$outer.ShipPostalCode], [o].[ShipCountry] AS [$outer.ShipCountry], [c].[CustomerID] AS [$inner.CustomerID], [c].[CompanyName] AS [$inner.CompanyName], [c].[ContactName] AS [$inner.ContactName], [c].[ContactTitle] AS [$inner.ContactTitle], [c].[Address] AS [$inner.Address], [c].[City] AS [$inner.City], [c].[Region] AS [$inner.Region], [c].[PostalCode] AS [$inner.PostalCode], [c].[Country] AS [$inner.Country], [c].[Phone] AS [$inner.Phone], [c].[Fax] AS [$inner.Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
     FROM [dbo].[Orders] AS [o]
     INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 ) AS [t]
 WHERE [t].[$rownumber] >= (
     SELECT COALESCE(MIN([t_0].[$rownumber]), 0)
     FROM (
-        SELECT [o_0].[OrderID] AS [OrderID], [c_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [c_0].[CompanyName] AS [CompanyName], [c_0].[ContactName] AS [ContactName], [c_0].[ContactTitle] AS [ContactTitle], [c_0].[Address] AS [Address], [c_0].[City] AS [City], [c_0].[Region] AS [Region], [c_0].[PostalCode] AS [PostalCode], [c_0].[Country] AS [Country], [c_0].[Phone] AS [Phone], [c_0].[Fax] AS [Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+        SELECT [o_0].[OrderID] AS [$outer.OrderID], [o_0].[CustomerID] AS [$outer.CustomerID], [o_0].[EmployeeID] AS [$outer.EmployeeID], [o_0].[OrderDate] AS [$outer.OrderDate], [o_0].[RequiredDate] AS [$outer.RequiredDate], [o_0].[ShippedDate] AS [$outer.ShippedDate], [o_0].[ShipVia] AS [$outer.ShipVia], [o_0].[Freight] AS [$outer.Freight], [o_0].[ShipName] AS [$outer.ShipName], [o_0].[ShipAddress] AS [$outer.ShipAddress], [o_0].[ShipCity] AS [$outer.ShipCity], [o_0].[ShipRegion] AS [$outer.ShipRegion], [o_0].[ShipPostalCode] AS [$outer.ShipPostalCode], [o_0].[ShipCountry] AS [$outer.ShipCountry], [c_0].[CustomerID] AS [$inner.CustomerID], [c_0].[CompanyName] AS [$inner.CompanyName], [c_0].[ContactName] AS [$inner.ContactName], [c_0].[ContactTitle] AS [$inner.ContactTitle], [c_0].[Address] AS [$inner.Address], [c_0].[City] AS [$inner.City], [c_0].[Region] AS [$inner.Region], [c_0].[PostalCode] AS [$inner.PostalCode], [c_0].[Country] AS [$inner.Country], [c_0].[Phone] AS [$inner.Phone], [c_0].[Fax] AS [$inner.Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
         FROM [dbo].[Orders] AS [o_0]
         INNER JOIN [dbo].[Customers] AS [c_0] ON [o_0].[CustomerID] = [c_0].[CustomerID]
     ) AS [t_0]
-    WHERE [t_0].[City] = N'Berlin'
+    WHERE [t_0].[$inner.City] = N'Berlin'
 )",
                 context.SqlLog);
         }
@@ -431,20 +451,20 @@ WHERE [t].[$rownumber] >= (
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [t].[OrderID] AS [OrderID], [t].[CustomerID] AS [CustomerID], [t].[EmployeeID] AS [EmployeeID], [t].[OrderDate] AS [OrderDate], [t].[RequiredDate] AS [RequiredDate], [t].[ShippedDate] AS [ShippedDate], [t].[ShipVia] AS [ShipVia], [t].[Freight] AS [Freight], [t].[ShipName] AS [ShipName], [t].[ShipAddress] AS [ShipAddress], [t].[ShipCity] AS [ShipCity], [t].[ShipRegion] AS [ShipRegion], [t].[ShipPostalCode] AS [ShipPostalCode], [t].[ShipCountry] AS [ShipCountry]
+                @"SELECT [t].[$outer.OrderID] AS [OrderID], [t].[$outer.CustomerID] AS [CustomerID], [t].[$outer.EmployeeID] AS [EmployeeID], [t].[$outer.OrderDate] AS [OrderDate], [t].[$outer.RequiredDate] AS [RequiredDate], [t].[$outer.ShippedDate] AS [ShippedDate], [t].[$outer.ShipVia] AS [ShipVia], [t].[$outer.Freight] AS [Freight], [t].[$outer.ShipName] AS [ShipName], [t].[$outer.ShipAddress] AS [ShipAddress], [t].[$outer.ShipCity] AS [ShipCity], [t].[$outer.ShipRegion] AS [ShipRegion], [t].[$outer.ShipPostalCode] AS [ShipPostalCode], [t].[$outer.ShipCountry] AS [ShipCountry]
 FROM (
-    SELECT [o].[OrderID] AS [OrderID], [c].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShippedDate] AS [ShippedDate], [o].[ShipVia] AS [ShipVia], [o].[Freight] AS [Freight], [o].[ShipName] AS [ShipName], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipRegion] AS [ShipRegion], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipCountry] AS [ShipCountry], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Address] AS [Address], [c].[City] AS [City], [c].[Region] AS [Region], [c].[PostalCode] AS [PostalCode], [c].[Country] AS [Country], [c].[Phone] AS [Phone], [c].[Fax] AS [Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    SELECT [o].[OrderID] AS [$outer.OrderID], [o].[CustomerID] AS [$outer.CustomerID], [o].[EmployeeID] AS [$outer.EmployeeID], [o].[OrderDate] AS [$outer.OrderDate], [o].[RequiredDate] AS [$outer.RequiredDate], [o].[ShippedDate] AS [$outer.ShippedDate], [o].[ShipVia] AS [$outer.ShipVia], [o].[Freight] AS [$outer.Freight], [o].[ShipName] AS [$outer.ShipName], [o].[ShipAddress] AS [$outer.ShipAddress], [o].[ShipCity] AS [$outer.ShipCity], [o].[ShipRegion] AS [$outer.ShipRegion], [o].[ShipPostalCode] AS [$outer.ShipPostalCode], [o].[ShipCountry] AS [$outer.ShipCountry], [c].[CustomerID] AS [$inner.CustomerID], [c].[CompanyName] AS [$inner.CompanyName], [c].[ContactName] AS [$inner.ContactName], [c].[ContactTitle] AS [$inner.ContactTitle], [c].[Address] AS [$inner.Address], [c].[City] AS [$inner.City], [c].[Region] AS [$inner.Region], [c].[PostalCode] AS [$inner.PostalCode], [c].[Country] AS [$inner.Country], [c].[Phone] AS [$inner.Phone], [c].[Fax] AS [$inner.Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
     FROM [dbo].[Orders] AS [o]
     INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 ) AS [t]
 WHERE [t].[$rownumber] >= (
     SELECT COALESCE(MIN([t_0].[$rownumber]), 0)
     FROM (
-        SELECT [o_0].[OrderID] AS [OrderID], [c_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [c_0].[CompanyName] AS [CompanyName], [c_0].[ContactName] AS [ContactName], [c_0].[ContactTitle] AS [ContactTitle], [c_0].[Address] AS [Address], [c_0].[City] AS [City], [c_0].[Region] AS [Region], [c_0].[PostalCode] AS [PostalCode], [c_0].[Country] AS [Country], [c_0].[Phone] AS [Phone], [c_0].[Fax] AS [Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+        SELECT [o_0].[OrderID] AS [$outer.OrderID], [o_0].[CustomerID] AS [$outer.CustomerID], [o_0].[EmployeeID] AS [$outer.EmployeeID], [o_0].[OrderDate] AS [$outer.OrderDate], [o_0].[RequiredDate] AS [$outer.RequiredDate], [o_0].[ShippedDate] AS [$outer.ShippedDate], [o_0].[ShipVia] AS [$outer.ShipVia], [o_0].[Freight] AS [$outer.Freight], [o_0].[ShipName] AS [$outer.ShipName], [o_0].[ShipAddress] AS [$outer.ShipAddress], [o_0].[ShipCity] AS [$outer.ShipCity], [o_0].[ShipRegion] AS [$outer.ShipRegion], [o_0].[ShipPostalCode] AS [$outer.ShipPostalCode], [o_0].[ShipCountry] AS [$outer.ShipCountry], [c_0].[CustomerID] AS [$inner.CustomerID], [c_0].[CompanyName] AS [$inner.CompanyName], [c_0].[ContactName] AS [$inner.ContactName], [c_0].[ContactTitle] AS [$inner.ContactTitle], [c_0].[Address] AS [$inner.Address], [c_0].[City] AS [$inner.City], [c_0].[Region] AS [$inner.Region], [c_0].[PostalCode] AS [$inner.PostalCode], [c_0].[Country] AS [$inner.Country], [c_0].[Phone] AS [$inner.Phone], [c_0].[Fax] AS [$inner.Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
         FROM [dbo].[Orders] AS [o_0]
         INNER JOIN [dbo].[Customers] AS [c_0] ON [o_0].[CustomerID] = [c_0].[CustomerID]
     ) AS [t_0]
-    WHERE [t_0].[City] = N'Berlin'
+    WHERE [t_0].[$inner.City] = N'Berlin'
 )",
                 context.SqlLog);
         }
@@ -457,20 +477,20 @@ WHERE [t].[$rownumber] >= (
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [t].[OrderID] AS [OrderID], [t].[CustomerID] AS [CustomerID], [t].[EmployeeID] AS [EmployeeID], [t].[OrderDate] AS [OrderDate], [t].[RequiredDate] AS [RequiredDate], [t].[ShippedDate] AS [ShippedDate], [t].[ShipVia] AS [ShipVia], [t].[Freight] AS [Freight], [t].[ShipName] AS [ShipName], [t].[ShipAddress] AS [ShipAddress], [t].[ShipCity] AS [ShipCity], [t].[ShipRegion] AS [ShipRegion], [t].[ShipPostalCode] AS [ShipPostalCode], [t].[ShipCountry] AS [ShipCountry]
+                @"SELECT [t].[$outer.OrderID] AS [OrderID], [t].[$outer.CustomerID] AS [CustomerID], [t].[$outer.EmployeeID] AS [EmployeeID], [t].[$outer.OrderDate] AS [OrderDate], [t].[$outer.RequiredDate] AS [RequiredDate], [t].[$outer.ShippedDate] AS [ShippedDate], [t].[$outer.ShipVia] AS [ShipVia], [t].[$outer.Freight] AS [Freight], [t].[$outer.ShipName] AS [ShipName], [t].[$outer.ShipAddress] AS [ShipAddress], [t].[$outer.ShipCity] AS [ShipCity], [t].[$outer.ShipRegion] AS [ShipRegion], [t].[$outer.ShipPostalCode] AS [ShipPostalCode], [t].[$outer.ShipCountry] AS [ShipCountry]
 FROM (
-    SELECT [o].[OrderID] AS [OrderID], [c].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShippedDate] AS [ShippedDate], [o].[ShipVia] AS [ShipVia], [o].[Freight] AS [Freight], [o].[ShipName] AS [ShipName], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipRegion] AS [ShipRegion], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipCountry] AS [ShipCountry], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Address] AS [Address], [c].[City] AS [City], [c].[Region] AS [Region], [c].[PostalCode] AS [PostalCode], [c].[Country] AS [Country], [c].[Phone] AS [Phone], [c].[Fax] AS [Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    SELECT [o].[OrderID] AS [$outer.OrderID], [o].[CustomerID] AS [$outer.CustomerID], [o].[EmployeeID] AS [$outer.EmployeeID], [o].[OrderDate] AS [$outer.OrderDate], [o].[RequiredDate] AS [$outer.RequiredDate], [o].[ShippedDate] AS [$outer.ShippedDate], [o].[ShipVia] AS [$outer.ShipVia], [o].[Freight] AS [$outer.Freight], [o].[ShipName] AS [$outer.ShipName], [o].[ShipAddress] AS [$outer.ShipAddress], [o].[ShipCity] AS [$outer.ShipCity], [o].[ShipRegion] AS [$outer.ShipRegion], [o].[ShipPostalCode] AS [$outer.ShipPostalCode], [o].[ShipCountry] AS [$outer.ShipCountry], [c].[CustomerID] AS [$inner.CustomerID], [c].[CompanyName] AS [$inner.CompanyName], [c].[ContactName] AS [$inner.ContactName], [c].[ContactTitle] AS [$inner.ContactTitle], [c].[Address] AS [$inner.Address], [c].[City] AS [$inner.City], [c].[Region] AS [$inner.Region], [c].[PostalCode] AS [$inner.PostalCode], [c].[Country] AS [$inner.Country], [c].[Phone] AS [$inner.Phone], [c].[Fax] AS [$inner.Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
     FROM [dbo].[Orders] AS [o]
     INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 ) AS [t]
 WHERE [t].[$rownumber] < (
     SELECT COALESCE(MIN([t_0].[$rownumber]), [t].[$rownumber] + 1)
     FROM (
-        SELECT [o_0].[OrderID] AS [OrderID], [c_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [c_0].[CompanyName] AS [CompanyName], [c_0].[ContactName] AS [ContactName], [c_0].[ContactTitle] AS [ContactTitle], [c_0].[Address] AS [Address], [c_0].[City] AS [City], [c_0].[Region] AS [Region], [c_0].[PostalCode] AS [PostalCode], [c_0].[Country] AS [Country], [c_0].[Phone] AS [Phone], [c_0].[Fax] AS [Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+        SELECT [o_0].[OrderID] AS [$outer.OrderID], [o_0].[CustomerID] AS [$outer.CustomerID], [o_0].[EmployeeID] AS [$outer.EmployeeID], [o_0].[OrderDate] AS [$outer.OrderDate], [o_0].[RequiredDate] AS [$outer.RequiredDate], [o_0].[ShippedDate] AS [$outer.ShippedDate], [o_0].[ShipVia] AS [$outer.ShipVia], [o_0].[Freight] AS [$outer.Freight], [o_0].[ShipName] AS [$outer.ShipName], [o_0].[ShipAddress] AS [$outer.ShipAddress], [o_0].[ShipCity] AS [$outer.ShipCity], [o_0].[ShipRegion] AS [$outer.ShipRegion], [o_0].[ShipPostalCode] AS [$outer.ShipPostalCode], [o_0].[ShipCountry] AS [$outer.ShipCountry], [c_0].[CustomerID] AS [$inner.CustomerID], [c_0].[CompanyName] AS [$inner.CompanyName], [c_0].[ContactName] AS [$inner.ContactName], [c_0].[ContactTitle] AS [$inner.ContactTitle], [c_0].[Address] AS [$inner.Address], [c_0].[City] AS [$inner.City], [c_0].[Region] AS [$inner.Region], [c_0].[PostalCode] AS [$inner.PostalCode], [c_0].[Country] AS [$inner.Country], [c_0].[Phone] AS [$inner.Phone], [c_0].[Fax] AS [$inner.Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
         FROM [dbo].[Orders] AS [o_0]
         INNER JOIN [dbo].[Customers] AS [c_0] ON [o_0].[CustomerID] = [c_0].[CustomerID]
     ) AS [t_0]
-    WHERE [t_0].[City] = N'Berlin'
+    WHERE [t_0].[$inner.City] = N'Berlin'
 )",
                 context.SqlLog);
         }
@@ -483,20 +503,20 @@ WHERE [t].[$rownumber] < (
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [t].[OrderID] AS [OrderID], [t].[CustomerID] AS [CustomerID], [t].[EmployeeID] AS [EmployeeID], [t].[OrderDate] AS [OrderDate], [t].[RequiredDate] AS [RequiredDate], [t].[ShippedDate] AS [ShippedDate], [t].[ShipVia] AS [ShipVia], [t].[Freight] AS [Freight], [t].[ShipName] AS [ShipName], [t].[ShipAddress] AS [ShipAddress], [t].[ShipCity] AS [ShipCity], [t].[ShipRegion] AS [ShipRegion], [t].[ShipPostalCode] AS [ShipPostalCode], [t].[ShipCountry] AS [ShipCountry]
+                @"SELECT [t].[$outer.OrderID] AS [OrderID], [t].[$outer.CustomerID] AS [CustomerID], [t].[$outer.EmployeeID] AS [EmployeeID], [t].[$outer.OrderDate] AS [OrderDate], [t].[$outer.RequiredDate] AS [RequiredDate], [t].[$outer.ShippedDate] AS [ShippedDate], [t].[$outer.ShipVia] AS [ShipVia], [t].[$outer.Freight] AS [Freight], [t].[$outer.ShipName] AS [ShipName], [t].[$outer.ShipAddress] AS [ShipAddress], [t].[$outer.ShipCity] AS [ShipCity], [t].[$outer.ShipRegion] AS [ShipRegion], [t].[$outer.ShipPostalCode] AS [ShipPostalCode], [t].[$outer.ShipCountry] AS [ShipCountry]
 FROM (
-    SELECT [o].[OrderID] AS [OrderID], [c].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShippedDate] AS [ShippedDate], [o].[ShipVia] AS [ShipVia], [o].[Freight] AS [Freight], [o].[ShipName] AS [ShipName], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipRegion] AS [ShipRegion], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipCountry] AS [ShipCountry], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Address] AS [Address], [c].[City] AS [City], [c].[Region] AS [Region], [c].[PostalCode] AS [PostalCode], [c].[Country] AS [Country], [c].[Phone] AS [Phone], [c].[Fax] AS [Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    SELECT [o].[OrderID] AS [$outer.OrderID], [o].[CustomerID] AS [$outer.CustomerID], [o].[EmployeeID] AS [$outer.EmployeeID], [o].[OrderDate] AS [$outer.OrderDate], [o].[RequiredDate] AS [$outer.RequiredDate], [o].[ShippedDate] AS [$outer.ShippedDate], [o].[ShipVia] AS [$outer.ShipVia], [o].[Freight] AS [$outer.Freight], [o].[ShipName] AS [$outer.ShipName], [o].[ShipAddress] AS [$outer.ShipAddress], [o].[ShipCity] AS [$outer.ShipCity], [o].[ShipRegion] AS [$outer.ShipRegion], [o].[ShipPostalCode] AS [$outer.ShipPostalCode], [o].[ShipCountry] AS [$outer.ShipCountry], [c].[CustomerID] AS [$inner.CustomerID], [c].[CompanyName] AS [$inner.CompanyName], [c].[ContactName] AS [$inner.ContactName], [c].[ContactTitle] AS [$inner.ContactTitle], [c].[Address] AS [$inner.Address], [c].[City] AS [$inner.City], [c].[Region] AS [$inner.Region], [c].[PostalCode] AS [$inner.PostalCode], [c].[Country] AS [$inner.Country], [c].[Phone] AS [$inner.Phone], [c].[Fax] AS [$inner.Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
     FROM [dbo].[Orders] AS [o]
     INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 ) AS [t]
 WHERE [t].[$rownumber] < (
     SELECT COALESCE(MIN([t_0].[$rownumber]), [t].[$rownumber] + 1)
     FROM (
-        SELECT [o_0].[OrderID] AS [OrderID], [c_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [c_0].[CompanyName] AS [CompanyName], [c_0].[ContactName] AS [ContactName], [c_0].[ContactTitle] AS [ContactTitle], [c_0].[Address] AS [Address], [c_0].[City] AS [City], [c_0].[Region] AS [Region], [c_0].[PostalCode] AS [PostalCode], [c_0].[Country] AS [Country], [c_0].[Phone] AS [Phone], [c_0].[Fax] AS [Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+        SELECT [o_0].[OrderID] AS [$outer.OrderID], [o_0].[CustomerID] AS [$outer.CustomerID], [o_0].[EmployeeID] AS [$outer.EmployeeID], [o_0].[OrderDate] AS [$outer.OrderDate], [o_0].[RequiredDate] AS [$outer.RequiredDate], [o_0].[ShippedDate] AS [$outer.ShippedDate], [o_0].[ShipVia] AS [$outer.ShipVia], [o_0].[Freight] AS [$outer.Freight], [o_0].[ShipName] AS [$outer.ShipName], [o_0].[ShipAddress] AS [$outer.ShipAddress], [o_0].[ShipCity] AS [$outer.ShipCity], [o_0].[ShipRegion] AS [$outer.ShipRegion], [o_0].[ShipPostalCode] AS [$outer.ShipPostalCode], [o_0].[ShipCountry] AS [$outer.ShipCountry], [c_0].[CustomerID] AS [$inner.CustomerID], [c_0].[CompanyName] AS [$inner.CompanyName], [c_0].[ContactName] AS [$inner.ContactName], [c_0].[ContactTitle] AS [$inner.ContactTitle], [c_0].[Address] AS [$inner.Address], [c_0].[City] AS [$inner.City], [c_0].[Region] AS [$inner.Region], [c_0].[PostalCode] AS [$inner.PostalCode], [c_0].[Country] AS [$inner.Country], [c_0].[Phone] AS [$inner.Phone], [c_0].[Fax] AS [$inner.Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
         FROM [dbo].[Orders] AS [o_0]
         INNER JOIN [dbo].[Customers] AS [c_0] ON [o_0].[CustomerID] = [c_0].[CustomerID]
     ) AS [t_0]
-    WHERE [t_0].[City] = N'Berlin'
+    WHERE [t_0].[$inner.City] = N'Berlin'
 )",
                 context.SqlLog);
         }
@@ -780,14 +800,14 @@ INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [o1].[OrderID] AS [o1.OrderID], [o1].[CustomerID] AS [o1.CustomerID], [o1].[EmployeeID] AS [o1.EmployeeID], [o1].[OrderDate] AS [o1.OrderDate], [o1].[RequiredDate] AS [o1.RequiredDate], [o1].[ShippedDate] AS [o1.ShippedDate], [o1].[ShipVia] AS [o1.ShipVia], [o1].[Freight] AS [o1.Freight], [o1].[ShipName] AS [o1.ShipName], [o1].[ShipAddress] AS [o1.ShipAddress], [o1].[ShipCity] AS [o1.ShipCity], [o1].[ShipRegion] AS [o1.ShipRegion], [o1].[ShipPostalCode] AS [o1.ShipPostalCode], [o1].[ShipCountry] AS [o1.ShipCountry], [t].[OrderID] AS [o2.OrderID], [t].[CustomerID] AS [o2.CustomerID], [t].[EmployeeID] AS [o2.EmployeeID], [t].[OrderDate] AS [o2.OrderDate], [t].[RequiredDate] AS [o2.RequiredDate], [t].[ShippedDate] AS [o2.ShippedDate], [t].[ShipVia] AS [o2.ShipVia], [t].[Freight] AS [o2.Freight], [t].[ShipName] AS [o2.ShipName], [t].[ShipAddress] AS [o2.ShipAddress], [t].[ShipCity] AS [o2.ShipCity], [t].[ShipRegion] AS [o2.ShipRegion], [t].[ShipPostalCode] AS [o2.ShipPostalCode], [t].[ShipCountry] AS [o2.ShipCountry]
+                @"SELECT [o1].[OrderID] AS [o1.OrderID], [o1].[CustomerID] AS [o1.CustomerID], [o1].[EmployeeID] AS [o1.EmployeeID], [o1].[OrderDate] AS [o1.OrderDate], [o1].[RequiredDate] AS [o1.RequiredDate], [o1].[ShippedDate] AS [o1.ShippedDate], [o1].[ShipVia] AS [o1.ShipVia], [o1].[Freight] AS [o1.Freight], [o1].[ShipName] AS [o1.ShipName], [o1].[ShipAddress] AS [o1.ShipAddress], [o1].[ShipCity] AS [o1.ShipCity], [o1].[ShipRegion] AS [o1.ShipRegion], [o1].[ShipPostalCode] AS [o1.ShipPostalCode], [o1].[ShipCountry] AS [o1.ShipCountry], [t].[$outer.OrderID] AS [o2.OrderID], [t].[$outer.CustomerID] AS [o2.CustomerID], [t].[$outer.EmployeeID] AS [o2.EmployeeID], [t].[$outer.OrderDate] AS [o2.OrderDate], [t].[$outer.RequiredDate] AS [o2.RequiredDate], [t].[$outer.ShippedDate] AS [o2.ShippedDate], [t].[$outer.ShipVia] AS [o2.ShipVia], [t].[$outer.Freight] AS [o2.Freight], [t].[$outer.ShipName] AS [o2.ShipName], [t].[$outer.ShipAddress] AS [o2.ShipAddress], [t].[$outer.ShipCity] AS [o2.ShipCity], [t].[$outer.ShipRegion] AS [o2.ShipRegion], [t].[$outer.ShipPostalCode] AS [o2.ShipPostalCode], [t].[$outer.ShipCountry] AS [o2.ShipCountry]
 FROM [dbo].[Orders] AS [o1]
 INNER JOIN [dbo].[Customers] AS [c] ON [o1].[CustomerID] = [c].[CustomerID]
 INNER JOIN (
-    SELECT [o2].[OrderID] AS [OrderID], [c_0].[CustomerID] AS [CustomerID], [o2].[EmployeeID] AS [EmployeeID], [o2].[OrderDate] AS [OrderDate], [o2].[RequiredDate] AS [RequiredDate], [o2].[ShippedDate] AS [ShippedDate], [o2].[ShipVia] AS [ShipVia], [o2].[Freight] AS [Freight], [o2].[ShipName] AS [ShipName], [o2].[ShipAddress] AS [ShipAddress], [o2].[ShipCity] AS [ShipCity], [o2].[ShipRegion] AS [ShipRegion], [o2].[ShipPostalCode] AS [ShipPostalCode], [o2].[ShipCountry] AS [ShipCountry], [c_0].[CompanyName] AS [CompanyName], [c_0].[ContactName] AS [ContactName], [c_0].[ContactTitle] AS [ContactTitle], [c_0].[Address] AS [Address], [c_0].[City] AS [City], [c_0].[Region] AS [Region], [c_0].[PostalCode] AS [PostalCode], [c_0].[Country] AS [Country], [c_0].[Phone] AS [Phone], [c_0].[Fax] AS [Fax]
+    SELECT [o2].[OrderID] AS [$outer.OrderID], [o2].[CustomerID] AS [$outer.CustomerID], [o2].[EmployeeID] AS [$outer.EmployeeID], [o2].[OrderDate] AS [$outer.OrderDate], [o2].[RequiredDate] AS [$outer.RequiredDate], [o2].[ShippedDate] AS [$outer.ShippedDate], [o2].[ShipVia] AS [$outer.ShipVia], [o2].[Freight] AS [$outer.Freight], [o2].[ShipName] AS [$outer.ShipName], [o2].[ShipAddress] AS [$outer.ShipAddress], [o2].[ShipCity] AS [$outer.ShipCity], [o2].[ShipRegion] AS [$outer.ShipRegion], [o2].[ShipPostalCode] AS [$outer.ShipPostalCode], [o2].[ShipCountry] AS [$outer.ShipCountry], [c_0].[CustomerID] AS [$inner.CustomerID], [c_0].[CompanyName] AS [$inner.CompanyName], [c_0].[ContactName] AS [$inner.ContactName], [c_0].[ContactTitle] AS [$inner.ContactTitle], [c_0].[Address] AS [$inner.Address], [c_0].[City] AS [$inner.City], [c_0].[Region] AS [$inner.Region], [c_0].[PostalCode] AS [$inner.PostalCode], [c_0].[Country] AS [$inner.Country], [c_0].[Phone] AS [$inner.Phone], [c_0].[Fax] AS [$inner.Fax]
     FROM [dbo].[Orders] AS [o2]
     INNER JOIN [dbo].[Customers] AS [c_0] ON [o2].[CustomerID] = [c_0].[CustomerID]
-) AS [t] ON [c].[City] = [t].[City]",
+) AS [t] ON [c].[City] = [t].[$inner.City]",
                 context.SqlLog);
         }
 
@@ -801,14 +821,14 @@ INNER JOIN (
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [c].[CustomerID] AS [c1], [t].[CustomerID] AS [c2]
+                @"SELECT [c].[CustomerID] AS [c1], [t].[$inner.CustomerID] AS [c2]
 FROM [dbo].[Orders] AS [o1]
 INNER JOIN [dbo].[Customers] AS [c] ON [o1].[CustomerID] = [c].[CustomerID]
 INNER JOIN (
-    SELECT [o2].[OrderID] AS [OrderID], [c_0].[CustomerID] AS [CustomerID], [o2].[EmployeeID] AS [EmployeeID], [o2].[OrderDate] AS [OrderDate], [o2].[RequiredDate] AS [RequiredDate], [o2].[ShippedDate] AS [ShippedDate], [o2].[ShipVia] AS [ShipVia], [o2].[Freight] AS [Freight], [o2].[ShipName] AS [ShipName], [o2].[ShipAddress] AS [ShipAddress], [o2].[ShipCity] AS [ShipCity], [o2].[ShipRegion] AS [ShipRegion], [o2].[ShipPostalCode] AS [ShipPostalCode], [o2].[ShipCountry] AS [ShipCountry], [c_0].[CompanyName] AS [CompanyName], [c_0].[ContactName] AS [ContactName], [c_0].[ContactTitle] AS [ContactTitle], [c_0].[Address] AS [Address], [c_0].[City] AS [City], [c_0].[Region] AS [Region], [c_0].[PostalCode] AS [PostalCode], [c_0].[Country] AS [Country], [c_0].[Phone] AS [Phone], [c_0].[Fax] AS [Fax]
+    SELECT [o2].[OrderID] AS [$outer.OrderID], [o2].[CustomerID] AS [$outer.CustomerID], [o2].[EmployeeID] AS [$outer.EmployeeID], [o2].[OrderDate] AS [$outer.OrderDate], [o2].[RequiredDate] AS [$outer.RequiredDate], [o2].[ShippedDate] AS [$outer.ShippedDate], [o2].[ShipVia] AS [$outer.ShipVia], [o2].[Freight] AS [$outer.Freight], [o2].[ShipName] AS [$outer.ShipName], [o2].[ShipAddress] AS [$outer.ShipAddress], [o2].[ShipCity] AS [$outer.ShipCity], [o2].[ShipRegion] AS [$outer.ShipRegion], [o2].[ShipPostalCode] AS [$outer.ShipPostalCode], [o2].[ShipCountry] AS [$outer.ShipCountry], [c_0].[CustomerID] AS [$inner.CustomerID], [c_0].[CompanyName] AS [$inner.CompanyName], [c_0].[ContactName] AS [$inner.ContactName], [c_0].[ContactTitle] AS [$inner.ContactTitle], [c_0].[Address] AS [$inner.Address], [c_0].[City] AS [$inner.City], [c_0].[Region] AS [$inner.Region], [c_0].[PostalCode] AS [$inner.PostalCode], [c_0].[Country] AS [$inner.Country], [c_0].[Phone] AS [$inner.Phone], [c_0].[Fax] AS [$inner.Fax]
     FROM [dbo].[Orders] AS [o2]
     INNER JOIN [dbo].[Customers] AS [c_0] ON [o2].[CustomerID] = [c_0].[CustomerID]
-) AS [t] ON [c].[City] = [t].[City]",
+) AS [t] ON [c].[City] = [t].[$inner.City]",
                 context.SqlLog);
         }
 
@@ -1123,18 +1143,18 @@ GROUP BY [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate], [o]
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [o].[OrderID] AS [Order.OrderID], [o].[CustomerID] AS [Order.CustomerID], [o].[EmployeeID] AS [Order.EmployeeID], [o].[OrderDate] AS [Order.OrderDate], [o].[RequiredDate] AS [Order.RequiredDate], [o].[ShippedDate] AS [Order.ShippedDate], [o].[ShipVia] AS [Order.ShipVia], [o].[Freight] AS [Order.Freight], [o].[ShipName] AS [Order.ShipName], [o].[ShipAddress] AS [Order.ShipAddress], [o].[ShipCity] AS [Order.ShipCity], [o].[ShipRegion] AS [Order.ShipRegion], [o].[ShipPostalCode] AS [Order.ShipPostalCode], [o].[ShipCountry] AS [Order.ShipCountry], [t].[Key.OrderID] AS [e.Key.OrderID], [t].[Key.ProductID] AS [e.Key.ProductID], [t].[Key.UnitPrice] AS [e.Key.UnitPrice], [t].[Key.Quantity] AS [e.Key.Quantity], [t].[Key.Discount] AS [e.Key.Discount], (
+                @"SELECT [o].[OrderID] AS [Order.OrderID], [o].[CustomerID] AS [Order.CustomerID], [o].[EmployeeID] AS [Order.EmployeeID], [o].[OrderDate] AS [Order.OrderDate], [o].[RequiredDate] AS [Order.RequiredDate], [o].[ShippedDate] AS [Order.ShippedDate], [o].[ShipVia] AS [Order.ShipVia], [o].[Freight] AS [Order.Freight], [o].[ShipName] AS [Order.ShipName], [o].[ShipAddress] AS [Order.ShipAddress], [o].[ShipCity] AS [Order.ShipCity], [o].[ShipRegion] AS [Order.ShipRegion], [o].[ShipPostalCode] AS [Order.ShipPostalCode], [o].[ShipCountry] AS [Order.ShipCountry], [t].[$inner.Key.OrderID] AS [e.Key.OrderID], [t].[$inner.Key.ProductID] AS [e.Key.ProductID], [t].[$inner.Key.UnitPrice] AS [e.Key.UnitPrice], [t].[$inner.Key.Quantity] AS [e.Key.Quantity], [t].[$inner.Key.Discount] AS [e.Key.Discount], (
     SELECT [o_0].[OrderID] AS [OrderID], [o_0].[ProductID] AS [ProductID], [o_0].[UnitPrice] AS [UnitPrice], [o_0].[Quantity] AS [Quantity], [o_0].[Discount] AS [Discount]
     FROM [dbo].[Order Details] AS [o_0]
-    WHERE ([t].[Key.OrderID] = [o_0].[OrderID]) AND ([t].[Key.ProductID] = [o_0].[ProductID])
+    WHERE ([t].[$inner.Key.OrderID] = [o_0].[OrderID]) AND ([t].[$inner.Key.ProductID] = [o_0].[ProductID])
     FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [e.Elements]
 FROM (
-    SELECT [o_1].[OrderID] AS [OrderID], [o_1].[ProductID] AS [ProductID], [o_1].[UnitPrice] AS [UnitPrice], [o_1].[Quantity] AS [Quantity], [o_1].[Discount] AS [Discount], [o_1].[OrderID] AS [Key.OrderID], [o_1].[ProductID] AS [Key.ProductID], [o_1].[UnitPrice] AS [Key.UnitPrice], [o_1].[Quantity] AS [Key.Quantity], [o_1].[Discount] AS [Key.Discount]
+    SELECT [o_1].[OrderID] AS [$outer.OrderID], [o_1].[ProductID] AS [$outer.ProductID], [o_1].[UnitPrice] AS [$outer.UnitPrice], [o_1].[Quantity] AS [$outer.Quantity], [o_1].[Discount] AS [$outer.Discount], [o_1].[OrderID] AS [$inner.Key.OrderID], [o_1].[ProductID] AS [$inner.Key.ProductID], [o_1].[UnitPrice] AS [$inner.Key.UnitPrice], [o_1].[Quantity] AS [$inner.Key.Quantity], [o_1].[Discount] AS [$inner.Key.Discount]
     FROM [dbo].[Order Details] AS [o_1]
     GROUP BY [o_1].[OrderID], [o_1].[ProductID], [o_1].[UnitPrice], [o_1].[Quantity], [o_1].[Discount]
 ) AS [t]
-INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
+INNER JOIN [dbo].[Orders] AS [o] ON [t].[$outer.OrderID] = [o].[OrderID]",
                 context.SqlLog);
         }
 
@@ -1150,20 +1170,20 @@ INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [c].[CustomerID] AS [Customer.CustomerID], [c].[CompanyName] AS [Customer.CompanyName], [c].[ContactName] AS [Customer.ContactName], [c].[ContactTitle] AS [Customer.ContactTitle], [c].[Address] AS [Customer.Address], [c].[City] AS [Customer.City], [c].[Region] AS [Customer.Region], [c].[PostalCode] AS [Customer.PostalCode], [c].[Country] AS [Customer.Country], [c].[Phone] AS [Customer.Phone], [c].[Fax] AS [Customer.Fax], [t].[Key.OrderID] AS [e.Key.OrderID], [t].[Key.CustomerID] AS [e.Key.CustomerID], [t].[Key.EmployeeID] AS [e.Key.EmployeeID], [t].[Key.OrderDate] AS [e.Key.OrderDate], [t].[Key.RequiredDate] AS [e.Key.RequiredDate], [t].[Key.ShippedDate] AS [e.Key.ShippedDate], [t].[Key.ShipVia] AS [e.Key.ShipVia], [t].[Key.Freight] AS [e.Key.Freight], [t].[Key.ShipName] AS [e.Key.ShipName], [t].[Key.ShipAddress] AS [e.Key.ShipAddress], [t].[Key.ShipCity] AS [e.Key.ShipCity], [t].[Key.ShipRegion] AS [e.Key.ShipRegion], [t].[Key.ShipPostalCode] AS [e.Key.ShipPostalCode], [t].[Key.ShipCountry] AS [e.Key.ShipCountry], (
+                @"SELECT [c].[CustomerID] AS [Customer.CustomerID], [c].[CompanyName] AS [Customer.CompanyName], [c].[ContactName] AS [Customer.ContactName], [c].[ContactTitle] AS [Customer.ContactTitle], [c].[Address] AS [Customer.Address], [c].[City] AS [Customer.City], [c].[Region] AS [Customer.Region], [c].[PostalCode] AS [Customer.PostalCode], [c].[Country] AS [Customer.Country], [c].[Phone] AS [Customer.Phone], [c].[Fax] AS [Customer.Fax], [t].[$inner.Key.OrderID] AS [e.Key.OrderID], [t].[$inner.Key.CustomerID] AS [e.Key.CustomerID], [t].[$inner.Key.EmployeeID] AS [e.Key.EmployeeID], [t].[$inner.Key.OrderDate] AS [e.Key.OrderDate], [t].[$inner.Key.RequiredDate] AS [e.Key.RequiredDate], [t].[$inner.Key.ShippedDate] AS [e.Key.ShippedDate], [t].[$inner.Key.ShipVia] AS [e.Key.ShipVia], [t].[$inner.Key.Freight] AS [e.Key.Freight], [t].[$inner.Key.ShipName] AS [e.Key.ShipName], [t].[$inner.Key.ShipAddress] AS [e.Key.ShipAddress], [t].[$inner.Key.ShipCity] AS [e.Key.ShipCity], [t].[$inner.Key.ShipRegion] AS [e.Key.ShipRegion], [t].[$inner.Key.ShipPostalCode] AS [e.Key.ShipPostalCode], [t].[$inner.Key.ShipCountry] AS [e.Key.ShipCountry], (
     SELECT [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[UnitPrice] AS [UnitPrice], [d].[Quantity] AS [Quantity], [d].[Discount] AS [Discount]
     FROM [dbo].[Order Details] AS [d]
     INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
-    WHERE [t].[Key.OrderID] = [o].[OrderID]
+    WHERE [t].[$inner.Key.OrderID] = [o].[OrderID]
     FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [e.Elements]
 FROM (
-    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [o_0].[OrderID] AS [Key.OrderID], [o_0].[CustomerID] AS [Key.CustomerID], [o_0].[EmployeeID] AS [Key.EmployeeID], [o_0].[OrderDate] AS [Key.OrderDate], [o_0].[RequiredDate] AS [Key.RequiredDate], [o_0].[ShippedDate] AS [Key.ShippedDate], [o_0].[ShipVia] AS [Key.ShipVia], [o_0].[Freight] AS [Key.Freight], [o_0].[ShipName] AS [Key.ShipName], [o_0].[ShipAddress] AS [Key.ShipAddress], [o_0].[ShipCity] AS [Key.ShipCity], [o_0].[ShipRegion] AS [Key.ShipRegion], [o_0].[ShipPostalCode] AS [Key.ShipPostalCode], [o_0].[ShipCountry] AS [Key.ShipCountry]
+    SELECT [o_0].[OrderID] AS [$outer.OrderID], [o_0].[CustomerID] AS [$outer.CustomerID], [o_0].[EmployeeID] AS [$outer.EmployeeID], [o_0].[OrderDate] AS [$outer.OrderDate], [o_0].[RequiredDate] AS [$outer.RequiredDate], [o_0].[ShippedDate] AS [$outer.ShippedDate], [o_0].[ShipVia] AS [$outer.ShipVia], [o_0].[Freight] AS [$outer.Freight], [o_0].[ShipName] AS [$outer.ShipName], [o_0].[ShipAddress] AS [$outer.ShipAddress], [o_0].[ShipCity] AS [$outer.ShipCity], [o_0].[ShipRegion] AS [$outer.ShipRegion], [o_0].[ShipPostalCode] AS [$outer.ShipPostalCode], [o_0].[ShipCountry] AS [$outer.ShipCountry], [o_0].[OrderID] AS [$inner.Key.OrderID], [o_0].[CustomerID] AS [$inner.Key.CustomerID], [o_0].[EmployeeID] AS [$inner.Key.EmployeeID], [o_0].[OrderDate] AS [$inner.Key.OrderDate], [o_0].[RequiredDate] AS [$inner.Key.RequiredDate], [o_0].[ShippedDate] AS [$inner.Key.ShippedDate], [o_0].[ShipVia] AS [$inner.Key.ShipVia], [o_0].[Freight] AS [$inner.Key.Freight], [o_0].[ShipName] AS [$inner.Key.ShipName], [o_0].[ShipAddress] AS [$inner.Key.ShipAddress], [o_0].[ShipCity] AS [$inner.Key.ShipCity], [o_0].[ShipRegion] AS [$inner.Key.ShipRegion], [o_0].[ShipPostalCode] AS [$inner.Key.ShipPostalCode], [o_0].[ShipCountry] AS [$inner.Key.ShipCountry]
     FROM [dbo].[Order Details] AS [d_0]
     INNER JOIN [dbo].[Orders] AS [o_0] ON [d_0].[OrderID] = [o_0].[OrderID]
     GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
 ) AS [t]
-INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
+INNER JOIN [dbo].[Customers] AS [c] ON [t].[$outer.CustomerID] = [c].[CustomerID]",
                 context.SqlLog);
         }
 
@@ -1213,14 +1233,14 @@ GROUP BY [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate], [o]
                 @"SELECT [o].[OrderID] AS [OrderID], (
     SELECT MAX([o_0].[Quantity])
     FROM [dbo].[Order Details] AS [o_0]
-    WHERE ([t].[Key.OrderID] = [o_0].[OrderID]) AND ([t].[Key.ProductID] = [o_0].[ProductID])
+    WHERE ([t].[$inner.Key.OrderID] = [o_0].[OrderID]) AND ([t].[$inner.Key.ProductID] = [o_0].[ProductID])
 ) AS [max]
 FROM (
-    SELECT [o_1].[OrderID] AS [OrderID], [o_1].[ProductID] AS [ProductID], [o_1].[UnitPrice] AS [UnitPrice], [o_1].[Quantity] AS [Quantity], [o_1].[Discount] AS [Discount], [o_1].[OrderID] AS [Key.OrderID], [o_1].[ProductID] AS [Key.ProductID], [o_1].[UnitPrice] AS [Key.UnitPrice], [o_1].[Quantity] AS [Key.Quantity], [o_1].[Discount] AS [Key.Discount]
+    SELECT [o_1].[OrderID] AS [$outer.OrderID], [o_1].[ProductID] AS [$outer.ProductID], [o_1].[UnitPrice] AS [$outer.UnitPrice], [o_1].[Quantity] AS [$outer.Quantity], [o_1].[Discount] AS [$outer.Discount], [o_1].[OrderID] AS [$inner.Key.OrderID], [o_1].[ProductID] AS [$inner.Key.ProductID], [o_1].[UnitPrice] AS [$inner.Key.UnitPrice], [o_1].[Quantity] AS [$inner.Key.Quantity], [o_1].[Discount] AS [$inner.Key.Discount]
     FROM [dbo].[Order Details] AS [o_1]
     GROUP BY [o_1].[OrderID], [o_1].[ProductID], [o_1].[UnitPrice], [o_1].[Quantity], [o_1].[Discount]
 ) AS [t]
-INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
+INNER JOIN [dbo].[Orders] AS [o] ON [t].[$outer.OrderID] = [o].[OrderID]",
                 context.SqlLog);
         }
 
@@ -1246,15 +1266,15 @@ INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
     SELECT MAX([d].[Quantity])
     FROM [dbo].[Order Details] AS [d]
     INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
-    WHERE [t].[Key.OrderID] = [o].[OrderID]
+    WHERE [t].[$inner.Key.OrderID] = [o].[OrderID]
 ) AS [max]
 FROM (
-    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [o_0].[OrderID] AS [Key.OrderID], [o_0].[CustomerID] AS [Key.CustomerID], [o_0].[EmployeeID] AS [Key.EmployeeID], [o_0].[OrderDate] AS [Key.OrderDate], [o_0].[RequiredDate] AS [Key.RequiredDate], [o_0].[ShippedDate] AS [Key.ShippedDate], [o_0].[ShipVia] AS [Key.ShipVia], [o_0].[Freight] AS [Key.Freight], [o_0].[ShipName] AS [Key.ShipName], [o_0].[ShipAddress] AS [Key.ShipAddress], [o_0].[ShipCity] AS [Key.ShipCity], [o_0].[ShipRegion] AS [Key.ShipRegion], [o_0].[ShipPostalCode] AS [Key.ShipPostalCode], [o_0].[ShipCountry] AS [Key.ShipCountry]
+    SELECT [o_0].[OrderID] AS [$outer.OrderID], [o_0].[CustomerID] AS [$outer.CustomerID], [o_0].[EmployeeID] AS [$outer.EmployeeID], [o_0].[OrderDate] AS [$outer.OrderDate], [o_0].[RequiredDate] AS [$outer.RequiredDate], [o_0].[ShippedDate] AS [$outer.ShippedDate], [o_0].[ShipVia] AS [$outer.ShipVia], [o_0].[Freight] AS [$outer.Freight], [o_0].[ShipName] AS [$outer.ShipName], [o_0].[ShipAddress] AS [$outer.ShipAddress], [o_0].[ShipCity] AS [$outer.ShipCity], [o_0].[ShipRegion] AS [$outer.ShipRegion], [o_0].[ShipPostalCode] AS [$outer.ShipPostalCode], [o_0].[ShipCountry] AS [$outer.ShipCountry], [o_0].[OrderID] AS [$inner.Key.OrderID], [o_0].[CustomerID] AS [$inner.Key.CustomerID], [o_0].[EmployeeID] AS [$inner.Key.EmployeeID], [o_0].[OrderDate] AS [$inner.Key.OrderDate], [o_0].[RequiredDate] AS [$inner.Key.RequiredDate], [o_0].[ShippedDate] AS [$inner.Key.ShippedDate], [o_0].[ShipVia] AS [$inner.Key.ShipVia], [o_0].[Freight] AS [$inner.Key.Freight], [o_0].[ShipName] AS [$inner.Key.ShipName], [o_0].[ShipAddress] AS [$inner.Key.ShipAddress], [o_0].[ShipCity] AS [$inner.Key.ShipCity], [o_0].[ShipRegion] AS [$inner.Key.ShipRegion], [o_0].[ShipPostalCode] AS [$inner.Key.ShipPostalCode], [o_0].[ShipCountry] AS [$inner.Key.ShipCountry]
     FROM [dbo].[Order Details] AS [d_0]
     INNER JOIN [dbo].[Orders] AS [o_0] ON [d_0].[OrderID] = [o_0].[OrderID]
     GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
 ) AS [t]
-INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
+INNER JOIN [dbo].[Customers] AS [c] ON [t].[$outer.CustomerID] = [c].[CustomerID]",
                 context.SqlLog);
         }
 
@@ -1325,18 +1345,18 @@ GROUP BY [d].[ProductID]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [o].[OrderID] AS [Order.OrderID], [o].[CustomerID] AS [Order.CustomerID], [o].[EmployeeID] AS [Order.EmployeeID], [o].[OrderDate] AS [Order.OrderDate], [o].[RequiredDate] AS [Order.RequiredDate], [o].[ShippedDate] AS [Order.ShippedDate], [o].[ShipVia] AS [Order.ShipVia], [o].[Freight] AS [Order.Freight], [o].[ShipName] AS [Order.ShipName], [o].[ShipAddress] AS [Order.ShipAddress], [o].[ShipCity] AS [Order.ShipCity], [o].[ShipRegion] AS [Order.ShipRegion], [o].[ShipPostalCode] AS [Order.ShipPostalCode], [o].[ShipCountry] AS [Order.ShipCountry], [t].[Key.OrderID] AS [y.Key.OrderID], [t].[Key.ProductID] AS [y.Key.ProductID], [t].[Key.UnitPrice] AS [y.Key.UnitPrice], [t].[Key.Quantity] AS [y.Key.Quantity], [t].[Key.Discount] AS [y.Key.Discount], (
+                @"SELECT [o].[OrderID] AS [Order.OrderID], [o].[CustomerID] AS [Order.CustomerID], [o].[EmployeeID] AS [Order.EmployeeID], [o].[OrderDate] AS [Order.OrderDate], [o].[RequiredDate] AS [Order.RequiredDate], [o].[ShippedDate] AS [Order.ShippedDate], [o].[ShipVia] AS [Order.ShipVia], [o].[Freight] AS [Order.Freight], [o].[ShipName] AS [Order.ShipName], [o].[ShipAddress] AS [Order.ShipAddress], [o].[ShipCity] AS [Order.ShipCity], [o].[ShipRegion] AS [Order.ShipRegion], [o].[ShipPostalCode] AS [Order.ShipPostalCode], [o].[ShipCountry] AS [Order.ShipCountry], [t].[$inner.Key.OrderID] AS [y.Key.OrderID], [t].[$inner.Key.ProductID] AS [y.Key.ProductID], [t].[$inner.Key.UnitPrice] AS [y.Key.UnitPrice], [t].[$inner.Key.Quantity] AS [y.Key.Quantity], [t].[$inner.Key.Discount] AS [y.Key.Discount], (
     SELECT [o_0].[OrderID] AS [OrderID], [o_0].[ProductID] AS [ProductID], [o_0].[UnitPrice] AS [UnitPrice], [o_0].[Quantity] AS [Quantity], [o_0].[Discount] AS [Discount]
     FROM [dbo].[Order Details] AS [o_0]
-    WHERE ([t].[Key.OrderID] = [o_0].[OrderID]) AND ([t].[Key.ProductID] = [o_0].[ProductID])
+    WHERE ([t].[$inner.Key.OrderID] = [o_0].[OrderID]) AND ([t].[$inner.Key.ProductID] = [o_0].[ProductID])
     FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [y.Elements]
 FROM (
-    SELECT [o_1].[OrderID] AS [OrderID], [o_1].[ProductID] AS [ProductID], [o_1].[UnitPrice] AS [UnitPrice], [o_1].[Quantity] AS [Quantity], [o_1].[Discount] AS [Discount], [o_1].[OrderID] AS [Key.OrderID], [o_1].[ProductID] AS [Key.ProductID], [o_1].[UnitPrice] AS [Key.UnitPrice], [o_1].[Quantity] AS [Key.Quantity], [o_1].[Discount] AS [Key.Discount]
+    SELECT [o_1].[OrderID] AS [$outer.OrderID], [o_1].[ProductID] AS [$outer.ProductID], [o_1].[UnitPrice] AS [$outer.UnitPrice], [o_1].[Quantity] AS [$outer.Quantity], [o_1].[Discount] AS [$outer.Discount], [o_1].[OrderID] AS [$inner.Key.OrderID], [o_1].[ProductID] AS [$inner.Key.ProductID], [o_1].[UnitPrice] AS [$inner.Key.UnitPrice], [o_1].[Quantity] AS [$inner.Key.Quantity], [o_1].[Discount] AS [$inner.Key.Discount]
     FROM [dbo].[Order Details] AS [o_1]
     GROUP BY [o_1].[OrderID], [o_1].[ProductID], [o_1].[UnitPrice], [o_1].[Quantity], [o_1].[Discount]
 ) AS [t]
-INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
+INNER JOIN [dbo].[Orders] AS [o] ON [t].[$outer.OrderID] = [o].[OrderID]",
                 context.SqlLog);
         }
 
@@ -1381,20 +1401,20 @@ GROUP BY [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate], [o]
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [c].[CustomerID] AS [Customer.CustomerID], [c].[CompanyName] AS [Customer.CompanyName], [c].[ContactName] AS [Customer.ContactName], [c].[ContactTitle] AS [Customer.ContactTitle], [c].[Address] AS [Customer.Address], [c].[City] AS [Customer.City], [c].[Region] AS [Customer.Region], [c].[PostalCode] AS [Customer.PostalCode], [c].[Country] AS [Customer.Country], [c].[Phone] AS [Customer.Phone], [c].[Fax] AS [Customer.Fax], [t].[Key.OrderID] AS [y.Key.OrderID], [t].[Key.CustomerID] AS [y.Key.CustomerID], [t].[Key.EmployeeID] AS [y.Key.EmployeeID], [t].[Key.OrderDate] AS [y.Key.OrderDate], [t].[Key.RequiredDate] AS [y.Key.RequiredDate], [t].[Key.ShippedDate] AS [y.Key.ShippedDate], [t].[Key.ShipVia] AS [y.Key.ShipVia], [t].[Key.Freight] AS [y.Key.Freight], [t].[Key.ShipName] AS [y.Key.ShipName], [t].[Key.ShipAddress] AS [y.Key.ShipAddress], [t].[Key.ShipCity] AS [y.Key.ShipCity], [t].[Key.ShipRegion] AS [y.Key.ShipRegion], [t].[Key.ShipPostalCode] AS [y.Key.ShipPostalCode], [t].[Key.ShipCountry] AS [y.Key.ShipCountry], (
+                @"SELECT [c].[CustomerID] AS [Customer.CustomerID], [c].[CompanyName] AS [Customer.CompanyName], [c].[ContactName] AS [Customer.ContactName], [c].[ContactTitle] AS [Customer.ContactTitle], [c].[Address] AS [Customer.Address], [c].[City] AS [Customer.City], [c].[Region] AS [Customer.Region], [c].[PostalCode] AS [Customer.PostalCode], [c].[Country] AS [Customer.Country], [c].[Phone] AS [Customer.Phone], [c].[Fax] AS [Customer.Fax], [t].[$inner.Key.OrderID] AS [y.Key.OrderID], [t].[$inner.Key.CustomerID] AS [y.Key.CustomerID], [t].[$inner.Key.EmployeeID] AS [y.Key.EmployeeID], [t].[$inner.Key.OrderDate] AS [y.Key.OrderDate], [t].[$inner.Key.RequiredDate] AS [y.Key.RequiredDate], [t].[$inner.Key.ShippedDate] AS [y.Key.ShippedDate], [t].[$inner.Key.ShipVia] AS [y.Key.ShipVia], [t].[$inner.Key.Freight] AS [y.Key.Freight], [t].[$inner.Key.ShipName] AS [y.Key.ShipName], [t].[$inner.Key.ShipAddress] AS [y.Key.ShipAddress], [t].[$inner.Key.ShipCity] AS [y.Key.ShipCity], [t].[$inner.Key.ShipRegion] AS [y.Key.ShipRegion], [t].[$inner.Key.ShipPostalCode] AS [y.Key.ShipPostalCode], [t].[$inner.Key.ShipCountry] AS [y.Key.ShipCountry], (
     SELECT [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[UnitPrice] AS [UnitPrice], [d].[Quantity] AS [Quantity], [d].[Discount] AS [Discount]
     FROM [dbo].[Order Details] AS [d]
     INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
-    WHERE [t].[Key.OrderID] = [o].[OrderID]
+    WHERE [t].[$inner.Key.OrderID] = [o].[OrderID]
     FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [y.Elements]
 FROM (
-    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [o_0].[OrderID] AS [Key.OrderID], [o_0].[CustomerID] AS [Key.CustomerID], [o_0].[EmployeeID] AS [Key.EmployeeID], [o_0].[OrderDate] AS [Key.OrderDate], [o_0].[RequiredDate] AS [Key.RequiredDate], [o_0].[ShippedDate] AS [Key.ShippedDate], [o_0].[ShipVia] AS [Key.ShipVia], [o_0].[Freight] AS [Key.Freight], [o_0].[ShipName] AS [Key.ShipName], [o_0].[ShipAddress] AS [Key.ShipAddress], [o_0].[ShipCity] AS [Key.ShipCity], [o_0].[ShipRegion] AS [Key.ShipRegion], [o_0].[ShipPostalCode] AS [Key.ShipPostalCode], [o_0].[ShipCountry] AS [Key.ShipCountry]
+    SELECT [o_0].[OrderID] AS [$outer.OrderID], [o_0].[CustomerID] AS [$outer.CustomerID], [o_0].[EmployeeID] AS [$outer.EmployeeID], [o_0].[OrderDate] AS [$outer.OrderDate], [o_0].[RequiredDate] AS [$outer.RequiredDate], [o_0].[ShippedDate] AS [$outer.ShippedDate], [o_0].[ShipVia] AS [$outer.ShipVia], [o_0].[Freight] AS [$outer.Freight], [o_0].[ShipName] AS [$outer.ShipName], [o_0].[ShipAddress] AS [$outer.ShipAddress], [o_0].[ShipCity] AS [$outer.ShipCity], [o_0].[ShipRegion] AS [$outer.ShipRegion], [o_0].[ShipPostalCode] AS [$outer.ShipPostalCode], [o_0].[ShipCountry] AS [$outer.ShipCountry], [o_0].[OrderID] AS [$inner.Key.OrderID], [o_0].[CustomerID] AS [$inner.Key.CustomerID], [o_0].[EmployeeID] AS [$inner.Key.EmployeeID], [o_0].[OrderDate] AS [$inner.Key.OrderDate], [o_0].[RequiredDate] AS [$inner.Key.RequiredDate], [o_0].[ShippedDate] AS [$inner.Key.ShippedDate], [o_0].[ShipVia] AS [$inner.Key.ShipVia], [o_0].[Freight] AS [$inner.Key.Freight], [o_0].[ShipName] AS [$inner.Key.ShipName], [o_0].[ShipAddress] AS [$inner.Key.ShipAddress], [o_0].[ShipCity] AS [$inner.Key.ShipCity], [o_0].[ShipRegion] AS [$inner.Key.ShipRegion], [o_0].[ShipPostalCode] AS [$inner.Key.ShipPostalCode], [o_0].[ShipCountry] AS [$inner.Key.ShipCountry]
     FROM [dbo].[Order Details] AS [d_0]
     INNER JOIN [dbo].[Orders] AS [o_0] ON [d_0].[OrderID] = [o_0].[OrderID]
     GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
 ) AS [t]
-INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
+INNER JOIN [dbo].[Customers] AS [c] ON [t].[$outer.CustomerID] = [c].[CustomerID]",
                 context.SqlLog);
         }
 
@@ -1411,22 +1431,22 @@ INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [o].[OrderID] AS [Order.OrderID], [o].[CustomerID] AS [Order.CustomerID], [o].[EmployeeID] AS [Order.EmployeeID], [o].[OrderDate] AS [Order.OrderDate], [o].[RequiredDate] AS [Order.RequiredDate], [o].[ShippedDate] AS [Order.ShippedDate], [o].[ShipVia] AS [Order.ShipVia], [o].[Freight] AS [Order.Freight], [o].[ShipName] AS [Order.ShipName], [o].[ShipAddress] AS [Order.ShipAddress], [o].[ShipCity] AS [Order.ShipCity], [o].[ShipRegion] AS [Order.ShipRegion], [o].[ShipPostalCode] AS [Order.ShipPostalCode], [o].[ShipCountry] AS [Order.ShipCountry], [t].[Key.OrderID] AS [y.Key.OrderID], [t].[Key.ProductID] AS [y.Key.ProductID], [t].[Key.UnitPrice] AS [y.Key.UnitPrice], [t].[Key.Quantity] AS [y.Key.Quantity], [t].[Key.Discount] AS [y.Key.Discount], (
+                @"SELECT [o].[OrderID] AS [Order.OrderID], [o].[CustomerID] AS [Order.CustomerID], [o].[EmployeeID] AS [Order.EmployeeID], [o].[OrderDate] AS [Order.OrderDate], [o].[RequiredDate] AS [Order.RequiredDate], [o].[ShippedDate] AS [Order.ShippedDate], [o].[ShipVia] AS [Order.ShipVia], [o].[Freight] AS [Order.Freight], [o].[ShipName] AS [Order.ShipName], [o].[ShipAddress] AS [Order.ShipAddress], [o].[ShipCity] AS [Order.ShipCity], [o].[ShipRegion] AS [Order.ShipRegion], [o].[ShipPostalCode] AS [Order.ShipPostalCode], [o].[ShipCountry] AS [Order.ShipCountry], [t].[$inner.Key.OrderID] AS [y.Key.OrderID], [t].[$inner.Key.ProductID] AS [y.Key.ProductID], [t].[$inner.Key.UnitPrice] AS [y.Key.UnitPrice], [t].[$inner.Key.Quantity] AS [y.Key.Quantity], [t].[$inner.Key.Discount] AS [y.Key.Discount], (
     SELECT [c].[CustomerID] AS [CustomerID], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Address] AS [Address], [c].[City] AS [City], [c].[Region] AS [Region], [c].[PostalCode] AS [PostalCode], [c].[Country] AS [Country], [c].[Phone] AS [Phone], [c].[Fax] AS [Fax]
     FROM [dbo].[Order Details] AS [d]
     INNER JOIN [dbo].[Orders] AS [o_0] ON [d].[OrderID] = [o_0].[OrderID]
     INNER JOIN [dbo].[Customers] AS [c] ON [o_0].[CustomerID] = [c].[CustomerID]
-    WHERE ([t].[Key.OrderID] = [d].[OrderID]) AND ([t].[Key.ProductID] = [d].[ProductID])
+    WHERE ([t].[$inner.Key.OrderID] = [d].[OrderID]) AND ([t].[$inner.Key.ProductID] = [d].[ProductID])
     FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [y.Elements]
 FROM (
-    SELECT [d_0].[OrderID] AS [OrderID], [d_0].[ProductID] AS [ProductID], [d_0].[UnitPrice] AS [UnitPrice], [d_0].[Quantity] AS [Quantity], [d_0].[Discount] AS [Discount], [d_0].[OrderID] AS [Key.OrderID], [d_0].[ProductID] AS [Key.ProductID], [d_0].[UnitPrice] AS [Key.UnitPrice], [d_0].[Quantity] AS [Key.Quantity], [d_0].[Discount] AS [Key.Discount]
+    SELECT [d_0].[OrderID] AS [$outer.OrderID], [d_0].[ProductID] AS [$outer.ProductID], [d_0].[UnitPrice] AS [$outer.UnitPrice], [d_0].[Quantity] AS [$outer.Quantity], [d_0].[Discount] AS [$outer.Discount], [d_0].[OrderID] AS [$inner.Key.OrderID], [d_0].[ProductID] AS [$inner.Key.ProductID], [d_0].[UnitPrice] AS [$inner.Key.UnitPrice], [d_0].[Quantity] AS [$inner.Key.Quantity], [d_0].[Discount] AS [$inner.Key.Discount]
     FROM [dbo].[Order Details] AS [d_0]
     INNER JOIN [dbo].[Orders] AS [o_1] ON [d_0].[OrderID] = [o_1].[OrderID]
     INNER JOIN [dbo].[Customers] AS [c_0] ON [o_1].[CustomerID] = [c_0].[CustomerID]
     GROUP BY [d_0].[OrderID], [d_0].[ProductID], [d_0].[UnitPrice], [d_0].[Quantity], [d_0].[Discount]
 ) AS [t]
-INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
+INNER JOIN [dbo].[Orders] AS [o] ON [t].[$outer.OrderID] = [o].[OrderID]",
                 context.SqlLog);
         }
 
@@ -1443,22 +1463,22 @@ INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [c].[CustomerID] AS [Customer.CustomerID], [c].[CompanyName] AS [Customer.CompanyName], [c].[ContactName] AS [Customer.ContactName], [c].[ContactTitle] AS [Customer.ContactTitle], [c].[Address] AS [Customer.Address], [c].[City] AS [Customer.City], [c].[Region] AS [Customer.Region], [c].[PostalCode] AS [Customer.PostalCode], [c].[Country] AS [Customer.Country], [c].[Phone] AS [Customer.Phone], [c].[Fax] AS [Customer.Fax], [t].[Key.OrderID] AS [y.Key.OrderID], [t].[Key.CustomerID] AS [y.Key.CustomerID], [t].[Key.EmployeeID] AS [y.Key.EmployeeID], [t].[Key.OrderDate] AS [y.Key.OrderDate], [t].[Key.RequiredDate] AS [y.Key.RequiredDate], [t].[Key.ShippedDate] AS [y.Key.ShippedDate], [t].[Key.ShipVia] AS [y.Key.ShipVia], [t].[Key.Freight] AS [y.Key.Freight], [t].[Key.ShipName] AS [y.Key.ShipName], [t].[Key.ShipAddress] AS [y.Key.ShipAddress], [t].[Key.ShipCity] AS [y.Key.ShipCity], [t].[Key.ShipRegion] AS [y.Key.ShipRegion], [t].[Key.ShipPostalCode] AS [y.Key.ShipPostalCode], [t].[Key.ShipCountry] AS [y.Key.ShipCountry], (
+                @"SELECT [c].[CustomerID] AS [Customer.CustomerID], [c].[CompanyName] AS [Customer.CompanyName], [c].[ContactName] AS [Customer.ContactName], [c].[ContactTitle] AS [Customer.ContactTitle], [c].[Address] AS [Customer.Address], [c].[City] AS [Customer.City], [c].[Region] AS [Customer.Region], [c].[PostalCode] AS [Customer.PostalCode], [c].[Country] AS [Customer.Country], [c].[Phone] AS [Customer.Phone], [c].[Fax] AS [Customer.Fax], [t].[$inner.Key.OrderID] AS [y.Key.OrderID], [t].[$inner.Key.CustomerID] AS [y.Key.CustomerID], [t].[$inner.Key.EmployeeID] AS [y.Key.EmployeeID], [t].[$inner.Key.OrderDate] AS [y.Key.OrderDate], [t].[$inner.Key.RequiredDate] AS [y.Key.RequiredDate], [t].[$inner.Key.ShippedDate] AS [y.Key.ShippedDate], [t].[$inner.Key.ShipVia] AS [y.Key.ShipVia], [t].[$inner.Key.Freight] AS [y.Key.Freight], [t].[$inner.Key.ShipName] AS [y.Key.ShipName], [t].[$inner.Key.ShipAddress] AS [y.Key.ShipAddress], [t].[$inner.Key.ShipCity] AS [y.Key.ShipCity], [t].[$inner.Key.ShipRegion] AS [y.Key.ShipRegion], [t].[$inner.Key.ShipPostalCode] AS [y.Key.ShipPostalCode], [t].[$inner.Key.ShipCountry] AS [y.Key.ShipCountry], (
     SELECT [c_0].[CustomerID] AS [CustomerID], [c_0].[CompanyName] AS [CompanyName], [c_0].[ContactName] AS [ContactName], [c_0].[ContactTitle] AS [ContactTitle], [c_0].[Address] AS [Address], [c_0].[City] AS [City], [c_0].[Region] AS [Region], [c_0].[PostalCode] AS [PostalCode], [c_0].[Country] AS [Country], [c_0].[Phone] AS [Phone], [c_0].[Fax] AS [Fax]
     FROM [dbo].[Order Details] AS [d]
     INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
     INNER JOIN [dbo].[Customers] AS [c_0] ON [o].[CustomerID] = [c_0].[CustomerID]
-    WHERE [t].[Key.OrderID] = [o].[OrderID]
+    WHERE [t].[$inner.Key.OrderID] = [o].[OrderID]
     FOR JSON PATH, INCLUDE_NULL_VALUES
 ) AS [y.Elements]
 FROM (
-    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [o_0].[OrderID] AS [Key.OrderID], [o_0].[CustomerID] AS [Key.CustomerID], [o_0].[EmployeeID] AS [Key.EmployeeID], [o_0].[OrderDate] AS [Key.OrderDate], [o_0].[RequiredDate] AS [Key.RequiredDate], [o_0].[ShippedDate] AS [Key.ShippedDate], [o_0].[ShipVia] AS [Key.ShipVia], [o_0].[Freight] AS [Key.Freight], [o_0].[ShipName] AS [Key.ShipName], [o_0].[ShipAddress] AS [Key.ShipAddress], [o_0].[ShipCity] AS [Key.ShipCity], [o_0].[ShipRegion] AS [Key.ShipRegion], [o_0].[ShipPostalCode] AS [Key.ShipPostalCode], [o_0].[ShipCountry] AS [Key.ShipCountry]
+    SELECT [o_0].[OrderID] AS [$outer.OrderID], [o_0].[CustomerID] AS [$outer.CustomerID], [o_0].[EmployeeID] AS [$outer.EmployeeID], [o_0].[OrderDate] AS [$outer.OrderDate], [o_0].[RequiredDate] AS [$outer.RequiredDate], [o_0].[ShippedDate] AS [$outer.ShippedDate], [o_0].[ShipVia] AS [$outer.ShipVia], [o_0].[Freight] AS [$outer.Freight], [o_0].[ShipName] AS [$outer.ShipName], [o_0].[ShipAddress] AS [$outer.ShipAddress], [o_0].[ShipCity] AS [$outer.ShipCity], [o_0].[ShipRegion] AS [$outer.ShipRegion], [o_0].[ShipPostalCode] AS [$outer.ShipPostalCode], [o_0].[ShipCountry] AS [$outer.ShipCountry], [o_0].[OrderID] AS [$inner.Key.OrderID], [o_0].[CustomerID] AS [$inner.Key.CustomerID], [o_0].[EmployeeID] AS [$inner.Key.EmployeeID], [o_0].[OrderDate] AS [$inner.Key.OrderDate], [o_0].[RequiredDate] AS [$inner.Key.RequiredDate], [o_0].[ShippedDate] AS [$inner.Key.ShippedDate], [o_0].[ShipVia] AS [$inner.Key.ShipVia], [o_0].[Freight] AS [$inner.Key.Freight], [o_0].[ShipName] AS [$inner.Key.ShipName], [o_0].[ShipAddress] AS [$inner.Key.ShipAddress], [o_0].[ShipCity] AS [$inner.Key.ShipCity], [o_0].[ShipRegion] AS [$inner.Key.ShipRegion], [o_0].[ShipPostalCode] AS [$inner.Key.ShipPostalCode], [o_0].[ShipCountry] AS [$inner.Key.ShipCountry]
     FROM [dbo].[Order Details] AS [d_0]
     INNER JOIN [dbo].[Orders] AS [o_0] ON [d_0].[OrderID] = [o_0].[OrderID]
     INNER JOIN [dbo].[Customers] AS [c_1] ON [o_0].[CustomerID] = [c_1].[CustomerID]
     GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
 ) AS [t]
-INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
+INNER JOIN [dbo].[Customers] AS [c] ON [t].[$outer.CustomerID] = [c].[CustomerID]",
                 context.SqlLog);
         }
 
@@ -1519,15 +1539,15 @@ GROUP BY [d].[ProductID]",
     SELECT MAX([d].[Quantity])
     FROM [dbo].[Order Details] AS [d]
     INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
-    WHERE [t].[Key.OrderID] = [o].[OrderID]
+    WHERE [t].[$inner.Key.OrderID] = [o].[OrderID]
 ) AS [y]
 FROM (
-    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [o_0].[OrderID] AS [Key.OrderID], [o_0].[CustomerID] AS [Key.CustomerID], [o_0].[EmployeeID] AS [Key.EmployeeID], [o_0].[OrderDate] AS [Key.OrderDate], [o_0].[RequiredDate] AS [Key.RequiredDate], [o_0].[ShippedDate] AS [Key.ShippedDate], [o_0].[ShipVia] AS [Key.ShipVia], [o_0].[Freight] AS [Key.Freight], [o_0].[ShipName] AS [Key.ShipName], [o_0].[ShipAddress] AS [Key.ShipAddress], [o_0].[ShipCity] AS [Key.ShipCity], [o_0].[ShipRegion] AS [Key.ShipRegion], [o_0].[ShipPostalCode] AS [Key.ShipPostalCode], [o_0].[ShipCountry] AS [Key.ShipCountry]
+    SELECT [o_0].[OrderID] AS [$outer.OrderID], [o_0].[CustomerID] AS [$outer.CustomerID], [o_0].[EmployeeID] AS [$outer.EmployeeID], [o_0].[OrderDate] AS [$outer.OrderDate], [o_0].[RequiredDate] AS [$outer.RequiredDate], [o_0].[ShippedDate] AS [$outer.ShippedDate], [o_0].[ShipVia] AS [$outer.ShipVia], [o_0].[Freight] AS [$outer.Freight], [o_0].[ShipName] AS [$outer.ShipName], [o_0].[ShipAddress] AS [$outer.ShipAddress], [o_0].[ShipCity] AS [$outer.ShipCity], [o_0].[ShipRegion] AS [$outer.ShipRegion], [o_0].[ShipPostalCode] AS [$outer.ShipPostalCode], [o_0].[ShipCountry] AS [$outer.ShipCountry], [o_0].[OrderID] AS [$inner.Key.OrderID], [o_0].[CustomerID] AS [$inner.Key.CustomerID], [o_0].[EmployeeID] AS [$inner.Key.EmployeeID], [o_0].[OrderDate] AS [$inner.Key.OrderDate], [o_0].[RequiredDate] AS [$inner.Key.RequiredDate], [o_0].[ShippedDate] AS [$inner.Key.ShippedDate], [o_0].[ShipVia] AS [$inner.Key.ShipVia], [o_0].[Freight] AS [$inner.Key.Freight], [o_0].[ShipName] AS [$inner.Key.ShipName], [o_0].[ShipAddress] AS [$inner.Key.ShipAddress], [o_0].[ShipCity] AS [$inner.Key.ShipCity], [o_0].[ShipRegion] AS [$inner.Key.ShipRegion], [o_0].[ShipPostalCode] AS [$inner.Key.ShipPostalCode], [o_0].[ShipCountry] AS [$inner.Key.ShipCountry]
     FROM [dbo].[Order Details] AS [d_0]
     INNER JOIN [dbo].[Orders] AS [o_0] ON [d_0].[OrderID] = [o_0].[OrderID]
     GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
 ) AS [t]
-INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
+INNER JOIN [dbo].[Customers] AS [c] ON [t].[$outer.CustomerID] = [c].[CustomerID]",
                 context.SqlLog);
         }
 
@@ -1569,15 +1589,15 @@ GROUP BY [c].[CustomerID], [c].[CompanyName], [c].[ContactName], [c].[ContactTit
     SELECT MAX([d].[Quantity])
     FROM [dbo].[Order Details] AS [d]
     INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
-    WHERE [t].[Key.OrderID] = [o].[OrderID]
+    WHERE [t].[$inner.Key.OrderID] = [o].[OrderID]
 ) AS [y]
 FROM (
-    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [o_0].[OrderID] AS [Key.OrderID], [o_0].[CustomerID] AS [Key.CustomerID], [o_0].[EmployeeID] AS [Key.EmployeeID], [o_0].[OrderDate] AS [Key.OrderDate], [o_0].[RequiredDate] AS [Key.RequiredDate], [o_0].[ShippedDate] AS [Key.ShippedDate], [o_0].[ShipVia] AS [Key.ShipVia], [o_0].[Freight] AS [Key.Freight], [o_0].[ShipName] AS [Key.ShipName], [o_0].[ShipAddress] AS [Key.ShipAddress], [o_0].[ShipCity] AS [Key.ShipCity], [o_0].[ShipRegion] AS [Key.ShipRegion], [o_0].[ShipPostalCode] AS [Key.ShipPostalCode], [o_0].[ShipCountry] AS [Key.ShipCountry]
+    SELECT [o_0].[OrderID] AS [$outer.OrderID], [o_0].[CustomerID] AS [$outer.CustomerID], [o_0].[EmployeeID] AS [$outer.EmployeeID], [o_0].[OrderDate] AS [$outer.OrderDate], [o_0].[RequiredDate] AS [$outer.RequiredDate], [o_0].[ShippedDate] AS [$outer.ShippedDate], [o_0].[ShipVia] AS [$outer.ShipVia], [o_0].[Freight] AS [$outer.Freight], [o_0].[ShipName] AS [$outer.ShipName], [o_0].[ShipAddress] AS [$outer.ShipAddress], [o_0].[ShipCity] AS [$outer.ShipCity], [o_0].[ShipRegion] AS [$outer.ShipRegion], [o_0].[ShipPostalCode] AS [$outer.ShipPostalCode], [o_0].[ShipCountry] AS [$outer.ShipCountry], [o_0].[OrderID] AS [$inner.Key.OrderID], [o_0].[CustomerID] AS [$inner.Key.CustomerID], [o_0].[EmployeeID] AS [$inner.Key.EmployeeID], [o_0].[OrderDate] AS [$inner.Key.OrderDate], [o_0].[RequiredDate] AS [$inner.Key.RequiredDate], [o_0].[ShippedDate] AS [$inner.Key.ShippedDate], [o_0].[ShipVia] AS [$inner.Key.ShipVia], [o_0].[Freight] AS [$inner.Key.Freight], [o_0].[ShipName] AS [$inner.Key.ShipName], [o_0].[ShipAddress] AS [$inner.Key.ShipAddress], [o_0].[ShipCity] AS [$inner.Key.ShipCity], [o_0].[ShipRegion] AS [$inner.Key.ShipRegion], [o_0].[ShipPostalCode] AS [$inner.Key.ShipPostalCode], [o_0].[ShipCountry] AS [$inner.Key.ShipCountry]
     FROM [dbo].[Order Details] AS [d_0]
     INNER JOIN [dbo].[Orders] AS [o_0] ON [d_0].[OrderID] = [o_0].[OrderID]
     GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
 ) AS [t]
-INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
+INNER JOIN [dbo].[Customers] AS [c] ON [t].[$outer.CustomerID] = [c].[CustomerID]",
                 context.SqlLog);
         }
 
@@ -1598,15 +1618,15 @@ INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
     SELECT MAX([o_0].[OrderDate])
     FROM [dbo].[Order Details] AS [d]
     INNER JOIN [dbo].[Orders] AS [o_0] ON [d].[OrderID] = [o_0].[OrderID]
-    WHERE ([t].[Key.OrderID] = [d].[OrderID]) AND ([t].[Key.ProductID] = [d].[ProductID])
+    WHERE ([t].[$inner.Key.OrderID] = [d].[OrderID]) AND ([t].[$inner.Key.ProductID] = [d].[ProductID])
 ) AS [y]
 FROM (
-    SELECT [d_0].[OrderID] AS [OrderID], [d_0].[ProductID] AS [ProductID], [d_0].[UnitPrice] AS [UnitPrice], [d_0].[Quantity] AS [Quantity], [d_0].[Discount] AS [Discount], [d_0].[OrderID] AS [Key.OrderID], [d_0].[ProductID] AS [Key.ProductID], [d_0].[UnitPrice] AS [Key.UnitPrice], [d_0].[Quantity] AS [Key.Quantity], [d_0].[Discount] AS [Key.Discount]
+    SELECT [d_0].[OrderID] AS [$outer.OrderID], [d_0].[ProductID] AS [$outer.ProductID], [d_0].[UnitPrice] AS [$outer.UnitPrice], [d_0].[Quantity] AS [$outer.Quantity], [d_0].[Discount] AS [$outer.Discount], [d_0].[OrderID] AS [$inner.Key.OrderID], [d_0].[ProductID] AS [$inner.Key.ProductID], [d_0].[UnitPrice] AS [$inner.Key.UnitPrice], [d_0].[Quantity] AS [$inner.Key.Quantity], [d_0].[Discount] AS [$inner.Key.Discount]
     FROM [dbo].[Order Details] AS [d_0]
     INNER JOIN [dbo].[Orders] AS [o_1] ON [d_0].[OrderID] = [o_1].[OrderID]
     GROUP BY [d_0].[OrderID], [d_0].[ProductID], [d_0].[UnitPrice], [d_0].[Quantity], [d_0].[Discount]
 ) AS [t]
-INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
+INNER JOIN [dbo].[Orders] AS [o] ON [t].[$outer.OrderID] = [o].[OrderID]",
                 context.SqlLog);
         }
 
@@ -1627,15 +1647,15 @@ INNER JOIN [dbo].[Orders] AS [o] ON [t].[OrderID] = [o].[OrderID]",
     SELECT MAX([o].[OrderDate])
     FROM [dbo].[Order Details] AS [d]
     INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
-    WHERE [t].[Key.OrderID] = [o].[OrderID]
+    WHERE [t].[$inner.Key.OrderID] = [o].[OrderID]
 ) AS [y]
 FROM (
-    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [o_0].[OrderID] AS [Key.OrderID], [o_0].[CustomerID] AS [Key.CustomerID], [o_0].[EmployeeID] AS [Key.EmployeeID], [o_0].[OrderDate] AS [Key.OrderDate], [o_0].[RequiredDate] AS [Key.RequiredDate], [o_0].[ShippedDate] AS [Key.ShippedDate], [o_0].[ShipVia] AS [Key.ShipVia], [o_0].[Freight] AS [Key.Freight], [o_0].[ShipName] AS [Key.ShipName], [o_0].[ShipAddress] AS [Key.ShipAddress], [o_0].[ShipCity] AS [Key.ShipCity], [o_0].[ShipRegion] AS [Key.ShipRegion], [o_0].[ShipPostalCode] AS [Key.ShipPostalCode], [o_0].[ShipCountry] AS [Key.ShipCountry]
+    SELECT [o_0].[OrderID] AS [$outer.OrderID], [o_0].[CustomerID] AS [$outer.CustomerID], [o_0].[EmployeeID] AS [$outer.EmployeeID], [o_0].[OrderDate] AS [$outer.OrderDate], [o_0].[RequiredDate] AS [$outer.RequiredDate], [o_0].[ShippedDate] AS [$outer.ShippedDate], [o_0].[ShipVia] AS [$outer.ShipVia], [o_0].[Freight] AS [$outer.Freight], [o_0].[ShipName] AS [$outer.ShipName], [o_0].[ShipAddress] AS [$outer.ShipAddress], [o_0].[ShipCity] AS [$outer.ShipCity], [o_0].[ShipRegion] AS [$outer.ShipRegion], [o_0].[ShipPostalCode] AS [$outer.ShipPostalCode], [o_0].[ShipCountry] AS [$outer.ShipCountry], [o_0].[OrderID] AS [$inner.Key.OrderID], [o_0].[CustomerID] AS [$inner.Key.CustomerID], [o_0].[EmployeeID] AS [$inner.Key.EmployeeID], [o_0].[OrderDate] AS [$inner.Key.OrderDate], [o_0].[RequiredDate] AS [$inner.Key.RequiredDate], [o_0].[ShippedDate] AS [$inner.Key.ShippedDate], [o_0].[ShipVia] AS [$inner.Key.ShipVia], [o_0].[Freight] AS [$inner.Key.Freight], [o_0].[ShipName] AS [$inner.Key.ShipName], [o_0].[ShipAddress] AS [$inner.Key.ShipAddress], [o_0].[ShipCity] AS [$inner.Key.ShipCity], [o_0].[ShipRegion] AS [$inner.Key.ShipRegion], [o_0].[ShipPostalCode] AS [$inner.Key.ShipPostalCode], [o_0].[ShipCountry] AS [$inner.Key.ShipCountry]
     FROM [dbo].[Order Details] AS [d_0]
     INNER JOIN [dbo].[Orders] AS [o_0] ON [d_0].[OrderID] = [o_0].[OrderID]
     GROUP BY [o_0].[OrderID], [o_0].[CustomerID], [o_0].[EmployeeID], [o_0].[OrderDate], [o_0].[RequiredDate], [o_0].[ShippedDate], [o_0].[ShipVia], [o_0].[Freight], [o_0].[ShipName], [o_0].[ShipAddress], [o_0].[ShipCity], [o_0].[ShipRegion], [o_0].[ShipPostalCode], [o_0].[ShipCountry]
 ) AS [t]
-INNER JOIN [dbo].[Customers] AS [c] ON [t].[CustomerID] = [c].[CustomerID]",
+INNER JOIN [dbo].[Customers] AS [c] ON [t].[$outer.CustomerID] = [c].[CustomerID]",
                 context.SqlLog);
         }
 
@@ -1690,9 +1710,9 @@ GROUP BY [c].[City]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT [t].[City] AS [c1], [t_0].[City] AS [c2]
+                @"SELECT [t].[$inner.City] AS [c1], [t_0].[$inner.City] AS [c2]
 FROM (
-    SELECT [o].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[UnitPrice] AS [UnitPrice], [d].[Quantity] AS [Quantity], [d].[Discount] AS [Discount], [c].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShippedDate] AS [ShippedDate], [o].[ShipVia] AS [ShipVia], [o].[Freight] AS [Freight], [o].[ShipName] AS [ShipName], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipRegion] AS [ShipRegion], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipCountry] AS [ShipCountry], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Address] AS [Address], [c].[City] AS [City], [c].[Region] AS [Region], [c].[PostalCode] AS [PostalCode], [c].[Country] AS [Country], [c].[Phone] AS [Phone], [c].[Fax] AS [Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    SELECT [d].[OrderID] AS [$outer.$outer.OrderID], [d].[ProductID] AS [$outer.$outer.ProductID], [d].[UnitPrice] AS [$outer.$outer.UnitPrice], [d].[Quantity] AS [$outer.$outer.Quantity], [d].[Discount] AS [$outer.$outer.Discount], [o].[OrderID] AS [$outer.$inner.OrderID], [o].[CustomerID] AS [$outer.$inner.CustomerID], [o].[EmployeeID] AS [$outer.$inner.EmployeeID], [o].[OrderDate] AS [$outer.$inner.OrderDate], [o].[RequiredDate] AS [$outer.$inner.RequiredDate], [o].[ShippedDate] AS [$outer.$inner.ShippedDate], [o].[ShipVia] AS [$outer.$inner.ShipVia], [o].[Freight] AS [$outer.$inner.Freight], [o].[ShipName] AS [$outer.$inner.ShipName], [o].[ShipAddress] AS [$outer.$inner.ShipAddress], [o].[ShipCity] AS [$outer.$inner.ShipCity], [o].[ShipRegion] AS [$outer.$inner.ShipRegion], [o].[ShipPostalCode] AS [$outer.$inner.ShipPostalCode], [o].[ShipCountry] AS [$outer.$inner.ShipCountry], [c].[CustomerID] AS [$inner.CustomerID], [c].[CompanyName] AS [$inner.CompanyName], [c].[ContactName] AS [$inner.ContactName], [c].[ContactTitle] AS [$inner.ContactTitle], [c].[Address] AS [$inner.Address], [c].[City] AS [$inner.City], [c].[Region] AS [$inner.Region], [c].[PostalCode] AS [$inner.PostalCode], [c].[Country] AS [$inner.Country], [c].[Phone] AS [$inner.Phone], [c].[Fax] AS [$inner.Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
     FROM (
         SELECT TOP (10) [d_0].[OrderID] AS [OrderID], [d_0].[ProductID] AS [ProductID], [d_0].[UnitPrice] AS [UnitPrice], [d_0].[Quantity] AS [Quantity], [d_0].[Discount] AS [Discount]
         FROM [dbo].[Order Details] AS [d_0]
@@ -1701,7 +1721,7 @@ FROM (
     INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 ) AS [t]
 INNER JOIN (
-    SELECT [o_0].[OrderID] AS [OrderID], [c_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShippedDate] AS [ShippedDate], [o_0].[ShipVia] AS [ShipVia], [o_0].[Freight] AS [Freight], [o_0].[ShipName] AS [ShipName], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipCountry] AS [ShipCountry], [c_0].[CompanyName] AS [CompanyName], [c_0].[ContactName] AS [ContactName], [c_0].[ContactTitle] AS [ContactTitle], [c_0].[Address] AS [Address], [c_0].[City] AS [City], [c_0].[Region] AS [Region], [c_0].[PostalCode] AS [PostalCode], [c_0].[Country] AS [Country], [c_0].[Phone] AS [Phone], [c_0].[Fax] AS [Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+    SELECT [o_0].[OrderID] AS [$outer.OrderID], [o_0].[CustomerID] AS [$outer.CustomerID], [o_0].[EmployeeID] AS [$outer.EmployeeID], [o_0].[OrderDate] AS [$outer.OrderDate], [o_0].[RequiredDate] AS [$outer.RequiredDate], [o_0].[ShippedDate] AS [$outer.ShippedDate], [o_0].[ShipVia] AS [$outer.ShipVia], [o_0].[Freight] AS [$outer.Freight], [o_0].[ShipName] AS [$outer.ShipName], [o_0].[ShipAddress] AS [$outer.ShipAddress], [o_0].[ShipCity] AS [$outer.ShipCity], [o_0].[ShipRegion] AS [$outer.ShipRegion], [o_0].[ShipPostalCode] AS [$outer.ShipPostalCode], [o_0].[ShipCountry] AS [$outer.ShipCountry], [c_0].[CustomerID] AS [$inner.CustomerID], [c_0].[CompanyName] AS [$inner.CompanyName], [c_0].[ContactName] AS [$inner.ContactName], [c_0].[ContactTitle] AS [$inner.ContactTitle], [c_0].[Address] AS [$inner.Address], [c_0].[City] AS [$inner.City], [c_0].[Region] AS [$inner.Region], [c_0].[PostalCode] AS [$inner.PostalCode], [c_0].[Country] AS [$inner.Country], [c_0].[Phone] AS [$inner.Phone], [c_0].[Fax] AS [$inner.Fax], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
     FROM (
         SELECT TOP (10) [o_1].[OrderID] AS [OrderID], [o_1].[CustomerID] AS [CustomerID], [o_1].[EmployeeID] AS [EmployeeID], [o_1].[OrderDate] AS [OrderDate], [o_1].[RequiredDate] AS [RequiredDate], [o_1].[ShippedDate] AS [ShippedDate], [o_1].[ShipVia] AS [ShipVia], [o_1].[Freight] AS [Freight], [o_1].[ShipName] AS [ShipName], [o_1].[ShipAddress] AS [ShipAddress], [o_1].[ShipCity] AS [ShipCity], [o_1].[ShipRegion] AS [ShipRegion], [o_1].[ShipPostalCode] AS [ShipPostalCode], [o_1].[ShipCountry] AS [ShipCountry]
         FROM [dbo].[Orders] AS [o_1]

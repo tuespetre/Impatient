@@ -8,6 +8,8 @@ namespace Impatient.Query.Expressions
         {
         }
 
+        public override int GetAnnotationHashCode() => 0;
+
         protected override Expression VisitChildren(ExpressionVisitor visitor)
         {
             var expression = visitor.Visit(Expression);
