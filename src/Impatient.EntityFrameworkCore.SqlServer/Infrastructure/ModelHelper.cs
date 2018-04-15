@@ -161,7 +161,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 materializer
                     = new EntityMaterializationExpression(
                         targetType,
-                        IdentityMapMode.IdentityMapWithFixup,
+                        IdentityMapMode.IdentityMap,
                         keyExpression,
                         shadowProperties.Select(s => s.property),
                         shadowProperties.Select(s => s.column),
@@ -224,7 +224,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         = Expression.Lambda(
                             new EntityMaterializationExpression(
                                 targetType,
-                                IdentityMapMode.IdentityMapWithFixup,
+                                IdentityMapMode.IdentityMap,
                                 keyExpression,
                                 shadowProperties.Select(s => s.property),
                                 shadowProperties.Select(s => s.expression),
@@ -332,7 +332,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         GetMemberInfo(navigation),
                         new EntityMaterializationExpression(
                             navigationType,
-                            IdentityMapMode.IdentityMapWithFixup,
+                            IdentityMapMode.IdentityMap,
                             CreateMaterializationKeySelector(navigationType),
                             shadowProperties.Select(s => s.property),
                             shadowProperties.Select(s => s.expression),

@@ -13,14 +13,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 {
     public class EntityMaterializationCompilingExpressionVisitor : ExpressionVisitor
     {
-        private static readonly MethodInfo getEntityUsingStateManagerMethodInfo
-            = typeof(EntityMaterializationCompilingExpressionVisitor)
-                .GetMethod(nameof(GetEntityUsingStateManager), BindingFlags.NonPublic | BindingFlags.Static);
-
-        private static readonly MethodInfo getEntityUsingIdentityMapWithFixupMethodInfo
-            = typeof(EntityMaterializationCompilingExpressionVisitor)
-                .GetMethod(nameof(GetEntityUsingIdentityMapWithFixup), BindingFlags.NonPublic | BindingFlags.Static);
-
         private readonly IModel model;
         private readonly ParameterExpression executionContextParameter;
 
@@ -51,20 +43,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         case IdentityMapMode.StateManager
                         when !entityType.HasDefiningNavigation():
                         {
-                            getEntityMethodInfo = getEntityUsingStateManagerMethodInfo;
+                            getEntityMethodInfo = EntityTrackingHelper.GetEntityUsingStateManagerMethodInfo;
                             break;
                         }
-
-                        case IdentityMapMode.IdentityMapWithFixup:
-                        {
-                            getEntityMethodInfo = getEntityUsingIdentityMapWithFixupMethodInfo;
-                            break;
-                        }
-
+                        
                         case IdentityMapMode.IdentityMap:
                         default:
                         {
-                            getEntityMethodInfo = getEntityUsingIdentityMapWithFixupMethodInfo;
+                            getEntityMethodInfo = EntityTrackingHelper.GetEntityUsingIdentityMapMethodInfo;
                             break;
                         }
                     }
@@ -109,115 +95,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     return base.Visit(node);
                 }
             }
-        }
-
-        private static object GetEntityUsingStateManager(
-            EFCoreDbCommandExecutor executor,
-            IEntityType entityType,
-            IKey key,
-            object[] keyValues,
-            object entity,
-            IProperty[] shadowProperties,
-            object[] shadowPropertyValues,
-            IReadOnlyList<INavigation> loadedNavigations)
-        {
-            var stateManager = executor.CurrentDbContext.GetDependencies().StateManager;
-
-            var entry = stateManager.TryGetEntry(key, keyValues);
-
-            if (entry == null)
-            {
-                entry = stateManager.GetOrCreateEntry(entity);
-
-                for (var i = 0; i < shadowProperties.Length; i++)
-                {
-                    entry.SetProperty(shadowProperties[i], shadowPropertyValues[i], false);
-                }
-
-                stateManager.StartTracking(entry);
-
-                entry.MarkUnchangedFromQuery(null);
-            }
-
-            foreach (var navigation in loadedNavigations)
-            {
-                entry.SetIsLoaded(navigation);
-            }
-
-            return entry.Entity;
-        }
-
-        private static object GetEntityUsingIdentityMapWithFixup(
-            EFCoreDbCommandExecutor executor,
-            IEntityType entityType,
-            IKey key,
-            object[] keyValues,
-            object entity,
-            IProperty[] shadowProperties,
-            object[] shadowPropertyValues,
-            IReadOnlyList<INavigation> includes)
-        {
-            if (entity ==  null)
-            {
-                return null;
-            }
-
-            var cached = entity;
-
-            if (!executor.TryGetEntity(entityType.ClrType, keyValues, ref cached))
-            {
-                executor.CacheEntity(entityType, key, keyValues, entity, shadowProperties, shadowPropertyValues, includes);
-            }
-
-            // TODO: Keep information about the includes in a cache so we can return early
-            // i.e. modify TryGetEntity to accept the include set and have an out flag
-            // telling use whether this include set was processed already
-
-            foreach (var navigation in includes)
-            {
-                var inverse = navigation.FindInverse();
-
-                if (inverse == null)
-                {
-                    continue;
-                }
-
-                var value = navigation.GetGetter().GetClrValue(entity);
-
-                if (value == null)
-                {
-                    continue;
-                }
-
-                navigation.GetSetter().SetClrValue(cached, value);
-
-                if (inverse.IsCollection())
-                {
-                    var collection = inverse.GetCollectionAccessor();
-
-                    collection.Add(value, cached);
-
-                    continue;
-                }
-                else
-                {
-                    var setter = inverse.GetSetter();
-
-                    if (value is IEnumerable enumerable)
-                    {
-                        foreach (var item in enumerable)
-                        {
-                            setter.SetClrValue(item, cached);
-                        }
-                    }
-                    else
-                    {
-                        setter.SetClrValue(value, cached);
-                    }
-                }
-            }
-
-            return cached;
         }
 
         private class CollectionNavigationFixupExpressionVisitor : ExpressionVisitor

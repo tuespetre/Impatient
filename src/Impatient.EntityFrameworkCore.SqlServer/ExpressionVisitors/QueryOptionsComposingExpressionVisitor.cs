@@ -79,7 +79,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                         var identityMapMode 
                             = queryTrackingBehavior == QueryTrackingBehavior.TrackAll 
                                 ? IdentityMapMode.StateManager
-                                : IdentityMapMode.IdentityMapWithFixup;
+                                : IdentityMapMode.IdentityMap;
 
                         return base.Visit(
                             entityMaterializationExpression

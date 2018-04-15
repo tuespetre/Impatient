@@ -19,10 +19,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 {
     public class ResultTrackingComposingExpressionVisitor : ExpressionVisitor
     {
-        private static readonly MethodInfo trackEntitiesMethodInfo
-            = typeof(ResultTrackingComposingExpressionVisitor)
-                .GetMethod(nameof(TrackEntities), BindingFlags.NonPublic | BindingFlags.Static);
-
         private readonly IModel model;
         private readonly ParameterExpression executionContextParameter;
 
@@ -83,7 +79,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         = Expression.Call(
                             typeof(Enumerable).GetMethod(nameof(Enumerable.Cast)).MakeGenericMethod(projection.Type),
                             Expression.Call(
-                                trackEntitiesMethodInfo,
+                                EntityTrackingHelper.TrackEntitiesMethodInfo,
                                 result,
                                 Expression.Convert(executionContextParameter, typeof(EFCoreDbCommandExecutor)),
                                 Expression.Constant(GenerateAccessors(pathFinder.FoundPaths))));
@@ -238,158 +234,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return accessorInfos;
         }
 
-        private static IEnumerable IterateSource(IEnumerable source)
-        {
-            if (source is IList list)
-            {
-                var count = list.Count;
-
-                for (var i = 0; i < count; i++)
-                {
-                    yield return list[i];
-                }
-            }
-            else
-            {
-                foreach (var item in source)
-                {
-                    yield return item;
-                }
-            }
-        }
-
-        private static IEnumerable TrackEntities(
-            IEnumerable source,
-            EFCoreDbCommandExecutor executor,
-            IList<MaterializerAccessorInfo> accessorInfos)
-        {
-            foreach (var item in IterateSource(source))
-            {
-                var result = item;
-
-                foreach (var accessorInfo in accessorInfos)
-                {
-                    var value = accessorInfo.GetValue(item);
-
-                    if (value == null)
-                    {
-                        continue;
-                    }
-                    else if (ReferenceEquals(value, item))
-                    {
-                        HandleEntry(executor, ref result, accessorInfo.Type);
-                    }
-                    else if (value is IList list)
-                    {
-                        var i = 0;
-
-                        foreach (var subvalue in TrackEntities(list, executor, accessorInfo.SubAccessors))
-                        {
-                            list[i] = subvalue;
-                            i++;
-                        }
-                    }
-                    else if (value is IEnumerable enumerable)
-                    {
-                        foreach (var subvalue in TrackEntities(enumerable, executor, accessorInfo.SubAccessors))
-                        {
-                            // no-op
-                        }
-                    }
-                    else
-                    {
-                        HandleEntry(executor, ref value, accessorInfo.Type);
-
-                        accessorInfo.SetValue?.Invoke(result, value);
-                    }
-                }
-
-                yield return result;
-            }
-        }
-
-        private static void HandleEntry<TEntity>(EFCoreDbCommandExecutor executor, ref TEntity entity, Type type)
-        {
-            var info = executor.GetMaterializationInfo(entity, type);
-
-            if (info != null)
-            {
-                var stateManager = executor.CurrentDbContext.GetDependencies().StateManager;
-
-                var entry = stateManager.TryGetEntry(info.Key, info.KeyValues);
-
-                var cached = entity;
-
-                if (entry == null)
-                {
-                    entry = stateManager.GetOrCreateEntry(entity);
-
-                    for (var i = 0; i < info.ShadowProperties.Length; i++)
-                    {
-                        entry.SetProperty(info.ShadowProperties[i], info.ShadowPropertyValues[i], false);
-                    }
-
-                    stateManager.StartTracking(entry);
-
-                    entry.MarkUnchangedFromQuery(null);
-                }
-                else
-                {
-                    cached = (TEntity)entry.Entity;
-                }
-
-                foreach (var navigation in info.Includes)
-                {
-                    entry.SetIsLoaded(navigation);
-
-                    // TODO: See if we can avoid the double fixup
-
-                    var inverse = navigation.FindInverse();
-
-                    if (inverse == null)
-                    {
-                        continue;
-                    }
-
-                    var value = navigation.GetGetter().GetClrValue(entity);
-
-                    if (value == null)
-                    {
-                        continue;
-                    }
-
-                    navigation.GetSetter().SetClrValue(cached, value);
-
-                    if (inverse.IsCollection())
-                    {
-                        var collection = inverse.GetCollectionAccessor();
-
-                        collection.Add(value, cached);
-
-                        continue;
-                    }
-                    else
-                    {
-                        var setter = inverse.GetSetter();
-
-                        if (value is IEnumerable enumerable)
-                        {
-                            foreach (var item in enumerable)
-                            {
-                                setter.SetClrValue(item, cached);
-                            }
-                        }
-                        else
-                        {
-                            setter.SetClrValue(value, cached);
-                        }
-                    }
-                }
-
-                entity = cached;
-            }
-        }
-
         private class UntrackingExpressionVisitor : ExpressionVisitor
         {
             public override Expression Visit(Expression node)
@@ -534,14 +378,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             public Type Type;
             public IList<MemberInfo> Path;
             public IList<MaterializerPathInfo> SubPaths;
-        }
-
-        private class MaterializerAccessorInfo
-        {
-            public Type Type;
-            public Func<object, object> GetValue;
-            public Action<object, object> SetValue;
-            public IList<MaterializerAccessorInfo> SubAccessors;
         }
     }
 }

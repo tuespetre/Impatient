@@ -3,7 +3,6 @@
     public enum IdentityMapMode
     {
         IdentityMap,
-        IdentityMapWithFixup,
         StateManager,
     }
 }
