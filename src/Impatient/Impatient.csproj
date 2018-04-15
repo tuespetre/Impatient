@@ -15,4 +15,35 @@
     <PackageReference Include="System.ValueTuple" Version="4.3.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Tables Include="**/AliasedTableExpression.cs" />
+    <Tables Include="**/BaseTableExpression.cs" />
+    <Tables Include="**/CrossApplyExpression.cs" />
+    <Tables Include="**/CrossJoinExpression.cs" />
+    <Tables Include="**/ExceptExpression.cs" />
+    <Tables Include="**/FullJoinExpression.cs" />
+    <Tables Include="**/InnerJoinExpression.cs" />
+    <Tables Include="**/IntersectExpression.cs" />
+    <Tables Include="**/JoinExpression.cs" />
+    <Tables Include="**/LeftJoinExpression.cs" />
+    <Tables Include="**/OuterApplyExpression.cs" />
+    <Tables Include="**/PredicateJoinExpression.cs" />
+    <Tables Include="**/SetOperatorExpression.cs" />
+    <Tables Include="**/SubqueryTableExpression.cs" />
+    <Tables Include="**/UnionAllExpression.cs" />
+    <Tables Include="**/UnionExpression.cs" />
+    <Compile Update="@(Tables)">
+      <DependentUpon>TableExpression.cs</DependentUpon>
+    </Compile>
+    <Compile Update="**/Sql*Expression.cs">
+      <DependentUpon>SqlExpression.cs</DependentUpon>
+    </Compile>
+    <Compile Update="**/*ProjectionExpression.cs">
+      <DependentUpon>ProjectionExpression.cs</DependentUpon>
+    </Compile>
+    <Compile Update="**/*QueryExpression.cs; **/GroupByResultExpression.cs">
+      <DependentUpon>RelationalQueryExpression.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
 </Project>
