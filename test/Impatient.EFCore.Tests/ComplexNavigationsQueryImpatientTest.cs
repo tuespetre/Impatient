@@ -27,44 +27,6 @@ namespace Impatient.EFCore.Tests
             base.GroupJoin_reference_to_group_in_OrderBy();
         }
 
-        public override void Multiple_complex_includes()
-        {
-            var expectedIncludes = new List<IExpectedInclude>
-            {
-                new ExpectedInclude<Level1>(l1 => l1.OneToOne_Optional_FK, "OneToOne_Optional_FK"),
-                new ExpectedInclude<Level2>(l2 => l2.OneToMany_Optional, "OneToMany_Optional", navigationPath: "OneToOne_Optional_FK"),
-                new ExpectedInclude<Level1>(l1 => l1.OneToMany_Optional, "OneToMany_Optional"),
-                new ExpectedInclude<Level2>(l2 => l2.OneToOne_Optional_FK, "OneToOne_Optional_FK", navigationPath: "OneToMany_Optional")
-            };
-
-            Func<IQueryable<Level1>, IQueryable<Level1>> func = l1s =>
-                l1s
-                    .Include(e => e.OneToOne_Optional_FK)
-                    .ThenInclude(e => e.OneToMany_Optional)
-                    .Include(e => e.OneToMany_Optional)
-                    .ThenInclude(e => e.OneToOne_Optional_FK);
-
-            using (var context = CreateContext())
-            {
-                var actual = func(Set<Level1>(context)).ToList();
-                var expected = func(ExpectedSet<Level1>()).ToList();
-
-                /*if (elementSorter != null)
-                {
-                    actual = actual.OrderBy(elementSorter).ToList();
-                    expected = expected.OrderBy(elementSorter).ToList();
-                }
-
-                if (clientProjection != null)
-                {
-                    actual = actual.Select(clientProjection).ToList();
-                    expected = expected.Select(clientProjection).ToList();
-                }*/
-
-                ResultAsserter.AssertResult(expected, actual, expectedIncludes);
-            }
-        }
-
         private class ComplexNavigationsQueryResultAsserter : QueryResultAsserter
         {
             private readonly MethodInfo _assertElementMethodInfo;
