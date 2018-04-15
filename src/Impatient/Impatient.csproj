@@ -35,13 +35,25 @@
     <Compile Update="@(Tables)">
       <DependentUpon>TableExpression.cs</DependentUpon>
     </Compile>
-    <Compile Update="**/Sql*Expression.cs">
+  </ItemGroup>
+
+  <ItemGroup>
+    <SqlExpressions Include="**/Sql*Expression.cs" Exclude="**/SqlExpression.cs" />
+    <Compile Update="@(SqlExpressions)">
       <DependentUpon>SqlExpression.cs</DependentUpon>
     </Compile>
-    <Compile Update="**/*ProjectionExpression.cs">
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectionExpressions Include="**/*ProjectionExpression.cs" Exclude="**/ProjectionExpression.cs" />
+    <Compile Update="@(ProjectionExpressions)">
       <DependentUpon>ProjectionExpression.cs</DependentUpon>
     </Compile>
-    <Compile Update="**/*QueryExpression.cs; **/GroupByResultExpression.cs">
+  </ItemGroup>
+
+  <ItemGroup>
+    <QueryExpressions Include="**/*QueryExpression.cs; **/GroupByResultExpression.cs" Exclude="**/RelationalQueryExpression.cs" />
+    <Compile Update="@(QueryExpressions)">
       <DependentUpon>RelationalQueryExpression.cs</DependentUpon>
     </Compile>
   </ItemGroup>
