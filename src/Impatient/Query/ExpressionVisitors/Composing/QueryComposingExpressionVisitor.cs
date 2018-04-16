@@ -699,7 +699,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                 }
 
                                 var polymorphicExpression
-                                    = (outerProjection.UnwrapAnnotations() as PolymorphicExpression)
+                                    = (outerProjection.UnwrapInnerExpression() as PolymorphicExpression)
                                         .Filter(outType);
 
                                 var predicate

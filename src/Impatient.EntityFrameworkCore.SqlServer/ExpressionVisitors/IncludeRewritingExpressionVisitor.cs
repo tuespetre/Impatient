@@ -11,7 +11,7 @@ using System.Reflection;
 
 namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 {
-    public class IncludeExpressionRewritingExpressionVisitor : ExpressionVisitor
+    public class IncludeRewritingExpressionVisitor : ExpressionVisitor
     {
         public override Expression Visit(Expression node)
         {
@@ -104,29 +104,46 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                         return visited;
                     }
 
-                    case ExtraPropertiesExpression extraPropertiesExpression:
+                    case SimpleExtraPropertiesExpression extraPropertiesExpression:
                     {
-                        var currentNavigation = path.Peek();
+                        var navigation = path.Pop();
 
-                        var visited = (ExtraPropertiesExpression)base.VisitExtension(node);
+                        for (var i = 0; i < extraPropertiesExpression.Names.Count; i++)
+                        {
+                            var name = extraPropertiesExpression.Names[i];
 
-                        return visited;
+                            if (name == navigation.PropertyInfo.Name)
+                            {
+                                var expression = Visit(extraPropertiesExpression.Properties[i]);
+
+                                if (Finished)
+                                {
+                                    return extraPropertiesExpression.SetProperty(name, expression);
+                                }
+                                else
+                                {
+                                    return extraPropertiesExpression;
+                                }
+                            }
+                        }
+
+                        path.Push(navigation);
+
+                        return base.VisitExtension(node);
                     }
 
                     case PolymorphicExpression polymorphicExpression:
                     {
-                        var extraProperties = polymorphicExpression.Row as SimpleExtraPropertiesExpression;
+                        var row = Visit(polymorphicExpression.Row);
 
-                        if (extraProperties != null)
+                        if (Finished)
                         {
-                            extraProperties = (SimpleExtraPropertiesExpression)base.Visit(extraProperties);
-
-                            if (Finished)
-                            {
-                                return polymorphicExpression.Update(extraProperties, polymorphicExpression.Descriptors);
-                            }
+                            return polymorphicExpression.Update(
+                                row,
+                                polymorphicExpression.Descriptors);
                         }
-                        else
+
+                        if (!(row is SimpleExtraPropertiesExpression extraProperties))
                         {
                             extraProperties
                                 = new SimpleExtraPropertiesExpression(
@@ -137,7 +154,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                         var navigation = path.Pop();
 
-                        extraProperties = extraProperties.AddProperty(navigation.PropertyInfo.Name, includedExpression);
+                        extraProperties = extraProperties.SetProperty(navigation.PropertyInfo.Name, includedExpression);
 
                         var descriptors = polymorphicExpression.Descriptors.ToArray();
 

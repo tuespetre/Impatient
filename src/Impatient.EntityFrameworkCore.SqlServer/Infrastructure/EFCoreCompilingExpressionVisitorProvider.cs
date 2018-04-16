@@ -25,6 +25,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public override IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
         {
+            // Deal with change tracking before we muck up the materializers
+
+            yield return new ResultTrackingCompilingExpressionVisitor(
+                currentDbContext.Context.Model,
+                context.ExecutionContextParameter);
+
             foreach (var visitor in base.CreateExpressionVisitors(context))
             {
                 yield return visitor;
@@ -37,6 +43,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             yield return new EntityMaterializationCompilingExpressionVisitor(
                 currentDbContext.Context.Model,
                 context.ExecutionContextParameter);
+
+            yield return new IncludeCompilingExpressionVisitor();
         }
     }
 }

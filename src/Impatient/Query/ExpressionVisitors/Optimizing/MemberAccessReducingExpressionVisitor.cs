@@ -1,6 +1,7 @@
 ﻿using Impatient.Extensions;
 using Impatient.Query.Expressions;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -19,6 +20,8 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
                     if (Visit(expression).TryResolvePath(property, out var resolved))
                     {
+                        Debug.Assert(node.Type.IsAssignableFrom(resolved.Type));
+
                         return Visit(resolved);
                     }
 

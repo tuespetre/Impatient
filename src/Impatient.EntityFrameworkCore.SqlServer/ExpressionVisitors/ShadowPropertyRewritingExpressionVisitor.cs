@@ -36,18 +36,31 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                 if (entityType != null)
                 {
+                    var result = default(Expression);
+
                     var property = entityType.FindProperty(propertyName);
 
                     if (property != null && !property.IsShadowProperty)
                     {
-                        return Expression.MakeMemberAccess(arguments[0], property.GetMemberInfo(false, false));
+                        result = Expression.MakeMemberAccess(arguments[0], property.GetMemberInfo(false, false));
                     }
 
                     var navigation = entityType.FindNavigation(propertyName);
 
                     if (navigation != null && !navigation.IsShadowProperty)
                     {
-                        return Expression.MakeMemberAccess(arguments[0], navigation.GetMemberInfo(false, false));
+                        result = Expression.MakeMemberAccess(arguments[0], navigation.GetMemberInfo(false, false));
+                    }
+
+                    if (result != null)
+                    {
+                        if (result.Type != node.Type 
+                            && result.Type.UnwrapNullableType() == node.Type.UnwrapNullableType())
+                        {
+                            result = Expression.Convert(result, node.Type);
+                        }
+
+                        return result;
                     }
                 }
             }

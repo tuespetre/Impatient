@@ -21,7 +21,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 
         public override IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
         {
-            yield return new IncludeExpressionRewritingExpressionVisitor();
+            yield return new IncludeRewritingExpressionVisitor();
 
             yield return new ShadowPropertyPushdownExpressionVisitor();
 

@@ -161,12 +161,14 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                         if (rowValue is ExtraPropertiesExpression extraPropertiesExpression)
                         {
+                            extraPropertiesExpression = VisitAndConvert(extraPropertiesExpression, nameof(Visit));
+
                             var properties = new List<Expression>();
 
                             for (var i = 0; i < extraPropertiesExpression.Names.Count; i++)
                             {
                                 var propertyName = extraPropertiesExpression.Names[i];
-                                var propertyValue = Visit(extraPropertiesExpression.Properties[i]);
+                                var propertyValue = extraPropertiesExpression.Properties[i];
                                 var propertyVariable = Expression.Variable(propertyValue.Type, propertyName);
 
                                 variables.Add(propertyVariable);

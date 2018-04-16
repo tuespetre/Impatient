@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Impatient.Query.Expressions
 {
@@ -11,10 +13,21 @@ namespace Impatient.Query.Expressions
         public SimpleExtraPropertiesExpression(
             Expression expression,
             IEnumerable<string> names,
-            IEnumerable<Expression> properties) : base(expression)
+            IEnumerable<Expression> properties) 
+            : this(
+                  expression, 
+                  names.ToArray(), 
+                  new ReadOnlyCollection<Expression>(properties.ToArray()))
         {
-            Names = names.ToArray();
-            Properties = new ReadOnlyCollection<Expression>(properties.ToArray());
+        }
+
+        private SimpleExtraPropertiesExpression(
+            Expression expression,
+            IReadOnlyList<string> names,
+            ReadOnlyCollection<Expression> properties) : base(expression)
+        {
+            Names = names;
+            Properties = properties;
         }
 
         public override IReadOnlyList<string> Names { get; }
@@ -31,12 +44,33 @@ namespace Impatient.Query.Expressions
             return this;
         }
 
-        public SimpleExtraPropertiesExpression AddProperty(string name, Expression expression)
+        public SimpleExtraPropertiesExpression SetProperty(string name, Expression expression)
         {
+            var names = Names.ToList();
+            var properties = Properties.ToList();
+            var found = false;
+
+            for (var i = 0; i < names.Count; i++)
+            {
+                if (names[i] == name)
+                {
+                    Debug.Assert(properties[i].Type.IsAssignableFrom(expression.Type));
+
+                    properties[i] = expression;
+                    found = true;
+                }
+            }
+
+            if (!found)
+            {
+                names.Add(name);
+                properties.Add(expression);
+            }
+
             return new SimpleExtraPropertiesExpression(
                 Expression,
-                Names.Append(name),
-                Properties.Append(expression));
+                names,
+                new ReadOnlyCollection<Expression>(properties));
         }
     }
 }

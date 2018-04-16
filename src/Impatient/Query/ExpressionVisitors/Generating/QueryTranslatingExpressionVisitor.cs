@@ -255,11 +255,11 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                     }
 
                     var leftIsNullable
-                        = left.UnwrapAnnotationsAndConversions() is SqlExpression leftSqlExpression
+                        = left.UnwrapInnerExpression() is SqlExpression leftSqlExpression
                             && leftSqlExpression.IsNullable;
 
                     var rightIsNullable
-                        = right.UnwrapAnnotationsAndConversions() is SqlExpression rightSqlExpression
+                        = right.UnwrapInnerExpression() is SqlExpression rightSqlExpression
                             && rightSqlExpression.IsNullable;
 
                     if (leftIsNullable && rightIsNullable)
@@ -346,11 +346,11 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                     }
 
                     var leftIsNullable
-                        = left.UnwrapAnnotationsAndConversions() is SqlExpression leftSqlExpression
+                        = left.UnwrapInnerExpression() is SqlExpression leftSqlExpression
                             && leftSqlExpression.IsNullable;
 
                     var rightIsNullable
-                        = right.UnwrapAnnotationsAndConversions() is SqlExpression rightSqlExpression
+                        = right.UnwrapInnerExpression() is SqlExpression rightSqlExpression
                             && rightSqlExpression.IsNullable;
 
                     if (leftIsNullable && rightIsNullable)

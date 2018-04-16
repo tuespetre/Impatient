@@ -127,6 +127,11 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                     return new TranslatableExpression(node);
                 }
 
+                case ExtraPropertiesExpression extraPropertiesExpression:
+                {
+                    return Visit(extraPropertiesExpression.Expression);
+                }
+
                 case AnnotationExpression annotationExpression:
                 {
                     return Visit(annotationExpression.Expression);

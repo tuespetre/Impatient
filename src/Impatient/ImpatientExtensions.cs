@@ -89,6 +89,11 @@ namespace Impatient
                     return annotationExpression.Expression.Is<TExpression>();
                 }
 
+                case ExtraPropertiesExpression extraPropertiesExpression:
+                {
+                    return extraPropertiesExpression.Expression.Is<TExpression>();
+                }
+
                 default:
                 {
                     return false;
@@ -117,6 +122,11 @@ namespace Impatient
                     return annotationExpression.Expression.Is(out found);
                 }
 
+                case ExtraPropertiesExpression extraPropertiesExpression:
+                {
+                    return extraPropertiesExpression.Expression.Is(out found);
+                }
+
                 default:
                 {
                     found = null;
@@ -136,11 +146,11 @@ namespace Impatient
 
         public static Expression AsSqlBooleanExpression(this Expression expression)
         {
-            expression = expression.UnwrapAnnotations();
+            var unwrapped = expression.UnwrapInnerExpression();
 
-            if (expression.IsSqlBooleanExpression())
+            if (unwrapped.IsSqlBooleanExpression())
             {
-                return expression;
+                return unwrapped;
             }
             
             var test = true;
@@ -438,15 +448,19 @@ namespace Impatient
             }
         }
 
-        public static Expression UnwrapAnnotationsAndConversions(this Expression expression)
+        public static Expression UnwrapInnerExpression(this Expression expression)
         {
             if (expression is AnnotationExpression annotationExpression)
             {
-                return annotationExpression.Expression.UnwrapAnnotationsAndConversions();
+                return annotationExpression.Expression.UnwrapInnerExpression();
+            }
+            else if (expression is ExtraPropertiesExpression extraPropertiesExpression)
+            {
+                return extraPropertiesExpression.Expression.UnwrapInnerExpression();
             }
             else if (expression.NodeType == ExpressionType.Convert)
             {
-                return ((UnaryExpression)expression).Operand.UnwrapAnnotationsAndConversions();
+                return ((UnaryExpression)expression).Operand.UnwrapInnerExpression();
             }
             else
             {

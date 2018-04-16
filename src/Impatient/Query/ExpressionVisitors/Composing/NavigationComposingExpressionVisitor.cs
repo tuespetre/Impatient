@@ -1777,7 +1777,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             {
                 path.Add(memberExpression.Member);
 
-                innerExpression = memberExpression.Expression.UnwrapAnnotationsAndConversions();
+                innerExpression = memberExpression.Expression.UnwrapInnerExpression();
 
                 memberExpression = innerExpression as MemberExpression;
             }

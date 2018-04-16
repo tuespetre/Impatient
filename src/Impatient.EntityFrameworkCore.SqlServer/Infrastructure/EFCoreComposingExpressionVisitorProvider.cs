@@ -63,10 +63,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 translatabilityAnalyzingExpressionVisitor,
                 rewritingExpressionVisitorProvider.CreateExpressionVisitors(context),
                 new SqlParameterRewritingExpressionVisitor(context.ParameterMapping.Values));
-
-            yield return new ResultTrackingComposingExpressionVisitor(
-                currentDbContext.Context.Model,
-                context.ExecutionContextParameter);
         }
     }
 }

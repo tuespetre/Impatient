@@ -118,6 +118,16 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
             EFCoreDbCommandExecutor executor,
             IList<MaterializerAccessorInfo> accessorInfos)
         {
+            if (accessorInfos == null)
+            {
+                foreach (var item in IterateSource(source))
+                {
+                    yield return item;
+                }
+
+                yield break;
+            }
+
             foreach (var item in IterateSource(source))
             {
                 var result = item;

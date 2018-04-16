@@ -211,7 +211,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     {
                         var argument = arguments[0];
 
-                        if (argument.UnwrapAnnotationsAndConversions() is SqlColumnExpression sqlColumnExpression)
+                        if (argument.UnwrapInnerExpression() is SqlColumnExpression sqlColumnExpression)
                         {
                             argument
                                 = new SqlColumnExpression(

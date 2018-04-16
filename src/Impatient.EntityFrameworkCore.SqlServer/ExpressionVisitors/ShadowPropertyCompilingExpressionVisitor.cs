@@ -73,7 +73,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                         path.Insert(0, memberExpression.Member);
 
-                        innerExpression = memberExpression.Expression.UnwrapAnnotationsAndConversions();
+                        innerExpression = memberExpression.Expression.UnwrapInnerExpression();
                     }
 
                     var entry
@@ -165,7 +165,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
             {
                 path.Insert(0, memberExpression.Member);
 
-                innerExpression = memberExpression.Expression.UnwrapAnnotationsAndConversions();
+                innerExpression = memberExpression.Expression.UnwrapInnerExpression();
 
                 memberExpression = innerExpression as MemberExpression;
             }

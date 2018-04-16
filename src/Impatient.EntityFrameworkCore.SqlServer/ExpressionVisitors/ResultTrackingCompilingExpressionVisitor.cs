@@ -11,18 +11,19 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
-    public class ResultTrackingComposingExpressionVisitor : ExpressionVisitor
+    public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
     {
         private readonly IModel model;
         private readonly ParameterExpression executionContextParameter;
 
-        public ResultTrackingComposingExpressionVisitor(
+        public ResultTrackingCompilingExpressionVisitor(
             IModel model,
             ParameterExpression executionContextParameter)
         {
@@ -40,13 +41,15 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 }
             }
 
+            var unwrapped = node.UnwrapInnerExpression();
+
             var visitor = new ProjectionBubblingExpressionVisitor();
 
-            if (visitor.Visit(node.UnwrapAnnotations()) is ProjectionExpression projection)
+            if (visitor.Visit(unwrapped) is ProjectionExpression projection)
             {
                 var extraCallStack = new Stack<MethodCallExpression>();
 
-                var call = node.UnwrapAnnotations() as MethodCallExpression;
+                var call = unwrapped as MethodCallExpression;
 
                 // TODO: Strip predicates and push down into calls to Where
                 while (call != null && call.Method.IsQueryableOrEnumerableMethod())
@@ -82,7 +85,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                 EntityTrackingHelper.TrackEntitiesMethodInfo,
                                 result,
                                 Expression.Convert(executionContextParameter, typeof(EFCoreDbCommandExecutor)),
-                                Expression.Constant(GenerateAccessors(pathFinder.FoundPaths))));
+                                Expression.Constant(GenerateAccessors(pathFinder.FoundPaths.Values.ToList()))));
                 }
 
                 while (extraCallStack.TryPop(out call))
@@ -257,7 +260,27 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private class PathFindingExpressionVisitor : ProjectionExpressionVisitor
         {
-            public List<MaterializerPathInfo> FoundPaths = new List<MaterializerPathInfo>();
+            public Dictionary<string, MaterializerPathInfo> FoundPaths
+                = new Dictionary<string, MaterializerPathInfo>();
+
+            private void AddPath(Type type, IList<MaterializerPathInfo> subpaths = null)
+            {
+                var name = string.Join('.', GetNameParts());
+
+                if (FoundPaths.TryGetValue(name, out _))
+                {
+                    Debug.Assert(FoundPaths[name].Type.IsAssignableFrom(type));
+
+                    return;
+                }
+
+                FoundPaths[name] = new MaterializerPathInfo
+                {
+                    Type = type,
+                    Path = CurrentPath.ToList(),
+                    SubPaths = subpaths,
+                };
+            }
 
             public override Expression Visit(Expression node)
             {
@@ -267,11 +290,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     {
                         if (!entityMaterializationExpression.EntityType.HasDefiningNavigation())
                         {
-                            FoundPaths.Add(new MaterializerPathInfo
-                            {
-                                Type = node.Type,
-                                Path = CurrentPath.ToList(),
-                            });
+                            AddPath(node.Type);
                         }
 
                         break;
@@ -292,11 +311,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                         if (addPath)
                         {
-                            FoundPaths.Add(new MaterializerPathInfo
+                            AddPath(node.Type);
+
+                            foreach (var descriptor in polymorphicExpression.Descriptors)
                             {
-                                Type = node.Type,
-                                Path = CurrentPath.ToList(),
-                            });
+                                Visit(descriptor.Materializer.ExpandParameters(polymorphicExpression.Row));
+
+                                return node;
+                            }
                         }
 
                         break;
@@ -314,12 +336,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                         pathFinder.Visit(result.Flatten().Body);
 
-                        FoundPaths.Add(new MaterializerPathInfo
-                        {
-                            Type = node.Type,
-                            Path = CurrentPath.ToList(),
-                            SubPaths = pathFinder.FoundPaths,
-                        });
+                        AddPath(node.Type, pathFinder.FoundPaths.Values.ToList());
 
                         break;
                     }
@@ -352,20 +369,40 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                             if (methodCallExpression.Type.IsSequenceType())
                             {
-                                FoundPaths.Add(new MaterializerPathInfo
-                                {
-                                    Type = node.Type,
-                                    Path = CurrentPath.ToList(),
-                                    SubPaths = pathFinder.FoundPaths,
-                                });
+                                AddPath(node.Type, pathFinder.FoundPaths.Values.ToList());
                             }
                             else
                             {
-                                FoundPaths.AddRange(pathFinder.FoundPaths);
+                                foreach (var (key, value) in pathFinder.FoundPaths)
+                                {
+                                    // TODO: Verify that this is okay
+                                    FoundPaths.Add(string.Join('.', GetNameParts().Append(key)), value);
+                                }
                             }
                         }
 
                         break;
+                    }
+
+                    case IncludeExpression includeExpression:
+                    {
+                        Visit(includeExpression.Expression);
+
+                        for (var i = 0; i<includeExpression.Paths.Count; i++)
+                        {
+                            var include = includeExpression.Includes[i];
+                            var path = includeExpression.Paths[i];
+
+                            FoundPaths.Add(
+                                string.Join('.', GetNameParts().Concat(path.Select(p => p.Name))),
+                                new MaterializerPathInfo
+                                {
+                                    Type = include.Type,
+                                    Path = path.Select(p => p.PropertyInfo).ToArray()
+                                });
+                        }
+
+                        return includeExpression;
                     }
                 }
 

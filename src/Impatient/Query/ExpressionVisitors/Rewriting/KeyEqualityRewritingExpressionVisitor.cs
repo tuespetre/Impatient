@@ -22,8 +22,8 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
             // TODO: Write an explicit test case for PolymorphicExpression key comparison
             if (node.NodeType == ExpressionType.Equal || node.NodeType == ExpressionType.NotEqual)
             {
-                var left = Visit(node.Left).UnwrapAnnotations();
-                var right = Visit(node.Right).UnwrapAnnotations();
+                var left = Visit(node.Left).UnwrapInnerExpression();
+                var right = Visit(node.Right).UnwrapInnerExpression();
                 var leftIsNullConstant = left is ConstantExpression leftConstant && leftConstant.Value == null;
                 var rightIsNullConstant = right is ConstantExpression rightConstant && rightConstant.Value == null;
                 var canRewriteLeft = CanRewrite(left);
