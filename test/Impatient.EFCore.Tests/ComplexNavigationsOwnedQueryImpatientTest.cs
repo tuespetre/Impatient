@@ -24,6 +24,8 @@ namespace Impatient.EFCore.Tests
 
     public class ComplexNavigationsOwnedQueryImpatientFixture : ComplexNavigationsOwnedQueryRelationalFixtureBase<ImpatientTestStore>
     {
+        private const string connectionString = @"Server=.\sqlexpress; Database=efcore-impatient-complex-navigations-owned; Trusted_Connection=true; MultipleActiveResultSets=True";
+
         private readonly DbContextOptions options;
 
         public ComplexNavigationsOwnedQueryImpatientFixture()
@@ -42,10 +44,10 @@ namespace Impatient.EFCore.Tests
             options
                 = new DbContextOptionsBuilder()
                     .UseInternalServiceProvider(provider)
-                    .UseSqlServer(@"Server=.\sqlexpress; Database=efcore-impatient-complex-navigations-owned; Trusted_Connection=true; MultipleActiveResultSets=True")
                     .Options;
 
-            using (var context = new ComplexNavigationsContext(options))
+            using (var context = new ComplexNavigationsContext(
+                new DbContextOptionsBuilder(options).UseSqlServer(connectionString).Options))
             {
                 // context.Database.EnsureDeleted();
                 if (context.Database.EnsureCreated())
@@ -57,7 +59,10 @@ namespace Impatient.EFCore.Tests
 
         public override ComplexNavigationsContext CreateContext(ImpatientTestStore testStore)
         {
-            var context = new ComplexNavigationsContext(options);
+            var context 
+                = new ComplexNavigationsContext(
+                    new DbContextOptionsBuilder(options)
+                        .UseSqlServer(testStore.Connection).Options);
 
             context.Database.UseTransaction(testStore.Transaction);
 
@@ -66,7 +71,7 @@ namespace Impatient.EFCore.Tests
 
         public override ImpatientTestStore CreateTestStore()
         {
-            return new ImpatientTestStore();
+            return new ImpatientTestStore(connectionString);
         }
     }
 }

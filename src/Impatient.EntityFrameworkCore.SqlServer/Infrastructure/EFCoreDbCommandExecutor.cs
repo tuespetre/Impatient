@@ -234,9 +234,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return command;
         }
 
-        public EntityMaterializationInfo GetMaterializationInfo(object entity, Type type)
+        public EntityMaterializationInfo GetMaterializationInfo(object entity, IEntityType entityType)
         {
-            if (entityLookups.TryGetValue(type, out var lookups))
+            if (entityLookups.TryGetValue(entityType, out var lookups))
             {
                 if (lookups.EntityMap.TryGetValue(entity, out var info))
                 {
@@ -247,11 +247,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return default;
         }
 
-        public bool TryGetEntity(Type type, object[] keyValues, ref object entity, List<INavigation> includes, out bool includesCached)
+        public bool TryGetEntity(IEntityType entityType, object[] keyValues, ref object entity, List<INavigation> includes, out bool includesCached)
         {
             includesCached = false;
 
-            if (entityLookups.TryGetValue(type, out var lookups))
+            if (entityLookups.TryGetValue(entityType, out var lookups))
             {
                 if (lookups.KeyMap.TryGetValue(keyValues, out var cached))
                 {
@@ -264,6 +264,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     else
                     {
                         cached.Includes.Add(includes);
+
+                        foreach (var include in includes)
+                        {
+                            cached.ForeignKeys.Add(include.ForeignKey);
+                        }
                     }
 
                     return true;
@@ -282,7 +287,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             object[] shadowPropertyValues,
             List<INavigation> includes)
         {
-            if (!entityLookups.TryGetValue(entityType.ClrType, out var lookups))
+            if (!entityLookups.TryGetValue(entityType, out var lookups))
             {
                 lookups = new EntityLookups
                 {
@@ -290,7 +295,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     EntityMap = new ConditionalWeakTable<object, EntityMaterializationInfo>(),
                 };
 
-                entityLookups[entityType.ClrType] = lookups;                       
+                entityLookups[entityType] = lookups;                       
             }
 
             var info = new EntityMaterializationInfo
@@ -302,6 +307,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 Key = key,
                 ShadowProperties = shadowProperties,
                 Includes = new List<List<INavigation>> { includes },
+                ForeignKeys = new HashSet<IForeignKey>(includes.Select(i => i.ForeignKey))
             };
 
             lookups.KeyMap[keyValues] = info;
@@ -315,8 +321,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             public ConditionalWeakTable<object, EntityMaterializationInfo> EntityMap;
         }
 
-        private readonly Dictionary<Type, EntityLookups> entityLookups
-            = new Dictionary<Type, EntityLookups>();
+        private readonly Dictionary<IEntityType, EntityLookups> entityLookups
+            = new Dictionary<IEntityType, EntityLookups>();
 
         private class KeyValuesComparer : IEqualityComparer<object[]>
         {

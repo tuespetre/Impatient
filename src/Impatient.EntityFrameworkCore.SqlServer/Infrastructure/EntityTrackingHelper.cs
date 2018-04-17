@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
@@ -76,7 +77,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 
             var cached = entity;
 
-            if (!executor.TryGetEntity(entityType.ClrType, keyValues, ref cached, includes, out var includesCached))
+            if (!executor.TryGetEntity(entityType, keyValues, ref cached, includes, out var includesCached))
             {
                 includesCached = false;
 
@@ -143,7 +144,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
                     }
                     else if (ReferenceEquals(value, item))
                     {
-                        HandleEntry(executor, ref result, accessorInfo.Type);
+                        HandleEntry(executor, ref result, accessorInfo.EntityType);
                     }
                     else if (value is IList list)
                     {
@@ -166,7 +167,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
                     {
                         var copy = value;
 
-                        HandleEntry(executor, ref value, accessorInfo.Type);
+                        HandleEntry(executor, ref value, accessorInfo.EntityType);
 
                         if (!ReferenceEquals(copy, value))
                         {
@@ -179,50 +180,64 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
             }
         }
 
-        private static void HandleEntry<TEntity>(EFCoreDbCommandExecutor executor, ref TEntity entity, Type type)
+        private static void HandleEntry<TEntity>(EFCoreDbCommandExecutor executor, ref TEntity entity, IEntityType entityType)
         {
-            var info = executor.GetMaterializationInfo(entity, type);
-
-            if (info != null)
+            if (entityType == null)
             {
-                var stateManager = executor.CurrentDbContext.GetDependencies().StateManager;
-
-                var entry = stateManager.TryGetEntry(info.Key, info.KeyValues);
-
-                var cached = entity;
-
-                if (entry == null)
-                {
-                    entry = stateManager.GetOrCreateEntry(entity);
-
-                    for (var i = 0; i < info.ShadowProperties.Length; i++)
-                    {
-                        entry.SetProperty(info.ShadowProperties[i], info.ShadowPropertyValues[i], false);
-                    }
-
-                    stateManager.StartTracking(entry);
-
-                    entry.MarkUnchangedFromQuery(null);
-                }
-                else
-                {
-                    cached = (TEntity)entry.Entity;
-                }
-
-                foreach (var set in info.Includes)
-                {
-                    foreach (var navigation in set)
-                    {
-                        entry.SetIsLoaded(navigation);
-
-                        // TODO: See if we can avoid the double fixup
-
-                        FixupNavigation(navigation, entity, cached);
-                    }
-                }
-
-                entity = cached;
+                return;
             }
+
+            var info = executor.GetMaterializationInfo(entity, entityType);
+
+            if (info == null)
+            {
+                return;
+            }
+
+            var stateManager = executor.CurrentDbContext.GetDependencies().StateManager;
+
+            var entry = stateManager.TryGetEntry(info.Key, info.KeyValues);
+
+            var cached = entity;
+
+            if (entry == null)
+            {
+                var clrType = entity.GetType();
+
+                if (entityType.ClrType != entity.GetType())
+                {
+                    entityType = entityType.GetDerivedTypes().Single(t => t.ClrType == clrType);
+                }
+
+                entry = stateManager.GetOrCreateEntry(entity, entityType);
+
+                for (var i = 0; i < info.ShadowProperties.Length; i++)
+                {
+                    entry.SetProperty(info.ShadowProperties[i], info.ShadowPropertyValues[i], false);
+                }
+
+                stateManager.StartTracking(entry);
+
+                entry.MarkUnchangedFromQuery(null);//info.ForeignKeys);
+            }
+            else
+            {
+                cached = (TEntity)entry.Entity;
+            }
+
+            foreach (var set in info.Includes)
+            {
+                foreach (var navigation in set)
+                {
+                    entry.SetIsLoaded(navigation);
+
+                    // TODO: See if we can avoid the double fixup
+
+                    FixupNavigation(navigation, entity, cached);
+                }
+            }
+
+            entity = cached;
         }
 
         private static void FixupNavigation(INavigation navigation, object entity, object cached)

@@ -13,5 +13,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
         public IKey Key;
         public IProperty[] ShadowProperties;
         public List<List<INavigation>> Includes;
+        public HashSet<IForeignKey> ForeignKeys;
     }
 }

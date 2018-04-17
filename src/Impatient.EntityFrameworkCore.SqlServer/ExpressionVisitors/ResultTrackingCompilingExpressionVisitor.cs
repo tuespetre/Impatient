@@ -215,16 +215,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 var type = pathInfo.Type;
 
-                var entityType = model.FindEntityType(type);
-
-                if (entityType != null)
-                {
-                    type = entityType.RootType().ClrType;
-                }
+                var entityType = model.GetEntityTypes().SingleOrDefault(t => t.ClrType == type);
 
                 accessorInfos.Add(new MaterializerAccessorInfo
                 {
-                    Type = type,
+                    EntityType = entityType?.RootType(),
                     GetValue = getter,
                     SetValue = setter,
                     SubAccessors = subAccessors,
@@ -285,7 +280,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 {
                     case EntityMaterializationExpression entityMaterializationExpression:
                     {
-                        if (!entityMaterializationExpression.EntityType.HasDefiningNavigation())
+                        if (!entityMaterializationExpression.EntityType.IsOwned())
                         {
                             AddPath(node.Type);
                         }
