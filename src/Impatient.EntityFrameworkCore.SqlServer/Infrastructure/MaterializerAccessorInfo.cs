@@ -8,6 +8,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
         public Type Type;
         public Func<object, object> GetValue;
         public Action<object, object> SetValue;
-        public IList<MaterializerAccessorInfo> SubAccessors;
+        public MaterializerAccessorInfo[] SubAccessors;
     }
 }

@@ -36,7 +36,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                         var target = (Expression)variable;
 
-                        for (var j = 0; j < path.Count; j++)
+                        for (var j = 0; j < path.Length; j++)
                         {
                             target = Expression.MakeMemberAccess(target, path[j].PropertyInfo);
                         }

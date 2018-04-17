@@ -3,6 +3,7 @@ using Impatient.Query.Expressions;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
@@ -24,9 +25,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
             IdentityMapMode = identityMapMode;
             KeyExpression = keyExpression ?? throw new ArgumentNullException(nameof(keyExpression));
-            ShadowProperties = shadowProperties.ToArray();
-            IncludedNavigations = includedNavigations?.ToArray() ?? new INavigation[0];
-            Names = shadowProperties.Select(p => p.Name).ToArray();
+            ShadowProperties = shadowProperties.ToImmutableArray();
+            IncludedNavigations = includedNavigations?.ToImmutableArray() ?? ImmutableArray.Create<INavigation>();
+            Names = new ReadOnlyCollection<string>(shadowProperties.Select(p => p.Name).ToArray());
             Properties = new ReadOnlyCollection<Expression>(shadowPropertyExpressions.ToArray());
         }
 
@@ -36,11 +37,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public Expression KeyExpression { get; }
 
-        public IReadOnlyList<IProperty> ShadowProperties { get; }
+        public ImmutableArray<IProperty> ShadowProperties { get; }
 
-        public IReadOnlyList<INavigation> IncludedNavigations { get; }
+        public ImmutableArray<INavigation> IncludedNavigations { get; }
 
-        public override IReadOnlyList<string> Names { get; }
+        public override ReadOnlyCollection<string> Names { get; }
 
         public override ReadOnlyCollection<Expression> Properties { get; }
 

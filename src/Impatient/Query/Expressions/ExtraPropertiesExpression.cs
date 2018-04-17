@@ -16,7 +16,7 @@ namespace Impatient.Query.Expressions
 
         public Expression Expression { get; }
 
-        public abstract IReadOnlyList<string> Names { get; }
+        public abstract ReadOnlyCollection<string> Names { get; }
 
         public abstract ReadOnlyCollection<Expression> Properties { get; }
 

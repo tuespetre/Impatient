@@ -65,7 +65,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
             public CoreProjectionIncludeRewritingExpressionVisitor(
                 Expression includedExpression, 
-                IReadOnlyList<INavigation> path)
+                IEnumerable<INavigation> path)
             {
                 this.includedExpression 
                     = path.Last().PropertyInfo.GetMemberType().IsCollectionType() 

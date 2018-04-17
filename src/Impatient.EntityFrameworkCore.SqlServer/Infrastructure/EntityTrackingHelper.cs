@@ -31,7 +31,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
             object entity,
             IProperty[] shadowProperties,
             object[] shadowPropertyValues,
-            IReadOnlyList<INavigation> loadedNavigations)
+            INavigation[] loadedNavigations)
         {
             var stateManager = executor.CurrentDbContext.GetDependencies().StateManager;
 
@@ -67,7 +67,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
             object entity,
             IProperty[] shadowProperties,
             object[] shadowPropertyValues,
-            IReadOnlyList<INavigation> includes)
+            INavigation[] includes)
         {
             if (entity == null)
             {
@@ -116,7 +116,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
         private static IEnumerable TrackEntities(
             IEnumerable source,
             EFCoreDbCommandExecutor executor,
-            IList<MaterializerAccessorInfo> accessorInfos)
+            MaterializerAccessorInfo[] accessorInfos)
         {
             if (accessorInfos == null)
             {

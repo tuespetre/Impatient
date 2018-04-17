@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
@@ -17,17 +18,17 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
             : this(
                   expression, 
                   new ReadOnlyCollection<Expression>(includes.ToArray()), 
-                  paths.Select(p => p.ToArray()).ToArray())
+                  paths.Select(p => p.ToImmutableArray()).ToImmutableArray())
         {
         }
 
         public IncludeExpression(
             Expression expression, 
             ReadOnlyCollection<Expression> includes,
-            IReadOnlyList<IReadOnlyList<INavigation>> paths) 
+            ImmutableArray<ImmutableArray<INavigation>> paths) 
             : base(expression)
         {
-            if (includes.Count != paths.Count)
+            if (includes.Count != paths.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(paths));
             }
@@ -38,7 +39,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
 
         public ReadOnlyCollection<Expression> Includes { get; }
 
-        public IReadOnlyList<IReadOnlyList<INavigation>> Paths { get; }
+        public ImmutableArray<ImmutableArray<INavigation>> Paths { get; }
 
         protected override Expression VisitChildren(ExpressionVisitor visitor)
         {

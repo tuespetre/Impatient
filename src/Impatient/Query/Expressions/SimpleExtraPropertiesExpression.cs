@@ -16,21 +16,21 @@ namespace Impatient.Query.Expressions
             IEnumerable<Expression> properties) 
             : this(
                   expression, 
-                  names.ToArray(), 
+                  new ReadOnlyCollection<string>(names.ToArray()), 
                   new ReadOnlyCollection<Expression>(properties.ToArray()))
         {
         }
 
         private SimpleExtraPropertiesExpression(
             Expression expression,
-            IReadOnlyList<string> names,
+            ReadOnlyCollection<string> names,
             ReadOnlyCollection<Expression> properties) : base(expression)
         {
             Names = names;
             Properties = properties;
         }
 
-        public override IReadOnlyList<string> Names { get; }
+        public override ReadOnlyCollection<string> Names { get; }
 
         public override ReadOnlyCollection<Expression> Properties { get; }
 

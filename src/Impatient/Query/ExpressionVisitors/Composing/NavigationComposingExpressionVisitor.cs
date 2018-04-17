@@ -1797,7 +1797,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 Expression lambdaBody,
                 ParameterExpression oldParameter,
                 ParameterExpression newParameter,
-                IList<ExpansionMapping> mappings)
+                List<ExpansionMapping> mappings)
             {
                 var visitor = new NavigationExpandingExpressionVisitor(oldParameter, newParameter, mappings);
 
@@ -2187,7 +2187,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             }
         }
 
-        private static bool IsValidMemberPath(IList<MemberInfo> members)
+        private static bool IsValidMemberPath(List<MemberInfo> members)
         {
             var type = members.ElementAtOrDefault(0)?.DeclaringType;
 

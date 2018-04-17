@@ -269,7 +269,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             object entity,
             IProperty[] shadowProperties,
             object[] shadowPropertyValues,
-            IReadOnlyList<INavigation> includes)
+            INavigation[] includes)
         {
             if (!entityLookups.TryGetValue(entityType.ClrType, out var lookups))
             {

@@ -84,9 +84,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                         .UnwrapLambda()
                                         .ExpandParameters(entityVariable, shadowPropertiesVariable),
                                     entityVariable,
-                                    Expression.Constant(entityMaterializationExpression.ShadowProperties),
+                                    Expression.Constant(entityMaterializationExpression.ShadowProperties.ToArray()),
                                     shadowPropertiesVariable,
-                                    Expression.Constant(entityMaterializationExpression.IncludedNavigations)),
+                                    Expression.Constant(entityMaterializationExpression.IncludedNavigations.ToArray())),
                                 node.Type)
                         });
                 }

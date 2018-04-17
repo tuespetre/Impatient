@@ -207,11 +207,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
         }
 
-        private IEnumerable<(Expression expression, IReadOnlyList<INavigation> path)> BuildIncludeAccessors(
+        private IEnumerable<(Expression expression, IList<INavigation> path)> BuildIncludeAccessors(
             IEntityType entityType,
             Expression baseExpression,
             IEnumerable<IEnumerable<PropertyInfo>> paths,
-            IReadOnlyList<INavigation> previousPath)
+            IList<INavigation> previousPath)
         {            
             foreach (var pathset in paths.GroupBy(p => p.First(), p => p.Skip(1)))
             {

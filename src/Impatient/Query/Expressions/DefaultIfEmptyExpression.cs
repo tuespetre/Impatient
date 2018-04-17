@@ -8,6 +8,9 @@ namespace Impatient.Query.Expressions
 {
     public class DefaultIfEmptyExpression : ExtraPropertiesExpression
     {
+        private static readonly ReadOnlyCollection<string> names
+            = new ReadOnlyCollection<string>(new[] { "$empty" });
+
         public DefaultIfEmptyExpression(Expression expression) : this(expression, Constant(0, typeof(int?)))
         {
         }
@@ -24,7 +27,7 @@ namespace Impatient.Query.Expressions
 
         public Expression Flag => Properties[0];
 
-        public override IReadOnlyList<string> Names => new[] { "$empty" };
+        public override ReadOnlyCollection<string> Names => names;
 
         public override ReadOnlyCollection<Expression> Properties { get; }
 

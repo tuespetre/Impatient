@@ -82,7 +82,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                 EntityTrackingHelper.TrackEntitiesMethodInfo,
                                 result,
                                 Expression.Convert(executionContextParameter, typeof(EFCoreDbCommandExecutor)),
-                                Expression.Constant(GenerateAccessors(pathFinder.FoundPaths.Values.ToList()))));
+                                Expression.Constant(GenerateAccessors(pathFinder.FoundPaths.Values.ToArray()))));
                 }
 
                 while (extraCallStack.TryPop(out call))
@@ -145,7 +145,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             var currentExpression = (Expression)targetParameter;
             var lastMember = default(MemberInfo);
 
-            for (var i = 0; i < pathInfo.Path.Count; i++)
+            for (var i = 0; i < pathInfo.Path.Length; i++)
             {
                 var member = pathInfo.Path[i];
 
@@ -154,7 +154,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     currentExpression = Expression.Convert(currentExpression, member.DeclaringType);
                 }
 
-                if (i + 1 == pathInfo.Path.Count)
+                if (i + 1 == pathInfo.Path.Length)
                 {
                     if (member is PropertyInfo propertyInfo && !propertyInfo.CanWrite)
                     {
@@ -196,7 +196,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 .Compile();
         }
 
-        private IList<MaterializerAccessorInfo> GenerateAccessors(IList<MaterializerPathInfo> pathInfos)
+        private MaterializerAccessorInfo[] GenerateAccessors(MaterializerPathInfo[] pathInfos)
         {
             var accessorInfos = new List<MaterializerAccessorInfo>();
 
@@ -206,7 +206,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 var setter = GenerateSetter(pathInfo);
 
-                var subAccessors = default(IList<MaterializerAccessorInfo>);
+                var subAccessors = default(MaterializerAccessorInfo[]);
 
                 if (pathInfo.SubPaths != null)
                 {
@@ -231,7 +231,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 });
             }
 
-            return accessorInfos;
+            return accessorInfos.ToArray();
         }
 
         private class UntrackingExpressionVisitor : ExpressionVisitor
@@ -260,7 +260,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             public Dictionary<string, MaterializerPathInfo> FoundPaths
                 = new Dictionary<string, MaterializerPathInfo>();
 
-            private void AddPath(Type type, IList<MaterializerPathInfo> subpaths = null)
+            private void AddPath(Type type, MaterializerPathInfo[] subpaths = null)
             {
                 var name = string.Join('.', GetNameParts());
 
@@ -274,7 +274,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 FoundPaths[name] = new MaterializerPathInfo
                 {
                     Type = type,
-                    Path = CurrentPath.ToList(),
+                    Path = CurrentPath.ToArray(),
                     SubPaths = subpaths,
                 };
             }
@@ -317,7 +317,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                         pathFinder.Visit(result.Flatten().Body);
 
-                        AddPath(node.Type, pathFinder.FoundPaths.Values.ToList());
+                        AddPath(node.Type, pathFinder.FoundPaths.Values.ToArray());
 
                         return node;
                     }
@@ -350,7 +350,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                             if (methodCallExpression.Type.IsSequenceType())
                             {
-                                AddPath(node.Type, pathFinder.FoundPaths.Values.ToList());
+                                AddPath(node.Type, pathFinder.FoundPaths.Values.ToArray());
                             }
                             else
                             {
@@ -369,7 +369,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     {
                         Visit(includeExpression.Expression);
 
-                        for (var i = 0; i < includeExpression.Paths.Count; i++)
+                        for (var i = 0; i < includeExpression.Paths.Length; i++)
                         {
                             var include = includeExpression.Includes[i];
                             var path = includeExpression.Paths[i];
@@ -394,8 +394,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         private class MaterializerPathInfo
         {
             public Type Type;
-            public IList<MemberInfo> Path;
-            public IList<MaterializerPathInfo> SubPaths;
+            public MemberInfo[] Path;
+            public MaterializerPathInfo[] SubPaths;
         }
     }
 }
