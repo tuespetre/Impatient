@@ -33,24 +33,10 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
             if (node.Method.IsEFPropertyMethod())
             {
-                var expression = arguments[0];
+                var expression = arguments[0].UnwrapInnerExpression();
                 var propertyNameArgument = arguments[1];
 
-                var propertyName = default(string);
-
-                if (propertyNameArgument.UnwrapInnerExpression() is ConstantExpression constantExpression)
-                {
-                    propertyName = (string)constantExpression.Value;
-                }
-                else
-                {
-                    throw new NotSupportedException(
-                        $"Impatient does not support expressions of type " +
-                        $"{propertyNameArgument.GetType()} for the " +
-                        $"property name argument to EF.Property.");
-                }
-
-                var entityType = model.GetEntityTypes(arguments[0].Type).FirstOrDefault();
+                var entityType = model.GetEntityTypes(expression.Type).FirstOrDefault();
 
                 if (entityType != null)
                 {
@@ -102,9 +88,27 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                     var finalExpression = default(Expression);
 
-                    var property = entityType.FindProperty(propertyName);
-
-                    if (property != null)
+                    if (model.GetEntityTypes().Any(t => t.ClrType == node.Type))
+                    {
+                        finalExpression =
+                            Expression.MakeMemberAccess(
+                                Expression.Call(
+                                    entry,
+                                    typeof(EntityEntry).GetMethod(nameof(EntityEntry.Reference)),
+                                    arguments[1]),
+                                typeof(ReferenceEntry).GetProperty(nameof(ReferenceEntry.CurrentValue)));
+                    }
+                    else if (node.Type.IsCollectionType())
+                    {
+                        finalExpression =
+                            Expression.MakeMemberAccess(
+                                Expression.Call(
+                                    entry,
+                                    typeof(EntityEntry).GetMethod(nameof(EntityEntry.Collection)),
+                                    arguments[1]),
+                                typeof(CollectionEntry).GetProperty(nameof(CollectionEntry.CurrentValue), typeof(IEnumerable)));
+                    }
+                    else
                     {
                         finalExpression 
                             = Expression.MakeMemberAccess(
@@ -113,34 +117,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                                     typeof(EntityEntry).GetMethod(nameof(EntityEntry.Property)),
                                     arguments[1]),
                                 typeof(PropertyEntry).GetProperty(nameof(PropertyEntry.CurrentValue)));
-                    }
-                    else
-                    {
-                        var navigation = entityType.FindNavigation(propertyName);
-
-                        if (navigation != null)
-                        {
-                            if (navigation.IsCollection())
-                            {
-                                finalExpression =
-                                    Expression.MakeMemberAccess(
-                                        Expression.Call(
-                                            entry,
-                                            typeof(EntityEntry).GetMethod(nameof(EntityEntry.Collection)),
-                                            arguments[1]),
-                                        typeof(CollectionEntry).GetProperty(nameof(CollectionEntry.CurrentValue), typeof(IEnumerable)));
-                            }
-                            else
-                            {
-                                finalExpression =
-                                    Expression.MakeMemberAccess(
-                                        Expression.Call(
-                                            entry,
-                                            typeof(EntityEntry).GetMethod(nameof(EntityEntry.Reference)),
-                                            arguments[1]),
-                                        typeof(ReferenceEntry).GetProperty(nameof(ReferenceEntry.CurrentValue)));
-                            }
-                        }
                     }
 
                     if (finalExpression != null)
