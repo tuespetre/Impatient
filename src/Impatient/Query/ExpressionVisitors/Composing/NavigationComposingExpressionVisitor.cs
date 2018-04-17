@@ -14,6 +14,21 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 {
     public class NavigationComposingExpressionVisitor : ExpressionVisitor
     {
+        private static readonly MethodInfo queryableSelectMethodInfo
+            = GetGenericMethodDefinition((IQueryable<object> o) => o.Select(x => x));
+
+        private static readonly MethodInfo enumerableSelectMethodInfo
+            = GetGenericMethodDefinition((IEnumerable<object> o) => o.Select(x => x));
+
+        private static readonly MethodInfo queryableWhereMethodInfo
+            = GetGenericMethodDefinition((IQueryable<bool> o) => o.Where(x => x));
+
+        private static readonly MethodInfo enumerableWhereMethodInfo
+            = GetGenericMethodDefinition((IEnumerable<bool> o) => o.Where(x => x));
+
+        private static readonly MethodInfo enumerableCountMethodInfo
+            = GetGenericMethodDefinition<IEnumerable<object>, int>(o => o.Count());
+
         private readonly IEnumerable<NavigationDescriptor> navigationDescriptors;
 
         public NavigationComposingExpressionVisitor(IEnumerable<NavigationDescriptor> navigationDescriptors)
@@ -31,18 +46,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
         private sealed class CoreNavigationRewritingExpressionVisitor : ExpressionVisitor
         {
-            private static readonly MethodInfo queryableSelectMethodInfo
-                = GetGenericMethodDefinition((IQueryable<object> o) => o.Select(x => x));
-
-            private static readonly MethodInfo enumerableSelectMethodInfo
-                = GetGenericMethodDefinition((IEnumerable<object> o) => o.Select(x => x));
-
-            private static readonly MethodInfo queryableWhereMethodInfo
-                = GetGenericMethodDefinition((IQueryable<bool> o) => o.Where(x => x));
-
-            private static readonly MethodInfo enumerableWhereMethodInfo
-                = GetGenericMethodDefinition((IEnumerable<bool> o) => o.Where(x => x));
-
             private readonly IEnumerable<NavigationDescriptor> navigationDescriptors;
 
             public CoreNavigationRewritingExpressionVisitor(IEnumerable<NavigationDescriptor> navigationDescriptors)
@@ -57,17 +60,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     || node.ContainsNonLambdaExpressions())
                 {
                     return base.VisitMethodCall(node);
-                }
-
-                var isQueryable = node.Method.IsQueryableMethod();
-
-                var terminalSelectMethod = isQueryable ? queryableSelectMethodInfo : enumerableSelectMethodInfo;
-
-                var terminalWhereMethod = isQueryable ? queryableWhereMethodInfo : queryableSelectMethodInfo;
-
-                Expression Quote(LambdaExpression lambda)
-                {
-                    return isQueryable ? Expression.Quote(lambda) : lambda as Expression;
                 }
 
                 switch (node.Method.Name)
@@ -93,853 +85,42 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     case nameof(Queryable.Reverse):
                     case nameof(Queryable.Skip):
                     case nameof(Queryable.Take):
+                    //case nameof(Queryable.SkipLast):
+                    //case nameof(Queryable.TakeLast):
                     {
-                        var source = Visit(node.Arguments[0]);
-
-                        if (source is NavigationExpansionContextExpression nece)
-                        {
-                            var result
-                                = Expression.Call(
-                                    node.Method.GetGenericMethodDefinition().MakeGenericMethod(
-                                        nece.Source.Type.GetSequenceType()),
-                                    node.Arguments.Skip(1).Prepend(nece.Source));
-
-                            var terminator
-                                = Expression.Call(
-                                    terminalSelectMethod.MakeGenericMethod(
-                                        result.Type.GetSequenceType(),
-                                        node.Type.GetSequenceType()),
-                                    result,
-                                    Quote(nece.Context.OuterTerminalSelector));
-
-                            return new NavigationExpansionContextExpression(terminator, nece.Context);
-                        }
-                        else
-                        {
-                            return node.Update(null, node.Arguments.Skip(1).Prepend(source));
-                        }
+                        return HandlePassthroughMethod(node);
                     }
 
                     // Complex selector lambdas
-                    case nameof(Queryable.Zip):
+
+                    case nameof(Queryable.Select):
                     {
-                        var outerSource = Visit(node.Arguments[0]);
-                        var innerSource = Visit(node.Arguments[1]);
-                        var resultSelector = Visit(node.Arguments[2]).UnwrapLambda();
-                        var outerParameter = resultSelector.Parameters[0];
-                        var innerParameter = resultSelector.Parameters[1];
-                        var outerContext = default(NavigationExpansionContext);
-                        var innerContext = default(NavigationExpansionContext);
+                        return HandleSelect(node);
+                    }
 
-                        if (outerSource is NavigationExpansionContextExpression outerNece)
-                        {
-                            outerSource = outerNece.Source;
-                            outerContext = outerNece.Context;
-                        }
-                        else
-                        {
-                            outerContext = new NavigationExpansionContext(outerParameter, navigationDescriptors);
-                        }
-
-                        if (innerSource is NavigationExpansionContextExpression innerNece)
-                        {
-                            innerSource = innerNece.Source;
-                            innerContext = innerNece.Context;
-                        }
-                        else
-                        {
-                            innerContext = new NavigationExpansionContext(innerParameter, navigationDescriptors);
-                        }
-
-                        var outerExpanded
-                            = outerContext.ExpandIntermediateLambda(
-                                ref outerSource,
-                                ref resultSelector,
-                                ref outerParameter,
-                                out _);
-
-                        var innerExpanded
-                            = innerContext.ExpandIntermediateLambda(
-                                ref innerSource,
-                                ref resultSelector,
-                                ref innerParameter,
-                                out _);
-
-                        if (outerExpanded || innerExpanded)
-                        {
-                            // TODO: Zip: navigations inside result selector
-
-                            var resultContext
-                                = NavigationExpansionContext.Merge(
-                                    outerContext,
-                                    outerParameter,
-                                    innerContext,
-                                    innerParameter,
-                                    ref resultSelector,
-                                    applyExpansions: false);
-
-                            var result
-                                = Expression.Call(
-                                    node.Method.GetGenericMethodDefinition().MakeGenericMethod(
-                                        outerSource.Type.GetSequenceType(),
-                                        innerSource.Type.GetSequenceType(),
-                                        resultSelector.ReturnType),
-                                    new[]
-                                    {
-                                        outerSource,
-                                        innerSource,
-                                        Quote(resultSelector),
-                                    });
-
-                            var terminator
-                                = Expression.Call(
-                                    terminalSelectMethod.MakeGenericMethod(
-                                        resultSelector.ReturnType,
-                                        node.Type.GetSequenceType()),
-                                    result,
-                                    Quote(resultContext.OuterTerminalSelector));
-
-                            return new NavigationExpansionContextExpression(terminator, resultContext);
-                        }
-                        else
-                        {
-                            return node.Update(null, new[]
-                            {
-                                outerSource,
-                                innerSource,
-                                resultSelector,
-                            }.Concat(node.Arguments.Skip(3)));
-                        }
+                    case nameof(Queryable.SelectMany):
+                    {
+                        return HandleSelectMany(node);
                     }
 
                     case nameof(Queryable.GroupBy):
                     {
-                        var source = Visit(node.Arguments[0]);
-                        var keySelector = Visit(node.Arguments[1]).UnwrapLambda();
-                        var keyParameter = keySelector.Parameters[0];
-                        var context = default(NavigationExpansionContext);
-
-                        if (source is NavigationExpansionContextExpression nece)
-                        {
-                            source = nece.Source;
-                            context = nece.Context;
-                        }
-                        else
-                        {
-                            context = new NavigationExpansionContext(keyParameter, navigationDescriptors);
-                        }
-
-                        var parameters = node.Method.GetParameters();
-                        var hasElementSelector = parameters.Any(p => p.Name == "elementSelector");
-                        var hasResultSelector = parameters.Any(p => p.Name == "resultSelector");
-
-                        if (hasElementSelector && hasResultSelector)
-                        {
-                            var elementSelector = Visit(node.Arguments[2]).UnwrapLambda();
-                            var elementParameter = elementSelector.Parameters[0];
-                            var resultSelector = Visit(node.Arguments[3]).UnwrapLambda();
-
-                            bool foundKeyNavigations, foundElementNavigations, expandedAny = false;
-
-                            var originalKeySelector = keySelector;
-                            var originalKeyParameter = keyParameter;
-                            var originalElementSelector = elementSelector;
-                            var originalElementParameter = elementParameter;
-
-                            do
-                            {
-                                keySelector = originalKeySelector;
-                                keyParameter = originalKeyParameter;
-                                elementSelector = originalElementSelector;
-                                elementParameter = originalElementParameter;
-
-                                expandedAny
-                                    |= context.ExpandIntermediateLambda(
-                                        ref source,
-                                        ref keySelector,
-                                        ref keyParameter,
-                                        out foundKeyNavigations);
-
-                                expandedAny
-                                    |= context.ExpandIntermediateLambda(
-                                        ref source,
-                                        ref elementSelector,
-                                        ref elementParameter,
-                                        out foundElementNavigations);
-                            }
-                            while (foundKeyNavigations || foundElementNavigations);
-
-                            var resultKeyParameter = resultSelector.Parameters[0];
-                            var resultElementsParameter = resultSelector.Parameters[1];
-
-                            var intermediateResultType
-                                = typeof(NavigationTransparentIdentifier<,>).MakeGenericType(
-                                    resultKeyParameter.Type,
-                                    resultElementsParameter.Type);
-
-                            var resultOuterField = intermediateResultType.GetRuntimeField("Outer");
-                            var resultInnerField = intermediateResultType.GetRuntimeField("Inner");
-
-                            var intermediateResultSelector
-                                = Expression.Lambda(
-                                    Expression.New(
-                                        intermediateResultType.GetTypeInfo().DeclaredConstructors.Single(),
-                                        new[] { resultKeyParameter, resultElementsParameter },
-                                        new[] { resultOuterField, resultInnerField }),
-                                    new[] { resultKeyParameter, resultElementsParameter });
-
-                            var newSource
-                                = Expression.Call(
-                                    node.Method
-                                        .GetGenericMethodDefinition()
-                                        .MakeGenericMethod(new[]
-                                        {
-                                            source.Type.GetSequenceType(),
-                                            keySelector.ReturnType,
-                                            elementSelector.ReturnType,
-                                            intermediateResultType,
-                                        }),
-                                    new[]
-                                    {
-                                        source,
-                                        Quote(keySelector),
-                                        Quote(elementSelector),
-                                        Quote(intermediateResultSelector),
-                                    }.Concat(node.Arguments.Skip(4))) as Expression;
-
-                            var newResultParameter = Expression.Parameter(intermediateResultType, "<>nav");
-                            var newContext = new NavigationExpansionContext(newResultParameter, navigationDescriptors);
-
-                            var newResultSelector
-                                = Expression.Lambda(
-                                    resultSelector.Body
-                                        .Replace(
-                                            resultKeyParameter,
-                                            Expression.MakeMemberAccess(newResultParameter, resultOuterField))
-                                        .Replace(
-                                            resultElementsParameter,
-                                            Expression.MakeMemberAccess(newResultParameter, resultInnerField)),
-                                    newResultParameter);
-
-                            if (newContext.ExpandResultLambda(ref newSource, ref newResultSelector, ref newResultParameter))
-                            {
-                                var result
-                                    = Expression.Call(
-                                        terminalSelectMethod.MakeGenericMethod(
-                                            newSource.Type.GetSequenceType(),
-                                            newResultSelector.ReturnType),
-                                        newSource,
-                                        newResultSelector);
-
-                                var terminator
-                                    = Expression.Call(
-                                        terminalSelectMethod.MakeGenericMethod(
-                                            newResultSelector.ReturnType,
-                                            node.Type.GetSequenceType()),
-                                        result,
-                                        Quote(newContext.OuterTerminalSelector));
-
-                                return new NavigationExpansionContextExpression(terminator, newContext);
-                            }
-                            else if (expandedAny)
-                            {
-                                return Expression.Call(
-                                    node.Method
-                                        .GetGenericMethodDefinition()
-                                        .MakeGenericMethod(new[]
-                                        {
-                                            source.Type.GetSequenceType(),
-                                            keySelector.ReturnType,
-                                            elementSelector.ReturnType,
-                                            resultSelector.ReturnType,
-                                        }),
-                                    new[]
-                                    {
-                                        source,
-                                        Quote(keySelector),
-                                        Quote(elementSelector),
-                                        Quote(resultSelector),
-                                    }.Concat(node.Arguments.Skip(4)));
-                            }
-                            else
-                            {
-                                return node.Update(null, new[]
-                                {
-                                    source,
-                                    keySelector,
-                                    elementSelector,
-                                    resultSelector,
-                                }.Concat(node.Arguments.Skip(4)));
-                            }
-                        }
-                        else if (hasElementSelector)
-                        {
-                            var elementSelector = Visit(node.Arguments[2]).UnwrapLambda();
-                            var elementParameter = elementSelector.Parameters[0];
-
-                            bool foundKeyNavigations, foundElementNavigations, expandedAny = false;
-
-                            var originalKeySelector = keySelector;
-                            var originalKeyParameter = keyParameter;
-                            var originalElementSelector = elementSelector;
-                            var originalElementParameter = elementParameter;
-
-                            do
-                            {
-                                keySelector = originalKeySelector;
-                                keyParameter = originalKeyParameter;
-                                elementSelector = originalElementSelector;
-                                elementParameter = originalElementParameter;
-
-                                expandedAny
-                                    |= context.ExpandIntermediateLambda(
-                                        ref source,
-                                        ref keySelector,
-                                        ref keyParameter,
-                                        out foundKeyNavigations);
-
-                                expandedAny
-                                    |= context.ExpandIntermediateLambda(
-                                        ref source,
-                                        ref elementSelector,
-                                        ref elementParameter,
-                                        out foundElementNavigations);
-                            }
-                            while (foundKeyNavigations || foundElementNavigations);
-
-                            if (expandedAny)
-                            {
-                                return Expression.Call(
-                                    node.Method.GetGenericMethodDefinition().MakeGenericMethod(
-                                        source.Type.GetSequenceType(),
-                                        keySelector.ReturnType,
-                                        elementSelector.ReturnType),
-                                    new[]
-                                    {
-                                        source,
-                                        keySelector,
-                                        elementSelector,
-                                    }.Concat(node.Arguments.Skip(3)));
-                            }
-                            else
-                            {
-                                return node.Update(null, new[]
-                                {
-                                    source,
-                                    keySelector,
-                                    elementSelector,
-                                }.Concat(node.Arguments.Skip(3)));
-                            }
-                        }
-                        else if (hasResultSelector)
-                        {
-                            var expandedKeySelector
-                                = context.ExpandIntermediateLambda(
-                                    ref source,
-                                    ref keySelector,
-                                    ref keyParameter,
-                                    out _);
-
-                            var resultSelector = Visit(node.Arguments[2]).UnwrapLambda();
-                            var resultKeyParameter = resultSelector.Parameters[0];
-                            var resultElementsParameter = resultSelector.Parameters[1];
-
-                            var intermediateResultType
-                                = typeof(NavigationTransparentIdentifier<,>).MakeGenericType(
-                                    resultKeyParameter.Type,
-                                    resultElementsParameter.Type);
-
-                            var resultOuterField = intermediateResultType.GetRuntimeField("Outer");
-                            var resultInnerField = intermediateResultType.GetRuntimeField("Inner");
-
-                            var intermediateResultSelector
-                                = Expression.Lambda(
-                                    Expression.New(
-                                        intermediateResultType.GetTypeInfo().DeclaredConstructors.Single(),
-                                        new[] { resultKeyParameter, resultElementsParameter },
-                                        new[] { resultOuterField, resultInnerField }),
-                                    new[] { resultKeyParameter, resultElementsParameter });
-
-                            var newGenericMethodDefinition
-                                = node.Method.DeclaringType
-                                    .GetTypeInfo()
-                                    .GetDeclaredMethods("GroupBy")
-                                    .Select(m => new { m, p = m.GetParameters() })
-                                    .Where(x => x.p.Length == node.Arguments.Count + 1)
-                                    .Where(x => x.p.Any(p => p.Name == "elementSelector"))
-                                    .Where(x => x.p.Any(p => p.Name == "resultSelector"))
-                                    .Select(x => x.m)
-                                    .Single();
-
-                            var newSource
-                                = Expression.Call(
-                                    newGenericMethodDefinition
-                                        .MakeGenericMethod(new[]
-                                        {
-                                            source.Type.GetSequenceType(),
-                                            keySelector.ReturnType,
-                                            node.Method.GetGenericArguments()[0],
-                                            intermediateResultType,
-                                        }),
-                                    new[]
-                                    {
-                                        source,
-                                        Quote(keySelector),
-                                        Quote(context.OuterTerminalSelector),
-                                        Quote(intermediateResultSelector),
-                                    }.Concat(node.Arguments.Skip(4))) as Expression;
-
-                            var newResultParameter = Expression.Parameter(intermediateResultType, "<>nav");
-                            var newContext = new NavigationExpansionContext(newResultParameter, navigationDescriptors);
-
-                            var newResultSelector
-                                = Expression.Lambda(
-                                    resultSelector.Body
-                                        .Replace(
-                                            resultKeyParameter,
-                                            Expression.MakeMemberAccess(newResultParameter, resultOuterField))
-                                        .Replace(
-                                            resultElementsParameter,
-                                            Expression.MakeMemberAccess(newResultParameter, resultInnerField)),
-                                    newResultParameter);
-
-                            if (newContext.ExpandResultLambda(ref newSource, ref newResultSelector, ref newResultParameter))
-                            {
-                                var result
-                                    = Expression.Call(
-                                        terminalSelectMethod.MakeGenericMethod(
-                                            newSource.Type.GetSequenceType(),
-                                            newResultSelector.ReturnType),
-                                        newSource,
-                                        newResultSelector);
-
-                                var terminator
-                                    = Expression.Call(
-                                        terminalSelectMethod.MakeGenericMethod(
-                                            newResultSelector.ReturnType,
-                                            node.Type.GetSequenceType()),
-                                        result,
-                                        Quote(newContext.OuterTerminalSelector));
-
-                                return new NavigationExpansionContextExpression(terminator, newContext);
-                            }
-                            else if (expandedKeySelector)
-                            {
-                                return Expression.Call(
-                                    newGenericMethodDefinition
-                                        .MakeGenericMethod(new[]
-                                        {
-                                            keyParameter.Type,
-                                            keySelector.ReturnType,
-                                            node.Method.GetGenericArguments()[0],
-                                            node.Method.GetGenericArguments()[2],
-                                        }),
-                                    new[]
-                                    {
-                                        source,
-                                        Quote(keySelector),
-                                        Quote(context.OuterTerminalSelector),
-                                        Quote(resultSelector),
-                                    }.Concat(node.Arguments.Skip(3)));
-                            }
-                            else
-                            {
-                                return node.Update(null, new[]
-                                {
-                                    source,
-                                    keySelector,
-                                    resultSelector,
-                                }.Concat(node.Arguments.Skip(3)));
-                            }
-                        }
-                        else
-                        {
-                            if (context.ExpandIntermediateLambda(ref source, ref keySelector, ref keyParameter, out _))
-                            {
-                                return Expression.Call(
-                                    node.Method.DeclaringType.GetTypeInfo()
-                                        .GetDeclaredMethods("GroupBy")
-                                        .Select(m => new { m, p = m.GetParameters() })
-                                        .Where(x => x.p.Length == node.Arguments.Count + 1)
-                                        .Where(x => x.p.Any(p => p.Name == "elementSelector"))
-                                        .Select(x => x.m)
-                                        .Single()
-                                        .MakeGenericMethod(new[]
-                                        {
-                                            keyParameter.Type,
-                                            keySelector.ReturnType,
-                                            node.Method.GetGenericArguments()[0],
-                                        }),
-                                    new[]
-                                    {
-                                        source,
-                                        Quote(keySelector),
-                                        Quote(context.OuterTerminalSelector),
-                                    }.Concat(node.Arguments.Skip(2)));
-                            }
-                            else
-                            {
-                                return node.Update(null, new[]
-                                {
-                                    source,
-                                    keySelector,
-                                }.Concat(node.Arguments.Skip(2)));
-                            }
-                        }
+                        return HandleGroupBy(node);
                     }
 
                     case nameof(Queryable.GroupJoin):
                     {
-                        var outerSource = Visit(node.Arguments[0]);
-                        var innerSource = Visit(node.Arguments[1]);
-                        var outerKeySelector = Visit(node.Arguments[2]).UnwrapLambda();
-                        var innerKeySelector = Visit(node.Arguments[3]).UnwrapLambda();
-                        var resultSelector = Visit(node.Arguments[4]).UnwrapLambda();
-                        var outerParameter = outerKeySelector.Parameters.Single();
-                        var innerParameter = innerKeySelector.Parameters.Single();
-                        var outerContext = default(NavigationExpansionContext);
-                        var innerContext = default(NavigationExpansionContext);
-
-                        if (outerSource is NavigationExpansionContextExpression outerNece)
-                        {
-                            outerSource = outerNece.Source;
-                            outerContext = outerNece.Context;
-                        }
-                        else
-                        {
-                            outerContext = new NavigationExpansionContext(outerParameter, navigationDescriptors);
-                        }
-
-                        if (innerSource is NavigationExpansionContextExpression innerNece)
-                        {
-                            innerSource = innerNece.Source;
-                            innerContext = innerNece.Context;
-                        }
-                        else
-                        {
-                            innerContext = new NavigationExpansionContext(innerParameter, navigationDescriptors);
-                        }
-
-                        var outerExpanded
-                            = outerContext.ExpandIntermediateLambda(
-                                ref outerSource,
-                                ref outerKeySelector,
-                                ref outerParameter,
-                                out _);
-
-                        var innerExpanded
-                            = innerContext.ExpandIntermediateLambda(
-                                ref innerSource,
-                                ref innerKeySelector,
-                                ref innerParameter,
-                                out _);
-
-                        if (outerExpanded || innerExpanded)
-                        {
-                            // TODO: GroupJoin: navigations inside result selector
-
-                            if (innerExpanded)
-                            {
-                                var oldResultInnerParameter = resultSelector.Parameters[1];
-
-                                var newResultInnerParameter
-                                    = Expression.Parameter(
-                                        typeof(IEnumerable<>).MakeGenericType(innerParameter.Type),
-                                        oldResultInnerParameter.Name);
-
-                                resultSelector
-                                     = Expression.Lambda(
-                                         resultSelector.Body.Replace(
-                                             oldResultInnerParameter,
-                                             Expression.Call(
-                                                 enumerableSelectMethodInfo.MakeGenericMethod(
-                                                     newResultInnerParameter.Type.GetSequenceType(),
-                                                     oldResultInnerParameter.Type.GetSequenceType()),
-                                                 newResultInnerParameter,
-                                                 innerContext.OuterTerminalSelector)),
-                                         resultSelector.Parameters[0],
-                                         newResultInnerParameter);
-                            }
-
-                            outerParameter = resultSelector.Parameters[0];
-
-                            outerContext.ExpandResultLambda(
-                                ref outerSource,
-                                ref resultSelector,
-                                ref outerParameter);
-
-                            var result
-                                = Expression.Call(
-                                    node.Method.GetGenericMethodDefinition().MakeGenericMethod(
-                                        outerSource.Type.GetSequenceType(),
-                                        innerSource.Type.GetSequenceType(),
-                                        outerKeySelector.ReturnType,
-                                        resultSelector.ReturnType),
-                                    new[]
-                                    {
-                                        outerSource,
-                                        innerSource,
-                                        Quote(outerKeySelector),
-                                        Quote(innerKeySelector),
-                                        Quote(resultSelector),
-                                    });
-
-                            var newParameter = Expression.Parameter(resultSelector.ReturnType);
-
-                            var outerTerminalSelector
-                                = outerExpanded
-                                    ? Quote(outerContext.OuterTerminalSelector)
-                                    : Quote(Expression.Lambda(
-                                        body: newParameter,
-                                        name: "GroupJoinPassthroughSelector",
-                                        parameters: new[] { newParameter }));
-
-                            var terminator
-                                = Expression.Call(
-                                    terminalSelectMethod.MakeGenericMethod(
-                                        resultSelector.ReturnType,
-                                        node.Type.GetSequenceType()),
-                                    result,
-                                    outerTerminalSelector);
-
-                            return new NavigationExpansionContextExpression(terminator, outerContext);
-                        }
-                        else
-                        {
-                            return node.Update(null, new[]
-                            {
-                                outerSource,
-                                innerSource,
-                                outerKeySelector,
-                                innerKeySelector,
-                                resultSelector,
-                            }.Concat(node.Arguments.Skip(5)));
-                        }
+                        return HandleGroupJoin(node);
                     }
 
                     case nameof(Queryable.Join):
                     {
-                        var outerSource = Visit(node.Arguments[0]);
-                        var innerSource = Visit(node.Arguments[1]);
-                        var outerKeySelector = Visit(node.Arguments[2]).UnwrapLambda();
-                        var innerKeySelector = Visit(node.Arguments[3]).UnwrapLambda();
-                        var resultSelector = Visit(node.Arguments[4]).UnwrapLambda();
-                        var outerParameter = outerKeySelector.Parameters.Single();
-                        var innerParameter = innerKeySelector.Parameters.Single();
-                        var outerContext = default(NavigationExpansionContext);
-                        var innerContext = default(NavigationExpansionContext);
-
-                        if (outerSource is NavigationExpansionContextExpression outerNece)
-                        {
-                            outerSource = outerNece.Source;
-                            outerContext = outerNece.Context;
-                        }
-                        else
-                        {
-                            outerContext = new NavigationExpansionContext(outerParameter, navigationDescriptors);
-                        }
-
-                        if (innerSource is NavigationExpansionContextExpression innerNece)
-                        {
-                            innerSource = innerNece.Source;
-                            innerContext = innerNece.Context;
-                        }
-                        else
-                        {
-                            innerContext = new NavigationExpansionContext(innerParameter, navigationDescriptors);
-                        }
-
-                        var outerExpanded
-                            = outerContext.ExpandIntermediateLambda(
-                                ref outerSource,
-                                ref outerKeySelector,
-                                ref outerParameter,
-                                out _);
-
-                        var innerExpanded
-                            = innerContext.ExpandIntermediateLambda(
-                                ref innerSource,
-                                ref innerKeySelector,
-                                ref innerParameter,
-                                out _);
-
-                        if (outerExpanded || innerExpanded)
-                        {
-                            // TODO: Join: navigations inside result selector
-
-                            var resultContext
-                                = NavigationExpansionContext.Merge(
-                                    outerContext,
-                                    outerParameter,
-                                    innerContext,
-                                    innerParameter,
-                                    ref resultSelector);
-
-                            var result
-                                = Expression.Call(
-                                    node.Method.GetGenericMethodDefinition().MakeGenericMethod(
-                                        outerSource.Type.GetSequenceType(),
-                                        innerSource.Type.GetSequenceType(),
-                                        outerKeySelector.ReturnType,
-                                        resultSelector.ReturnType),
-                                    new[]
-                                    {
-                                        outerSource,
-                                        innerSource,
-                                        Quote(outerKeySelector),
-                                        Quote(innerKeySelector),
-                                        Quote(resultSelector),
-                                    });
-
-                            var terminator
-                                = Expression.Call(
-                                    terminalSelectMethod.MakeGenericMethod(
-                                        resultSelector.ReturnType,
-                                        node.Type.GetSequenceType()),
-                                    result,
-                                    Quote(resultContext.OuterTerminalSelector));
-
-                            return new NavigationExpansionContextExpression(terminator, resultContext);
-                        }
-                        else
-                        {
-                            return node.Update(null, new[]
-                            {
-                                outerSource,
-                                innerSource,
-                                outerKeySelector,
-                                innerKeySelector,
-                                resultSelector,
-                            }.Concat(node.Arguments.Skip(5)));
-                        }
+                        return HandleJoin(node);
                     }
 
-                    case nameof(Queryable.Select):
+                    case nameof(Queryable.Zip):
                     {
-                        var source = Visit(node.Arguments[0]);
-                        var selector = Visit(node.Arguments[1]).UnwrapLambda();
-                        var parameter = selector.Parameters[0];
-                        var context = default(NavigationExpansionContext);
-
-                        if (source is NavigationExpansionContextExpression nece)
-                        {
-                            source = nece.Source;
-                            context = nece.Context;
-                        }
-                        else
-                        {
-                            context = new NavigationExpansionContext(parameter, navigationDescriptors);
-                        }
-
-                        if (context.ExpandResultLambda(ref source, ref selector, ref parameter))
-                        {
-                            var result
-                                = Expression.Call(
-                                    node.Method.GetGenericMethodDefinition().MakeGenericMethod(
-                                        parameter.Type,
-                                        selector.ReturnType),
-                                    source,
-                                    Quote(selector));
-
-                            var terminator
-                                = Expression.Call(
-                                    terminalSelectMethod.MakeGenericMethod(
-                                        selector.ReturnType,
-                                        node.Type.GetSequenceType()),
-                                    result,
-                                    Quote(context.OuterTerminalSelector));
-
-                            return new NavigationExpansionContextExpression(terminator, context);
-                        }
-                        else
-                        {
-                            return node.Update(null, new[] { source, selector }.Concat(node.Arguments.Skip(2)));
-                        }
-                    }
-
-                    case nameof(Queryable.SelectMany)
-                    when node.Arguments.Count == 2:
-                    {
-                        var source = Visit(node.Arguments[0]);
-                        var selector = Visit(node.Arguments[1]).UnwrapLambda();
-                        var parameter = selector.Parameters[0];
-                        var context = default(NavigationExpansionContext);
-
-                        if (source is NavigationExpansionContextExpression nece)
-                        {
-                            source = nece.Source;
-                            context = nece.Context;
-                        }
-                        else
-                        {
-                            context = new NavigationExpansionContext(parameter, navigationDescriptors);
-                        }
-
-                        if (context.ExpandIntermediateLambda(ref source, ref selector, ref parameter, out _))
-                        {
-                            return Expression.Call(
-                                node.Method.GetGenericMethodDefinition().MakeGenericMethod(
-                                    parameter.Type,
-                                    node.Method.GetGenericArguments()[1]),
-                                source,
-                                Quote(selector));
-                        }
-                        else
-                        {
-                            return node.Update(null, new[] { source, selector }.Concat(node.Arguments.Skip(2)));
-                        }
-                    }
-
-                    case nameof(Queryable.SelectMany)
-                    when node.Arguments.Count == 3:
-                    {
-                        var source = Visit(node.Arguments[0]);
-                        var collectionSelector = Visit(node.Arguments[1]).UnwrapLambda();
-                        var resultSelector = Visit(node.Arguments[2]).UnwrapLambda();
-                        var parameter1 = collectionSelector.Parameters[0];
-                        var parameter2 = resultSelector.Parameters[0];
-                        var context = default(NavigationExpansionContext);
-
-                        if (source is NavigationExpansionContextExpression nece)
-                        {
-                            source = nece.Source;
-                            context = nece.Context;
-                        }
-                        else
-                        {
-                            context = new NavigationExpansionContext(parameter1, navigationDescriptors);
-                        }
-
-                        if (context.ExpandIntermediateLambda(ref source, ref collectionSelector, ref parameter1, out _)
-                            && context.ExpandResultLambda(ref source, ref resultSelector, ref parameter2))
-                        {
-                            // TODO: The collectionSelector needs to be wrapped
-                            // with a call to AsEnumerable in case it is returning IQueryable.
-
-                            var result
-                                = Expression.Call(
-                                    node.Method.GetGenericMethodDefinition().MakeGenericMethod(
-                                        parameter1.Type,
-                                        node.Method.GetGenericArguments()[1],
-                                        resultSelector.ReturnType),
-                                    source,
-                                    Quote(collectionSelector),
-                                    Quote(resultSelector));
-
-                            var terminator
-                                = Expression.Call(
-                                    terminalSelectMethod.MakeGenericMethod(
-                                        resultSelector.ReturnType,
-                                        node.Type.GetSequenceType()),
-                                    result,
-                                    Quote(context.OuterTerminalSelector));
-
-                            return new NavigationExpansionContextExpression(terminator, context);
-                        }
-                        else
-                        {
-                            return node.Update(null, new[] { source, collectionSelector, resultSelector }.Concat(node.Arguments.Skip(3)));
-                        }
+                        return HandleZip(node);
                     }
 
                     // Intermediate selector lambdas
@@ -948,45 +129,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     case nameof(Queryable.ThenBy):
                     case nameof(Queryable.ThenByDescending):
                     {
-                        var source = Visit(node.Arguments[0]);
-                        var selector = Visit(node.Arguments[1]).UnwrapLambda();
-                        var parameter = selector.Parameters[0];
-                        var context = default(NavigationExpansionContext);
-
-                        if (source is NavigationExpansionContextExpression nece)
-                        {
-                            source = nece.Source;
-                            context = nece.Context;
-                        }
-                        else
-                        {
-                            context = new NavigationExpansionContext(parameter, navigationDescriptors);
-                        }
-
-                        if (context.ExpandIntermediateLambda(ref source, ref selector, ref parameter, out _))
-                        {
-                            var result
-                                = Expression.Call(
-                                    node.Method.GetGenericMethodDefinition().MakeGenericMethod(
-                                        parameter.Type,
-                                        node.Method.GetGenericArguments()[1]),
-                                    source,
-                                    Quote(selector));
-
-                            var terminator
-                                = Expression.Call(
-                                    terminalSelectMethod.MakeGenericMethod(
-                                        parameter.Type,
-                                        node.Type.GetSequenceType()),
-                                    result,
-                                    Quote(context.OuterTerminalSelector));
-
-                            return new NavigationExpansionContextExpression(terminator, context);
-                        }
-                        else
-                        {
-                            return node.Update(null, new[] { source, selector }.Concat(node.Arguments.Skip(2)));
-                        }
+                        return HandleIntermediateSelectorMethod(node);
                     }
 
                     // Terminal selector lambdas
@@ -995,36 +138,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     case nameof(Queryable.Min) when node.Arguments.Count == 2:
                     case nameof(Queryable.Sum) when node.Arguments.Count == 2:
                     {
-                        var source = Visit(node.Arguments[0]);
-                        var selector = Visit(node.Arguments[1]).UnwrapLambda();
-                        var parameter = selector.Parameters[0];
-                        var context = default(NavigationExpansionContext);
-
-                        if (source is NavigationExpansionContextExpression nece)
-                        {
-                            source = nece.Source;
-                            context = nece.Context;
-                        }
-                        else
-                        {
-                            context = new NavigationExpansionContext(parameter, navigationDescriptors);
-                        }
-
-                        if (context.ExpandIntermediateLambda(ref source, ref selector, ref parameter, out _))
-                        {
-                            return Expression.Call(
-                                node.Method.GetGenericMethodDefinition().MakeGenericMethod(
-                                    node.Method.GetGenericArguments()
-                                        .Skip(1)
-                                        .Prepend(parameter.Type)
-                                        .ToArray()),
-                                source,
-                                Quote(selector));
-                        }
-                        else
-                        {
-                            return node.Update(null, new[] { source, selector }.Concat(node.Arguments.Skip(2)));
-                        }
+                        return HandleTerminalSelectorMethod(node);
                     }
 
                     // Type-independent terminal predicate lambdas
@@ -1033,33 +147,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     case nameof(Queryable.Count) when node.Arguments.Count == 2:
                     case nameof(Queryable.LongCount) when node.Arguments.Count == 2:
                     {
-                        var source = Visit(node.Arguments[0]);
-                        var predicate = Visit(node.Arguments[1]).UnwrapLambda();
-                        var parameter = predicate.Parameters[0];
-                        var context = default(NavigationExpansionContext);
-
-                        if (source is NavigationExpansionContextExpression nece)
-                        {
-                            source = nece.Source;
-                            context = nece.Context;
-                        }
-                        else
-                        {
-                            context = new NavigationExpansionContext(parameter, navigationDescriptors);
-                        }
-
-                        if (context.ExpandIntermediateLambda(ref source, ref predicate, ref parameter, out _))
-                        {
-                            return Expression.Call(
-                                node.Method.GetGenericMethodDefinition().MakeGenericMethod(
-                                    parameter.Type),
-                                source,
-                                Quote(predicate));
-                        }
-                        else
-                        {
-                            return node.Update(null, new[] { source, predicate }.Concat(node.Arguments.Skip(2)));
-                        }
+                        return HandleTypeIndependentTerminalPredicateMethod(node);
                     }
 
                     // Type-dependent terminal predicate lambdas
@@ -1070,43 +158,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     case nameof(Queryable.Single) when node.Arguments.Count == 2:
                     case nameof(Queryable.SingleOrDefault) when node.Arguments.Count == 2:
                     {
-                        var source = Visit(node.Arguments[0]);
-                        var predicate = Visit(node.Arguments[1]).UnwrapLambda();
-                        var parameter = predicate.Parameters[0];
-                        var context = default(NavigationExpansionContext);
-
-                        if (source is NavigationExpansionContextExpression nece)
-                        {
-                            source = nece.Source;
-                            context = nece.Context;
-                        }
-                        else
-                        {
-                            context = new NavigationExpansionContext(parameter, navigationDescriptors);
-                        }
-
-                        if (context.ExpandIntermediateLambda(ref source, ref predicate, ref parameter, out _))
-                        {
-                            return Expression.Call(
-                                node.Method.DeclaringType
-                                    .GetTypeInfo()
-                                    .GetDeclaredMethods(node.Method.Name)
-                                    .Single(m => m.GetParameters().Length == 1)
-                                    .MakeGenericMethod(node.Method.GetGenericArguments()[0]),
-                                Expression.Call(
-                                    terminalSelectMethod.MakeGenericMethod(
-                                        parameter.Type,
-                                        node.Method.GetGenericArguments()[0]),
-                                    Expression.Call(
-                                        terminalWhereMethod.MakeGenericMethod(parameter.Type),
-                                        source,
-                                        Quote(predicate)),
-                                    Quote(context.OuterTerminalSelector)));
-                        }
-                        else
-                        {
-                            return node.Update(null, new[] { source, predicate }.Concat(node.Arguments.Skip(2)));
-                        }
+                        return HandleTypeDependentTerminalPredicateMethod(node);
                     }
 
                     // Non-terminal predicate lambdas
@@ -1114,48 +166,1148 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     case nameof(Queryable.TakeWhile):
                     case nameof(Queryable.Where):
                     {
-                        var source = Visit(node.Arguments[0]);
-                        var predicate = Visit(node.Arguments[1]).UnwrapLambda();
-                        var parameter = predicate.Parameters[0];
-                        var context = default(NavigationExpansionContext);
-
-                        if (source is NavigationExpansionContextExpression nece)
-                        {
-                            source = nece.Source;
-                            context = nece.Context;
-                        }
-                        else
-                        {
-                            context = new NavigationExpansionContext(parameter, navigationDescriptors);
-                        }
-
-                        if (context.ExpandIntermediateLambda(ref source, ref predicate, ref parameter, out _))
-                        {
-                            var result
-                                = Expression.Call(
-                                    node.Method.GetGenericMethodDefinition().MakeGenericMethod(
-                                        parameter.Type),
-                                    source,
-                                    Quote(predicate));
-
-                            var terminator
-                                = Expression.Call(
-                                    terminalSelectMethod.MakeGenericMethod(
-                                        parameter.Type,
-                                        node.Method.GetGenericArguments()[0]),
-                                    result,
-                                    Quote(context.OuterTerminalSelector));
-
-                            return new NavigationExpansionContextExpression(terminator, context);
-                        }
-                        else
-                        {
-                            return node.Update(null, new[] { source, predicate }.Concat(node.Arguments.Skip(2)));
-                        }
+                        return HandleNonTerminalPredicateMethod(node);
                     }
                 }
 
                 return base.VisitMethodCall(node);
+            }
+
+            private MethodCallExpression CreateTerminalCall(
+                MethodCallExpression originalNode,
+                Expression result,
+                NavigationExpansionContext context)
+            {
+                var queryable = originalNode.Method.IsQueryableMethod();
+
+                var terminalSelectMethod = queryable ? queryableSelectMethodInfo : enumerableSelectMethodInfo;
+
+                var terminalSelectorArgument = (Expression)context.OuterTerminalSelector;
+
+                if (queryable)
+                {
+                    terminalSelectorArgument = Expression.Quote(terminalSelectorArgument);
+                }
+
+                return Expression.Call(
+                    terminalSelectMethod.MakeGenericMethod(
+                        result.Type.GetSequenceType(),
+                        originalNode.Type.GetSequenceType()),
+                    result,
+                    terminalSelectorArgument);
+            }
+
+            private MethodCallExpression CreateCall(
+                MethodInfo method,
+                IEnumerable<Expression> arguments)
+            {
+                if (method.IsQueryableMethod())
+                {
+                    arguments = arguments.Select(a => a is LambdaExpression ? Expression.Quote(a) : a);
+                }
+
+                return Expression.Call(method, arguments);
+            }
+
+            private Expression HandlePassthroughMethod(MethodCallExpression node)
+            {
+                var source = Visit(node.Arguments[0]);
+
+                if (source is NavigationExpansionContextExpression nece)
+                {
+                    var result
+                        = CreateCall(
+                            node.Method.GetGenericMethodDefinition().MakeGenericMethod(
+                                nece.Source.Type.GetSequenceType()),
+                            node.Arguments.Skip(1).Prepend(nece.Source));
+
+                    return new NavigationExpansionContextExpression(
+                        CreateTerminalCall(node, result, nece.Context),
+                        nece.Context);
+                }
+                else
+                {
+                    return node.Update(null, node.Arguments.Skip(1).Prepend(source));
+                }
+            }
+
+            private Expression HandleIntermediateSelectorMethod(MethodCallExpression node)
+            {
+                var source = Visit(node.Arguments[0]);
+                var selector = Visit(node.Arguments[1]).UnwrapLambda();
+                var parameter = selector.Parameters[0];
+                var context = default(NavigationExpansionContext);
+
+                if (source is NavigationExpansionContextExpression nece)
+                {
+                    source = nece.Source;
+                    context = nece.Context;
+                }
+                else
+                {
+                    context = new NavigationExpansionContext(parameter, navigationDescriptors);
+                }
+
+                if (context.ExpandIntermediateLambda(ref source, ref selector, ref parameter, out _))
+                {
+                    var result
+                        = CreateCall(
+                            node.Method.GetGenericMethodDefinition().MakeGenericMethod(
+                                parameter.Type,
+                                node.Method.GetGenericArguments()[1]),
+                            new[] { source, selector });
+
+                    return new NavigationExpansionContextExpression(
+                        CreateTerminalCall(node, result, context),
+                        context);
+                }
+                else
+                {
+                    return node.Update(null, new[] { source, selector }.Concat(node.Arguments.Skip(2)));
+                }
+            }
+
+            private Expression HandleTerminalSelectorMethod(MethodCallExpression node)
+            {
+                var source = Visit(node.Arguments[0]);
+                var selector = Visit(node.Arguments[1]).UnwrapLambda();
+                var parameter = selector.Parameters[0];
+                var context = default(NavigationExpansionContext);
+
+                if (source is NavigationExpansionContextExpression nece)
+                {
+                    source = nece.Source;
+                    context = nece.Context;
+                }
+                else
+                {
+                    context = new NavigationExpansionContext(parameter, navigationDescriptors);
+                }
+
+                if (context.ExpandIntermediateLambda(ref source, ref selector, ref parameter, out _))
+                {
+                    return CreateCall(
+                        node.Method.GetGenericMethodDefinition().MakeGenericMethod(
+                            node.Method.GetGenericArguments()
+                                .Skip(1)
+                                .Prepend(parameter.Type)
+                                .ToArray()),
+                        new[] { source, selector });
+                }
+                else
+                {
+                    return node.Update(null, new[] { source, selector }.Concat(node.Arguments.Skip(2)));
+                }
+            }
+
+            private Expression HandleTypeIndependentTerminalPredicateMethod(MethodCallExpression node)
+            {
+                var source = Visit(node.Arguments[0]);
+                var predicate = Visit(node.Arguments[1]).UnwrapLambda();
+                var parameter = predicate.Parameters[0];
+                var context = default(NavigationExpansionContext);
+
+                if (source is NavigationExpansionContextExpression nece)
+                {
+                    source = nece.Source;
+                    context = nece.Context;
+                }
+                else
+                {
+                    context = new NavigationExpansionContext(parameter, navigationDescriptors);
+                }
+
+                if (context.ExpandIntermediateLambda(ref source, ref predicate, ref parameter, out _))
+                {
+                    return CreateCall(
+                        node.Method.GetGenericMethodDefinition().MakeGenericMethod(
+                            parameter.Type),
+                        new[] { source, predicate });
+                }
+                else
+                {
+                    return node.Update(null, new[] { source, predicate }.Concat(node.Arguments.Skip(2)));
+                }
+            }
+
+            private Expression HandleTypeDependentTerminalPredicateMethod(MethodCallExpression node)
+            {
+                var source = Visit(node.Arguments[0]);
+                var predicate = Visit(node.Arguments[1]).UnwrapLambda();
+                var parameter = predicate.Parameters[0];
+                var context = default(NavigationExpansionContext);
+
+                if (source is NavigationExpansionContextExpression nece)
+                {
+                    source = nece.Source;
+                    context = nece.Context;
+                }
+                else
+                {
+                    context = new NavigationExpansionContext(parameter, navigationDescriptors);
+                }
+
+                if (context.ExpandIntermediateLambda(ref source, ref predicate, ref parameter, out _))
+                {
+                    var terminalSelectMethod = enumerableSelectMethodInfo;
+                    var terminalWhereMethod = enumerableWhereMethodInfo;
+                    var predicateArgument = (Expression)predicate;
+                    var terminalSelectorArgument = (Expression)context.OuterTerminalSelector;
+
+                    if (node.Method.IsQueryableMethod())
+                    {
+                        terminalSelectMethod = queryableSelectMethodInfo;
+                        terminalWhereMethod = queryableWhereMethodInfo;
+                        predicateArgument = Expression.Quote(predicateArgument);
+                        terminalSelectorArgument = Expression.Quote(terminalSelectorArgument);
+                    }
+
+                    return Expression.Call(
+                        node.Method.DeclaringType
+                            .GetTypeInfo()
+                            .GetDeclaredMethods(node.Method.Name)
+                            .Single(m => m.GetParameters().Length == 1)
+                            .MakeGenericMethod(node.Method.GetGenericArguments()[0]),
+                        Expression.Call(
+                            terminalSelectMethod.MakeGenericMethod(
+                                parameter.Type,
+                                node.Method.GetGenericArguments()[0]),
+                            Expression.Call(
+                                terminalWhereMethod.MakeGenericMethod(parameter.Type),
+                                source,
+                                predicateArgument),
+                            terminalSelectorArgument));
+                }
+                else
+                {
+                    return node.Update(null, new[] { source, predicate }.Concat(node.Arguments.Skip(2)));
+                }
+            }
+
+            private Expression HandleNonTerminalPredicateMethod(MethodCallExpression node)
+            {
+                var source = Visit(node.Arguments[0]);
+                var predicate = Visit(node.Arguments[1]).UnwrapLambda();
+                var parameter = predicate.Parameters[0];
+                var context = default(NavigationExpansionContext);
+
+                if (source is NavigationExpansionContextExpression nece)
+                {
+                    source = nece.Source;
+                    context = nece.Context;
+                }
+                else
+                {
+                    context = new NavigationExpansionContext(parameter, navigationDescriptors);
+                }
+
+                if (context.ExpandIntermediateLambda(ref source, ref predicate, ref parameter, out _))
+                {
+                    var result
+                        = CreateCall(
+                            node.Method.GetGenericMethodDefinition().MakeGenericMethod(
+                                parameter.Type),
+                            new[] { source, predicate });
+
+                    return new NavigationExpansionContextExpression(
+                        CreateTerminalCall(node, result, context),
+                        context);
+                }
+                else
+                {
+                    return node.Update(null, new[] { source, predicate }.Concat(node.Arguments.Skip(2)));
+                }
+            }
+
+            private Expression HandleSelect(MethodCallExpression node)
+            {
+                var source = Visit(node.Arguments[0]);
+                var selector = Visit(node.Arguments[1]).UnwrapLambda();
+                var parameter = selector.Parameters[0];
+                var context = default(NavigationExpansionContext);
+
+                if (source is NavigationExpansionContextExpression nece)
+                {
+                    source = nece.Source;
+                    context = nece.Context;
+                }
+                else
+                {
+                    context = new NavigationExpansionContext(parameter, navigationDescriptors);
+                }
+
+                if (context.ExpandResultLambda(ref source, ref selector, ref parameter))
+                {
+                    var result
+                        = CreateCall(
+                            node.Method.GetGenericMethodDefinition().MakeGenericMethod(
+                                parameter.Type,
+                                selector.ReturnType),
+                            new[] { source, selector });
+
+                    return new NavigationExpansionContextExpression(
+                        CreateTerminalCall(node, result, context),
+                        context);
+                }
+                else
+                {
+                    return node.Update(null, new[] { source, selector }.Concat(node.Arguments.Skip(2)));
+                }
+            }
+
+            private Expression HandleSelectMany(MethodCallExpression node)
+            {
+                if (node.Arguments.Count == 2)
+                {
+                    return HandleSelectManyWithoutResultSelector(node);
+                }
+                else
+                {
+                    return HandleSelectManyWithResultSelector(node);
+                }
+            }
+
+            private Expression HandleSelectManyWithoutResultSelector(MethodCallExpression node)
+            {
+                var source = Visit(node.Arguments[0]);
+                var selector = Visit(node.Arguments[1]).UnwrapLambda();
+                var parameter = selector.Parameters[0];
+                var context = default(NavigationExpansionContext);
+
+                if (source is NavigationExpansionContextExpression nece)
+                {
+                    source = nece.Source;
+                    context = nece.Context;
+                }
+                else
+                {
+                    context = new NavigationExpansionContext(parameter, navigationDescriptors);
+                }
+
+                if (context.ExpandIntermediateLambda(ref source, ref selector, ref parameter, out _))
+                {
+                    return CreateCall(
+                        node.Method.GetGenericMethodDefinition().MakeGenericMethod(
+                            parameter.Type,
+                            node.Method.GetGenericArguments()[1]),
+                        new[] { source, selector });
+                }
+                else
+                {
+                    return node.Update(null, new[] { source, selector }.Concat(node.Arguments.Skip(2)));
+                }
+            }
+
+            private Expression HandleSelectManyWithResultSelector(MethodCallExpression node)
+            {
+                var source = Visit(node.Arguments[0]);
+                var collectionSelector = Visit(node.Arguments[1]).UnwrapLambda();
+                var resultSelector = Visit(node.Arguments[2]).UnwrapLambda();
+                var parameter1 = collectionSelector.Parameters[0];
+                var parameter2 = resultSelector.Parameters[0];
+                var context = default(NavigationExpansionContext);
+
+                if (source is NavigationExpansionContextExpression nece)
+                {
+                    source = nece.Source;
+                    context = nece.Context;
+                }
+                else
+                {
+                    context = new NavigationExpansionContext(parameter1, navigationDescriptors);
+                }
+
+                if (context.ExpandIntermediateLambda(ref source, ref collectionSelector, ref parameter1, out _)
+                    && context.ExpandResultLambda(ref source, ref resultSelector, ref parameter2))
+                {
+                    // TODO: The collectionSelector needs to be wrapped
+                    // with a call to AsEnumerable in case it is returning IQueryable.
+
+                    var result
+                        = CreateCall(
+                            node.Method.GetGenericMethodDefinition().MakeGenericMethod(
+                                parameter1.Type,
+                                node.Method.GetGenericArguments()[1],
+                                resultSelector.ReturnType),
+                            new[] { source, collectionSelector, resultSelector });
+
+                    return new NavigationExpansionContextExpression(
+                        CreateTerminalCall(node, result, context),
+                        context);
+                }
+                else
+                {
+                    return node.Update(null, new[] { source, collectionSelector, resultSelector }.Concat(node.Arguments.Skip(3)));
+                }
+            }
+
+            private Expression HandleGroupBy(MethodCallExpression node)
+            {
+                var parameters = node.Method.GetParameters();
+                var hasElementSelector = parameters.Any(p => p.Name == "elementSelector");
+                var hasResultSelector = parameters.Any(p => p.Name == "resultSelector");
+
+                if (hasElementSelector && hasResultSelector)
+                {
+                    return HandleGroupByWithElementAndResultSelectors(node);
+                }
+                else if (hasElementSelector)
+                {
+                    return HandleGroupByWithElementSelector(node);
+                }
+                else if (hasResultSelector)
+                {
+                    return HandleGroupByWithResultSelector(node);
+                }
+                else
+                {
+                    return HandleGroupByWithoutElementAndResultSelectors(node);
+                }
+            }
+
+            private Expression HandleGroupByWithElementAndResultSelectors(MethodCallExpression node)
+            {
+                var source = Visit(node.Arguments[0]);
+                var keySelector = Visit(node.Arguments[1]).UnwrapLambda();
+                var elementSelector = Visit(node.Arguments[2]).UnwrapLambda();
+                var resultSelector = Visit(node.Arguments[3]).UnwrapLambda();
+                var keyParameter = keySelector.Parameters[0];
+                var elementParameter = elementSelector.Parameters[0];
+                var context = default(NavigationExpansionContext);
+
+                if (source is NavigationExpansionContextExpression nece)
+                {
+                    source = nece.Source;
+                    context = nece.Context;
+                }
+                else
+                {
+                    context = new NavigationExpansionContext(keyParameter, navigationDescriptors);
+                }
+
+                bool foundKeyNavigations, foundElementNavigations, expandedAny = false;
+
+                var originalKeySelector = keySelector;
+                var originalKeyParameter = keyParameter;
+                var originalElementSelector = elementSelector;
+                var originalElementParameter = elementParameter;
+
+                do
+                {
+                    keySelector = originalKeySelector;
+                    keyParameter = originalKeyParameter;
+                    elementSelector = originalElementSelector;
+                    elementParameter = originalElementParameter;
+
+                    expandedAny
+                        |= context.ExpandIntermediateLambda(
+                            ref source,
+                            ref keySelector,
+                            ref keyParameter,
+                            out foundKeyNavigations);
+
+                    expandedAny
+                        |= context.ExpandIntermediateLambda(
+                            ref source,
+                            ref elementSelector,
+                            ref elementParameter,
+                            out foundElementNavigations);
+                }
+                while (foundKeyNavigations || foundElementNavigations);
+
+                var resultKeyParameter = resultSelector.Parameters[0];
+                var resultElementsParameter = resultSelector.Parameters[1];
+
+                var intermediateResultType
+                    = typeof(NavigationTransparentIdentifier<,>).MakeGenericType(
+                        resultKeyParameter.Type,
+                        resultElementsParameter.Type);
+
+                var resultOuterField = intermediateResultType.GetRuntimeField("Outer");
+                var resultInnerField = intermediateResultType.GetRuntimeField("Inner");
+
+                var intermediateResultSelector
+                    = Expression.Lambda(
+                        Expression.New(
+                            intermediateResultType.GetTypeInfo().DeclaredConstructors.Single(),
+                            new[] { resultKeyParameter, resultElementsParameter },
+                            new[] { resultOuterField, resultInnerField }),
+                        new[] { resultKeyParameter, resultElementsParameter });
+
+                var newSource
+                    = CreateCall(
+                        node.Method
+                            .GetGenericMethodDefinition()
+                            .MakeGenericMethod(new[]
+                            {
+                                source.Type.GetSequenceType(),
+                                keySelector.ReturnType,
+                                elementSelector.ReturnType,
+                                intermediateResultType,
+                            }),
+                        new[]
+                        {
+                            source,
+                            keySelector,
+                            elementSelector,
+                            intermediateResultSelector,
+                        }.Concat(node.Arguments.Skip(4))) as Expression;
+
+                var newResultParameter = Expression.Parameter(intermediateResultType, "<>nav");
+                var newContext = new NavigationExpansionContext(newResultParameter, navigationDescriptors);
+
+                var newResultSelector
+                    = Expression.Lambda(
+                        resultSelector.Body
+                            .Replace(
+                                resultKeyParameter,
+                                Expression.MakeMemberAccess(newResultParameter, resultOuterField))
+                            .Replace(
+                                resultElementsParameter,
+                                Expression.MakeMemberAccess(newResultParameter, resultInnerField)),
+                        newResultParameter);
+
+                if (newContext.ExpandResultLambda(ref newSource, ref newResultSelector, ref newResultParameter))
+                {
+                    var terminalSelectMethod = enumerableSelectMethodInfo;
+                    var terminalSelector = (Expression)newContext.OuterTerminalSelector;
+
+                    if (node.Method.IsQueryableMethod())
+                    {
+                        terminalSelectMethod = queryableSelectMethodInfo;
+                        terminalSelector = Expression.Quote(terminalSelector);
+                    }
+
+                    var result
+                        = Expression.Call(
+                            terminalSelectMethod.MakeGenericMethod(
+                                newSource.Type.GetSequenceType(),
+                                newResultSelector.ReturnType),
+                            newSource,
+                            newResultSelector);
+
+                    var terminator
+                        = Expression.Call(
+                            terminalSelectMethod.MakeGenericMethod(
+                                newResultSelector.ReturnType,
+                                node.Type.GetSequenceType()),
+                            result,
+                            terminalSelector);
+
+                    return new NavigationExpansionContextExpression(terminator, newContext);
+                }
+                else if (expandedAny)
+                {
+                    return CreateCall(
+                        node.Method
+                            .GetGenericMethodDefinition()
+                            .MakeGenericMethod(new[]
+                            {
+                                source.Type.GetSequenceType(),
+                                keySelector.ReturnType,
+                                elementSelector.ReturnType,
+                                resultSelector.ReturnType,
+                            }),
+                        new[]
+                        {
+                            source,
+                            keySelector,
+                            elementSelector,
+                            resultSelector,
+                        }.Concat(node.Arguments.Skip(4)));
+                }
+                else
+                {
+                    return node.Update(null, new[]
+                    {
+                        source,
+                        keySelector,
+                        elementSelector,
+                        resultSelector,
+                    }.Concat(node.Arguments.Skip(4)));
+                }
+            }
+
+            private Expression HandleGroupByWithElementSelector(MethodCallExpression node)
+            {
+                var source = Visit(node.Arguments[0]);
+                var keySelector = Visit(node.Arguments[1]).UnwrapLambda();
+                var elementSelector = Visit(node.Arguments[2]).UnwrapLambda();
+                var keyParameter = keySelector.Parameters[0];
+                var elementParameter = elementSelector.Parameters[0];
+                var context = default(NavigationExpansionContext);
+
+                if (source is NavigationExpansionContextExpression nece)
+                {
+                    source = nece.Source;
+                    context = nece.Context;
+                }
+                else
+                {
+                    context = new NavigationExpansionContext(keyParameter, navigationDescriptors);
+                }
+
+                bool foundKeyNavigations, foundElementNavigations, expandedAny = false;
+
+                var originalKeySelector = keySelector;
+                var originalKeyParameter = keyParameter;
+                var originalElementSelector = elementSelector;
+                var originalElementParameter = elementParameter;
+
+                do
+                {
+                    keySelector = originalKeySelector;
+                    keyParameter = originalKeyParameter;
+                    elementSelector = originalElementSelector;
+                    elementParameter = originalElementParameter;
+
+                    expandedAny
+                        |= context.ExpandIntermediateLambda(
+                            ref source,
+                            ref keySelector,
+                            ref keyParameter,
+                            out foundKeyNavigations);
+
+                    expandedAny
+                        |= context.ExpandIntermediateLambda(
+                            ref source,
+                            ref elementSelector,
+                            ref elementParameter,
+                            out foundElementNavigations);
+                }
+                while (foundKeyNavigations || foundElementNavigations);
+
+                if (expandedAny)
+                {
+                    return Expression.Call(
+                        node.Method.GetGenericMethodDefinition().MakeGenericMethod(
+                            source.Type.GetSequenceType(),
+                            keySelector.ReturnType,
+                            elementSelector.ReturnType),
+                        new[]
+                        {
+                            source,
+                            keySelector,
+                            elementSelector,
+                        }.Concat(node.Arguments.Skip(3)));
+                }
+                else
+                {
+                    return node.Update(null, new[]
+                    {
+                        source,
+                        keySelector,
+                        elementSelector,
+                    }.Concat(node.Arguments.Skip(3)));
+                }
+            }
+
+            private Expression HandleGroupByWithResultSelector(MethodCallExpression node)
+            {
+                var source = Visit(node.Arguments[0]);
+                var keySelector = Visit(node.Arguments[1]).UnwrapLambda();
+                var resultSelector = Visit(node.Arguments[2]).UnwrapLambda();
+                var keyParameter = keySelector.Parameters[0];
+                var resultKeyParameter = resultSelector.Parameters[0];
+                var resultElementsParameter = resultSelector.Parameters[1];
+                var context = default(NavigationExpansionContext);
+
+                if (source is NavigationExpansionContextExpression nece)
+                {
+                    source = nece.Source;
+                    context = nece.Context;
+                }
+                else
+                {
+                    context = new NavigationExpansionContext(keyParameter, navigationDescriptors);
+                }
+
+                var expandedKeySelector
+                    = context.ExpandIntermediateLambda(
+                        ref source,
+                        ref keySelector,
+                        ref keyParameter,
+                        out _);
+
+                var intermediateResultType
+                    = typeof(NavigationTransparentIdentifier<,>).MakeGenericType(
+                        resultKeyParameter.Type,
+                        resultElementsParameter.Type);
+
+                var resultOuterField = intermediateResultType.GetRuntimeField("Outer");
+                var resultInnerField = intermediateResultType.GetRuntimeField("Inner");
+
+                var intermediateResultSelector
+                    = Expression.Lambda(
+                        Expression.New(
+                            intermediateResultType.GetTypeInfo().DeclaredConstructors.Single(),
+                            new[] { resultKeyParameter, resultElementsParameter },
+                            new[] { resultOuterField, resultInnerField }),
+                        new[] { resultKeyParameter, resultElementsParameter });
+
+                var newGenericMethodDefinition
+                    = node.Method.DeclaringType
+                        .GetTypeInfo()
+                        .GetDeclaredMethods("GroupBy")
+                        .Select(m => new { m, p = m.GetParameters() })
+                        .Where(x => x.p.Length == node.Arguments.Count + 1)
+                        .Where(x => x.p.Any(p => p.Name == "elementSelector"))
+                        .Where(x => x.p.Any(p => p.Name == "resultSelector"))
+                        .Select(x => x.m)
+                        .Single();
+
+                var newSource
+                    = CreateCall(
+                        newGenericMethodDefinition
+                            .MakeGenericMethod(new[]
+                            {
+                                    source.Type.GetSequenceType(),
+                                    keySelector.ReturnType,
+                                    node.Method.GetGenericArguments()[0],
+                                    intermediateResultType,
+                            }),
+                        new[]
+                        {
+                                source,
+                                keySelector,
+                                context.OuterTerminalSelector,
+                                intermediateResultSelector,
+                        }.Concat(node.Arguments.Skip(4))) as Expression;
+
+                var newResultParameter = Expression.Parameter(intermediateResultType, "<>nav");
+                var newContext = new NavigationExpansionContext(newResultParameter, navigationDescriptors);
+
+                var newResultSelector
+                    = Expression.Lambda(
+                        resultSelector.Body
+                            .Replace(
+                                resultKeyParameter,
+                                Expression.MakeMemberAccess(newResultParameter, resultOuterField))
+                            .Replace(
+                                resultElementsParameter,
+                                Expression.MakeMemberAccess(newResultParameter, resultInnerField)),
+                        newResultParameter);
+
+                if (newContext.ExpandResultLambda(ref newSource, ref newResultSelector, ref newResultParameter))
+                {
+                    var terminalSelectMethod = enumerableSelectMethodInfo;
+                    var terminalSelector = (Expression)newContext.OuterTerminalSelector;
+
+                    if (node.Method.IsQueryableMethod())
+                    {
+                        terminalSelectMethod = queryableSelectMethodInfo;
+                        terminalSelector = Expression.Quote(terminalSelector);
+                    }
+
+                    var result
+                        = Expression.Call(
+                            terminalSelectMethod.MakeGenericMethod(
+                                newSource.Type.GetSequenceType(),
+                                newResultSelector.ReturnType),
+                            newSource,
+                            newResultSelector);
+
+                    var terminator
+                        = Expression.Call(
+                            terminalSelectMethod.MakeGenericMethod(
+                                newResultSelector.ReturnType,
+                                node.Type.GetSequenceType()),
+                            result,
+                            terminalSelector);
+
+                    return new NavigationExpansionContextExpression(terminator, newContext);
+                }
+                else if (expandedKeySelector)
+                {
+                    return CreateCall(
+                        newGenericMethodDefinition
+                            .MakeGenericMethod(new[]
+                            {
+                                keyParameter.Type,
+                                keySelector.ReturnType,
+                                node.Method.GetGenericArguments()[0],
+                                node.Method.GetGenericArguments()[2],
+                            }),
+                        new[]
+                        {
+                            source,
+                            keySelector,
+                            context.OuterTerminalSelector,
+                            resultSelector,
+                        }.Concat(node.Arguments.Skip(3)));
+                }
+                else
+                {
+                    return node.Update(null, new[]
+                    {
+                        source,
+                        keySelector,
+                        resultSelector,
+                    }.Concat(node.Arguments.Skip(3)));
+                }
+            }
+
+            private Expression HandleGroupByWithoutElementAndResultSelectors(MethodCallExpression node)
+            {
+                var source = Visit(node.Arguments[0]);
+                var keySelector = Visit(node.Arguments[1]).UnwrapLambda();
+                var keyParameter = keySelector.Parameters[0];
+                var context = default(NavigationExpansionContext);
+
+                if (source is NavigationExpansionContextExpression nece)
+                {
+                    source = nece.Source;
+                    context = nece.Context;
+                }
+                else
+                {
+                    context = new NavigationExpansionContext(keyParameter, navigationDescriptors);
+                }
+
+                if (context.ExpandIntermediateLambda(ref source, ref keySelector, ref keyParameter, out _))
+                {
+                    return CreateCall(
+                        node.Method.DeclaringType.GetTypeInfo()
+                            .GetDeclaredMethods("GroupBy")
+                            .Select(m => new { m, p = m.GetParameters() })
+                            .Where(x => x.p.Length == node.Arguments.Count + 1)
+                            .Where(x => x.p.Any(p => p.Name == "elementSelector"))
+                            .Select(x => x.m)
+                            .Single()
+                            .MakeGenericMethod(new[]
+                            {
+                                keyParameter.Type,
+                                keySelector.ReturnType,
+                                node.Method.GetGenericArguments()[0],
+                            }),
+                        new[]
+                        {
+                            source,
+                            keySelector,
+                            context.OuterTerminalSelector,
+                        }.Concat(node.Arguments.Skip(2)));
+                }
+                else
+                {
+                    return node.Update(null, new[]
+                    {
+                        source,
+                        keySelector,
+                    }.Concat(node.Arguments.Skip(2)));
+                }
+            }
+
+            private Expression HandleGroupJoin(MethodCallExpression node)
+            {
+                var outerSource = Visit(node.Arguments[0]);
+                var innerSource = Visit(node.Arguments[1]);
+                var outerKeySelector = Visit(node.Arguments[2]).UnwrapLambda();
+                var innerKeySelector = Visit(node.Arguments[3]).UnwrapLambda();
+                var resultSelector = Visit(node.Arguments[4]).UnwrapLambda();
+                var outerParameter = outerKeySelector.Parameters.Single();
+                var innerParameter = innerKeySelector.Parameters.Single();
+                var outerContext = default(NavigationExpansionContext);
+                var innerContext = default(NavigationExpansionContext);
+
+                if (outerSource is NavigationExpansionContextExpression outerNece)
+                {
+                    outerSource = outerNece.Source;
+                    outerContext = outerNece.Context;
+                }
+                else
+                {
+                    outerContext = new NavigationExpansionContext(outerParameter, navigationDescriptors);
+                }
+
+                if (innerSource is NavigationExpansionContextExpression innerNece)
+                {
+                    innerSource = innerNece.Source;
+                    innerContext = innerNece.Context;
+                }
+                else
+                {
+                    innerContext = new NavigationExpansionContext(innerParameter, navigationDescriptors);
+                }
+
+                var outerExpanded
+                    = outerContext.ExpandIntermediateLambda(
+                        ref outerSource,
+                        ref outerKeySelector,
+                        ref outerParameter,
+                        out _);
+
+                var innerExpanded
+                    = innerContext.ExpandIntermediateLambda(
+                        ref innerSource,
+                        ref innerKeySelector,
+                        ref innerParameter,
+                        out _);
+
+                if (outerExpanded || innerExpanded)
+                {
+                    // TODO: GroupJoin: navigations inside result selector
+
+                    if (innerExpanded)
+                    {
+                        var oldResultInnerParameter = resultSelector.Parameters[1];
+
+                        var newResultInnerParameter
+                            = Expression.Parameter(
+                                typeof(IEnumerable<>).MakeGenericType(innerParameter.Type),
+                                oldResultInnerParameter.Name);
+
+                        resultSelector
+                             = Expression.Lambda(
+                                 resultSelector.Body.Replace(
+                                     oldResultInnerParameter,
+                                     Expression.Call(
+                                         enumerableSelectMethodInfo.MakeGenericMethod(
+                                             newResultInnerParameter.Type.GetSequenceType(),
+                                             oldResultInnerParameter.Type.GetSequenceType()),
+                                         newResultInnerParameter,
+                                         innerContext.OuterTerminalSelector)),
+                                 resultSelector.Parameters[0],
+                                 newResultInnerParameter);
+                    }
+
+                    outerParameter = resultSelector.Parameters[0];
+
+                    outerContext.ExpandResultLambda(
+                        ref outerSource,
+                        ref resultSelector,
+                        ref outerParameter);
+
+                    var result
+                        = CreateCall(
+                            node.Method.GetGenericMethodDefinition().MakeGenericMethod(
+                                outerSource.Type.GetSequenceType(),
+                                innerSource.Type.GetSequenceType(),
+                                outerKeySelector.ReturnType,
+                                resultSelector.ReturnType),
+                            new[]
+                            {
+                                outerSource,
+                                innerSource,
+                                outerKeySelector,
+                                innerKeySelector,
+                                resultSelector,
+                            });
+
+                    var newParameter = Expression.Parameter(resultSelector.ReturnType);
+
+                    Expression outerTerminalSelector
+                        = outerExpanded
+                            ? outerContext.OuterTerminalSelector
+                            : Expression.Lambda(
+                                body: newParameter,
+                                name: "GroupJoinPassthroughSelector",
+                                parameters: new[] { newParameter });
+
+                    var terminalSelectMethod = enumerableSelectMethodInfo;
+
+                    if (node.Method.IsQueryableMethod())
+                    {
+                        outerTerminalSelector = Expression.Quote(outerTerminalSelector);
+                        terminalSelectMethod = queryableSelectMethodInfo;
+                    }
+
+                    var terminator
+                        = Expression.Call(
+                            terminalSelectMethod.MakeGenericMethod(
+                                resultSelector.ReturnType,
+                                node.Type.GetSequenceType()),
+                            result,
+                            outerTerminalSelector);
+
+                    return new NavigationExpansionContextExpression(terminator, outerContext);
+                }
+                else
+                {
+                    return node.Update(null, new[]
+                    {
+                        outerSource,
+                        innerSource,
+                        outerKeySelector,
+                        innerKeySelector,
+                        resultSelector,
+                    }.Concat(node.Arguments.Skip(5)));
+                }
+            }
+
+            private Expression HandleJoin(MethodCallExpression node)
+            {
+                var outerSource = Visit(node.Arguments[0]);
+                var innerSource = Visit(node.Arguments[1]);
+                var outerKeySelector = Visit(node.Arguments[2]).UnwrapLambda();
+                var innerKeySelector = Visit(node.Arguments[3]).UnwrapLambda();
+                var resultSelector = Visit(node.Arguments[4]).UnwrapLambda();
+                var outerParameter = outerKeySelector.Parameters.Single();
+                var innerParameter = innerKeySelector.Parameters.Single();
+                var outerContext = default(NavigationExpansionContext);
+                var innerContext = default(NavigationExpansionContext);
+
+                if (outerSource is NavigationExpansionContextExpression outerNece)
+                {
+                    outerSource = outerNece.Source;
+                    outerContext = outerNece.Context;
+                }
+                else
+                {
+                    outerContext = new NavigationExpansionContext(outerParameter, navigationDescriptors);
+                }
+
+                if (innerSource is NavigationExpansionContextExpression innerNece)
+                {
+                    innerSource = innerNece.Source;
+                    innerContext = innerNece.Context;
+                }
+                else
+                {
+                    innerContext = new NavigationExpansionContext(innerParameter, navigationDescriptors);
+                }
+
+                var outerExpanded
+                    = outerContext.ExpandIntermediateLambda(
+                        ref outerSource,
+                        ref outerKeySelector,
+                        ref outerParameter,
+                        out _);
+
+                var innerExpanded
+                    = innerContext.ExpandIntermediateLambda(
+                        ref innerSource,
+                        ref innerKeySelector,
+                        ref innerParameter,
+                        out _);
+
+                if (outerExpanded || innerExpanded)
+                {
+                    // TODO: Join: navigations inside result selector
+
+                    var resultContext
+                        = NavigationExpansionContext.Merge(
+                            outerContext,
+                            outerParameter,
+                            innerContext,
+                            innerParameter,
+                            ref resultSelector);
+
+                    var result
+                        = CreateCall(
+                            node.Method.GetGenericMethodDefinition().MakeGenericMethod(
+                                outerSource.Type.GetSequenceType(),
+                                innerSource.Type.GetSequenceType(),
+                                outerKeySelector.ReturnType,
+                                resultSelector.ReturnType),
+                            new[]
+                            {
+                                outerSource,
+                                innerSource,
+                                outerKeySelector,
+                                innerKeySelector,
+                                resultSelector,
+                            });
+
+                    return new NavigationExpansionContextExpression(
+                        CreateTerminalCall(node, result, resultContext),
+                        resultContext);
+                }
+                else
+                {
+                    return node.Update(null, new[]
+                    {
+                        outerSource,
+                        innerSource,
+                        outerKeySelector,
+                        innerKeySelector,
+                        resultSelector,
+                    }.Concat(node.Arguments.Skip(5)));
+                }
+            }
+
+            private Expression HandleZip(MethodCallExpression node)
+            {
+                var outerSource = Visit(node.Arguments[0]);
+                var innerSource = Visit(node.Arguments[1]);
+                var resultSelector = Visit(node.Arguments[2]).UnwrapLambda();
+                var outerParameter = resultSelector.Parameters[0];
+                var innerParameter = resultSelector.Parameters[1];
+                var outerContext = default(NavigationExpansionContext);
+                var innerContext = default(NavigationExpansionContext);
+
+                if (outerSource is NavigationExpansionContextExpression outerNece)
+                {
+                    outerSource = outerNece.Source;
+                    outerContext = outerNece.Context;
+                }
+                else
+                {
+                    outerContext = new NavigationExpansionContext(outerParameter, navigationDescriptors);
+                }
+
+                if (innerSource is NavigationExpansionContextExpression innerNece)
+                {
+                    innerSource = innerNece.Source;
+                    innerContext = innerNece.Context;
+                }
+                else
+                {
+                    innerContext = new NavigationExpansionContext(innerParameter, navigationDescriptors);
+                }
+
+                var outerExpanded
+                    = outerContext.ExpandIntermediateLambda(
+                        ref outerSource,
+                        ref resultSelector,
+                        ref outerParameter,
+                        out _);
+
+                var innerExpanded
+                    = innerContext.ExpandIntermediateLambda(
+                        ref innerSource,
+                        ref resultSelector,
+                        ref innerParameter,
+                        out _);
+
+                if (outerExpanded || innerExpanded)
+                {
+                    // TODO: Zip: navigations inside result selector
+
+                    var resultContext
+                        = NavigationExpansionContext.Merge(
+                            outerContext,
+                            outerParameter,
+                            innerContext,
+                            innerParameter,
+                            ref resultSelector,
+                            applyExpansions: false);
+
+                    var result
+                        = CreateCall(
+                            node.Method.GetGenericMethodDefinition().MakeGenericMethod(
+                                outerSource.Type.GetSequenceType(),
+                                innerSource.Type.GetSequenceType(),
+                                resultSelector.ReturnType),
+                            new[]
+                            {
+                                outerSource,
+                                innerSource,
+                                resultSelector,
+                            });
+
+                    return new NavigationExpansionContextExpression(
+                        CreateTerminalCall(node, result, resultContext),
+                        resultContext);
+                }
+                else
+                {
+                    return node.Update(null, new[]
+                    {
+                        outerSource,
+                        innerSource,
+                        resultSelector,
+                    }.Concat(node.Arguments.Skip(3)));
+                }
             }
         }
 
@@ -1442,7 +1594,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     var outerKeyPath
                         = targetMapping.NewPath.Concat(
                             navigation.Path.Except(targetMapping.OldPath).SkipLast(1));
-                    
+
                     var outerKeySelector
                         = Expression.Lambda(
                             navigation.Descriptor.OuterKeySelector.Body.Replace(
@@ -1845,9 +1997,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             private readonly ParameterExpression oldParameter;
             private readonly ParameterExpression newParameter;
             private readonly IEnumerable<ExpansionMapping> mappings;
-
-            private static readonly MethodInfo enumerableCountMethodInfo
-                = GetGenericMethodDefinition<IEnumerable<object>, int>(o => o.Count());
 
             public NavigationExpandingExpressionVisitor(
                 ParameterExpression oldParameter,
