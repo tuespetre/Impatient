@@ -103,19 +103,6 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
             switch (node.NodeType)
             {
-                case ExpressionType.TypeAs
-                when operand is PolymorphicExpression polymorphicExpression:
-                {
-                    if (polymorphicExpression.Type.IsAssignableFrom(node.Type))
-                    {
-                        return polymorphicExpression.Filter(node.Type);
-                    }
-                    else
-                    {
-                        return polymorphicExpression.Upcast(node.Type);
-                    }
-                }
-
                 case ExpressionType.Convert
                 when operand is UnaryExpression unaryExpression
                     && unaryExpression.NodeType == ExpressionType.Convert
@@ -124,6 +111,24 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                     && node.Type != typeof(Enum):
                 {
                     return unaryExpression.Operand;
+                }
+
+                case ExpressionType.TypeAs:
+                case ExpressionType.Convert:
+                {
+                    if (operand is PolymorphicExpression polymorphicExpression)
+                    {
+                        if (polymorphicExpression.Type.IsAssignableFrom(node.Type))
+                        {
+                            return polymorphicExpression.Filter(node.Type);
+                        }
+                        else
+                        {
+                            return polymorphicExpression.Upcast(node.Type);
+                        }
+                    }
+
+                    goto default;
                 }
 
                 default:

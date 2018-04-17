@@ -10,7 +10,9 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
         {
             var visited = Visit(node.Operand);
 
-            if (node.NodeType == ExpressionType.Convert || node.NodeType == ExpressionType.ConvertChecked)
+            if (node.NodeType == ExpressionType.Convert 
+                || node.NodeType == ExpressionType.ConvertChecked
+                || node.NodeType == ExpressionType.TypeAs)
             {
                 if (visited.Type == node.Type)
                 {

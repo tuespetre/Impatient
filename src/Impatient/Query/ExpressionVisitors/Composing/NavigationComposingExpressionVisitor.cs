@@ -1394,6 +1394,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
         {
             public List<MemberInfo> OldPath;
             public List<MemberInfo> NewPath;
+            public bool Nullable;
         }
 
         private struct FoundNavigation
@@ -1662,7 +1663,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                 innerKeySelector,
                                 resultSelector);
                     }
-                    else if (navigation.Descriptor.IsNullable)
+                    else if (navigation.Descriptor.IsNullable || targetMapping.Nullable)
                     {
                         var innerEnumerableType = innerType.MakeEnumerableType();
 
@@ -1785,6 +1786,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     {
                         OldPath = navigation.Path.ToList(),
                         NewPath = new List<MemberInfo> { innerField },
+                        Nullable = navigation.Descriptor.IsNullable || targetMapping.Nullable,
                     });
 
                     terminalPath.Push(outerField);

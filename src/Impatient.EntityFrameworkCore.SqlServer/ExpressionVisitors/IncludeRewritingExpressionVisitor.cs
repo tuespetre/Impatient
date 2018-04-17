@@ -59,17 +59,17 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
         private class CoreProjectionIncludeRewritingExpressionVisitor : ExpressionVisitor
         {
             private Expression includedExpression;
-            private readonly Stack<INavigation> path;
+            private Stack<INavigation> path;
 
             public bool Finished { get; private set; }
 
             public CoreProjectionIncludeRewritingExpressionVisitor(
-                Expression includedExpression, 
+                Expression includedExpression,
                 IEnumerable<INavigation> path)
             {
-                this.includedExpression 
-                    = path.Last().PropertyInfo.GetMemberType().IsCollectionType() 
-                        ? includedExpression.AsCollectionType() 
+                this.includedExpression
+                    = path.Last().PropertyInfo.GetMemberType().IsCollectionType()
+                        ? includedExpression.AsCollectionType()
                         : includedExpression;
 
                 this.path = new Stack<INavigation>(path.Reverse());
@@ -139,31 +139,38 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                         if (Finished)
                         {
-                            return polymorphicExpression.Update(
-                                row,
-                                polymorphicExpression.Descriptors);
+                            return polymorphicExpression.Update(row, polymorphicExpression.Descriptors);
                         }
 
                         if (!(row is SimpleExtraPropertiesExpression extraProperties))
                         {
                             extraProperties
                                 = new SimpleExtraPropertiesExpression(
-                                    polymorphicExpression.Row, 
-                                    Array.Empty<string>(), 
+                                    polymorphicExpression.Row,
+                                    Array.Empty<string>(),
                                     Array.Empty<Expression>());
                         }
 
-                        var navigation = path.Pop();
+                        var navigation = path.Peek();
+
+                        var hasCompatibleDescriptor
+                            = polymorphicExpression.Descriptors
+                                .Any(d => d.Type.IsAssignableFrom(navigation.PropertyInfo.DeclaringType));
+
+                        if (!hasCompatibleDescriptor)
+                        {
+                            return polymorphicExpression.Update(row, polymorphicExpression.Descriptors);
+                        }
 
                         extraProperties = extraProperties.SetProperty(navigation.PropertyInfo.Name, includedExpression);
 
                         var descriptors = polymorphicExpression.Descriptors.ToArray();
 
+                        var finishedAny = false;
+
                         for (var i = 0; i < descriptors.Length; i++)
                         {
                             Finished = false;
-
-                            path.Push(navigation);
 
                             var descriptor = descriptors[i];
 
@@ -185,11 +192,18 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                                     descriptor.Type,
                                     descriptor.Test,
                                     materializer);
+
+                            finishedAny |= Finished;
                         }
 
-                        Finished = true;
+                        if (finishedAny)
+                        {
+                            Finished = true;
 
-                        return polymorphicExpression.Update(extraProperties, descriptors);
+                            return polymorphicExpression.Update(extraProperties, descriptors);
+                        }
+                        
+                        return polymorphicExpression.Update(row, polymorphicExpression.Descriptors);
                     }
 
                     default:
@@ -208,7 +222,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                 var arguments = node.Arguments.ToArray();
                 var currentMember = path.Pop();
-                var foundMember = false;
 
                 for (var i = 0; i < node.Arguments.Count; i++)
                 {
@@ -217,16 +230,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                     if (member == currentMember.PropertyInfo)
                     {
-                        foundMember = true;
                         arguments[i] = Visit(argument);
                         break;
                     }
                 }
 
-                if (!foundMember)
-                {
-                    path.Push(currentMember);
-                }
+                path.Push(currentMember);
 
                 // TODO: Finding a new constructor to use that we can insert the include into?
 
@@ -236,7 +245,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
             protected override Expression VisitMemberInit(MemberInitExpression node)
             {
                 var newExpression = VisitAndConvert(node.NewExpression, nameof(VisitMemberInit));
-                
+
                 if (Finished)
                 {
                     return node.Update(newExpression, node.Bindings);
@@ -268,18 +277,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                     }
                 }
 
-                if (!foundMember)
+                if (!foundMember && currentMember.PropertyInfo.DeclaringType.IsAssignableFrom(node.Type))
                 {
-                    if (currentMember.PropertyInfo.DeclaringType.IsAssignableFrom(node.Type))
-                    {
-                        bindings.Add(Expression.Bind(currentMember.PropertyInfo, includedExpression));
-                        Finished = true;
-                    }
-                    else
-                    {
-                        path.Push(currentMember);
-                    }
+                    bindings.Add(Expression.Bind(currentMember.PropertyInfo, includedExpression));
+                    Finished = true;
                 }
+
+                path.Push(currentMember);
 
                 return node.Update(newExpression, bindings);
             }
