@@ -1,4 +1,5 @@
 using Impatient.EntityFrameworkCore.SqlServer;
+using Impatient.Extensions;
 using Impatient.Metadata;
 using Impatient.Query;
 using Impatient.Query.Expressions;
@@ -54,8 +55,7 @@ namespace Impatient.Tests
                             from property in type.GetTypeInfo().DeclaredProperties
                             where property.PropertyType.IsScalarType()
                             let nullable =
-                                (property.PropertyType.IsConstructedGenericType
-                                    && property.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                                (property.PropertyType.IsNullableType())
                                 || (!property.PropertyType.GetTypeInfo().IsValueType
                                     && property.GetCustomAttribute<RequiredAttribute>() == null)
                             let column = new SqlColumnExpression(table, property.Name, property.PropertyType, nullable)

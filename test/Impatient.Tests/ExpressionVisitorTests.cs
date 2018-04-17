@@ -1,4 +1,5 @@
-﻿using Impatient.Query.ExpressionVisitors.Optimizing;
+﻿using Impatient.Extensions;
+using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
@@ -40,7 +41,7 @@ namespace Impatient.Tests
         [DynamicData(nameof(QueryableMethods))]
         public void ImpatientExtensions_MatchQueryableMethod(MethodInfo methodInfo)
         {
-            ImpatientExtensions.MatchQueryableMethod(methodInfo);
+            ReflectionExtensions.MatchQueryableMethod(methodInfo);
         }
 
         [TestMethod]

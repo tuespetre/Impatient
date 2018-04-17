@@ -1,23 +1,20 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Expressions;
 using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
-using Impatient.Extensions;
 using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Utility;
-using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Collections.Generic;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
+    using Impatient.Extensions;
+
     public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
     {
         private readonly IModel model;
@@ -33,7 +30,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public override Expression Visit(Expression node)
         {
-            if (node.Is<QueryOptionsExpression>(out var queryOptionsExpression))
+            if (node is QueryOptionsExpression queryOptionsExpression)
             {
                 if (queryOptionsExpression.QueryTrackingBehavior == QueryTrackingBehavior.NoTracking)
                 {
@@ -293,35 +290,19 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                             AddPath(node.Type);
                         }
 
-                        break;
+                        return base.Visit(node);
                     }
 
                     case PolymorphicExpression polymorphicExpression:
                     {
-                        var addPath = true;
+                        AddPath(node.Type);
 
                         foreach (var descriptor in polymorphicExpression.Descriptors)
                         {
-                            if (!descriptor.Materializer.Body.Is<EntityMaterializationExpression>())
-                            {
-                                addPath = false;
-                                break;
-                            }
+                            Visit(descriptor.Materializer.ExpandParameters(polymorphicExpression.Row));
                         }
 
-                        if (addPath)
-                        {
-                            AddPath(node.Type);
-
-                            foreach (var descriptor in polymorphicExpression.Descriptors)
-                            {
-                                Visit(descriptor.Materializer.ExpandParameters(polymorphicExpression.Row));
-
-                                return node;
-                            }
-                        }
-
-                        break;
+                        return node;
                     }
 
                     case EnumerableRelationalQueryExpression queryExpression:
@@ -338,7 +319,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                         AddPath(node.Type, pathFinder.FoundPaths.Values.ToList());
 
-                        break;
+                        return node;
                     }
 
                     case SqlColumnExpression sqlColumnExpression:
@@ -353,7 +334,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                             }
                         }
 
-                        break;
+                        return node;
                     }
 
                     case MethodCallExpression methodCallExpression
@@ -381,14 +362,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                             }
                         }
 
-                        break;
+                        return node;
                     }
 
                     case IncludeExpression includeExpression:
                     {
                         Visit(includeExpression.Expression);
 
-                        for (var i = 0; i<includeExpression.Paths.Count; i++)
+                        for (var i = 0; i < includeExpression.Paths.Count; i++)
                         {
                             var include = includeExpression.Includes[i];
                             var path = includeExpression.Paths[i];

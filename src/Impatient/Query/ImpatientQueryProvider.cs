@@ -1,4 +1,5 @@
-﻿using Impatient.Query;
+﻿using Impatient.Extensions;
+using Impatient.Query;
 using System;
 using System.Collections.Generic;
 using System.Linq;

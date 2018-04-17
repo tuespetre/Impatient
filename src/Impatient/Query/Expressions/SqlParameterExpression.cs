@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Impatient.Extensions;
+using System;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Impatient.Query.Expressions
 {
@@ -12,7 +14,7 @@ namespace Impatient.Query.Expressions
 
         public override Type Type => Expression.Type;
 
-        public override bool IsNullable => Expression.Type.IsNullableType();
+        public override bool IsNullable => Expression.Type.IsNullableType() || !Expression.Type.GetTypeInfo().IsValueType;
 
         public Expression Expression { get; }
     }

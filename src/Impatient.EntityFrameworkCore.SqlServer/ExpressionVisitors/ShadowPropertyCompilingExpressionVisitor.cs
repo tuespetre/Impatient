@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Impatient.Extensions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Extensions.Internal;
 using Microsoft.EntityFrameworkCore.Internal;
@@ -37,7 +38,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                 var propertyName = default(string);
 
-                if (propertyNameArgument.UnwrapConversions() is ConstantExpression constantExpression)
+                if (propertyNameArgument.UnwrapInnerExpression() is ConstantExpression constantExpression)
                 {
                     propertyName = (string)constantExpression.Value;
                 }
@@ -153,25 +154,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
             }
 
             return node.Update(@object, arguments);
-        }
-
-        private static IList<MemberInfo> UnwindMemberExpression(
-            MemberExpression memberExpression,
-            out Expression innerExpression)
-        {
-            var path = new List<MemberInfo>();
-
-            do
-            {
-                path.Insert(0, memberExpression.Member);
-
-                innerExpression = memberExpression.Expression.UnwrapInnerExpression();
-
-                memberExpression = innerExpression as MemberExpression;
-            }
-            while (memberExpression != null);
-
-            return path;
         }
     }
 }

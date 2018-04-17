@@ -1,4 +1,5 @@
-﻿using Impatient.Query.Expressions;
+﻿using Impatient.Extensions;
+using Impatient.Query.Expressions;
 using System;
 using System.Data.Common;
 using System.Linq.Expressions;
@@ -70,7 +71,7 @@ namespace Impatient.Query.Infrastructure
         {
             var unwrappedType = source.Type.UnwrapNullableType();
 
-            if (unwrappedType.GetTypeInfo().IsEnum)
+            if (unwrappedType.IsEnum())
             {
                 return Expression.Call(
                     source is SqlColumnExpression column && !column.IsNullable

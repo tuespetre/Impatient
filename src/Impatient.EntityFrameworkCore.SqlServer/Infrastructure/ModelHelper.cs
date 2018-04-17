@@ -12,13 +12,15 @@ using System.Reflection;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
+    using Impatient.Extensions;
+
     internal static class ModelHelper
     {
         private static readonly MethodInfo efPropertyMethodInfo
-            = ImpatientExtensions.GetGenericMethodDefinition<object, string>(obj => EF.Property<string>(obj, "key"));
+            = ReflectionExtensions.GetGenericMethodDefinition<object, string>(obj => EF.Property<string>(obj, "key"));
 
         private static readonly MethodInfo queryableWhere
-            = ImpatientExtensions.GetGenericMethodDefinition((IQueryable<bool> e) => e.Where(x => x));
+            = ReflectionExtensions.GetGenericMethodDefinition((IQueryable<bool> e) => e.Where(x => x));
 
         private static LambdaExpression CreateNavigationKeySelector(Type type, IReadOnlyList<IProperty> properties)
         {

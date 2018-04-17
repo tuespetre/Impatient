@@ -1,11 +1,12 @@
-﻿using Impatient.Query.Expressions;
+﻿using Impatient.Extensions;
+using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using static Impatient.ImpatientExtensions;
+using static Impatient.Extensions.ReflectionExtensions;
 
 namespace Impatient.Query.ExpressionVisitors.Rewriting
 {

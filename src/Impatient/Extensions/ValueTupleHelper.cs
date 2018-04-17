@@ -6,7 +6,7 @@ using System.Reflection;
 using static System.Linq.Enumerable;
 using static System.Math;
 
-namespace Impatient
+namespace Impatient.Extensions
 {
     internal static class ValueTupleHelper
     {

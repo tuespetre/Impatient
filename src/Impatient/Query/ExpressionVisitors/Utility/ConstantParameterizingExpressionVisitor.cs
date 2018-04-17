@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Impatient.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -22,7 +23,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
         protected override Expression VisitConstant(ConstantExpression node)
         {
             if (node.Type.UnwrapNullableType().IsConstantLiteralType() 
-                || node.Type.GetTypeInfo().IsEnum
+                || node.Type.IsEnum()
                 || node.Value is null 
                 || node.Value is IQueryable)
             {

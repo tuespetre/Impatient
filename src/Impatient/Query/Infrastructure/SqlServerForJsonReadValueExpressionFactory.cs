@@ -25,13 +25,13 @@ namespace Impatient.Query.Infrastructure
             = typeof(DbDataReader).GetTypeInfo().GetDeclaredMethod(nameof(DbDataReader.IsDBNull));
 
         private static readonly MethodInfo enumerableEmptyMethodInfo
-            = ImpatientExtensions.GetGenericMethodDefinition((object o) => Empty<object>());
+            = ReflectionExtensions.GetGenericMethodDefinition((object o) => Empty<object>());
 
         private static readonly MethodInfo enumerableToArrayMethodInfo
-            = ImpatientExtensions.GetGenericMethodDefinition((IEnumerable<object> e) => e.ToArray());
+            = ReflectionExtensions.GetGenericMethodDefinition((IEnumerable<object> e) => e.ToArray());
 
         private static readonly MethodInfo queryableAsQueryableMethodInfo
-            = ImpatientExtensions.GetGenericMethodDefinition((IEnumerable<object> e) => e.AsQueryable());
+            = ReflectionExtensions.GetGenericMethodDefinition((IEnumerable<object> e) => e.AsQueryable());
 
         private static readonly ConstructorInfo jsonTextReaderConstructorInfo
             = typeof(JsonTextReader).GetConstructor(new[] { typeof(StringReader) });
@@ -839,11 +839,11 @@ namespace Impatient.Query.Infrastructure
             {
                 return MakeCall(nameof(ReadNullableTimeSpan), reader);
             }
-            else if (type.GetTypeInfo().IsEnum)
+            else if (type.IsEnum())
             {
                 return Expression.Call(typeof(SqlServerJsonValueReader).GetMethod(nameof(ReadEnum)).MakeGenericMethod(type), reader);
             }
-            else if (type.UnwrapNullableType().GetTypeInfo().IsEnum)
+            else if (type.UnwrapNullableType().IsEnum())
             {
                 return Expression.Call(typeof(SqlServerJsonValueReader).GetMethod(nameof(ReadEnum)).MakeGenericMethod(type.UnwrapNullableType()), reader);
             }

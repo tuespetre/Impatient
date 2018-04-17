@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using Impatient.Extensions;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Optimizing

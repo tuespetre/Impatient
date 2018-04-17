@@ -1,6 +1,6 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Expressions;
+using Impatient.Extensions;
 using Impatient.Metadata;
-using Impatient.Query.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -16,16 +16,16 @@ namespace Impatient.EntityFrameworkCore.SqlServer
     public class IncludeComposingExpressionVisitor : ExpressionVisitor
     {
         private static readonly MethodInfo queryableSelectMethodInfo
-            = ImpatientExtensions.GetGenericMethodDefinition((IQueryable<object> o) => o.Select(x => x));
+            = ReflectionExtensions.GetGenericMethodDefinition((IQueryable<object> o) => o.Select(x => x));
 
         private static readonly MethodInfo enumerableSelectMethodInfo
-            = ImpatientExtensions.GetGenericMethodDefinition((IEnumerable<object> o) => o.Select(x => x));
+            = ReflectionExtensions.GetGenericMethodDefinition((IEnumerable<object> o) => o.Select(x => x));
 
         private static readonly MethodInfo queryableCastMethodInfo
-            = ImpatientExtensions.GetGenericMethodDefinition((IQueryable o) => o.Cast<object>());
+            = ReflectionExtensions.GetGenericMethodDefinition((IQueryable o) => o.Cast<object>());
 
         private static readonly MethodInfo queryableOfTypeMethodInfo
-            = ImpatientExtensions.GetGenericMethodDefinition((IQueryable o) => o.OfType<object>());
+            = ReflectionExtensions.GetGenericMethodDefinition((IQueryable o) => o.OfType<object>());
 
         private readonly IModel model;
         private readonly DescriptorSet descriptorSet;
@@ -230,7 +230,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 var includedExpression = Expression.MakeMemberAccess(baseExpression, includedProperty) as Expression;
 
-                var currentPath = previousPath.Append(navigation).ToArray();
+                var currentPath = previousPath.ToList();
+
+                currentPath.Add(navigation);
 
                 if (pathset.Any(p => p.Any()))
                 {

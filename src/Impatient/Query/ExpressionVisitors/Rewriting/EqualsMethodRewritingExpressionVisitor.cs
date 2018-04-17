@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Impatient.Extensions;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -31,13 +32,11 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
                     if (left.Type != right.Type)
                     {
-                        var leftType = left.UnwrapConversions().Type;
-                        var rightType = right.UnwrapConversions().Type;
+                        var leftType = left.UnwrapInnerExpression().Type.UnwrapNullableType();
+                        var rightType = right.UnwrapInnerExpression().Type.UnwrapNullableType();
 
                         if (!leftType.IsAssignableFrom(rightType) 
-                            && !rightType.IsAssignableFrom(leftType)
-                            && !(leftType.IsNullableType() && rightType == leftType.GetGenericArguments()[0])
-                            && !(rightType.IsNullableType() && leftType == rightType.GetGenericArguments()[0]))
+                            && !rightType.IsAssignableFrom(leftType))
                         {
                             return Expression.Constant(false);
                         }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Impatient.Extensions;
+using System;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions

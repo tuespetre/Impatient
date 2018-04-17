@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Impatient.Extensions;
 using Impatient.Metadata;
 using Impatient.Query;
 using Impatient.Query.Expressions;
@@ -217,11 +218,10 @@ namespace Impatient.Tests
                        var columns
                            = from cd in descriptor.ColumnDescriptors
                              let nullable = cd.SourceType != rootType
-                             let type = nullable ? cd.Type.MakeNullableType() : cd.Type
                              select new SqlColumnExpression(
                                  table,
                                  cd.ColumnName,
-                                 type,
+                                 cd.Type.MakeNullableType(),
                                  nullable || cd.IsNullable);
 
                        return new TablePerTypeInfo

@@ -1,4 +1,5 @@
-﻿using Impatient.Metadata;
+﻿using Impatient.Extensions;
+using Impatient.Metadata;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using System;
@@ -7,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using static Impatient.Extensions.ReflectionExtensions;
 
 namespace Impatient.Query.ExpressionVisitors.Composing
 {
@@ -30,16 +32,16 @@ namespace Impatient.Query.ExpressionVisitors.Composing
         private sealed class CoreNavigationRewritingExpressionVisitor : ExpressionVisitor
         {
             private static readonly MethodInfo queryableSelectMethodInfo
-                = ImpatientExtensions.GetGenericMethodDefinition((IQueryable<object> o) => o.Select(x => x));
+                = GetGenericMethodDefinition((IQueryable<object> o) => o.Select(x => x));
 
             private static readonly MethodInfo enumerableSelectMethodInfo
-                = ImpatientExtensions.GetGenericMethodDefinition((IEnumerable<object> o) => o.Select(x => x));
+                = GetGenericMethodDefinition((IEnumerable<object> o) => o.Select(x => x));
 
             private static readonly MethodInfo queryableWhereMethodInfo
-                = ImpatientExtensions.GetGenericMethodDefinition((IQueryable<bool> o) => o.Where(x => x));
+                = GetGenericMethodDefinition((IQueryable<bool> o) => o.Where(x => x));
 
             private static readonly MethodInfo enumerableWhereMethodInfo
-                = ImpatientExtensions.GetGenericMethodDefinition((IEnumerable<bool> o) => o.Where(x => x));
+                = GetGenericMethodDefinition((IEnumerable<bool> o) => o.Where(x => x));
 
             private readonly IEnumerable<NavigationDescriptor> navigationDescriptors;
 
@@ -1457,7 +1459,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                     var keyType
                         = nullableKeyType
-                            ? outerKeySelector.ReturnType.UnwrapNullableType().MakeNullableType()
+                            ? outerKeySelector.ReturnType.MakeNullableType()
                             : outerKeySelector.ReturnType;
 
                     if (nullableKeyType)
@@ -1845,7 +1847,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             private readonly IEnumerable<ExpansionMapping> mappings;
 
             private static readonly MethodInfo enumerableCountMethodInfo
-                = ImpatientExtensions.GetGenericMethodDefinition<IEnumerable<object>, int>(o => o.Count());
+                = GetGenericMethodDefinition<IEnumerable<object>, int>(o => o.Count());
 
             public NavigationExpandingExpressionVisitor(
                 ParameterExpression oldParameter,

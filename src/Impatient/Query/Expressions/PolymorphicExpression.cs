@@ -1,4 +1,5 @@
-﻿using Impatient.Metadata;
+﻿using Impatient.Extensions;
+using Impatient.Metadata;
 using Impatient.Query.Infrastructure;
 using System;
 using System.Collections.Generic;

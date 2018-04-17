@@ -1,4 +1,5 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
+using Impatient.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;

@@ -1,4 +1,5 @@
-﻿using Impatient.Query.Expressions;
+﻿using Impatient.Extensions;
+using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using System;
@@ -12,7 +13,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
     public class QueryCompilingExpressionVisitor : ExpressionVisitor
     {
         private static readonly MethodInfo asQueryableMethodInfo
-            = ImpatientExtensions.GetGenericMethodDefinition((IEnumerable<object> e) => e.AsQueryable());
+            = ReflectionExtensions.GetGenericMethodDefinition((IEnumerable<object> e) => e.AsQueryable());
 
         private static readonly MethodInfo executeEnumerableMethodInfo
             = typeof(IDbCommandExecutor).GetTypeInfo().GetDeclaredMethod(nameof(IDbCommandExecutor.ExecuteEnumerable));

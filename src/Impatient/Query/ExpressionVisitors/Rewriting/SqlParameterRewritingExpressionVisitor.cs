@@ -1,4 +1,5 @@
-﻿using Impatient.Query.Expressions;
+﻿using Impatient.Extensions;
+using Impatient.Query.Expressions;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Rewriting
@@ -19,11 +20,11 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                 {
                     if (node.Type.IsScalarType())
                     {
-                        var countingVisitor = new CountingExpressionVisitor();
+                        var verifyingVisitor = new ConstraintVerifyingExpressionVisitor();
 
-                        countingVisitor.Visit(node);
+                        verifyingVisitor.Visit(node);
 
-                        if (countingVisitor.IsClear)
+                        if (verifyingVisitor.Verified)
                         {
                             return new SqlParameterExpression(node);
                         }
@@ -34,13 +35,13 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
             }
         }
 
-        private class CountingExpressionVisitor : ExpressionVisitor
+        private class ConstraintVerifyingExpressionVisitor : ExpressionVisitor
         {
             private bool foundStaticReference;
 
             private bool foundExtension;
 
-            public bool IsClear => foundStaticReference && !foundExtension;
+            public bool Verified => foundStaticReference && !foundExtension;
 
             protected override Expression VisitMember(MemberExpression node)
             {

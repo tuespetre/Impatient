@@ -1,4 +1,5 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Expressions;
+using Impatient.Extensions;
 using Impatient.Metadata;
 using Impatient.Query.Expressions;
 using Microsoft.EntityFrameworkCore.Metadata;

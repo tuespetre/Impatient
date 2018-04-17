@@ -1,4 +1,5 @@
-﻿using Impatient.Query.Expressions;
+﻿using Impatient.Extensions;
+using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Rewriting;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
@@ -7,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using static Impatient.ImpatientExtensions;
+using static Impatient.Extensions.ReflectionExtensions;
 using static System.Linq.Enumerable;
 
 namespace Impatient.Query.ExpressionVisitors.Composing
@@ -687,7 +688,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                             }
 
                             // TODO: Test polymorphism in a nested complex subquery
-                            if (outerProjection.Is<PolymorphicExpression>(out var originalPolymorphicExpression))
+                            if (outerProjection is PolymorphicExpression originalPolymorphicExpression)
                             {
                                 if (!HandlePushdown(
                                     s => s.RequiresPushdownForPredicate(),

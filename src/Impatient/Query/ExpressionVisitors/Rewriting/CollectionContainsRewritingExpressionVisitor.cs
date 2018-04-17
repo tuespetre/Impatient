@@ -1,4 +1,5 @@
-﻿using Impatient.Query.Expressions;
+﻿using Impatient.Extensions;
+using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
