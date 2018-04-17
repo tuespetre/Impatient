@@ -247,13 +247,24 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return default;
         }
 
-        public bool TryGetEntity(Type type, object[] keyValues, ref object entity)
+        public bool TryGetEntity(Type type, object[] keyValues, ref object entity, List<INavigation> includes, out bool includesCached)
         {
+            includesCached = false;
+
             if (entityLookups.TryGetValue(type, out var lookups))
             {
                 if (lookups.KeyMap.TryGetValue(keyValues, out var cached))
                 {
                     entity = cached.Entity;
+
+                    if (cached.Includes.Contains(includes))
+                    {
+                        includesCached = true;
+                    }
+                    else
+                    {
+                        cached.Includes.Add(includes);
+                    }
 
                     return true;
                 }
@@ -269,7 +280,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             object entity,
             IProperty[] shadowProperties,
             object[] shadowPropertyValues,
-            INavigation[] includes)
+            List<INavigation> includes)
         {
             if (!entityLookups.TryGetValue(entityType.ClrType, out var lookups))
             {
@@ -290,7 +301,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 EntityType = entityType,
                 Key = key,
                 ShadowProperties = shadowProperties,
-                Includes = includes,
+                Includes = new List<List<INavigation>> { includes },
             };
 
             lookups.KeyMap[keyValues] = info;

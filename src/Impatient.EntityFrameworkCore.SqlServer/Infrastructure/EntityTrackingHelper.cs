@@ -31,7 +31,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
             object entity,
             IProperty[] shadowProperties,
             object[] shadowPropertyValues,
-            INavigation[] loadedNavigations)
+            List<INavigation> loadedNavigations)
         {
             var stateManager = executor.CurrentDbContext.GetDependencies().StateManager;
 
@@ -67,7 +67,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
             object entity,
             IProperty[] shadowProperties,
             object[] shadowPropertyValues,
-            INavigation[] includes)
+            List<INavigation> includes)
         {
             if (entity == null)
             {
@@ -76,18 +76,19 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 
             var cached = entity;
 
-            if (!executor.TryGetEntity(entityType.ClrType, keyValues, ref cached))
+            if (!executor.TryGetEntity(entityType.ClrType, keyValues, ref cached, includes, out var includesCached))
             {
+                includesCached = false;
+
                 executor.CacheEntity(entityType, key, keyValues, entity, shadowProperties, shadowPropertyValues, includes);
             }
 
-            // TODO: Keep information about the includes in a cache so we can return early
-            // i.e. modify TryGetEntity to accept the include set and have an out flag
-            // telling use whether this include set was processed already
-
-            foreach (var navigation in includes)
+            if (!includesCached)
             {
-                FixupNavigation(navigation, entity, cached);
+                foreach (var navigation in includes)
+                {
+                    FixupNavigation(navigation, entity, cached);
+                }
             }
 
             return cached;
@@ -208,13 +209,16 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
                     cached = (TEntity)entry.Entity;
                 }
 
-                foreach (var navigation in info.Includes)
+                foreach (var set in info.Includes)
                 {
-                    entry.SetIsLoaded(navigation);
+                    foreach (var navigation in set)
+                    {
+                        entry.SetIsLoaded(navigation);
 
-                    // TODO: See if we can avoid the double fixup
+                        // TODO: See if we can avoid the double fixup
 
-                    FixupNavigation(navigation, entity, cached);
+                        FixupNavigation(navigation, entity, cached);
+                    }
                 }
 
                 entity = cached;

@@ -12,6 +12,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
         public IEntityType EntityType;
         public IKey Key;
         public IProperty[] ShadowProperties;
-        public INavigation[] Includes;
+        public List<List<INavigation>> Includes;
     }
 }

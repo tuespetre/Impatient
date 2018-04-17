@@ -379,7 +379,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                 new MaterializerPathInfo
                                 {
                                     Type = include.Type,
-                                    Path = path.Select(p => p.PropertyInfo).ToArray()
+                                    Path = CurrentPath.Concat(path.Select(p => p.PropertyInfo)).ToArray()
                                 });
                         }
 

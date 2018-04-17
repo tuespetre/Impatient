@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Extensions.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
@@ -32,7 +33,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                     return resolved;
                 }
 
-                var entityType = model.FindEntityType(arguments[0].Type);
+                var entityType = model.GetEntityTypes().SingleOrDefault(t => t.ClrType == arguments[0].Type);
 
                 if (entityType != null)
                 {

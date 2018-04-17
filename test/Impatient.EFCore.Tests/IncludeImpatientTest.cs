@@ -1,8 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
-using Microsoft.EntityFrameworkCore.Query;
-using Microsoft.EntityFrameworkCore.TestModels.Northwind;
-using System.Linq;
+﻿using Microsoft.EntityFrameworkCore.Query;
 using Xunit;
 
 namespace Impatient.EFCore.Tests

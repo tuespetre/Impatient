@@ -132,7 +132,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                     return Expression.Call(
                         queryableSelectMethodInfo.MakeGenericMethod(parameter.Type, parameter.Type),
-                        inner,
+                        Visit(inner),
                         Expression.Lambda(includeExpression, parameter));
                 }
 

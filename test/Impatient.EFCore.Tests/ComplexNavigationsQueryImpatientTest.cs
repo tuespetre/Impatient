@@ -27,6 +27,12 @@ namespace Impatient.EFCore.Tests
             base.GroupJoin_reference_to_group_in_OrderBy();
         }
 
+        [Fact(Skip = EFCoreSkipReasons.Punt)]
+        public override void Comparing_collection_navigation_on_optional_reference_to_null()
+        {
+            base.Comparing_collection_navigation_on_optional_reference_to_null();
+        }
+
         private class ComplexNavigationsQueryResultAsserter : QueryResultAsserter
         {
             private readonly MethodInfo _assertElementMethodInfo;

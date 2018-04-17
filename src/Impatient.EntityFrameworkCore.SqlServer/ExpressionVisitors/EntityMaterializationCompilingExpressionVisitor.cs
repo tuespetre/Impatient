@@ -1,10 +1,8 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 using Impatient.Extensions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -86,7 +84,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                     entityVariable,
                                     Expression.Constant(entityMaterializationExpression.ShadowProperties.ToArray()),
                                     shadowPropertiesVariable,
-                                    Expression.Constant(entityMaterializationExpression.IncludedNavigations.ToArray())),
+                                    Expression.Constant(entityMaterializationExpression.IncludedNavigations.ToList())),
                                 node.Type)
                         });
                 }
