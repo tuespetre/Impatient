@@ -1,4 +1,5 @@
-﻿using Impatient.Query.ExpressionVisitors.Optimizing;
+﻿using Impatient.Extensions;
+using Impatient.Query.ExpressionVisitors.Optimizing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -37,7 +38,18 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                     query = repointer.Visit(query);
 
-                    return Visit(Reparameterize(query));
+                    query = Visit(Reparameterize(query));
+
+                    if (node.Type.GetSequenceType() != query.Type.GetSequenceType())
+                    {
+                        query 
+                            = Expression.Call(
+                                typeof(Queryable).GetMethod(nameof(Queryable.Cast))
+                                    .MakeGenericMethod(node.Type.GetSequenceType()),
+                                query);
+                    }
+
+                    return query;
                 }
                 catch
                 {

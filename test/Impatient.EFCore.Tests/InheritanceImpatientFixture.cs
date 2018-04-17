@@ -8,6 +8,8 @@ namespace Impatient.EFCore.Tests
 {
     public class InheritanceImpatientFixture : InheritanceRelationalFixture<ImpatientTestStore>
     {
+        private const string connectionString = @"Server=.\sqlexpress; Database=efcore-impatient-inheritance; Trusted_Connection=true; MultipleActiveResultSets=True";
+
         private readonly DbContextOptions options;
 
         public InheritanceImpatientFixture()
@@ -26,10 +28,10 @@ namespace Impatient.EFCore.Tests
             options
                 = new DbContextOptionsBuilder()
                     .UseInternalServiceProvider(provider)
-                    .UseSqlServer(@"Server=.\sqlexpress; Database=efcore-impatient-inheritance; Trusted_Connection=true; MultipleActiveResultSets=True")
                     .Options;
 
-            using (var context = new InheritanceContext(options))
+            using (var context = new InheritanceContext(
+                new DbContextOptionsBuilder(options).UseSqlServer(connectionString).Options))
             {
                 //context.Database.EnsureDeleted();
 
@@ -42,7 +44,10 @@ namespace Impatient.EFCore.Tests
 
         public override InheritanceContext CreateContext(ImpatientTestStore testStore)
         {
-            var context = new InheritanceContext(options);
+            var context 
+                = new InheritanceContext(
+                    new DbContextOptionsBuilder(options)
+                        .UseSqlServer(testStore.Connection).Options);
 
             context.Database.UseTransaction(testStore.Transaction);
 
@@ -51,7 +56,7 @@ namespace Impatient.EFCore.Tests
 
         public override ImpatientTestStore CreateTestStore()
         {
-            return new ImpatientTestStore();
+            return new ImpatientTestStore(connectionString);
         }
     }
 }
