@@ -1,5 +1,4 @@
-﻿using Impatient.Query.ExpressionVisitors;
-using Impatient.Query.ExpressionVisitors.Utility;
+﻿using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Linq;
 using System.Linq.Expressions;

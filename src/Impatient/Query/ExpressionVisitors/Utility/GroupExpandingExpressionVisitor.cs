@@ -73,7 +73,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                                     .AddToPredicate(predicate));
 
                         return ExpandedGrouping.Create(
-                            visited, 
+                            groupByResultExpression.Type, 
                             groupByResultExpression.OuterKeySelector,
                             query.AsList());
                     }
@@ -107,7 +107,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                                     .AddToPredicate(predicate));
 
                         return ExpandedGrouping.Create(
-                            visited, 
+                            groupedRelationalQueryExpression.Type, 
                             groupedRelationalQueryExpression.OuterKeySelector,
                             query.AsList());
                     }

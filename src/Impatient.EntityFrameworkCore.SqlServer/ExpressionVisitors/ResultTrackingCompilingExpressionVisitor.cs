@@ -14,6 +14,7 @@ using System.Collections.Generic;
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
     using Impatient.Extensions;
+    using Impatient.Query.Infrastructure;
 
     public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
     {
@@ -47,6 +48,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 var extraCallStack = new Stack<MethodCallExpression>();
 
                 var call = unwrapped as MethodCallExpression;
+                var returnType = unwrapped.Type;
 
                 // TODO: Strip predicates and push down into calls to Where
                 while (call != null && call.Method.IsQueryableOrEnumerableMethod())
@@ -58,6 +60,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         node = call.Arguments[0];
                         extraCallStack.Push(call);
                         call = node as MethodCallExpression;
+                        returnType = node.Type;
                     }
                     else
                     {
@@ -75,9 +78,15 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 if (pathFinder.FoundPaths.Any())
                 {
+                    // The ProjectionBubblingExpressionVisitor might give us some
+                    // ExpandedGroupings to reference even though the actual result
+                    // of the query will not be an ExpandedGrouping. 
+
                     result
                         = Expression.Call(
-                            typeof(Enumerable).GetMethod(nameof(Enumerable.Cast)).MakeGenericMethod(projection.Type),
+                            typeof(Enumerable)
+                                .GetMethod(nameof(Enumerable.Cast))
+                                .MakeGenericMethod(returnType.GetSequenceType()),
                             Expression.Call(
                                 EntityTrackingHelper.TrackEntitiesMethodInfo,
                                 result,
@@ -105,16 +114,37 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             var returnLabel = Expression.Label(typeof(object), "Return");
             var nullConstantExpression = Expression.Constant(null, typeof(object));
 
-            foreach (var member in pathInfo.Path)
+            for (var i = 0; i < pathInfo.Path.Length; i++)
             {
-                var memberVariable = Expression.Variable(member.GetMemberType(), member.Name);
+                var member = pathInfo.Path[i];
+
+                var memberType = member.GetMemberType();
+
+                var memberVariable = Expression.Variable(memberType, member.Name);
 
                 blockVariables.Add(memberVariable);
+
+                /*if (member.DeclaringType.IsGenericType(typeof(ExpandedGrouping<,>)))
+                {
+                    Debug.Assert(member == pathInfo.Path.Last());
+
+                    if (member.Name == "Elements")
+                    {
+                        blockExpressions.Add(
+                            Expression.IfThen(
+                                Expression.Not(Expression.TypeIs(currentExpression, member.DeclaringType)),
+                                Expression.Return(returnLabel, currentExpression)));
+                    }
+                    else
+                    {
+                        member = member.DeclaringType.FindGenericType(typeof(IGrouping<,>)).GetRuntimeProperty("Key");
+                    }
+                }*/
 
                 blockExpressions.Add(
                     Expression.IfThen(
                         Expression.Equal(nullConstantExpression, currentExpression),
-                        Expression.Return(returnLabel, Expression.Default(member.GetMemberType()))));
+                        Expression.Return(returnLabel, Expression.Default(memberType))));
 
                 if (!member.DeclaringType.IsAssignableFrom(currentExpression.Type))
                 {

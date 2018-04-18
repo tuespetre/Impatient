@@ -12,6 +12,50 @@ namespace Impatient.Extensions
 {
     public static class ExpressionExtensions
     {
+        public static bool IsSemanticallyEqualTo(this Expression expression, Expression other)
+        {
+            var hasher = new HashingExpressionVisitor();
+
+            hasher.Visit(expression);
+
+            var hashA = hasher.HashCode;
+
+            hasher.Reset();
+
+            hasher.Visit(other);
+
+            var hashB = hasher.HashCode;
+
+            return hashA == hashB;
+        }
+
+        public static bool IsNullConstant(this Expression expression)
+        {
+            switch (expression.UnwrapInnerExpression())
+            {
+                case ConstantExpression constantExpression:
+                {
+                    return constantExpression.Value == null;
+                }
+
+                case DefaultExpression defaultExpression:
+                {
+                    return defaultExpression.Type.IsNullableType()
+                        || !defaultExpression.Type.GetTypeInfo().IsValueType;
+                }
+
+                default:
+                {
+                    return false;
+                }
+            }
+        }
+
+        public static Expression AsNullable(this Expression expression)
+        {
+            return Expression.Convert(expression, expression.Type.MakeNullableType());
+        }
+
         public static Expression AsEnumerableQuery(this Expression expression)
         {
             Debug.Assert(expression.Type.IsSequenceType());

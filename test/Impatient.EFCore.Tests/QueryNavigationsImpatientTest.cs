@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.TestModels.Northwind;
+using System.Linq;
 using Xunit;
 
 namespace Impatient.EFCore.Tests
@@ -55,6 +57,22 @@ namespace Impatient.EFCore.Tests
         public override void Skip_Select_Navigation()
         {
             base.Skip_Select_Navigation();
+        }
+
+        [Fact, Trait("Skipped by EFCore", "Unskipped by us")]
+        public override void Project_first_or_default_on_empty_collection_of_value_types_returns_proper_default()
+        {
+            AssertQuery<Customer>(
+                cs => from c in cs
+                      select new { c.CustomerID, OrderId = c.Orders.OrderBy(o => o.OrderID).Select(o => o.OrderID).FirstOrDefault() },
+                cs => from c in cs
+                      select new { c.CustomerID, OrderId = c.Orders.OrderBy(o => o.OrderID).Select(o => o.OrderID).FirstOrDefault() });
+        }
+
+        [Fact, Trait("Skipped by EFCore", "Unskipped by us")]
+        public override void Client_groupjoin_with_orderby_key_descending()
+        {
+            base.Client_groupjoin_with_orderby_key_descending();
         }
     }
 }

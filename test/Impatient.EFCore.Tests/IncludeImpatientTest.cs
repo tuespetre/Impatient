@@ -40,5 +40,16 @@ namespace Impatient.EFCore.Tests
         {
             base.Then_include_property_expression_invalid();
         }
+
+        [Theory(Skip = EFCoreSkipReasons.Punt)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public override void GroupJoin_Include_reference_GroupBy_Select(bool useString)
+        {
+            // We load more than is necessary here due to an issue with the
+            // ProjectionBubblingExpressionVisitor and how its result is
+            // used by the ResultTrackingComposingExpressionVisitor.
+            base.GroupJoin_Include_reference_GroupBy_Select(useString);
+        }
     }
 }

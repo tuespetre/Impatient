@@ -14,11 +14,15 @@ namespace Impatient.Query.Infrastructure
     {
         public IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
         {
+            yield return new ConditionalComparisonOptimizingExpressionVisitor();
+
             yield return new SelectorPushdownExpressionVisitor();
 
-            yield return new BooleanOptimizingExpressionVisitor();
-
             yield return new RedundantConversionStrippingExpressionVisitor();
+
+            yield return new NullOrDefaultEqualityOptimizingExpressionVisitor();
+
+            yield return new BooleanOptimizingExpressionVisitor();
         }
     }
 }

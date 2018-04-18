@@ -79,7 +79,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            if (node.Type.IsScalarType())
+            if (node.Type.IsScalarType() || node.Value == null)
             {
                 return new TranslatableExpression(node);
             }

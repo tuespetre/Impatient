@@ -38,6 +38,8 @@ namespace Impatient.Query.Infrastructure
 
             yield return new EnumerableContainsRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor);
 
+            yield return new EnumerableQueryEqualityRewritingExpressionVisitor();
+
             // TODO: Pull this from the Default provider.
             yield return new SqlServerCountRewritingExpressionVisitor();
         }

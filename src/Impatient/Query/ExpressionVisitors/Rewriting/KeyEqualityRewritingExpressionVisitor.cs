@@ -34,7 +34,17 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     || (!canRewriteLeft && !leftIsNullConstant)
                     || (!canRewriteRight && !rightIsNullConstant))
                 {
-                    return node;
+                    if (left.Type != node.Left.Type)
+                    {
+                        left = Expression.Convert(left, node.Left.Type);
+                    }
+
+                    if (right.Type != node.Right.Type)
+                    {
+                        right = Expression.Convert(right, node.Right.Type);
+                    }
+
+                    return node.Update(left, node.Conversion, right);
                 }
 
                 left = TryReduceNavigationKey(left, out var rewroteLeft);
@@ -45,10 +55,12 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     return Expression.MakeBinary(node.NodeType, left, right);
                 }
 
+                var targetType = leftIsNullConstant ? right.Type : left.Type;
+
                 var primaryKeyDescriptor
                     = descriptorSet
                         .PrimaryKeyDescriptors
-                        .FirstOrDefault(d => d.TargetType.IsAssignableFrom(node.Left.Type));
+                        .FirstOrDefault(d => d.TargetType.IsAssignableFrom(targetType));
 
                 if (primaryKeyDescriptor == null)
                 {
@@ -72,18 +84,28 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                 {
                     var nonNullExpression = leftIsNullConstant ? right : left;
 
-                    if (nonNullExpression is NewExpression newExpression)
+                    switch (nonNullExpression)
                     {
-                        nonNullExpression = newExpression.Arguments.First(a => a.Type.IsScalarType());
+                        case NewExpression newExpression:
+                        {
+                            nonNullExpression 
+                                = newExpression.Arguments
+                                    .Select(a => a.UnwrapInnerExpression())
+                                    .First(a => a.Type.IsScalarType());
+                            break;
+                        }
+
+                        case NewArrayExpression newArrayExpression:
+                        {
+                            nonNullExpression 
+                                = newArrayExpression.Expressions
+                                    .Select(a => a.UnwrapInnerExpression())
+                                    .First(a => a.Type.IsScalarType());
+                            break;
+                        }
                     }
 
-                    if (nonNullExpression.Type.GetTypeInfo().IsValueType)
-                    {
-                        nonNullExpression
-                            = Expression.Convert(
-                                nonNullExpression,
-                                typeof(Nullable<>).MakeGenericType(nonNullExpression.Type));
-                    }
+                    nonNullExpression = nonNullExpression.AsNullable();
 
                     if (leftIsNullConstant)
                     {
@@ -96,11 +118,6 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                         right = Expression.Constant(null, nonNullExpression.Type);
                     }
                 }
-                /*else
-                {
-                    left = new SqlColumnNullabilityExpressionVisitor().Visit(left);
-                    right = new SqlColumnNullabilityExpressionVisitor().Visit(right);
-                }*/
                 
                 return Expression.MakeBinary(node.NodeType, left, right);
             }
@@ -190,7 +207,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                 case MemberInitExpression _:
                 case ParameterExpression _:
                 case PolymorphicExpression _:
-                //case ExtraPropertiesExpression _:
+                case ExtraPropertiesExpression _:
                 {
                     return true;
                 }

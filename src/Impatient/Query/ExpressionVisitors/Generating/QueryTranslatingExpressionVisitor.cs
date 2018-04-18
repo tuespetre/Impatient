@@ -236,8 +236,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                                 .Aggregate(Expression.AndAlso)
                                 .Balance());
                     }
-                    else if (left is ConstantExpression leftConstantExpression
-                        && leftConstantExpression.Value is null)
+                    else if (left.IsNullConstant())
                     {
                         right = Visit(right);
 
@@ -245,8 +244,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                         return node.Update(left, node.Conversion, right);
                     }
-                    else if (right is ConstantExpression rightConstantExpression
-                        && rightConstantExpression.Value is null)
+                    else if (right.IsNullConstant())
                     {
                         left = Visit(left);
 
@@ -327,8 +325,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                                 .Aggregate(Expression.OrElse)
                                 .Balance());
                     }
-                    else if (left is ConstantExpression leftConstantExpression
-                        && leftConstantExpression.Value is null)
+                    else if (left.IsNullConstant())
                     {
                         right = Visit(right);
 
@@ -336,8 +333,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                         return node.Update(left, node.Conversion, right);
                     }
-                    else if (right is ConstantExpression rightConstantExpression
-                        && rightConstantExpression.Value is null)
+                    else if (right.IsNullConstant())
                     {
                         left = Visit(left);
 
@@ -483,26 +479,36 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
             var ifTrue = node.IfTrue;
 
-            if (ifTrue is BinaryExpression && ifTrue.Type.IsBooleanType())
+            if (ifTrue.UnwrapInnerExpression() is BinaryExpression ifTrueBinary && ifTrueBinary.Type.IsBooleanType())
             {
-                ifTrue = Visit(Expression.Condition(ifTrue, Expression.Constant(true), Expression.Constant(false)));
+                ifTrue = Visit(Expression.Condition(ifTrueBinary, Expression.Constant(true), Expression.Constant(false)));
             }
             else
             {
                 ifTrue = Visit(ifTrue);
             }
 
+            if (ifTrue.Type != node.IfTrue.Type)
+            {
+                ifTrue = Expression.Convert(ifTrue, node.IfTrue.Type);
+            }
+
             Builder.Append(" ELSE ");
 
             var ifFalse = node.IfFalse;
 
-            if (ifFalse is BinaryExpression && ifFalse.Type.IsBooleanType())
+            if (ifFalse.UnwrapInnerExpression() is BinaryExpression ifFalseBinary && ifFalseBinary.Type.IsBooleanType())
             {
-                ifFalse = Visit(Expression.Condition(ifFalse, Expression.Constant(true), Expression.Constant(false)));
+                ifFalse = Visit(Expression.Condition(ifFalseBinary, Expression.Constant(true), Expression.Constant(false)));
             }
             else
             {
                 ifFalse = Visit(ifFalse);
+            }
+
+            if (ifFalse.Type != node.IfTrue.Type)
+            {
+                ifFalse = Expression.Convert(ifFalse, node.IfTrue.Type);
             }
 
             Builder.Append(" END)");
@@ -749,6 +755,24 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                 case ExpressionType.Convert:
                 {
+                    if (node.Operand.Type.UnwrapNullableType() != node.Type.UnwrapNullableType())
+                    {
+                        var typeMapper = new DefaultTypeMapper();
+
+                        var mapping = typeMapper.FindMapping(node.Type);
+
+                        if (mapping != null)
+                        {
+                            Builder.Append("CAST(");
+
+                            var visited = Visit(node.Operand);
+
+                            Builder.Append($" AS {mapping.DbType})");
+
+                            return node.Update(visited);
+                        }
+                    }
+
                     return base.VisitUnary(node);
                 }
 
@@ -840,11 +864,11 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                 EmitExpressionListExpression(groupings.First().expression);
 
-                foreach (var grouping in groupings.Skip(1))
+                foreach (var (alias, expression) in groupings.Skip(1))
                 {
                     Builder.Append(", ");
 
-                    EmitExpressionListExpression(grouping.expression);
+                    EmitExpressionListExpression(expression);
                 }
             }
 
@@ -1206,8 +1230,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
             foreach (var value in values)
             {
-                if (value.UnwrapInnerExpression() is ConstantExpression constant
-                    && constant.Value == null)
+                if (value.IsNullConstant())
                 {
                     foundNull = true;
                     continue;
@@ -1468,6 +1491,28 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 }
             }
 
+            /*var requiredCastDetector = new RequiredCastDetectingExpressionVisitor();
+
+            requiredCastDetector.Visit(expression);
+
+            if (requiredCastDetector.CastRequired)
+            {
+                var typeMapper = new DefaultTypeMapper();
+
+                var mapping = typeMapper.FindMapping(expression.Type);
+
+                if (mapping != null)
+                {
+                    Builder.Append("CAST(");
+
+                    Visit(expression);
+
+                    Builder.Append($" AS {mapping.DbType})");
+
+                    return;
+                }
+            }*/
+
             Visit(expression);
         }
 
@@ -1602,6 +1647,69 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                     default:
                     {
                         return base.VisitExtension(node);
+                    }
+                }
+            }
+        }
+
+        private class RequiredCastDetectingExpressionVisitor : ExpressionVisitor
+        {
+            public bool CastRequired { get; private set; }
+
+            public override Expression Visit(Expression node)
+            {
+                switch (node)
+                {
+                    case BinaryExpression binaryExpression:
+                    {
+                        var leftType = binaryExpression.Left.Type.UnwrapNullableType();
+                        var rightType = binaryExpression.Right.Type.UnwrapNullableType();
+
+                        if (leftType != rightType)
+                        {
+                            CastRequired = true;
+                        }
+
+                        return base.Visit(node);
+                    }
+
+                    default:
+                    {
+                        return node;
+                    }
+                }
+            }
+        }
+
+        private class NullResultDetectingExpressionVisitor : ExpressionVisitor
+        {
+            public bool PossibleNull { get; private set; }
+
+            public override Expression Visit(Expression node)
+            {
+                if (PossibleNull)
+                {
+                    return node;
+                }
+
+                switch (node)
+                {
+                    case ConditionalExpression conditionalExpression:
+                    {
+                        if (conditionalExpression.IfTrue.IsNullConstant()
+                            || conditionalExpression.IfFalse.IsNullConstant())
+                        {
+                            PossibleNull = true;
+
+                            return node;
+                        }
+
+                        return base.Visit(node);
+                    }
+
+                    default:
+                    {
+                        return node;
                     }
                 }
             }

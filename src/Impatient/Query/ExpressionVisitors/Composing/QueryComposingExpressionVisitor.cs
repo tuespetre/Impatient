@@ -729,6 +729,14 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
                             var keySelectorLambda = node.Arguments[1].UnwrapLambda();
 
+                            if (!keySelectorLambda.Body.References(keySelectorLambda.Parameters[0]))
+                            {
+                                // SQL Server Says:
+                                // Msg 164, Level 15, State 1, Line 3
+                                // Each GROUP BY expression must contain at least one column that is not an outer reference.
+                                return FallbackToEnumerable();
+                            }
+
                             if (!HandlePushdown(
                                 s => s.IsWindowed || s.IsDistinct || s.Limit != null || s.Offset != null || s.Grouping != null,
                                 keySelectorLambda.Parameters[0].Name,
@@ -747,7 +755,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                     .ExpandParameters(outerProjection)
                                     .VisitWith(PostExpansionVisitors);
 
-                            if (!IsTranslatable(keySelector))
+                            if (!IsTranslatable(keySelector) || ContainsAggregateOrSubquery(keySelector))
                             {
                                 return FallbackToEnumerable();
                             }

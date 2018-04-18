@@ -30,6 +30,24 @@ namespace Impatient.EFCore.Tests
         {
             base.Null_reference_protection_complex_client_eval();
         }
+
+        [Fact, Trait("Skipped by EFCore", "Unskipped by us")]
+        public override void Required_navigation_on_a_subquery_with_First_in_projection()
+        {
+            base.Required_navigation_on_a_subquery_with_First_in_projection();
+        }
+
+        [Fact, Trait("Skipped by EFCore", "Unskipped by us")]
+        public override void Select_subquery_with_client_eval_and_navigation1()
+        {
+            base.Select_subquery_with_client_eval_and_navigation1();
+        }
+
+        [Fact, Trait("Skipped by EFCore", "Unskipped by us")]
+        public override void Select_subquery_with_client_eval_and_navigation2()
+        {
+            base.Select_subquery_with_client_eval_and_navigation2();
+        }
     }
 
     public class ComplexNavigationsOwnedQueryImpatientFixture : ComplexNavigationsOwnedQueryRelationalFixtureBase<ImpatientTestStore>

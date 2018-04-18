@@ -97,6 +97,7 @@ namespace Impatient.EFCore.Tests
             return base.Throws_on_concurrent_query_first();
         }
 
+        [Fact]
         public override Task String_Contains_Literal()
         {
             // Overridden; EFCore SQL Server test does this too

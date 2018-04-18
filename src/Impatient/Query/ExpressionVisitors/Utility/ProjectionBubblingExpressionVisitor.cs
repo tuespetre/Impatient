@@ -1,6 +1,9 @@
 ﻿using Impatient.Extensions;
 using Impatient.Query.Expressions;
 using Impatient.Query.Infrastructure;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -135,7 +138,8 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
                     case nameof(Queryable.GroupBy):
                     {
-                        if (arguments[0] is ProjectionExpression projection)
+                        if (arguments[0] is ProjectionExpression projection
+                            && node.Method.HasResultSelector())
                         {
                             var keyExpression = projection.Merge(arguments[1].UnwrapLambda()).Flatten().Body;
 
@@ -154,7 +158,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                                         new ServerProjectionExpression(
                                             elementProjectionBody)));
 
-                            if (node.Method.HasResultSelector())
+                            //if (node.Method.HasResultSelector())
                             {
                                 var resultSelector
                                     = node.Method.HasElementSelector()
@@ -167,11 +171,11 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                                         .ExpandParameters(keyExpression, elementExpression));
                             }
 
-                            return new ServerProjectionExpression(
+                            /*return new ServerProjectionExpression(
                                 ExpandedGrouping.Create(
-                                    node,
+                                    node.Type.GetSequenceType(),
                                     keyExpression,
-                                    elementExpression.AsList()));
+                                    elementExpression.AsList()));*/
                         }
 
                         return node;
@@ -229,6 +233,15 @@ namespace Impatient.Query.ExpressionVisitors.Utility
             public SurrogateEnumerableRelationalQueryExpression(SelectExpression selectExpression) : base(selectExpression)
             {
             }
+        }
+
+        private class SurrogateGrouping<TKey, TElement> : IGrouping<TKey, TElement>
+        {
+            public TKey Key => throw new InvalidOperationException();
+
+            public IEnumerator<TElement> GetEnumerator() => throw new InvalidOperationException();
+
+            IEnumerator IEnumerable.GetEnumerator() => throw new InvalidOperationException();
         }
     }
 }

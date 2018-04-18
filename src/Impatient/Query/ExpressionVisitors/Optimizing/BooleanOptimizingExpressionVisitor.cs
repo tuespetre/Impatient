@@ -1,5 +1,4 @@
 ﻿using Impatient.Extensions;
-using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System.Linq.Expressions;
 
@@ -57,8 +56,8 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
         {
             protected override Expression VisitBinary(BinaryExpression node)
             {
-                var left = Visit(node.Left);
-                var right = Visit(node.Right);
+                var left = Visit(node.Left).UnwrapInnerExpression();
+                var right = Visit(node.Right).UnwrapInnerExpression();
 
                 if (node.NodeType == ExpressionType.Equal || node.NodeType == ExpressionType.NotEqual)
                 {
@@ -203,7 +202,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                             && leftConstant.Type.IsBooleanType()
                             && rightConstant.Type.IsBooleanType())
                         {
-                            if (leftConstant.Value == rightConstant.Value)
+                            if (leftConstant.Value.Equals(rightConstant.Value))
                             {
                                 return Expression.Constant(false);
                             }
@@ -239,6 +238,16 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                     }
                 }
 
+                if (left.Type != node.Left.Type)
+                {
+                    left = Expression.Convert(left, node.Left.Type);
+                }
+
+                if (right.Type != node.Right.Type)
+                {
+                    right = Expression.Convert(right, node.Right.Type);
+                }
+
                 return node.Update(left, node.Conversion, right);
             }
         }
@@ -262,25 +271,31 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
                 if (node.NodeType == ExpressionType.Not)
                 {
-                    switch (operand)
+                    switch (operand.NodeType)
                     {
-                        case BinaryExpression binaryExpression:
+                        case ExpressionType.AndAlso:
+                        case ExpressionType.OrElse:
+                        case ExpressionType.Equal:
+                        case ExpressionType.NotEqual:
+                        case ExpressionType.GreaterThan:
+                        case ExpressionType.GreaterThanOrEqual:
+                        case ExpressionType.LessThan:
+                        case ExpressionType.LessThanOrEqual:
                         {
                             // Immediately visiting the result ensures that any resulting double-nots are optimized.
-                            return Visit(BinaryInvertingExpressionVisitor.Instance.Visit(binaryExpression));
+                            return Visit(BinaryInvertingExpressionVisitor.Instance.Visit(operand));
                         }
 
-                        case ConstantExpression constantExpression:
+                        case ExpressionType.Constant:
                         {
-                            return true.Equals(constantExpression.Value)
+                            return true.Equals(((ConstantExpression)operand).Value)
                                 ? Expression.Constant(false)
                                 : Expression.Constant(true);
                         }
 
-                        case UnaryExpression unaryExpression
-                        when unaryExpression.NodeType == ExpressionType.Not:
+                        case ExpressionType.Not:
                         {
-                            return unaryExpression.Operand;
+                            return ((UnaryExpression)operand).Operand;
                         }
                     }
                 }

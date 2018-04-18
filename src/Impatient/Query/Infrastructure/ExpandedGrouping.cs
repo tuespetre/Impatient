@@ -12,45 +12,29 @@ namespace Impatient.Query.Infrastructure
     public static class ExpandedGrouping
     {
         public static Expression Create(
-            Expression expression,
+            Type type,
             Expression keyExpression,
             EnumerableRelationalQueryExpression elementsExpression)
         {
-            if (expression.Type.IsGenericType(typeof(IGrouping<,>)))
+            if (type.IsGenericType(typeof(IGrouping<,>)))
             {
-                var groupingType
+                var expandedGroupingType
                     = typeof(ExpandedGrouping<,>)
-                        .MakeGenericType(expression.Type.GenericTypeArguments);
+                        .MakeGenericType(type.GenericTypeArguments);
 
                 return Expression.New(
-                    groupingType.GetTypeInfo().DeclaredConstructors.Single(),
+                    expandedGroupingType.GetTypeInfo().DeclaredConstructors.Single(),
                     new[] { keyExpression, elementsExpression },
-                    new[] { groupingType.GetRuntimeProperty("Key"), groupingType.GetRuntimeProperty("Elements") });
+                    new[]
+                    {
+                        expandedGroupingType.GetRuntimeProperty("Key"),
+                        expandedGroupingType.GetRuntimeProperty("Elements")
+                    });
             }
             else
             {
                 return elementsExpression;
             }
-        }
-
-        public static bool IsExpandedGrouping(
-            Expression expression,
-            out Expression keyExpression,
-            out EnumerableRelationalQueryExpression elementsExpression)
-        {
-            keyExpression = default;
-            elementsExpression = default;
-
-            if (expression is NewExpression newExpression
-                && newExpression.Constructor.DeclaringType.IsGenericType(typeof(ExpandedGrouping<,>)))
-            {
-                keyExpression = newExpression.Arguments[0];
-                elementsExpression = (EnumerableRelationalQueryExpression)newExpression.Arguments[1];
-
-                return true;
-            }
-
-            return false;
         }
     }
 

@@ -304,6 +304,11 @@ namespace Impatient.EFCore.Tests
             }
         }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+        }
+
         public override InheritanceRelationshipsContext CreateContext(ImpatientTestStore testStore)
         {
             var context = new InheritanceRelationshipsContext(options);

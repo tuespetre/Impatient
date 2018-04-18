@@ -2,12 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.ComplexNavigationsModel;
-using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using Xunit;
 
 namespace Impatient.EFCore.Tests
@@ -16,9 +11,6 @@ namespace Impatient.EFCore.Tests
     {
         public ComplexNavigationsQueryImpatientTest(ComplexNavigationsQueryImpatientFixture fixture) : base(fixture)
         {
-            GetType().BaseType
-                 .GetField("<ResultAsserter>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)
-                 .SetValue(this, new ComplexNavigationsQueryResultAsserter());
         }
 
         [Fact(Skip = EFCoreSkipReasons.TestReliesOnUnguaranteedOrder)]
@@ -33,199 +25,58 @@ namespace Impatient.EFCore.Tests
             base.Comparing_collection_navigation_on_optional_reference_to_null();
         }
 
-        private class ComplexNavigationsQueryResultAsserter : QueryResultAsserter
+        [Fact(Skip = EFCoreSkipReasons.NullNavigationProtection)]
+        public override void Null_reference_protection_complex_client_eval()
         {
-            private readonly MethodInfo _assertElementMethodInfo;
-            private readonly MethodInfo _assertCollectionMethodInfo;
+            base.Null_reference_protection_complex_client_eval();
+        }
 
-            public ComplexNavigationsQueryResultAsserter()
-            {
-                _assertElementMethodInfo = GetType().GetTypeInfo().GetDeclaredMethod(nameof(AssertElement))
-                                      ?? typeof(ComplexNavigationsQueryResultAsserter).GetTypeInfo().GetDeclaredMethod(nameof(AssertElement));
+        [Fact(Skip = EFCoreSkipReasons.NullNavigationProtection)]
+        public override void Complex_query_with_optional_navigations_and_client_side_evaluation()
+        {
+            base.Complex_query_with_optional_navigations_and_client_side_evaluation();
+        }
 
-                _assertCollectionMethodInfo = GetType().GetTypeInfo().GetDeclaredMethod(nameof(AssertCollection))
-                                              ?? typeof(ComplexNavigationsQueryResultAsserter).GetTypeInfo().GetDeclaredMethod(nameof(AssertCollection));
+        [Fact(Skip = EFCoreSkipReasons.Punt)]
+        public override void Manually_created_left_join_propagates_nullability_to_navigations()
+        {
+            base.Manually_created_left_join_propagates_nullability_to_navigations();
+        }
 
-            }
+        [Fact, Trait("Skipped by EFCore", "Unskipped by us")]
+        public override void GroupJoin_on_a_subquery_containing_another_GroupJoin_projecting_outer()
+        {
+            base.GroupJoin_on_a_subquery_containing_another_GroupJoin_projecting_outer();
+        }
 
-            protected override void AssertCollection<TElement>(IEnumerable<TElement> expected, IEnumerable<TElement> actual, IEnumerable<IExpectedInclude> expectedIncludes)
-            {
-                if (expected != null && actual != null)
-                {
-                    if ((object)expected is IEnumerable<Level1> expectedLevel1 && (object)actual is IEnumerable<Level1> actualLevel1)
-                    {
-                        var expectedListLevel1 = _path.Any() ? expectedLevel1.OrderBy(l1 => l1.Id).ToList() : expectedLevel1.ToList();
-                        var actualListLevel1 = _path.Any() ? actualLevel1.OrderBy(l1 => l1.Id).ToList() : actualLevel1.ToList();
+        [Fact(Skip = EFCoreSkipReasons.NullNavigationProtection), Trait("Skipped by EFCore", "Unskipped by us")]
+        public override void GroupJoin_on_a_subquery_containing_another_GroupJoin_projecting_outer_with_client_method()
+        {
+            base.GroupJoin_on_a_subquery_containing_another_GroupJoin_projecting_outer_with_client_method();
+        }
 
-                        for (int i = 0; i < expectedListLevel1.Count; i++)
-                        {
-                            _fullPath.Push("[" + i + "]");
-                            AssertLevel1(expectedListLevel1[i], actualListLevel1[i], expectedIncludes);
-                            _fullPath.Pop();
-                        }
+        [Fact, Trait("Skipped by EFCore", "Unskipped by us")]
+        public override void GroupJoin_on_a_subquery_containing_another_GroupJoin_projecting_inner()
+        {
+            base.GroupJoin_on_a_subquery_containing_another_GroupJoin_projecting_inner();
+        }
 
-                        return;
-                    }
+        [Fact, Trait("Skipped by EFCore", "Unskipped by us")]
+        public override void Select_subquery_with_client_eval_and_multi_level_navigation()
+        {
+            base.Select_subquery_with_client_eval_and_multi_level_navigation();
+        }
 
-                    if ((object)expected is IEnumerable<Level2> expectedLevel2 && (object)actual is IEnumerable<Level2> actualLevel2)
-                    {
-                        var expectedListLevel2 = _path.Any() ? expectedLevel2.OrderBy(l2 => l2.Id).ToList() : expectedLevel2.ToList();
-                        var actualListLevel2 = _path.Any() ? actualLevel2.OrderBy(l2 => l2.Id).ToList() : actualLevel2.ToList();
+        [Fact, Trait("Skipped by EFCore", "Unskipped by us")]
+        public override void Subquery_with_Distinct_Skip_FirstOrDefault_without_OrderBy()
+        {
+            base.Subquery_with_Distinct_Skip_FirstOrDefault_without_OrderBy();
+        }
 
-                        for (int i = 0; i < expectedListLevel2.Count; i++)
-                        {
-                            _fullPath.Push("[" + i + "]");
-                            AssertLevel2(expectedListLevel2[i], actualListLevel2[i], expectedIncludes);
-                            _fullPath.Pop();
-                        }
-
-                        return;
-                    }
-
-                    if ((object)expected is IEnumerable<Level3> expectedLevel3 && (object)actual is IEnumerable<Level3> actualLevel3)
-                    {
-                        var expectedListLevel3 = _path.Any() ? expectedLevel3.OrderBy(l3 => l3.Id).ToList() : expectedLevel3.ToList();
-                        var actualListLevel3 = _path.Any() ? actualLevel3.OrderBy(l3 => l3.Id).ToList() : actualLevel3.ToList();
-
-                        for (int i = 0; i < expectedListLevel3.Count; i++)
-                        {
-                            _fullPath.Push("[" + i + "]");
-                            AssertLevel3(expectedListLevel3[i], actualListLevel3[i], expectedIncludes);
-                            _fullPath.Pop();
-                        }
-
-                        return;
-                    }
-
-                    if ((object)expected is IEnumerable<Level4> expectedLevel4 && (object)actual is IEnumerable<Level4> actualLevel4)
-                    {
-                        List<Level4> expectedListLevel4 = _path.Any() ? expectedLevel4.OrderBy(l4 => l4.Id).ToList() : expectedLevel4.ToList();
-                        List<Level4> actualListLevel4 = _path.Any() ? actualLevel4.OrderBy(l4 => l4.Id).ToList() : actualLevel4.ToList();
-
-                        for (int i = 0; i < expectedListLevel4.Count; i++)
-                        {
-                            _fullPath.Push("[" + i + "]");
-                            AssertLevel4(expectedListLevel4[i], actualListLevel4[i], expectedIncludes);
-                            _fullPath.Pop();
-                        }
-
-                        return;
-                    }
-                }
-
-                base.AssertCollection(expected, actual, expectedIncludes);
-            }
-
-            protected override void AssertElement<TElement>(TElement expected, TElement actual, IEnumerable<IExpectedInclude> expectedIncludes)
-            {
-                if (expected != null && actual != null)
-                {
-                    Assert.Equal(expected.GetType(), actual.GetType());
-
-                    if ((object)expected is Level1 expectedLevel1)
-                    {
-                        AssertLevel1(expectedLevel1, (Level1)(object)actual, expectedIncludes);
-
-                        return;
-                    }
-
-                    if ((object)expected is Level2 expectedLevel2)
-                    {
-                        AssertLevel2(expectedLevel2, (Level2)(object)actual, expectedIncludes);
-
-                        return;
-                    }
-
-                    if ((object)expected is Level3 expectedLevel3)
-                    {
-                        AssertLevel3(expectedLevel3, (Level3)(object)actual, expectedIncludes);
-
-                        return;
-                    }
-
-                    if ((object)expected is Level4 expectedLevel4)
-                    {
-                        AssertLevel4(expectedLevel4, (Level4)(object)actual, expectedIncludes);
-
-                        return;
-                    }
-                }
-
-                base.AssertElement(expected, actual, expectedIncludes);
-            }
-
-            private void AssertLevel1(Level1 expected, Level1 actual, IEnumerable<IExpectedInclude> expectedIncludes)
-            {
-                Assert.Equal(expected.Id, actual.Id);
-                Assert.Equal(expected.Name, actual.Name);
-                Assert.Equal(expected.Date, actual.Date);
-
-                ProcessIncludes(expected, actual, expectedIncludes);
-            }
-
-            private void AssertLevel2(Level2 expected, Level2 actual, IEnumerable<IExpectedInclude> expectedIncludes)
-            {
-                Assert.Equal(expected.Id, actual.Id);
-                Assert.Equal(expected.Name, actual.Name);
-                Assert.Equal(expected.Date, actual.Date);
-                Assert.Equal(expected.Level1_Optional_Id, actual.Level1_Optional_Id);
-                Assert.Equal(expected.Level1_Required_Id, actual.Level1_Required_Id);
-
-                ProcessIncludes(expected, actual, expectedIncludes);
-            }
-
-            private void AssertLevel3(Level3 expected, Level3 actual, IEnumerable<IExpectedInclude> expectedIncludes)
-            {
-                Assert.Equal(expected.Id, actual.Id);
-                Assert.Equal(expected.Name, actual.Name);
-                Assert.Equal(expected.Level2_Optional_Id, actual.Level2_Optional_Id);
-                Assert.Equal(expected.Level2_Required_Id, actual.Level2_Required_Id);
-
-                ProcessIncludes(expected, actual, expectedIncludes);
-            }
-
-            private void AssertLevel4(Level4 expected, Level4 actual, IEnumerable<IExpectedInclude> expectedIncludes)
-            {
-                Assert.Equal(expected.Id, actual.Id);
-                Assert.Equal(expected.Name, actual.Name);
-                Assert.Equal(expected.Level3_Optional_Id, actual.Level3_Optional_Id);
-                Assert.Equal(expected.Level3_Required_Id, actual.Level3_Required_Id);
-
-                ProcessIncludes(expected, actual, expectedIncludes);
-            }
-
-            public override void AssertResult(object expected, object actual, IEnumerable<IExpectedInclude> expectedIncludes)
-            {
-                _path = new List<string>();
-                _fullPath = new Stack<string>();
-                _fullPath.Push("root");
-
-                AssertObject(expected, actual, expectedIncludes);
-            }
-
-            protected override void AssertObject(object expected, object actual, IEnumerable<IExpectedInclude> expectedIncludes)
-            {
-                if (expected == null && actual == null)
-                {
-                    return;
-                }
-
-                Assert.Equal(expected == null, actual == null);
-
-                var expectedType = expected.GetType();
-                if (expectedType.GetTypeInfo().IsGenericType
-                    && expectedType.GetTypeInfo().ImplementedInterfaces.Any(i => i.IsConstructedGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
-                {
-                    var typeArgument = expectedType.GenericTypeArguments[0];
-                    var assertCollectionMethodInfo = _assertCollectionMethodInfo.MakeGenericMethod(typeArgument);
-                    assertCollectionMethodInfo.Invoke(this, new[] { expected, actual, expectedIncludes });
-                }
-                else
-                {
-                    var assertElementMethodInfo = _assertElementMethodInfo.MakeGenericMethod(expectedType);
-                    assertElementMethodInfo.Invoke(this, new[] { expected, actual, expectedIncludes });
-                }
-            }
+        [Fact, Trait("Skipped by EFCore", "Unskipped by us")]
+        public override void Include_inside_subquery()
+        {
+            base.Include_inside_subquery();
         }
     }
 

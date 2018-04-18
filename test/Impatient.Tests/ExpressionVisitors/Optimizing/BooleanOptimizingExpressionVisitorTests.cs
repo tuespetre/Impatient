@@ -16,7 +16,9 @@ namespace Impatient.Tests.ExpressionVisitors.Optimizing
 
         private class TestClass
         {
-            public bool Prop { get; set; }
+            public bool BooleanProperty { get; set; }
+
+            public string StringProperty { get; set; }
         }
 
         [TestMethod]
@@ -39,24 +41,24 @@ namespace Impatient.Tests.ExpressionVisitors.Optimizing
         public void Not_Not()
         {
             AssertTransformation(
-                input: x => !(!(x.Prop)),
-                output: x => x.Prop);
+                input: x => !(!(x.BooleanProperty)),
+                output: x => x.BooleanProperty);
         }
 
         [TestMethod]
         public void Not_Not_Not()
         {
             AssertTransformation(
-                input: x => !(!(!(x.Prop))),
-                output: x => !(x.Prop));
+                input: x => !(!(!(x.BooleanProperty))),
+                output: x => !(x.BooleanProperty));
         }
 
         [TestMethod]
         public void Not_Not_Not_Not()
         {
             AssertTransformation(
-                input: x => !(!(!(!(x.Prop)))),
-                output: x => x.Prop);
+                input: x => !(!(!(!(x.BooleanProperty)))),
+                output: x => x.BooleanProperty);
         }
 
         [TestMethod]
@@ -111,32 +113,40 @@ namespace Impatient.Tests.ExpressionVisitors.Optimizing
         public void Not_Binary_AndAlso()
         {
             AssertTransformation(
-                input: x => !(x.Prop && x.Prop),
-                output: x => !(x.Prop) || !(x.Prop));
+                input: x => !(x.BooleanProperty && x.BooleanProperty),
+                output: x => !(x.BooleanProperty) || !(x.BooleanProperty));
         }
 
         [TestMethod]
         public void Not_Binary_OrElse()
         {
             AssertTransformation(
-                input: x => !(x.Prop || x.Prop),
-                output: x => !(x.Prop) && !(x.Prop));
+                input: x => !(x.BooleanProperty || x.BooleanProperty),
+                output: x => !(x.BooleanProperty) && !(x.BooleanProperty));
         }
 
         [TestMethod]
         public void Not_Binary_complex1()
         {
             AssertTransformation(
-                input: x => !(((x.Prop || x.Prop) && number1 <= number2) && (number3 < number4 || x.Prop == false)),
-                output: x => ((!x.Prop && !x.Prop) || number1 > number2) || (number3 >= number4 && x.Prop));
+                input: x => !(((x.BooleanProperty || x.BooleanProperty) && number1 <= number2) && (number3 < number4 || x.BooleanProperty == false)),
+                output: x => ((!x.BooleanProperty && !x.BooleanProperty) || number1 > number2) || (number3 >= number4 && x.BooleanProperty));
         }
 
         [TestMethod]
         public void True_eq_true_eq_boolean()
         {
             AssertTransformation(
-                input: x => true == (true == (x.Prop)),
-                output: x => x.Prop);
+                input: x => true == (true == (x.BooleanProperty)),
+                output: x => x.BooleanProperty);
+        }
+
+        [TestMethod]
+        public void Property_Equal_Value_Equal_NullableBoolean()
+        {
+            AssertTransformation(
+                input: x => (x.StringProperty == "string") == (bool?)true,
+                output: x => (x.StringProperty == "string"));
         }
 
         private static void AssertTransformation(
@@ -159,7 +169,10 @@ namespace Impatient.Tests.ExpressionVisitors.Optimizing
 
             var outputHash = hasher.HashCode;
 
-            Assert.AreEqual(inputHash, outputHash, "Output expression trees do not match");
+            if (inputHash != outputHash)
+            {
+                Assert.Fail($"Output expression trees do not match.\r\nExpected: {output}\r\nActual: {result}");
+            }
         }
     }
 }

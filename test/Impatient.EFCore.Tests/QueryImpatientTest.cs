@@ -254,6 +254,13 @@ namespace Impatient.EFCore.Tests
             base.GroupJoin_tracking_groups();
         }
 
+        [Fact(Skip = EFCoreSkipReasons.Punt)]
+        public override void Comparing_collection_navigation_to_null()
+        {
+            base.Comparing_collection_navigation_to_null();
+        }
+
+        [Fact]
         public override void String_Contains_Literal()
         {
             // Overridden; EFCore SQL Server test does this too.
@@ -261,6 +268,45 @@ namespace Impatient.EFCore.Tests
                 cs => cs.Where(c => c.ContactName.Contains("M")), // case-insensitive
                 cs => cs.Where(c => c.ContactName.Contains("M") || c.ContactName.Contains("m")), // case-sensitive
                 entryCount: 34);
+        }
+
+        [Fact, Trait("Skipped by EFCore", "Unskipped by us")]
+        public override void Union_simple_groupby()
+        {
+            AssertQuery<Customer>(
+                cs => cs.Where(s => s.ContactTitle == "Owner")
+                    .Union(cs.Where(c => c.City == "México D.F."))
+                    .GroupBy(c => c.City)
+                    .Select(g => new
+                    {
+                        g.Key,
+                        Total = g.Count()
+                    }),
+                elementSorter: e => e.Key,
+                entryCount: 0);
+        }
+
+        [Fact, Trait("Skipped by EFCore", "Unskipped by us")]
+        public override void Where_subquery_anon()
+        {
+            base.Where_subquery_anon();
+        }
+
+        [Fact, Trait("Skipped by EFCore", "Unskipped by us")]
+        public override void GroupBy_anonymous_subquery()
+        {
+            // Overridden to apply ordering for assertion purposes
+            AssertQuery<Customer>(cs =>
+                cs.Select(c => new { c.City, c.CustomerID })
+                    .OrderBy(c => c.CustomerID)
+                    .GroupBy(a => from c2 in cs select c2),
+                assertOrder: true);
+        }
+
+        [Fact, Trait("Skipped by EFCore", "Unskipped by us")]
+        public override void Compare_two_collection_navigations_using_equals()
+        {
+            base.Compare_two_collection_navigations_using_equals();
         }
     }
 }
