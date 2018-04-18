@@ -52,7 +52,10 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
                 if (primaryKeyDescriptor == null)
                 {
-                    return Expression.MakeBinary(node.NodeType, left, right);
+                    return Expression.MakeBinary(
+                        node.NodeType, 
+                        Expression.Convert(left, node.Left.Type), 
+                        Expression.Convert(right, node.Right.Type));
                 }
 
                 if (!rewroteLeft && canRewriteLeft)

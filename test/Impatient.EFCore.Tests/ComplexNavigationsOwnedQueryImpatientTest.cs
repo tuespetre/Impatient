@@ -3,8 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.ComplexNavigationsModel;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Linq;
 using Xunit;
 
 namespace Impatient.EFCore.Tests
@@ -19,6 +17,18 @@ namespace Impatient.EFCore.Tests
         public override void GroupJoin_reference_to_group_in_OrderBy()
         {
             base.GroupJoin_reference_to_group_in_OrderBy();
+        }
+
+        [Fact(Skip = EFCoreSkipReasons.NullNavigationProtection)]
+        public override void Nested_group_join_with_take()
+        {
+            base.Nested_group_join_with_take();
+        }
+
+        [Fact(Skip = EFCoreSkipReasons.NullNavigationProtection)]
+        public override void Null_reference_protection_complex_client_eval()
+        {
+            base.Null_reference_protection_complex_client_eval();
         }
     }
 

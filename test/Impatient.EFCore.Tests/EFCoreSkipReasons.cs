@@ -30,5 +30,9 @@
         public const string TestReliesOnUnguaranteedOrder =
             "This test relies on certain assumptions about the order of results that " +
             "is not guaranteed by the semantics of the query.";
+
+        public const string NullNavigationProtection =
+            "This test requires or demonstrates the concept of null navigation property " +
+            "access protection. We may or may not want to support that.";
     }
 }

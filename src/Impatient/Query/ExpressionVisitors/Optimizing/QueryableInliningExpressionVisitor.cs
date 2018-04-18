@@ -21,7 +21,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             this.parameterMapping = parameterMapping ?? throw new ArgumentNullException(nameof(parameterMapping));
 
             replacingVisitor
-                = new ExpressionReplacingExpressionVisitor(
+                = new SelectiveExpressionReplacingExpressionVisitor(
                     parameterMapping.ToDictionary(
                         kvp => kvp.Value as Expression,
                         kvp => Expression.Constant(kvp.Key) as Expression));
@@ -57,13 +57,27 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
                     if (expanded != visited)
                     {
-                        evaluated = base.Visit(expanded) as ConstantExpression;
+                        var revisited = Visit(expanded);
+
+                        evaluated = revisited as ConstantExpression;
+
+                        if (evaluated == null)
+                        {
+                            return revisited;
+                        }
                     }
                 }
 
                 if (evaluated?.Value is IQueryable queryable && queryable.Provider == queryProvider)
                 {
-                    return Reparameterize(queryable.Expression);
+                    var query = queryable.Expression;
+
+                    if (query is ConstantExpression constant && constant.Value == queryable)
+                    {
+                        return query;
+                    }
+
+                    return Visit(Reparameterize(queryable.Expression));
                 }
             }
 
@@ -128,10 +142,29 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
         protected override Expression VisitMemberInit(MemberInitExpression node)
         {
+            // This override ensures that materializers with parameterless constructors
+            // are not botched by partial evaluation.
+
             var newExpression = VisitAndConvert(node.NewExpression, nameof(VisitMemberInit));
             var bindings = node.Bindings.Select(VisitMemberBinding);
 
             return node.Update(newExpression, bindings);
+        }
+
+        private class SelectiveExpressionReplacingExpressionVisitor : ExpressionReplacingExpressionVisitor
+        {
+            public SelectiveExpressionReplacingExpressionVisitor(IDictionary<Expression, Expression> mapping) : base(mapping)
+            {
+            }
+
+            public SelectiveExpressionReplacingExpressionVisitor(Expression target, Expression replacement) : base(target, replacement)
+            {
+            }
+
+            protected override Expression VisitLambda<T>(Expression<T> node)
+            {
+                return node;
+            }
         }
     }
 }
