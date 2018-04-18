@@ -13,9 +13,13 @@ namespace Impatient.Query.Infrastructure
 
         void DecreaseIndent();
 
+        void StartCapture();
+
+        string StopCapture();
+
         void AddParameter(Expression expression, Func<string, string> parameterNameFormatter);
 
-        void AddParameterList(Expression expression, Func<string, string> parameterNameFormatter);
+        void AddDynamicParameter(string fragment, Expression expression, Func<string, string> parameterNameFormatter);
 
         LambdaExpression Build();
     }

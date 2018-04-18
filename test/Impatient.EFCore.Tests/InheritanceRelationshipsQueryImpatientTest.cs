@@ -297,9 +297,10 @@ namespace Impatient.EFCore.Tests
 
             using (var context = new InheritanceRelationshipsContext(options))
             {
-                context.Database.EnsureCreated();
-
-                InheritanceRelationshipsModelInitializer.Seed(context);
+                if (context.Database.EnsureCreated())
+                {
+                    InheritanceRelationshipsModelInitializer.Seed(context);
+                }
             }
         }
 

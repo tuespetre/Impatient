@@ -119,10 +119,12 @@ namespace Impatient.Query.Infrastructure
             {
                 var sequenceType = type.GetSequenceType();
 
-                expression
-                    = Expression.Call(
-                        queryableAsQueryableMethodInfo.MakeGenericMethod(sequenceType),
-                        expression);
+                // Calling AsQueryable creates a self-referencing
+                // EnumerableQuery whose inner list/array/etc. cannot
+                // be accessed without reflection. We want other visitors
+                // to have the chance to access it so we manually construct
+                // the EnumerableQuery from a ConstantExpression.
+                expression = expression.AsEnumerableQuery();
 
                 if (type.IsGenericType(typeof(IOrderedQueryable<>)))
                 {

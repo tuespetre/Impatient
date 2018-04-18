@@ -1528,21 +1528,6 @@ FROM [dbo].[MyClass1] AS [m]",
         }
 
         [TestMethod]
-        public void Contains_expression_in_array_closured()
-        {
-            var array = new[] { 77, 88 };
-
-            var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => array.Contains(m.Prop2));
-
-            query.ToList();
-
-            Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN [m].[Prop2] IN (@p0_0, @p0_1) THEN 1 ELSE 0 END) AS BIT)
-FROM [dbo].[MyClass1] AS [m]",
-                SqlLog);
-        }
-
-        [TestMethod]
         public void Contains_expression_in_list_literal()
         {
             var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => new List<int> { 77 }.Contains(m.Prop2));
@@ -1556,7 +1541,22 @@ FROM [dbo].[MyClass1] AS [m]",
         }
 
         [TestMethod]
-        public void Contains_expression_in_list_closured()
+        public void Contains_expression_closured_has_null_has_nonnull()
+        {
+            var list = new List<int?> { 77, null };
+
+            var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => list.Contains(m.Prop2));
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT CAST((CASE WHEN ([m].[Prop2] IN (@p0_0) OR [m].[Prop2] IS NULL) THEN 1 ELSE 0 END) AS BIT)
+FROM [dbo].[MyClass1] AS [m]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Contains_expression_closured_has_nonnull()
         {
             var list = new List<int> { 77 };
 
@@ -1566,6 +1566,36 @@ FROM [dbo].[MyClass1] AS [m]",
 
             Assert.AreEqual(
                 @"SELECT CAST((CASE WHEN [m].[Prop2] IN (@p0_0) THEN 1 ELSE 0 END) AS BIT)
+FROM [dbo].[MyClass1] AS [m]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Contains_expression_closured_has_null()
+        {
+            var list = new List<int?> { null };
+
+            var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => list.Contains(m.Prop2));
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT CAST((CASE WHEN [m].[Prop2] IS NULL THEN 1 ELSE 0 END) AS BIT)
+FROM [dbo].[MyClass1] AS [m]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Contains_expression_closured_empty()
+        {
+            var list = new List<int>();
+
+            var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => list.Contains(m.Prop2));
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT CAST((CASE WHEN [m].[Prop2] IN (NULL) THEN 1 ELSE 0 END) AS BIT)
 FROM [dbo].[MyClass1] AS [m]",
                 SqlLog);
         }

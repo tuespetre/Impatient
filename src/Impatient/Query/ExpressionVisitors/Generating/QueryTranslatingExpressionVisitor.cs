@@ -1199,18 +1199,76 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return sqlFunctionExpression;
         }
 
+        private void HandleSqlInExpression(Expression valueExpression, IEnumerable<Expression> values)
+        {
+            var valueList = new List<Expression>();
+            var foundNull = false;
+
+            foreach (var value in values)
+            {
+                if (value.UnwrapInnerExpression() is ConstantExpression constant
+                    && constant.Value == null)
+                {
+                    foundNull = true;
+                    continue;
+                }
+
+                valueList.Add(value);
+            }
+
+            if (valueList.Count == 0)
+            {
+                if (!foundNull)
+                {
+                    Visit(valueExpression);
+                    Builder.Append(" IN (SELECT 1 WHERE 1 = 0)");
+                    return;
+                }
+                else
+                {
+                    Visit(valueExpression);
+                    Builder.Append(" IS NULL");
+                    return;
+                }
+            }
+            else
+            {
+                if (foundNull)
+                {
+                    Builder.Append("(");
+                    Visit(valueExpression);
+                    Builder.Append(" IS NULL OR ");
+                }
+
+                Visit(valueExpression);
+                Builder.Append(" IN (");
+                Visit(valueList[0]);
+
+                for (var i = 1; i < valueList.Count; i++)
+                {
+                    Builder.Append(", ");
+                    Visit(valueList[i]);
+                }
+
+                Builder.Append(")");
+
+                if (foundNull)
+                {
+                    Builder.Append(")");
+                }
+            }
+        }
+
         protected virtual Expression VisitSqlInExpression(SqlInExpression sqlInExpression)
         {
-            Visit(sqlInExpression.Value);
-
-            Builder.Append(" IN (");
-
-            var handled = false;
-
             switch (sqlInExpression.Values)
             {
                 case RelationalQueryExpression relationalQueryExpression:
                 {
+                    Visit(sqlInExpression.Value);
+
+                    Builder.Append(" IN (");
+
                     Builder.IncreaseIndent();
                     Builder.AppendLine();
 
@@ -1219,13 +1277,17 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                     Builder.DecreaseIndent();
                     Builder.AppendLine();
 
-                    handled = true;
+                    Builder.Append(")");
 
                     break;
                 }
 
                 case SelectExpression selectExpression:
                 {
+                    Visit(sqlInExpression.Value);
+
+                    Builder.Append(" IN (");
+
                     Builder.IncreaseIndent();
                     Builder.AppendLine();
 
@@ -1234,81 +1296,61 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                     Builder.DecreaseIndent();
                     Builder.AppendLine();
 
-                    handled = true;
+                    Builder.Append(")");
 
                     break;
                 }
 
+                // TODO: Check the following three cases for if they contain parameters
+
                 case NewArrayExpression newArrayExpression:
                 {
-                    foreach (var (expression, index) in newArrayExpression.Expressions.Select((e, i) => (e, i)))
-                    {
-                        handled = true;
-
-                        if (index > 0)
-                        {
-                            Builder.Append(", ");
-                        }
-
-                        Visit(expression);
-                    }
+                    HandleSqlInExpression(
+                        sqlInExpression.Value, 
+                        newArrayExpression.Expressions);
 
                     break;
                 }
 
                 case ListInitExpression listInitExpression:
                 {
-                    foreach (var (elementInit, index) in listInitExpression.Initializers.Select((e, i) => (e, i)))
-                    {
-                        handled = true;
-
-                        if (index > 0)
-                        {
-                            Builder.Append(", ");
-                        }
-
-                        Visit(elementInit.Arguments[0]);
-                    }
+                    HandleSqlInExpression(
+                        sqlInExpression.Value, 
+                        listInitExpression.Initializers.Select(i => i.Arguments[0]));
 
                     break;
                 }
 
                 case ConstantExpression constantExpression:
                 {
-                    var values = from object value in ((IEnumerable)constantExpression.Value)
-                                 select Expression.Constant(value);
-
-                    foreach (var (value, index) in values.Select((v, i) => (v, i)))
-                    {
-                        handled = true;
-
-                        if (index > 0)
-                        {
-                            Builder.Append(", ");
-                        }
-
-                        Visit(value);
-                    }
+                    HandleSqlInExpression(
+                        sqlInExpression.Value,
+                        from object value in ((IEnumerable)constantExpression.Value)
+                        select Expression.Constant(value));
 
                     break;
                 }
 
                 case Expression expression:
                 {
-                    handled = true;
+                    Builder.StartCapture();
 
-                    Builder.AddParameterList(expression, FormatParameterName);
+                    Visit(sqlInExpression.Value);
+
+                    var value = Builder.StopCapture();
+
+                    Builder.AddDynamicParameter(value, expression, FormatParameterName);
+
+                    break;
+                }
+
+                default:
+                {
+                    Builder.Append(" IN (SELECT 1 WHERE 1 = 0)");
 
                     break;
                 }
             }
-
-            if (!handled)
-            {
-                Builder.Append("SELECT 1 WHERE 1 = 0");
-            }
-
-            Builder.Append(")");
 
             return sqlInExpression;
         }

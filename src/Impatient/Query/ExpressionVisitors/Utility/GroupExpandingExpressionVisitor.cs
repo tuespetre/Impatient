@@ -17,6 +17,9 @@ namespace Impatient.Query.ExpressionVisitors.Utility
     /// </summary>
     public class GroupExpandingExpressionVisitor : ExpressionVisitor
     {
+        private static readonly MethodInfo toListGenericMethodInfo
+            = GetGenericMethodDefinition((IEnumerable<object> s) => s.ToList());
+
         private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
         private readonly IEnumerable<ExpressionVisitor> postExpansionVisitors;
 
@@ -63,13 +66,16 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                                 .Equal(outerKeySelector, innerKeySelector)
                                 .VisitWith(postExpansionVisitors);
 
+                        var query
+                            = new EnumerableRelationalQueryExpression(
+                                newSelectExpression
+                                    .UpdateProjection(new ServerProjectionExpression(projection))
+                                    .AddToPredicate(predicate));
+
                         return ExpandedGrouping.Create(
                             visited, 
                             groupByResultExpression.OuterKeySelector,
-                            new EnumerableRelationalQueryExpression(
-                                newSelectExpression
-                                    .UpdateProjection(new ServerProjectionExpression(projection))
-                                    .AddToPredicate(predicate)));
+                            query.AsList());
                     }
                     else
                     {
@@ -95,12 +101,15 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                                 .Equal(outerKeySelector, innerKeySelector)
                                 .VisitWith(postExpansionVisitors);
 
+                        var query
+                            = new EnumerableRelationalQueryExpression(
+                                groupedRelationalQueryExpression.SelectExpression
+                                    .AddToPredicate(predicate));
+
                         return ExpandedGrouping.Create(
                             visited, 
                             groupedRelationalQueryExpression.OuterKeySelector,
-                            new EnumerableRelationalQueryExpression(
-                                groupedRelationalQueryExpression.SelectExpression
-                                    .AddToPredicate(predicate)));
+                            query.AsList());
                     }
                     else
                     {

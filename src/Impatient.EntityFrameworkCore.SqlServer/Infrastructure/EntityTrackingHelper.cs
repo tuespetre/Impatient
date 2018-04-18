@@ -2,10 +2,11 @@
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
@@ -77,14 +78,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 
             var cached = entity;
 
-            if (!executor.TryGetEntity(entityType, keyValues, ref cached, includes, out var includesCached))
+            if (!executor.TryGetEntity(entityType, keyValues, ref cached, includes, out var cachedIncludes))
             {
-                includesCached = false;
+                cachedIncludes = false;
 
                 executor.CacheEntity(entityType, key, keyValues, entity, shadowProperties, shadowPropertyValues, includes);
             }
 
-            if (!includesCached)
+            if (!cachedIncludes)
             {
                 foreach (var navigation in includes)
                 {
@@ -142,11 +143,20 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
                     {
                         continue;
                     }
-                    else if (ReferenceEquals(value, item))
+
+                    if (ReferenceEquals(value, item))
                     {
                         HandleEntry(executor, ref result, accessorInfo.EntityType);
+
+                        continue;
                     }
-                    else if (value is IList list)
+
+                    if (value is IQueryable queryable && queryable.Expression is ConstantExpression constant)
+                    {
+                        value = constant.Value;
+                    }
+
+                    if (value is IList list)
                     {
                         var i = 0;
 
@@ -155,24 +165,37 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
                             list[i] = subvalue;
                             i++;
                         }
+
+                        continue;
                     }
-                    else if (value is IEnumerable enumerable)
+
+                    if (value is IEnumerable enumerable)
                     {
+                        // The whole point of the IList block above is that
+                        // we need to update references to cached entities
+                        // within the list. We should make sure that every 
+                        // materialized IEnumerable is a list.
+
+                        // If there is some kind of issue with entities
+                        // not being tracked, uncommenting the below line
+                        // might be a good place to start.
+
+                        // Debugger.Break();
+
                         foreach (var subvalue in TrackEntities(enumerable, executor, accessorInfo.SubAccessors))
                         {
-                            // no-op
                         }
+
+                        continue;
                     }
-                    else
+
+                    var copy = value;
+
+                    HandleEntry(executor, ref value, accessorInfo.EntityType);
+
+                    if (!ReferenceEquals(copy, value))
                     {
-                        var copy = value;
-
-                        HandleEntry(executor, ref value, accessorInfo.EntityType);
-
-                        if (!ReferenceEquals(copy, value))
-                        {
-                            accessorInfo.SetValue?.Invoke(result, value);
-                        }
+                        accessorInfo.SetValue?.Invoke(result, value);
                     }
                 }
 
@@ -218,7 +241,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 
                 stateManager.StartTracking(entry);
 
-                entry.MarkUnchangedFromQuery(null);//info.ForeignKeys);
+                entry.MarkUnchangedFromQuery(null);
             }
             else
             {
@@ -242,13 +265,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 
         private static void FixupNavigation(INavigation navigation, object entity, object cached)
         {
-            var inverse = navigation.FindInverse();
-
-            if (inverse == null)
-            {
-                return;
-            }
-
             var value = navigation.GetGetter().GetClrValue(entity);
 
             if (value == null)
@@ -257,6 +273,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
             }
 
             navigation.GetSetter().SetClrValue(cached, value);
+
+            var inverse = navigation.FindInverse();
+
+            if (inverse == null)
+            {
+                return;
+            }
 
             if (inverse.IsCollection())
             {

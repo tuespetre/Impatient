@@ -1,13 +1,18 @@
 ﻿using Impatient.Query.Infrastructure;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using static Impatient.Extensions.ReflectionExtensions;
 
 namespace Impatient.Query.Expressions
 {
     public class EnumerableRelationalQueryExpression : RelationalQueryExpression
     {
+        private static readonly MethodInfo toListGenericMethodInfo
+            = GetGenericMethodDefinition((IEnumerable<object> s) => s.ToList());
+        
         public EnumerableRelationalQueryExpression(SelectExpression selectExpression)
             : this(
                   selectExpression,
@@ -59,6 +64,11 @@ namespace Impatient.Query.Expressions
         public EnumerableRelationalQueryExpression WithTransformationMethod(MethodInfo transformationMethod)
         {
             return new EnumerableRelationalQueryExpression(SelectExpression, transformationMethod);
+        }
+
+        public EnumerableRelationalQueryExpression AsList()
+        {
+            return WithTransformationMethod(toListGenericMethodInfo.MakeGenericMethod(SelectExpression.Type));
         }
 
         public EnumerableRelationalQueryExpression AsOrdered()

@@ -171,7 +171,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                                 ExpandedGrouping.Create(
                                     node,
                                     keyExpression,
-                                    elementExpression));
+                                    elementExpression.AsList()));
                         }
 
                         return node;

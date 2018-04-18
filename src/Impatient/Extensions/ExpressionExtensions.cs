@@ -3,6 +3,7 @@ using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -11,6 +12,19 @@ namespace Impatient.Extensions
 {
     public static class ExpressionExtensions
     {
+        public static Expression AsEnumerableQuery(this Expression expression)
+        {
+            Debug.Assert(expression.Type.IsSequenceType());
+
+            var sequenceType = expression.Type.GetSequenceType();
+
+            return Expression.New(
+                typeof(EnumerableQuery<>).MakeGenericType(sequenceType).GetConstructor(new[] { typeof(Expression) }),
+                Expression.Call(
+                    typeof(Expression).GetRuntimeMethod(nameof(Expression.Constant), new[] { typeof(object) }),
+                    expression));
+        }
+
         private static Expression ResolveProperty(Expression expression, string segment)
         {
             switch (expression)

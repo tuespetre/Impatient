@@ -247,9 +247,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return default;
         }
 
-        public bool TryGetEntity(IEntityType entityType, object[] keyValues, ref object entity, List<INavigation> includes, out bool includesCached)
+        public bool TryGetEntity(IEntityType entityType, object[] keyValues, ref object entity, List<INavigation> includes, out bool cachedIncludes)
         {
-            includesCached = false;
+            cachedIncludes = false;
 
             if (entityLookups.TryGetValue(entityType, out var lookups))
             {
@@ -259,7 +259,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                     if (cached.Includes.Contains(includes))
                     {
-                        includesCached = true;
+                        cachedIncludes = true;
                     }
                     else
                     {

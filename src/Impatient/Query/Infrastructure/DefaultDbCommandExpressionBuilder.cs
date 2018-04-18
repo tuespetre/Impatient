@@ -14,6 +14,7 @@ namespace Impatient.Query.Infrastructure
         private int parameterIndex = 0;
         private int indentationLevel = 0;
         private bool containsParameterList = false;
+        private Stack<StringBuilder> captureStack = new Stack<StringBuilder>();
         private StringBuilder archiveStringBuilder = new StringBuilder();
         private StringBuilder workingStringBuilder = new StringBuilder();
 
@@ -83,6 +84,26 @@ namespace Impatient.Query.Infrastructure
             indentationLevel--;
         }
 
+        public void StartCapture()
+        {
+            EmitSql();
+
+            captureStack.Push(archiveStringBuilder);
+
+            archiveStringBuilder = new StringBuilder();
+        }
+
+        public string StopCapture()
+        {
+            EmitSql();
+
+            var result = archiveStringBuilder.ToString();
+
+            archiveStringBuilder = captureStack.Pop();
+
+            return result;
+        }
+
         private static Expression SetParameterValue(Expression parameter, Expression value)
         {
             var valueToSet = (Expression)Expression.Convert(value, typeof(object));
@@ -125,7 +146,7 @@ namespace Impatient.Query.Infrastructure
                         dbParameterParameterNamePropertyInfo),
                     Expression.Constant(parameterName)),
                 SetParameterValue(
-                    dbParameterVariable, 
+                    dbParameterVariable,
                     node),
                 Expression.Call(
                     Expression.MakeMemberAccess(
@@ -141,103 +162,19 @@ namespace Impatient.Query.Infrastructure
             parameterIndex++;
         }
 
-        public void AddParameterList(Expression node, Func<string, string> formatter)
+        public void AddDynamicParameter(string fragment, Expression expression, Func<string, string> formatter)
         {
-            var enumeratorVariable = Expression.Parameter(typeof(IEnumerator), "enumerator");
-            var enumeratedVariable = Expression.Parameter(typeof(bool), "enumerated");
-            var indexVariable = Expression.Parameter(typeof(int), "index");
-            var parameterPrefixVariable = Expression.Parameter(typeof(string), "parameterPrefix");
-            var parameterNameVariable = Expression.Parameter(typeof(string), "parameterName");
-            var breakLabel = Expression.Label();
-
-            var parameterListBlock
-                = Expression.Block(
-                    new[]
-                    {
-                        enumeratorVariable,
-                        enumeratedVariable,
-                        indexVariable,
-                        parameterPrefixVariable,
-                        parameterNameVariable
-                    },
-                    Expression.TryFinally(
-                        body: Expression.Block(
-                            Expression.Assign(
-                                enumeratorVariable,
-                                Expression.Call(
-                                    node,
-                                    enumerableGetEnumeratorMethodInfo)),
-                            Expression.Assign(
-                                parameterPrefixVariable,
-                                Expression.Constant(formatter($"p{parameterIndex}_"))),
-                            Expression.Loop(
-                                @break: breakLabel,
-                                body: Expression.Block(
-                                    Expression.Assign(
-                                        parameterNameVariable,
-                                        Expression.Call(
-                                            stringConcatObjectMethodInfo,
-                                            parameterPrefixVariable,
-                                            Expression.Convert(indexVariable, typeof(object)))),
-                                    Expression.IfThenElse(
-                                        Expression.Call(enumeratorVariable, enumeratorMoveNextMethodInfo),
-                                        Expression.Assign(enumeratedVariable, Expression.Constant(true)),
-                                        Expression.Break(breakLabel)),
-                                    Expression.IfThen(
-                                        Expression.GreaterThan(
-                                            indexVariable, 
-                                            Expression.Constant(0)),
-                                        Expression.Call(
-                                            stringBuilderVariable,
-                                            stringBuilderAppendMethodInfo,
-                                            Expression.Constant(", "))),
-                                    Expression.Assign(
-                                        indexVariable, 
-                                        Expression.Increment(indexVariable)),
-                                    Expression.Call(
-                                        stringBuilderVariable,
-                                        stringBuilderAppendMethodInfo,
-                                        parameterNameVariable),
-                                    Expression.Assign(
-                                        dbParameterVariable,
-                                        Expression.Call(
-                                            dbCommandVariable,
-                                            dbCommandCreateParameterMethodInfo)),
-                                    Expression.Assign(
-                                        Expression.MakeMemberAccess(
-                                            dbParameterVariable,
-                                            dbParameterParameterNamePropertyInfo),
-                                        parameterNameVariable),
-                                    SetParameterValue(
-                                        dbParameterVariable,
-                                        Expression.MakeMemberAccess(
-                                            enumeratorVariable,
-                                            enumeratorCurrentPropertyInfo)),
-                                    Expression.Call(
-                                        Expression.MakeMemberAccess(
-                                            dbCommandVariable,
-                                            dbCommandParametersPropertyInfo),
-                                        dbParameterCollectionAddMethodInfo,
-                                        dbParameterVariable)))),
-                            @finally: Expression.Block(
-                                Expression.IfThen(
-                                    Expression.IsFalse(enumeratedVariable),
-                                    Expression.Call(
-                                        stringBuilderVariable,
-                                        stringBuilderAppendMethodInfo,
-                                        Expression.Constant("SELECT 1 WHERE 1 = 0"))),
-                                Expression.IfThen(
-                                    Expression.TypeIs(
-                                        enumeratorVariable,
-                                        typeof(IDisposable)),
-                                    Expression.Call(
-                                        Expression.Convert(
-                                            enumeratorVariable,
-                                            typeof(IDisposable)),
-                                        disposableDisposeMethodInfo)))));
-
             EmitSql();
-            blockExpressions.Add(parameterListBlock);
+
+            blockExpressions.Add(Expression.Call(
+                GetType().GetMethod(nameof(AddRuntimeParameterList), BindingFlags.NonPublic | BindingFlags.Static),
+                dbCommandVariable,
+                stringBuilderVariable,
+                Expression.Constant(fragment),
+                expression,
+                Expression.Constant($"p{parameterIndex}"),
+                Expression.Constant(formatter)));
+
             parameterIndex++;
             containsParameterList = true;
         }
@@ -299,15 +236,121 @@ namespace Impatient.Query.Infrastructure
             {
                 var currentString = workingStringBuilder.ToString();
 
-                blockExpressions.Add(
-                    Expression.Call(
-                        stringBuilderVariable,
-                        stringBuilderAppendMethodInfo,
-                        Expression.Constant(currentString)));
+                if (captureStack.Count == 0)
+                {
+                    blockExpressions.Add(
+                        Expression.Call(
+                            stringBuilderVariable,
+                            stringBuilderAppendMethodInfo,
+                            Expression.Constant(currentString)));
+                }
 
                 archiveStringBuilder.Append(currentString);
 
                 workingStringBuilder.Clear();
+            }
+        }
+
+        private static void AddRuntimeParameterList(
+            DbCommand dbCommand,
+            StringBuilder stringBuilder,
+            string fragment,
+            IEnumerable values,
+            string name,
+            Func<string, string> formatter)
+        {
+            DbParameter parameter;
+            string formattedName;
+            IEnumerator enumerator = default;
+            var index = 0;
+            var addedParameter = false;
+            var foundNull = false;
+
+            try
+            {
+                enumerator = values.GetEnumerator();
+
+                var insertPoint = stringBuilder.Length;
+
+                stringBuilder.Append(fragment);
+
+                if (enumerator.MoveNext())
+                {
+                    if (enumerator.Current == null)
+                    {
+                        foundNull = true;
+                    }
+                    else
+                    {
+                        if (!addedParameter)
+                        {
+                            stringBuilder.Append(" IN (");
+                        }
+
+                        addedParameter = true;
+                        formattedName = formatter($"{name}_{index++}");
+                        stringBuilder.Append(formattedName);
+                        parameter = dbCommand.CreateParameter();
+                        parameter.ParameterName = formattedName;
+                        parameter.Value = enumerator.Current;
+                        dbCommand.Parameters.Add(parameter);
+                    }
+
+                    while (enumerator.MoveNext())
+                    {
+                        if (enumerator.Current == null)
+                        {
+                            foundNull = true;
+                        }
+                        else
+                        {
+                            if (!addedParameter)
+                            {
+                                stringBuilder.Append(" IN (");
+                            }
+
+                            addedParameter = true;
+                            formattedName = formatter($"{name}_{index++}");
+                            stringBuilder.Append($", {formattedName}");
+                            parameter = dbCommand.CreateParameter();
+                            parameter.ParameterName = formattedName;
+                            parameter.Value = enumerator.Current;
+                            dbCommand.Parameters.Add(parameter);
+                        }
+                    }
+                }
+
+                if (!addedParameter)
+                {
+                    if (!foundNull)
+                    {
+                        stringBuilder.Append(" IN (NULL)");
+                    }
+                    else
+                    {
+                        stringBuilder.Append(" IS NULL");
+                    }
+                }
+                else
+                {
+                    stringBuilder.Append(")");
+
+                    if (foundNull)
+                    {
+                        stringBuilder.Insert(insertPoint, "(");
+                        stringBuilder.Append(" OR ");
+                        stringBuilder.Append(fragment);
+                        stringBuilder.Append(" IS NULL");
+                        stringBuilder.Append(")");
+                    }
+                }
+            }
+            finally
+            {
+                if (enumerator is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
             }
         }
     }

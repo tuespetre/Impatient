@@ -1,5 +1,6 @@
 ﻿using Impatient.Extensions;
 using Impatient.Query.Expressions;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,7 +41,7 @@ namespace Impatient.Query.Infrastructure
             keyExpression = default;
             elementsExpression = default;
 
-            if (expression is NewExpression newExpression 
+            if (expression is NewExpression newExpression
                 && newExpression.Constructor.DeclaringType.IsGenericType(typeof(ExpandedGrouping<,>)))
             {
                 keyExpression = newExpression.Arguments[0];
@@ -55,20 +56,18 @@ namespace Impatient.Query.Infrastructure
 
     internal class ExpandedGrouping<TKey, TElement> : IGrouping<TKey, TElement>
     {
-        public ExpandedGrouping(TKey key, IEnumerable<TElement> elements)
+        public ExpandedGrouping(TKey key, List<TElement> elements)
         {
-            Key = key;
-            Elements = elements;
+            Key = key; // The key may very well be null
+            Elements = elements ?? throw new ArgumentNullException(nameof(elements));
         }
 
         public TKey Key { get; }
 
-        public IEnumerable<TElement> Elements { get; }
+        public List<TElement> Elements { get; }
 
-        public IEnumerator<TElement> GetEnumerator()
-            => Elements?.GetEnumerator() ?? Enumerable.Empty<TElement>().GetEnumerator();
+        public IEnumerator<TElement> GetEnumerator() => Elements.GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-            => Elements?.GetEnumerator() ?? Enumerable.Empty<TElement>().GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => Elements.GetEnumerator();
     }
 }
