@@ -19,7 +19,7 @@ namespace Impatient.Query.Infrastructure
 
         void AddParameter(Expression expression, Func<string, string> parameterNameFormatter);
 
-        void AddDynamicParameter(string fragment, Expression expression, Func<string, string> parameterNameFormatter);
+        void AddDynamicParameters(string fragment, Expression expression, Func<string, string> parameterNameFormatter);
 
         LambdaExpression Build();
     }

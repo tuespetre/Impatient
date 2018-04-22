@@ -172,7 +172,7 @@ namespace Impatient.Extensions
 
             return true;
         }
-        
+
         public static Expression ReplaceWithConversions(this Expression expression, Func<Expression, Expression> replacer)
         {
             var conversionStack = new Stack<UnaryExpression>();
@@ -195,16 +195,52 @@ namespace Impatient.Extensions
             return expression;
         }
 
-        public static Expression AsSqlBooleanExpression(this Expression expression)
+        public static void MatchNullableTypes(ref Expression left, ref Expression right)
         {
-            var unwrapped = expression.UnwrapInnerExpression();
-
-            if (unwrapped.IsSqlBooleanExpression())
+            if (left.Type == right.Type)
             {
-                return unwrapped;
+                return;
+            }
+            else if (left.Type.UnwrapNullableType() == right.Type)
+            {
+                right = Expression.Convert(right, left.Type);
+            }
+            else if (right.Type.UnwrapNullableType() == left.Type)
+            {
+                left = Expression.Convert(left, right.Type);
+            }
+        }
+
+        public static BinaryExpression Update(this BinaryExpression node, Expression left, Expression right)
+        {
+            if (left.Type != node.Left.Type)
+            {
+                left = Expression.Convert(left, node.Left.Type);
+            }
+
+            if (right.Type != node.Right.Type)
+            {
+                right = Expression.Convert(right, node.Right.Type);
+            }
+
+            return node.Update(left, node.Conversion, right);
+        }
+
+        /// <summary>
+        /// Ensures that the given expression is a valid expression
+        /// for producing a predicatable boolean value or wraps it otherwise.
+        /// Examples: IN, EXISTS, x = y, a &lt; b
+        /// </summary>
+        public static Expression AsLogicalBooleanSqlExpression(this Expression expression)
+        {
+            if (expression.IsLogicalBooleanSqlExpression())
+            {
+                return expression;
             }
 
             var test = true;
+
+            expression = expression.UnwrapInnerExpression();
 
             while (expression.NodeType == ExpressionType.Not)
             {
@@ -212,12 +248,106 @@ namespace Impatient.Extensions
                 expression = ((UnaryExpression)expression).Operand;
             }
 
-            return Expression.Equal(expression, Expression.Constant(test));
+            var testType = expression.Type.IsBooleanType() ? expression.Type : typeof(bool);
+
+            return Expression.Equal(expression, Expression.Constant(test, testType));
         }
 
-        public static bool IsSqlBooleanExpression(this Expression expression)
+        /// <summary>
+        /// Ensures that the given expression is a valid expression
+        /// for producing a projected boolean value or wraps it otherwise.
+        /// Examples: [table].[Column], CASE WHEN x = y THEN 1 ELSE 0 END
+        /// </summary>
+        public static Expression AsBooleanValuedSqlExpression(this Expression expression)
         {
-            switch (expression)
+            if (expression.IsBooleanValuedSqlExpression())
+            {
+                return expression;
+            }
+
+            expression = expression.UnwrapInnerExpression();
+
+            var flag = true;
+            var flipped = false;
+            var nullable = expression.Type.IsNullableType();
+
+            while (expression.NodeType == ExpressionType.Not)
+            {
+                flag = !flag;
+                flipped = true;
+                expression = ((UnaryExpression)expression).Operand;
+            }
+
+            if (expression.IsBooleanValuedSqlExpression())
+            {
+                if (nullable)
+                {
+                    return Expression.Condition(
+                        Expression.Equal(expression, Expression.Constant(null)),
+                        Expression.Constant(null, typeof(bool?)),
+                        flipped
+                            ? Expression.Convert(
+                                Expression.Equal(
+                                    expression, 
+                                    Expression.Constant(flag, typeof(bool?))),
+                                typeof(bool?))
+                            : expression);
+                }
+                else
+                {
+                    return Expression.Condition(
+                        Expression.Equal(expression, Expression.Constant(flag)),
+                        Expression.Constant(true),
+                        Expression.Constant(false));
+                }
+            }
+
+            var test = expression;
+
+            if (!test.IsLogicalBooleanSqlExpression())
+            {
+                if (nullable)
+                {
+                    test
+                        = Expression.AndAlso(
+                            Expression.NotEqual(test, Expression.Constant(null)),
+                            test.AsLogicalBooleanSqlExpression());
+                }
+                else
+                {
+                    test = test.AsLogicalBooleanSqlExpression();
+                }
+            }
+
+            var ifTrue = (Expression)Expression.Constant(flag);
+            var ifFalse = (Expression)Expression.Constant(!flag);
+
+            if (nullable)
+            {
+                if (test.NodeType == ExpressionType.Convert)
+                {
+                    test = ((UnaryExpression)test).Operand;
+                }
+                else
+                {
+                    ifTrue = Expression.Convert(ifTrue, typeof(bool?));
+                    ifFalse = Expression.Constant(null, typeof(bool?));
+                }
+            }
+
+            return Expression.Condition(test, ifTrue, ifFalse);
+        }
+
+        public static bool IsLogicalBooleanSqlExpression(this Expression expression)
+        {
+            if (!expression.Type.IsBooleanType())
+            {
+                return false;
+            }
+
+            var unwrapped = expression.UnwrapInnerExpression();
+
+            switch (unwrapped)
             {
                 case null:
                 {
@@ -233,7 +363,7 @@ namespace Impatient.Extensions
 
                 case BinaryExpression _:
                 {
-                    switch (expression.NodeType)
+                    switch (unwrapped.NodeType)
                     {
                         case ExpressionType.Equal:
                         case ExpressionType.NotEqual:
@@ -243,9 +373,8 @@ namespace Impatient.Extensions
                         case ExpressionType.LessThanOrEqual:
                         case ExpressionType.GreaterThan:
                         case ExpressionType.GreaterThanOrEqual:
-                        case ExpressionType.And when expression.Type.IsBooleanType():
-                        case ExpressionType.Or when expression.Type.IsBooleanType():
-                        //case ExpressionType.Coalesce when expression.Type.IsBooleanType():
+                        case ExpressionType.And:
+                        case ExpressionType.Or:
                         {
                             return true;
                         }
@@ -259,7 +388,7 @@ namespace Impatient.Extensions
 
                 case UnaryExpression unaryExpression:
                 {
-                    switch (expression.NodeType)
+                    switch (unwrapped.NodeType)
                     {
                         case ExpressionType.Not:
                         {
@@ -273,6 +402,39 @@ namespace Impatient.Extensions
                             return false;
                         }
                     }
+                }
+
+                default:
+                {
+                    return false;
+                }
+            }
+        }
+
+        public static bool IsBooleanValuedSqlExpression(this Expression expression)
+        {
+            if (!expression.Type.IsBooleanType())
+            {
+                return false;
+            }
+
+            var unwrapped = expression.UnwrapInnerExpression();
+
+            switch (unwrapped)
+            {
+                case SqlInExpression _:
+                case SqlExistsExpression _:
+                {
+                    return false;
+                }
+
+                case BinaryExpression _ when unwrapped.NodeType == ExpressionType.Coalesce:
+                case ConditionalExpression _:
+                case ConstantExpression _:
+                case SqlExpression _:
+                case RelationalQueryExpression _:
+                {
+                    return true;
                 }
 
                 default:

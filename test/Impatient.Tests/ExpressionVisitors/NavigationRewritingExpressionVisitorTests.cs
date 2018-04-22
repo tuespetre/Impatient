@@ -527,12 +527,12 @@ WHERE [t].[$rownumber] < (
             var result = context.Orders.All(o => o.Customer.ContactName != null);
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN NOT EXISTS (
+                @"SELECT CAST((CASE WHEN EXISTS (
     SELECT 1
     FROM [dbo].[Orders] AS [o]
     INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
     WHERE [c].[ContactName] IS NULL
-) THEN 1 ELSE 0 END) AS BIT)",
+) THEN 0 ELSE 1 END) AS BIT)",
                 context.SqlLog);
         }
 

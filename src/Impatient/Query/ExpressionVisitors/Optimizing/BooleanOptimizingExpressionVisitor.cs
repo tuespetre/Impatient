@@ -52,23 +52,18 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
         // true != x -> !x
         // x != false -> x
         // x != true -> !x
+        // !x == !y -> x == y
+        // !x == y -> x != y
+        // x == !y -> x != y
+        // !x != !y -> x != y
+        // !x != y -> x == y
+        // x != !y -> x == y
         private class BinaryExpressionReducingExpressionVisitor : ExpressionVisitor
         {
             protected override Expression VisitBinary(BinaryExpression node)
             {
                 var left = Visit(node.Left).UnwrapInnerExpression();
                 var right = Visit(node.Right).UnwrapInnerExpression();
-
-                if (node.NodeType == ExpressionType.Equal || node.NodeType == ExpressionType.NotEqual)
-                {
-                    if (left is UnaryExpression leftUnaryExpression && left.NodeType == ExpressionType.Not)
-                    {
-                        if (right is UnaryExpression rightUnaryExpression && right.NodeType == ExpressionType.Not)
-                        {
-                            return node.Update(leftUnaryExpression.Operand, node.Conversion, rightUnaryExpression.Operand);
-                        }
-                    }
-                }
 
                 var leftConstant = left as ConstantExpression;
                 var rightConstant = right as ConstantExpression;
@@ -169,7 +164,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                                 return Expression.Constant(false);
                             }
                         }
-                        else if (leftConstant != null)
+                        else if (leftConstant != null && !right.Type.IsNullableType())
                         {
                             if (true.Equals(leftConstant.Value))
                             {
@@ -180,7 +175,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                                 return Expression.Not(right);
                             }
                         }
-                        else if (rightConstant != null)
+                        else if (rightConstant != null && !left.Type.IsNullableType())
                         {
                             if (true.Equals(rightConstant.Value))
                             {
@@ -190,6 +185,31 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                             {
                                 return Expression.Not(left);
                             }
+                        }
+                        else if (left.NodeType == ExpressionType.Not && right.NodeType == ExpressionType.Not)
+                        {
+                            left = ((UnaryExpression)left).Operand;
+                            right = ((UnaryExpression)right).Operand;
+
+                            ExpressionExtensions.MatchNullableTypes(ref left, ref right);
+
+                            return Visit(Expression.Equal(left, right));
+                        }
+                        else if (left.NodeType == ExpressionType.Not && !left.Type.IsNullableType() && !right.Type.IsNullableType())
+                        {
+                            left = ((UnaryExpression)left).Operand;
+
+                            ExpressionExtensions.MatchNullableTypes(ref left, ref right);
+
+                            return Visit(Expression.NotEqual(left, right));
+                        }
+                        else if (right.NodeType == ExpressionType.Not && !left.Type.IsNullableType() && !right.Type.IsNullableType())
+                        {
+                            right = ((UnaryExpression)right).Operand;
+
+                            ExpressionExtensions.MatchNullableTypes(ref left, ref right);
+
+                            return Visit(Expression.NotEqual(left, right));
                         }
 
                         break;
@@ -211,7 +231,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                                 return Expression.Constant(true);
                             }
                         }
-                        else if (leftConstant != null)
+                        else if (leftConstant != null && !right.Type.IsNullableType())
                         {
                             if (false.Equals(leftConstant.Value))
                             {
@@ -222,7 +242,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                                 return Expression.Not(right);
                             }
                         }
-                        else if (rightConstant != null)
+                        else if (rightConstant != null && !left.Type.IsNullableType())
                         {
                             if (false.Equals(rightConstant.Value))
                             {
@@ -233,22 +253,37 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                                 return Expression.Not(left);
                             }
                         }
+                        else if (left.NodeType == ExpressionType.Not && right.NodeType == ExpressionType.Not)
+                        {
+                            left = ((UnaryExpression)left).Operand;
+                            right = ((UnaryExpression)right).Operand;
+
+                            ExpressionExtensions.MatchNullableTypes(ref left, ref right);
+
+                            return Visit(Expression.NotEqual(left, right));
+                        }
+                        else if (left.NodeType == ExpressionType.Not && !left.Type.IsNullableType() && !right.Type.IsNullableType())
+                        {
+                            left = ((UnaryExpression)left).Operand;
+
+                            ExpressionExtensions.MatchNullableTypes(ref left, ref right);
+
+                            return Visit(Expression.Equal(left, right));
+                        }
+                        else if (right.NodeType == ExpressionType.Not && !left.Type.IsNullableType() && !right.Type.IsNullableType())
+                        {
+                            right = ((UnaryExpression)right).Operand;
+
+                            ExpressionExtensions.MatchNullableTypes(ref left, ref right);
+
+                            return Visit(Expression.Equal(left, right));
+                        }
 
                         break;
                     }
                 }
 
-                if (left.Type != node.Left.Type)
-                {
-                    left = Expression.Convert(left, node.Left.Type);
-                }
-
-                if (right.Type != node.Right.Type)
-                {
-                    right = Expression.Convert(right, node.Right.Type);
-                }
-
-                return node.Update(left, node.Conversion, right);
+                return node.Update(left, right);
             }
         }
 

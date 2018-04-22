@@ -75,7 +75,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private Expression PrepareQuery(Expression query)
         {
-            return new QueryOptionsExpression(query, currentDbContext.Context.ChangeTracker.QueryTrackingBehavior, false);
+            return new QueryOptionsExpression(
+                query, 
+                currentDbContext.Context.ChangeTracker.QueryTrackingBehavior, 
+                false,
+                RelationalOptionsExtension.Extract(
+                    currentDbContext.Context.GetService<IDbContextOptions>())
+                    .UseRelationalNulls);
         }
 
         private IImpatientQueryExecutor GetQueryExecutor()

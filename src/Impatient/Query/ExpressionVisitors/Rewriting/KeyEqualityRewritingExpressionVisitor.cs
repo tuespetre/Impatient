@@ -237,7 +237,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                 {
                     reduced = true;
 
-                    return new SqlColumnNullabilityExpressionVisitor()
+                    return new SqlColumnNullabilityExpressionVisitor(true)
                         .Visit(navigationDescriptor.OuterKeySelector.ExpandParameters(memberExpression.Expression));
                 }
             }

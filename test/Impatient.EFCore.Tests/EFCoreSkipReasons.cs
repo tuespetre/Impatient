@@ -38,6 +38,9 @@
         public const string CompiledQueries =
             "Compiled queries are not yet supported.";
 
+        public const string FromSql =
+            "FromSql is not supported.";
+
         public const string TestMaybeBroken =
             "This test appears to be broken in a way that is out of our hands.";
     }

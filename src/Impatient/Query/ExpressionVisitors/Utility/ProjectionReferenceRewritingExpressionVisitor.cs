@@ -125,7 +125,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                 case DefaultIfEmptyExpression defaultIfEmptyExpression:
                 {
                     var expression
-                        = new SqlColumnNullabilityExpressionVisitor()
+                        = new SqlColumnNullabilityExpressionVisitor(true)
                             .Visit(Visit(defaultIfEmptyExpression.Expression));
 
                     var name = string.Join(".", GetNameParts().Append("$empty"));

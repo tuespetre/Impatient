@@ -149,6 +149,116 @@ namespace Impatient.Tests.ExpressionVisitors.Optimizing
                 output: x => (x.StringProperty == "string"));
         }
 
+        [TestMethod]
+        public void Left_Equal_NotRight()
+        {
+            bool left = true;
+            bool right = true;
+
+            AssertTransformation(
+                input: x => left == !right,
+                output: x => left != right);
+        }
+
+        [TestMethod]
+        public void Left_Equal_NotNullableRight()
+        {
+            bool left = true;
+            bool? right = true;
+
+            AssertTransformation(
+                input: x => left == !right,
+                output: x => left == !right);
+        }
+
+        [TestMethod]
+        public void NullableLeft_Equal_NotNullableRight()
+        {
+            bool? left = true;
+            bool? right = true;
+
+            AssertTransformation(
+                input: x => left == !right,
+                output: x => left == !right);
+        }
+
+        [TestMethod]
+        public void NotLeft_Equal_NotRight()
+        {
+            bool left = true;
+            bool right = true;
+
+            AssertTransformation(
+                input: x => !left == !right,
+                output: x => left == right);
+        }
+
+        [TestMethod]
+        public void NotLeft_Equal_Right()
+        {
+            bool left = true;
+            bool right = true;
+
+            AssertTransformation(
+                input: x => !left == right,
+                output: x => left != right);
+        }
+
+        [TestMethod]
+        public void NotLeft_NotEqual_NotRight()
+        {
+            var left = true;
+            var right = true;
+
+            AssertTransformation(
+                input: x => !left != !right,
+                output: x => left != right);
+        }
+
+        [TestMethod]
+        public void NotLeft_NotEqual_Right()
+        {
+            var left = true;
+            var right = true;
+
+            AssertTransformation(
+                input: x => !left != right,
+                output: x => left == right);
+        }
+
+        [TestMethod]
+        public void Left_NotEqual_NotRight()
+        {
+            var left = true;
+            var right = true;
+
+            AssertTransformation(
+                input: x => left != !right,
+                output: x => left == right);
+        }
+
+        [TestMethod]
+        public void Not_Left_Equal_NotRight()
+        {
+            bool left = true;
+            bool right = true;
+
+            AssertTransformation(
+                input: x => !(left == !right),
+                output: x => left == right);
+        }
+
+        [TestMethod]
+        public void Not_Left_Equal_NotNullableRight()
+        {
+            bool left = true;
+            bool? right = true;
+
+            AssertTransformation(
+                input: x => !(left == !right),
+                output: x => left != !right);
+        }
+
         private static void AssertTransformation(
             Expression<Func<TestClass, bool>> input,
             Expression<Func<TestClass, bool>> output)

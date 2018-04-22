@@ -5,6 +5,13 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 {
     public class SqlColumnNullabilityExpressionVisitor : ProjectionExpressionVisitor
     {
+        private readonly bool nullable;
+
+        public SqlColumnNullabilityExpressionVisitor(bool nullable)
+        {
+            this.nullable = nullable;
+        }
+
         protected override Expression VisitLeaf(Expression node)
         {
             switch (node)
@@ -15,7 +22,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                         sqlColumnExpression.Table,
                         sqlColumnExpression.ColumnName,
                         sqlColumnExpression.Type,
-                        isNullable: true);
+                        isNullable: nullable);
                 }
 
                 default:

@@ -9,15 +9,19 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
         public QueryOptionsExpression(
             Expression expression,
             QueryTrackingBehavior queryTrackingBehavior,
-            bool ignoreQueryFilters) : base(expression)
+            bool ignoreQueryFilters,
+            bool useRelationalNullSemantics) : base(expression)
         {
             QueryTrackingBehavior = queryTrackingBehavior;
             IgnoreQueryFilters = ignoreQueryFilters;
+            UseRelationalNullSemantics = useRelationalNullSemantics;
         }
 
         public QueryTrackingBehavior QueryTrackingBehavior { get; }
 
         public bool IgnoreQueryFilters { get; }
+
+        public bool UseRelationalNullSemantics { get; }
 
         protected override Expression VisitChildren(ExpressionVisitor visitor)
         {
@@ -25,12 +29,17 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
 
             if (expression != Expression)
             {
-                return new QueryOptionsExpression(expression, QueryTrackingBehavior, IgnoreQueryFilters);
+                return new QueryOptionsExpression(
+                    expression, 
+                    QueryTrackingBehavior, 
+                    IgnoreQueryFilters, 
+                    UseRelationalNullSemantics);
             }
 
             return this;
         }
 
-        public override int GetSemanticHashCode() => (QueryTrackingBehavior, IgnoreQueryFilters).GetHashCode();
+        public override int GetSemanticHashCode() => 
+            (QueryTrackingBehavior, IgnoreQueryFilters, UseRelationalNullSemantics).GetHashCode();
     }
 }

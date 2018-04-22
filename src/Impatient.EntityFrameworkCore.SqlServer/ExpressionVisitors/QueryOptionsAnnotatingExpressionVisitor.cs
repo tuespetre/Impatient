@@ -15,12 +15,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
             var queryTrackingBehavior = default(QueryTrackingBehavior);
             var ignoreQueryFilters = false;
+            var useRelationalNullSemantics = false;
 
             if (node is QueryOptionsExpression queryOptionsExpression)
             {
                 node = queryOptionsExpression.Expression;
                 queryTrackingBehavior = queryOptionsExpression.QueryTrackingBehavior;
                 ignoreQueryFilters = queryOptionsExpression.IgnoreQueryFilters;
+                useRelationalNullSemantics = queryOptionsExpression.UseRelationalNullSemantics;
             }
 
             if (visitor.QueryTrackingBehavior.HasValue)
@@ -33,7 +35,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                 ignoreQueryFilters = true;
             }
 
-            return new QueryOptionsExpression(node, queryTrackingBehavior, ignoreQueryFilters);
+            return new QueryOptionsExpression(
+                node, 
+                queryTrackingBehavior, 
+                ignoreQueryFilters,
+                useRelationalNullSemantics);
         }
 
         private class QueryOptionsDiscoveringExpressionVisitor : ExpressionVisitor

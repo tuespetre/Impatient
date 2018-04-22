@@ -1,5 +1,4 @@
-﻿using Impatient.Extensions;
-using Impatient.Metadata;
+﻿using Impatient.Metadata;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using System.Linq;
@@ -83,9 +82,6 @@ namespace Impatient.Query
 
                 if (!QueryCache.TryGetValue(hashingVisitor.HashCode, out var compiled))
                 {
-                    // Apply all optimizing visitors before each composing visitor and then apply all
-                    // optimizing visitors one last time.
-
                     var composingExpressionVisitors 
                         = ComposingExpressionVisitorProvider
                             .CreateExpressionVisitors(processingContext)
@@ -96,19 +92,36 @@ namespace Impatient.Query
                             .CreateExpressionVisitors(processingContext)
                             .ToArray();
 
-                    expression
-                        = composingExpressionVisitors
-                            .SelectMany(c => optimizingExpressionVisitors.Append(c))
-                            .Concat(optimizingExpressionVisitors)
-                            .Aggregate(expression, (e, v) => v.Visit(e));
+                    var compilingExpressionVisitors
+                        = CompilingExpressionVisitorProvider
+                            .CreateExpressionVisitors(processingContext)
+                            .ToArray();
+
+                    // Apply all optimizing visitors before each composing visitor and then apply all
+                    // optimizing visitors one last time.
+
+                    foreach (var optimizingVisitor in optimizingExpressionVisitors)
+                    {
+                        expression = optimizingVisitor.Visit(expression);
+                    }
+
+                    foreach (var composingVisitor in composingExpressionVisitors)
+                    {
+                        expression = composingVisitor.Visit(expression);
+
+                        foreach (var optimizingVisitor in optimizingExpressionVisitors)
+                        {
+                            expression = optimizingVisitor.Visit(expression);
+                        }
+                    }
 
                     // Transform the expression by rewriting all composed query expressions into 
                     // executable expressions that make database calls and perform result materialization.
 
-                    expression
-                        = expression
-                            .VisitWith(CompilingExpressionVisitorProvider
-                                .CreateExpressionVisitors(processingContext));
+                    foreach (var compilingVisitor in compilingExpressionVisitors)
+                    {
+                        expression = compilingVisitor.Visit(expression);
+                    }
 
                     // Compile the resulting expression into an executable delegate.
 

@@ -63,6 +63,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 translatabilityAnalyzingExpressionVisitor,
                 rewritingExpressionVisitorProvider.CreateExpressionVisitors(context),
                 new SqlParameterRewritingExpressionVisitor(context.ParameterMapping.Values));
+
+            // Apply possible relational null semantics after the whole query is composed
+            // but before it is compiled
+
+            yield return new RelationalNullSemanticsComposingExpressionVisitor();
         }
     }
 }

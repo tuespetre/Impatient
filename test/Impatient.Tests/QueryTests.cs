@@ -217,6 +217,38 @@ WHERE [a].[Prop2] = @p0",
         }
 
         [TestMethod]
+        public void Select_parameterized_where_parameter_can_be_null()
+        {
+            var localVariable = "string";
+
+            var query1 =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                where a.Prop1 == localVariable
+                select a;
+
+            query1.ToList();
+
+            localVariable = null;
+
+            var query2 =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                where a.Prop1 == localVariable
+                select a;
+
+            query2.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [a]
+WHERE [a].[Prop1] = @p0
+
+SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [a]
+WHERE [a].[Prop1] = @p0",
+                SqlLog);
+        }
+
+        [TestMethod]
         public void SelectMany_Where()
         {
             var query =
@@ -1478,11 +1510,11 @@ OFFSET 1 ROWS",
             Assert.IsFalse(result);
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN NOT EXISTS (
+                @"SELECT CAST((CASE WHEN EXISTS (
     SELECT 1
     FROM [dbo].[MyClass1] AS [m]
     WHERE [m].[Prop2] <> 77
-) THEN 1 ELSE 0 END) AS BIT)",
+) THEN 0 ELSE 1 END) AS BIT)",
                 SqlLog);
         }
 
@@ -4300,7 +4332,7 @@ INNER JOIN (
             Assert.IsTrue(result);
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN NOT EXISTS (
+                @"SELECT CAST((CASE WHEN EXISTS (
     SELECT 1
     FROM (
         SELECT [m1].[Prop1] AS [Prop1], [m1].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
@@ -4311,7 +4343,7 @@ INNER JOIN (
         FROM [dbo].[MyClass2] AS [m2]
     ) AS [t_0] ON [t].[$rownumber] = [t_0].[$rownumber]
     WHERE (([t].[$rownumber] IS NULL) OR ([t_0].[$rownumber] IS NULL)) OR (([t].[Prop1] <> [t_0].[Prop1]) OR ([t].[Prop2] <> [t_0].[Prop2]))
-) THEN 1 ELSE 0 END) AS BIT)",
+) THEN 0 ELSE 1 END) AS BIT)",
                 SqlLog);
         }
 

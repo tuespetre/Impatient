@@ -108,7 +108,7 @@ namespace Impatient.Query.Infrastructure
         {
             var valueToSet = (Expression)Expression.Convert(value, typeof(object));
 
-            if (value.Type.IsNullableType())
+            if (value.Type.IsNullableType() || !value.Type.GetTypeInfo().IsValueType)
             {
                 valueToSet
                     = Expression.Coalesce(
@@ -162,12 +162,12 @@ namespace Impatient.Query.Infrastructure
             parameterIndex++;
         }
 
-        public void AddDynamicParameter(string fragment, Expression expression, Func<string, string> formatter)
+        public void AddDynamicParameters(string fragment, Expression expression, Func<string, string> formatter)
         {
             EmitSql();
 
             blockExpressions.Add(Expression.Call(
-                GetType().GetMethod(nameof(AddRuntimeParameterList), BindingFlags.NonPublic | BindingFlags.Static),
+                GetType().GetMethod(nameof(RuntimeAddDynamicParameters), BindingFlags.NonPublic | BindingFlags.Static),
                 dbCommandVariable,
                 stringBuilderVariable,
                 Expression.Constant(fragment),
@@ -251,7 +251,7 @@ namespace Impatient.Query.Infrastructure
             }
         }
 
-        private static void AddRuntimeParameterList(
+        private static void RuntimeAddDynamicParameters(
             DbCommand dbCommand,
             StringBuilder stringBuilder,
             string fragment,
@@ -304,14 +304,18 @@ namespace Impatient.Query.Infrastructure
                         }
                         else
                         {
+                            formattedName = formatter($"{name}_{index++}");
+
                             if (!addedParameter)
                             {
-                                stringBuilder.Append(" IN (");
+                                stringBuilder.Append($" IN ({formattedName}");
+                            }
+                            else
+                            {
+                                stringBuilder.Append($", {formattedName}");
                             }
 
                             addedParameter = true;
-                            formattedName = formatter($"{name}_{index++}");
-                            stringBuilder.Append($", {formattedName}");
                             parameter = dbCommand.CreateParameter();
                             parameter.ParameterName = formattedName;
                             parameter.Value = enumerator.Current;
