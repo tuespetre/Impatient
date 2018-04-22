@@ -142,6 +142,25 @@ WHERE [a].[Prop2] = @p0",
         }
 
         [TestMethod]
+        public void Select_parameterized_from_closure_parameter_deduplicated()
+        {
+            var localVariable = 77;
+
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                where a.Prop2 == localVariable || a.Prop2 < localVariable
+                select a;
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [a]
+WHERE ([a].[Prop2] = @p0) OR ([a].[Prop2] < @p0)",
+                SqlLog);
+        }
+
+        [TestMethod]
         public void SelectMany_parameterized_from_closure()
         {
             var localVariable = 77;

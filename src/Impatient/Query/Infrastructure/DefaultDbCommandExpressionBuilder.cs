@@ -1,4 +1,5 @@
 ﻿using Impatient.Extensions;
+using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -23,6 +24,7 @@ namespace Impatient.Query.Infrastructure
         private readonly ParameterExpression dbParameterVariable = Expression.Parameter(typeof(DbParameter), "parameter");
         private readonly List<Expression> blockExpressions = new List<Expression>();
         private readonly List<Expression> dbParameterExpressions = new List<Expression>();
+        private readonly Dictionary<int, int> parameterCache = new Dictionary<int, int>();
 
         private static readonly MethodInfo stringBuilderAppendMethodInfo
             = typeof(StringBuilder).GetRuntimeMethod(nameof(StringBuilder.Append), new[] { typeof(string) });
@@ -127,7 +129,21 @@ namespace Impatient.Query.Infrastructure
 
         public void AddParameter(Expression node, Func<string, string> formatter)
         {
+            var hasher = new HashingExpressionVisitor();
+
+            hasher.Visit(node);
+
+            if (parameterCache.TryGetValue(hasher.HashCode, out var cachedIndex))
+            {
+                Append(formatter($"p{cachedIndex}"));
+
+                return;
+            }
+
             var parameterName = formatter($"p{parameterIndex}");
+            
+            parameterCache.Add(hasher.HashCode, parameterIndex);
+            parameterIndex++;
 
             Append(parameterName);
 
@@ -158,8 +174,6 @@ namespace Impatient.Query.Infrastructure
 
             blockExpressions.AddRange(expressions);
             dbParameterExpressions.AddRange(expressions);
-
-            parameterIndex++;
         }
 
         public void AddDynamicParameters(string fragment, Expression expression, Func<string, string> formatter)
