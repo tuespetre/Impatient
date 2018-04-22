@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Linq.Expressions;
 
-namespace Impatient.Query
+namespace Impatient.Query.Infrastructure
 {
     public interface IImpatientQueryExecutor
     {

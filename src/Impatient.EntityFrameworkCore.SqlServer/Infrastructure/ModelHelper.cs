@@ -68,11 +68,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return from t in model.GetEntityTypes()
                    where !t.IsOwned()
                    let k = t.FindPrimaryKey()
-                   select new PrimaryKeyDescriptor
-                   {
-                       TargetType = t.ClrType,
-                       KeySelector = CreateNavigationKeySelector(k.DeclaringEntityType.ClrType, k.Properties)
-                   };
+                   select new PrimaryKeyDescriptor(
+                       t.ClrType,
+                       CreateNavigationKeySelector(k.DeclaringEntityType.ClrType, k.Properties));
         }
 
         public static IEnumerable<NavigationDescriptor> CreateNavigationDescriptors(IModel model)
@@ -91,28 +89,24 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 if (fk.PrincipalToDependent != null)
                 {
-                    yield return new NavigationDescriptor
-                    {
-                        Type = fk.PrincipalEntityType.ClrType,
-                        Member = GetMemberInfo(fk.PrincipalToDependent),
-                        IsNullable = true,
-                        Expansion = CreateQueryExpression(fk.DeclaringEntityType.ClrType, model),
-                        OuterKeySelector = principal,
-                        InnerKeySelector = dependent
-                    };
+                    yield return new NavigationDescriptor(
+                        fk.PrincipalEntityType.ClrType,
+                        GetMemberInfo(fk.PrincipalToDependent),
+                        principal,
+                        dependent,
+                        true,
+                        CreateQueryExpression(fk.DeclaringEntityType.ClrType, model));
                 }
 
                 if (fk.DependentToPrincipal != null)
                 {
-                    yield return new NavigationDescriptor
-                    {
-                        Type = fk.DeclaringEntityType.ClrType,
-                        Member = GetMemberInfo(fk.DependentToPrincipal),
-                        IsNullable = !fk.IsRequired,
-                        Expansion = CreateQueryExpression(fk.PrincipalEntityType.ClrType, model),
-                        OuterKeySelector = dependent,
-                        InnerKeySelector = principal
-                    };
+                    yield return new NavigationDescriptor(
+                        fk.DeclaringEntityType.ClrType,
+                        GetMemberInfo(fk.DependentToPrincipal),
+                        dependent,
+                        principal,
+                        !fk.IsRequired,
+                        CreateQueryExpression(fk.PrincipalEntityType.ClrType, model));
                 }
             }
         }

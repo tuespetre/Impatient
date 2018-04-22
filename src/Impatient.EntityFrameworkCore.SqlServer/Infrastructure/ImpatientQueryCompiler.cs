@@ -1,5 +1,6 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Expressions;
 using Impatient.Query;
+using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Query;

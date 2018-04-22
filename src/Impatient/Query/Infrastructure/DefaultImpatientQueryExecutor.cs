@@ -5,7 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.Query
+namespace Impatient.Query.Infrastructure
 {
     public class DefaultImpatientQueryExecutor : IImpatientQueryExecutor
     {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Impatient.Query
+namespace Impatient.Query.Infrastructure
 {
     public interface IImpatientQueryCache
     {

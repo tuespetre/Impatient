@@ -3,9 +3,18 @@ using System.Linq.Expressions;
 
 namespace Impatient.Metadata
 {
-    public class PrimaryKeyDescriptor
+    public sealed class PrimaryKeyDescriptor
     {
-        public Type TargetType;
-        public LambdaExpression KeySelector;
+        public PrimaryKeyDescriptor(
+            Type targetType, 
+            LambdaExpression keySelector)
+        {
+            TargetType = targetType;
+            KeySelector = keySelector;
+        }
+
+        public Type TargetType { get; }
+
+        public LambdaExpression KeySelector { get; }
     }
 }

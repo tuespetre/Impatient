@@ -22,57 +22,47 @@ namespace Impatient.Tests
         {
             var navigationDescriptors = new[]
             {
-                new NavigationDescriptor
-                {
-                    Type = typeof(Customer),
-                    Member = typeof(Customer).GetRuntimeProperty(nameof(Customer.Orders)),
-                    OuterKeySelector = GetExpression((Customer c) => c.CustomerID),
-                    InnerKeySelector = GetExpression((Order o) => o.CustomerID),
-                    Expansion = CreateQueryExpression<Order>(),
-                },
-                new NavigationDescriptor
-                {
-                    Type = typeof(Order),
-                    Member = typeof(Order).GetRuntimeProperty(nameof(Order.Customer)),
-                    OuterKeySelector = GetExpression((Order o) => o.CustomerID),
-                    InnerKeySelector = GetExpression((Customer c) => c.CustomerID),
-                    Expansion = CreateQueryExpression<Customer>(),
-                },
-                new NavigationDescriptor
-                {
-                    Type = typeof(Order),
-                    Member = typeof(Order).GetRuntimeProperty(nameof(Order.OrderDetails)),
-                    OuterKeySelector = GetExpression((Order o) => o.OrderID),
-                    InnerKeySelector = GetExpression((OrderDetail d) => d.OrderID),
-                    Expansion = CreateQueryExpression<OrderDetail>(),
-                },
-                new NavigationDescriptor
-                {
-                    Type = typeof(OrderDetail),
-                    Member = typeof(OrderDetail).GetRuntimeProperty(nameof(OrderDetail.Order)),
-                    OuterKeySelector = GetExpression((OrderDetail d) => d.OrderID),
-                    InnerKeySelector = GetExpression((Order o) => o.OrderID),
-                    Expansion = CreateQueryExpression<Order>(),
-                },
+                new NavigationDescriptor(
+                    typeof(Customer),
+                    typeof(Customer).GetRuntimeProperty(nameof(Customer.Orders)),
+                    GetExpression((Customer c) => c.CustomerID),
+                    GetExpression((Order o) => o.CustomerID),
+                    false,
+                    CreateQueryExpression<Order>()),
+                new NavigationDescriptor(
+                    typeof(Order),
+                    typeof(Order).GetRuntimeProperty(nameof(Order.Customer)),
+                    GetExpression((Order o) => o.CustomerID),
+                    GetExpression((Customer c) => c.CustomerID),
+                    false,
+                    CreateQueryExpression<Customer>()),
+                new NavigationDescriptor(
+                    typeof(Order),
+                    typeof(Order).GetRuntimeProperty(nameof(Order.OrderDetails)),
+                    GetExpression((Order o) => o.OrderID),
+                    GetExpression((OrderDetail d) => d.OrderID),
+                    false,
+                    CreateQueryExpression<OrderDetail>()),
+                new NavigationDescriptor(
+                    typeof(OrderDetail),
+                    typeof(OrderDetail).GetRuntimeProperty(nameof(OrderDetail.Order)),
+                    GetExpression((OrderDetail d) => d.OrderID),
+                    GetExpression((Order o) => o.OrderID),
+                    false,
+                    CreateQueryExpression<Order>()),
             };
 
             var primaryKeyDescriptors = new[]
             {
-                new PrimaryKeyDescriptor
-                {
-                    TargetType = typeof(Customer),
-                    KeySelector = GetExpression((Customer c) => c.CustomerID),
-                },
-                new PrimaryKeyDescriptor
-                {
-                    TargetType = typeof(Order),
-                    KeySelector = GetExpression((Order o) => o.OrderID),
-                },
-                new PrimaryKeyDescriptor
-                {
-                    TargetType = typeof(OrderDetail),
-                    KeySelector = GetExpression((OrderDetail d) => new { d.OrderID, d.ProductID }),
-                },
+                new PrimaryKeyDescriptor(
+                    typeof(Customer),
+                    GetExpression((Customer c) => c.CustomerID)),
+                new PrimaryKeyDescriptor(
+                    typeof(Order),
+                    GetExpression((Order o) => o.OrderID)),
+                new PrimaryKeyDescriptor(
+                    typeof(OrderDetail),
+                    GetExpression((OrderDetail d) => new { d.OrderID, d.ProductID })),
             };
 
             services 

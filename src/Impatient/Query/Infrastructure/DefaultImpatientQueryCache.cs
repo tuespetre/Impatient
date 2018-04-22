@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Impatient.Query
+namespace Impatient.Query.Infrastructure
 {
     public class DefaultImpatientQueryCache : IImpatientQueryCache
     {

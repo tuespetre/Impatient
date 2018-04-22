@@ -176,44 +176,37 @@ namespace Impatient.Tests.ExpressionVisitors.Rewriting
             var myClass1KeyParameter = Expression.Parameter(typeof(MyClass1), "m1");
 
             var myClass1KeyDescriptor
-                = new PrimaryKeyDescriptor
-                {
-                    TargetType = typeof(MyClass1),
-                    KeySelector
-                        = Expression.Lambda(
-                            Expression.MakeMemberAccess(
-                                myClass1KeyParameter,
-                                typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Id))),
-                            myClass1KeyParameter)
-                };
+                = new PrimaryKeyDescriptor(
+                    typeof(MyClass1),
+                    Expression.Lambda(
+                        Expression.MakeMemberAccess(
+                            myClass1KeyParameter,
+                            typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Id))),
+                        myClass1KeyParameter));
 
             var myClass2KeyParameter = Expression.Parameter(typeof(MyClass2), "m2");
 
             var myClass2KeyDescriptor
-                = new PrimaryKeyDescriptor
-                {
-                    TargetType = typeof(MyClass2),
-                    KeySelector
-                        = Expression.Lambda(
-                            Expression.MakeMemberAccess(
-                                myClass2KeyParameter,
-                                typeof(MyClass2).GetRuntimeProperty(nameof(MyClass2.Id))),
-                            myClass2KeyParameter)
-                };
+                = new PrimaryKeyDescriptor(
+                    typeof(MyClass2),
+                    Expression.Lambda(
+                        Expression.MakeMemberAccess(
+                            myClass2KeyParameter,
+                            typeof(MyClass2).GetRuntimeProperty(nameof(MyClass2.Id))),
+                        myClass2KeyParameter));
 
             var myClass1NavigationDescriptor
-                = new NavigationDescriptor
-                {
-                    Type = typeof(MyClass1),
-                    Member = typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Nav1)),
-                    OuterKeySelector
-                        = Expression.Lambda(
+                = new NavigationDescriptor(
+                    typeof(MyClass1),
+                    typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Nav1)),
+                    Expression.Lambda(
                             Expression.MakeMemberAccess(
                                 myClass1KeyParameter,
                                 typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Nav1Id))),
                             myClass1KeyParameter),
-                    InnerKeySelector = myClass2KeyDescriptor.KeySelector,
-                };
+                    myClass2KeyDescriptor.KeySelector,
+                    false,
+                    Expression.Default(typeof(IQueryable<MyClass2>)));
 
             var visitor
                 = new KeyEqualityRewritingExpressionVisitor(
