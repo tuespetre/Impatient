@@ -464,6 +464,55 @@ FROM [dbo].[Products] AS [p]
             });
         }
 
+        [TestMethod]
+        public void NestedReaders()
+        {
+            var services = new ServiceCollection();
+            var loggerProvider = new TestConnectionLoggerProvider();
+
+            services.AddLogging(log =>
+            {
+                log
+                    .AddProvider(loggerProvider)
+                    .SetMinimumLevel(LogLevel.Debug)
+                    .AddFilter((category, level) => category.StartsWith(DbLoggerCategory.Database.Name));
+            });
+
+            services.AddDbContext<NorthwindDbContext>(options =>
+            {
+                options
+                    .UseSqlServer(@"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=true; MultipleActiveResultSets=True")
+                    .UseImpatientQueryCompiler();
+            });
+
+            var provider = services.BuildServiceProvider();
+
+            using (var scope = provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetRequiredService<NorthwindDbContext>())
+            {
+                var result = (from o in context.Set<Order>()
+                              select new { o, Customer = ForceNonTranslatable(context, o) }).Take(5).ToArray();
+
+                Assert.AreEqual(@"Opening connection t
+Opened connection to
+Executing DbCommand 
+Executed DbCommand (
+Executing DbCommand 
+Executed DbCommand (
+Executing DbCommand 
+Executed DbCommand (
+Executing DbCommand 
+Executed DbCommand (
+Executing DbCommand 
+Executed DbCommand (
+Executing DbCommand 
+Executed DbCommand (
+Closing connection t
+Closed connection to
+", loggerProvider.LoggerInstance.StringBuilder.ToString());
+            }
+        }
+
         private void EfCoreTestCase(Action<NorthwindDbContext, StringBuilder> action)
         {
             var services = new ServiceCollection();
@@ -518,7 +567,7 @@ FROM [dbo].[Products] AS [p]
 
         public class TestLoggerProvider : ILoggerProvider
         {
-            public TestLogger LoggerInstance = new TestLogger();
+            public TestSqlLogger LoggerInstance { get; } = new TestSqlLogger();
 
             public ILogger CreateLogger(string categoryName)
             {
@@ -530,7 +579,21 @@ FROM [dbo].[Products] AS [p]
             }
         }
 
-        public class TestLogger : ILogger
+        public class TestConnectionLoggerProvider : ILoggerProvider
+        {
+            public TestConnectionLogger LoggerInstance { get; } = new TestConnectionLogger();
+
+            public ILogger CreateLogger(string categoryName)
+            {
+                return LoggerInstance;
+            }
+
+            public void Dispose()
+            {
+            }
+        }
+
+        public class TestSqlLogger : ILogger
         {
             public StringBuilder StringBuilder { get; } = new StringBuilder();
 
@@ -554,6 +617,22 @@ FROM [dbo].[Products] AS [p]
                         StringBuilder.Append(commandText);
                     }
                 }
+            }
+        }
+
+        public class TestConnectionLogger : ILogger
+        {
+            public StringBuilder StringBuilder { get; } = new StringBuilder();
+
+            public IDisposable BeginScope<TState>(TState state) => null;
+
+            public bool IsEnabled(LogLevel logLevel) => true;
+
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+            {
+                var message = formatter(state, exception);
+                
+                StringBuilder.AppendLine(message.Substring(0, 20));
             }
         }
     }

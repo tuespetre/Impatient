@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -16,7 +17,6 @@ using System.Runtime.CompilerServices;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
-    // TODO: needs to be created via factory
     public class EFCoreDbCommandExecutor : IDbCommandExecutor
     {
         private readonly IDiagnosticsLogger<DbLoggerCategory.Database.Command> logger;
@@ -100,62 +100,75 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         {
             var connection = CurrentDbContext.Context.Database.GetService<IRelationalConnection>();
 
-            using (var command = CreateCommand(connection))
+            var command = CreateCommand(connection);
+
+            initializer(command);
+
+            connection.Open();
+
+            var commandId = Guid.NewGuid();
+            var startTime = DateTimeOffset.UtcNow;
+            var stopwatch = Stopwatch.StartNew();
+
+            logger.CommandExecuting(
+                command,
+                DbCommandMethod.ExecuteReader,
+                commandId,
+                connection.ConnectionId,
+                false,
+                startTime);
+
+            var reader = default(DbDataReader);
+
+            var caughtException = false;
+
+            try
             {
-                initializer(command);
+                reader = command.ExecuteReader();
 
-                connection.Open();
-
-                var commandId = Guid.NewGuid();
-                var startTime = DateTimeOffset.UtcNow;
-                var stopwatch = Stopwatch.StartNew();
-
-                logger.CommandExecuting(
+                logger.CommandExecuted(
                     command,
                     DbCommandMethod.ExecuteReader,
                     commandId,
                     connection.ConnectionId,
+                    reader,
                     false,
-                    startTime);
+                    startTime,
+                    stopwatch.Elapsed);
+            }
+            catch (Exception exception)
+            {
+                caughtException = true;
 
-                var reader = default(DbDataReader);
+                logger.CommandError(
+                    command,
+                    DbCommandMethod.ExecuteReader,
+                    commandId,
+                    connection.ConnectionId,
+                    exception,
+                    false,
+                    startTime,
+                    stopwatch.Elapsed);
 
-                try
+                throw;
+            }
+            finally
+            {
+                if (caughtException)
                 {
-                    reader = command.ExecuteReader(CommandBehavior.CloseConnection);
-
-                    logger.CommandExecuted(
-                        command,
-                        DbCommandMethod.ExecuteReader,
-                        commandId,
-                        connection.ConnectionId,
-                        reader,
-                        false,
-                        startTime,
-                        stopwatch.Elapsed);
-                }
-                catch (Exception exception)
-                {
-                    logger.CommandError(
-                        command,
-                        DbCommandMethod.ExecuteReader,
-                        commandId,
-                        connection.ConnectionId,
-                        exception,
-                        false,
-                        startTime,
-                        stopwatch.Elapsed);
-
-                    throw;
-                }
-
-                CurrentDbContext.GetDependencies().StateManager.BeginTrackingQuery();
-
-                while (reader.Read())
-                {
-                    yield return materializer(reader);
+                    reader?.Close();
+                    command.Dispose();
+                    connection.Close();
                 }
             }
+
+            CurrentDbContext.GetDependencies().StateManager.BeginTrackingQuery();
+
+            return new ReaderEnumerable<TElement>(
+                command,
+                connection,
+                reader,
+                materializer);
         }
 
         public TResult ExecuteScalar<TResult>(Action<DbCommand> initializer)
@@ -295,7 +308,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     EntityMap = new ConditionalWeakTable<object, EntityMaterializationInfo>(),
                 };
 
-                entityLookups[entityType] = lookups;                       
+                entityLookups[entityType] = lookups;
             }
 
             var info = new EntityMaterializationInfo
@@ -341,13 +354,102 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             public int GetHashCode(object[] obj)
             {
                 var hash = InitialHashCode;
-                
+
                 for (var i = 0; i < obj.Length; i++)
                 {
                     hash = Combine(hash, obj[i]?.GetHashCode() ?? 0);
                 }
 
                 return hash;
+            }
+        }
+
+        private class ReaderEnumerable<T> : IEnumerable<T>
+        {
+            private readonly DbCommand command;
+            private readonly IRelationalConnection connection;
+            private readonly DbDataReader reader;
+            private readonly Func<DbDataReader, T> materializer;
+
+            public ReaderEnumerable(
+                DbCommand command,
+                IRelationalConnection connection,
+                DbDataReader reader,
+                Func<DbDataReader, T> materializer)
+            {
+                this.command = command;
+                this.connection = connection;
+                this.reader = reader;
+                this.materializer = materializer;
+            }
+
+            public IEnumerator<T> GetEnumerator()
+                => new ReaderEnumerator<T>(
+                    command,
+                    connection,
+                    reader,
+                    materializer);
+
+            IEnumerator IEnumerable.GetEnumerator()
+                => GetEnumerator();
+        }
+
+        private class ReaderEnumerator<T> : IEnumerator<T>
+        {
+            private readonly DbCommand command;
+            private readonly IRelationalConnection connection;
+            private readonly DbDataReader reader;
+            private readonly Func<DbDataReader, T> materializer;
+
+            private bool finished;
+
+            public ReaderEnumerator(
+                DbCommand command,
+                IRelationalConnection connection,
+                DbDataReader reader,
+                Func<DbDataReader, T> materializer)
+            {
+                this.command = command;
+                this.connection = connection;
+                this.reader = reader;
+                this.materializer = materializer;
+            }
+
+            public T Current { get; private set; }
+
+            object IEnumerator.Current => Current;
+
+            public void Dispose()
+            {
+                reader.Close();
+                command.Dispose();
+                connection.Close();
+            }
+
+            public bool MoveNext()
+            {
+                if (finished)
+                {
+                    return false;
+                }
+                else if (reader.Read())
+                {
+                    Current = materializer(reader);
+
+                    return true;
+                }
+                else
+                {
+                    finished = true;
+                    Current = default;
+
+                    return false;
+                }
+            }
+
+            public void Reset()
+            {
+                throw new NotSupportedException();
             }
         }
     }
