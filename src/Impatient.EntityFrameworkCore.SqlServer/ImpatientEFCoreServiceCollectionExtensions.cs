@@ -35,6 +35,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             services.AddScoped<IDbCommandExecutorFactory, EFCoreDbCommandExecutorFactory>();
 
+            services.AddScoped<IQueryProcessingContextFactory, EFCoreQueryProcessingContextFactory>();
+
             services.AddScoped<IImpatientQueryExecutor, DefaultImpatientQueryExecutor>();
 
             foreach (var descriptor in services.Where(s => s.ServiceType == typeof(IQueryCompiler)).ToArray())

@@ -20,6 +20,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Impatient.Tests
@@ -1765,12 +1766,12 @@ ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
 
             var context = new QueryProcessingContext(impatient, DescriptorSet.Empty);
 
-            var expression 
+            var expression
                 = provider
                     .CreateExpressionVisitors(context)
                     .Aggregate(query.Expression, (e, v) => v.Visit(e));
 
-            expression 
+            expression
                 = new QueryComposingExpressionVisitor(
                     services.GetService<TranslatabilityAnalyzingExpressionVisitor>(),
                     services.GetService<IRewritingExpressionVisitorProvider>().CreateExpressionVisitors(context),
@@ -4489,6 +4490,89 @@ FROM [dbo].[MyClass1] AS [a]",
 )
 FROM [dbo].[MyClass1] AS [a]",
                 SqlLog);
+        }
+
+        [TestMethod]
+        public void QueryInlining_Value_From_Disconnected_Closure()
+        {
+            var wrapper = new QueryWrapper
+            {
+                Expression = MyClass2QueryExpression,
+                QueryProvider = impatient,
+                Filter = 9,
+            };
+
+            var query1 = from m1 in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                         from m2 in wrapper.GetQueryProperty.Where(m2 => m2.Prop2 == m1.Prop2)
+                         select new { m1, m2 };
+
+            var results1 = query1.ToArray();
+
+            Assert.AreEqual(1, results1.Length);
+            Assert.AreEqual(9, results1[0].m1.Prop2);
+
+            wrapper.Filter = 77;
+
+            var query2 = from m1 in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                         from m2 in wrapper.GetQueryProperty.Where(m2 => m2.Prop2 == m1.Prop2)
+                         select new { m1, m2 };
+
+            var results2 = query2.ToArray();
+
+            Assert.AreEqual(1, results2.Length);
+            Assert.AreEqual(77, results2[0].m1.Prop2);
+
+            Assert.AreEqual(
+    @"SELECT [m1].[Prop1] AS [m1.Prop1], [m1].[Prop2] AS [m1.Prop2], [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2]
+FROM [dbo].[MyClass1] AS [m1]
+CROSS APPLY (
+    SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass2] AS [m]
+    WHERE ([m].[Prop2] = @p0) AND ([m].[Prop2] = [m1].[Prop2])
+) AS [m2]
+
+SELECT [m1].[Prop1] AS [m1.Prop1], [m1].[Prop2] AS [m1.Prop2], [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2]
+FROM [dbo].[MyClass1] AS [m1]
+CROSS APPLY (
+    SELECT [m].[Prop1] AS [Prop1], [m].[Prop2] AS [Prop2]
+    FROM [dbo].[MyClass2] AS [m]
+    WHERE ([m].[Prop2] = @p0) AND ([m].[Prop2] = [m1].[Prop2])
+) AS [m2]",
+    SqlLog);
+        }
+
+        private class QueryWrapper
+        {
+            public Expression Expression { get; set; }
+
+            public IQueryProvider QueryProvider { get; set; }
+
+            public int Filter
+            {
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                get;
+                set;
+            }
+            
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public IQueryable<MyClass2> GetQueryMethod()
+            {
+                var filter = Filter;
+
+                return QueryProvider.CreateQuery<MyClass2>(Expression).Where(m => m.Prop2 == filter);
+            }
+
+            public IQueryable<MyClass2> GetQueryProperty
+
+            {
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                get
+                {
+                    var filter = Filter;
+
+                    return QueryProvider.CreateQuery<MyClass2>(Expression).Where(m => m.Prop2 == filter);
+                }
+            }
         }
 
         private class MyKeyObject

@@ -1,4 +1,5 @@
-﻿using Impatient.Query.ExpressionVisitors.Utility;
+﻿using Impatient.Query.Expressions;
+using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -72,12 +73,16 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                 {
                     var query = queryable.Expression;
 
-                    if (query is ConstantExpression constant && constant.Value == queryable)
+                    switch (query)
                     {
-                        return query;
+                        case RelationalQueryExpression _:
+                        case ConstantExpression constant when constant.Value == queryable:
+                        {
+                            return query;
+                        }
                     }
 
-                    return Visit(Reparameterize(queryable.Expression));
+                    return Visit(Reparameterize(query));
                 }
             }
 
@@ -161,10 +166,79 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             {
             }
 
+            #region no-ops
+
+            protected override Expression VisitBlock(BlockExpression node)
+            {
+                return node;
+            }
+
+            protected override CatchBlock VisitCatchBlock(CatchBlock node)
+            {
+                return node;
+            }
+
+            protected override Expression VisitConstant(ConstantExpression node)
+            {
+                return base.VisitConstant(node);
+            }
+
+            protected override Expression VisitDebugInfo(DebugInfoExpression node)
+            {
+                return node;
+            }
+
+            protected override Expression VisitDefault(DefaultExpression node)
+            {
+                return node;
+            }
+
+            protected override Expression VisitGoto(GotoExpression node)
+            {
+                return node;
+            }
+
+            protected override Expression VisitLabel(LabelExpression node)
+            {
+                return node;
+            }
+
             protected override Expression VisitLambda<T>(Expression<T> node)
             {
                 return node;
             }
+
+            protected override Expression VisitLoop(LoopExpression node)
+            {
+                return node;
+            }
+
+            protected override LabelTarget VisitLabelTarget(LabelTarget node)
+            {
+                return node;
+            }
+
+            protected override Expression VisitRuntimeVariables(RuntimeVariablesExpression node)
+            {
+                return node;
+            }
+
+            protected override Expression VisitSwitch(SwitchExpression node)
+            {
+                return node;
+            }
+
+            protected override SwitchCase VisitSwitchCase(SwitchCase node)
+            {
+                return node;
+            }
+
+            protected override Expression VisitTry(TryExpression node)
+            {
+                return node;
+            }
+
+            #endregion
         }
     }
 }

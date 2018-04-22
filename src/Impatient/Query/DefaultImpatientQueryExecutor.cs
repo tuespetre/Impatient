@@ -12,26 +12,30 @@ namespace Impatient.Query
         public DefaultImpatientQueryExecutor(
             DescriptorSet descriptorSet,
             IImpatientQueryCache queryCache,
-            IDbCommandExecutorFactory dbCommandExecutorFactory,
+            IQueryProcessingContextFactory queryProcessingContextFactory,
+            IQueryableInliningExpressionVisitorFactory queryableInliningExpressionVisitorFactory,
             IOptimizingExpressionVisitorProvider optimizingExpressionVisitorProvider,
             IComposingExpressionVisitorProvider composingExpressionVisitorProvider,
             ICompilingExpressionVisitorProvider compilingExpressionVisitorProvider,
-            IQueryableInliningExpressionVisitorFactory queryInliningExpressionVisitorFactory)
+            IDbCommandExecutorFactory dbCommandExecutorFactory)
         {
             DescriptorSet = descriptorSet;
             QueryCache = queryCache;
-            DbCommandExecutorFactory = dbCommandExecutorFactory;
+            QueryProcessingContextFactory = queryProcessingContextFactory;
+            QueryableInliningExpressionVisitorFactory = queryableInliningExpressionVisitorFactory;
             OptimizingExpressionVisitorProvider = optimizingExpressionVisitorProvider;
             ComposingExpressionVisitorProvider = composingExpressionVisitorProvider;
             CompilingExpressionVisitorProvider = compilingExpressionVisitorProvider;
-            QueryInliningExpressionVisitorFactory = queryInliningExpressionVisitorFactory;
+            DbCommandExecutorFactory = dbCommandExecutorFactory;
         }
 
         public DescriptorSet DescriptorSet { get; }
 
         public IImpatientQueryCache QueryCache { get; }
 
-        public IDbCommandExecutorFactory DbCommandExecutorFactory { get; }
+        public IQueryProcessingContextFactory QueryProcessingContextFactory { get; }
+
+        public IQueryableInliningExpressionVisitorFactory QueryableInliningExpressionVisitorFactory { get; }
 
         public IOptimizingExpressionVisitorProvider OptimizingExpressionVisitorProvider { get; }
 
@@ -39,13 +43,16 @@ namespace Impatient.Query
 
         public ICompilingExpressionVisitorProvider CompilingExpressionVisitorProvider { get; }
 
-        public IQueryableInliningExpressionVisitorFactory QueryInliningExpressionVisitorFactory { get; }
+        public IDbCommandExecutorFactory DbCommandExecutorFactory { get; }
 
         public object Execute(IQueryProvider provider, Expression expression)
         {
             try
             {
-                var processingContext = new QueryProcessingContext(provider, DescriptorSet);
+                var processingContext 
+                    = QueryProcessingContextFactory
+                        .CreateQueryProcessingContext(provider, DescriptorSet);
+
                 var parameterMapping = processingContext.ParameterMapping;
 
                 // Parameterize the expression by substituting any ConstantExpression
@@ -60,8 +67,8 @@ namespace Impatient.Query
                 // so that the resulting IQueryable's expression tree will be integrated into the 
                 // current expression tree.
 
-                expression 
-                    = QueryInliningExpressionVisitorFactory
+                expression
+                    = QueryableInliningExpressionVisitorFactory
                         .Create(processingContext)
                         .Visit(expression);
 

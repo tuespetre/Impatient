@@ -33,6 +33,8 @@ namespace Impatient.Tests.Utilities
 
             services.AddScoped<IQueryTranslatingExpressionVisitorFactory, DefaultQueryTranslatingExpressionVisitorFactory>();
 
+            services.AddScoped<IQueryProcessingContextFactory, DefaultQueryProcessingContextFactory>();
+
             services.AddScoped<IDbCommandExecutorFactory>(provider => provider.GetRequiredService<TestDbCommandExecutorFactory>());
 
             services.AddScoped<IImpatientQueryExecutor, DefaultImpatientQueryExecutor>();
