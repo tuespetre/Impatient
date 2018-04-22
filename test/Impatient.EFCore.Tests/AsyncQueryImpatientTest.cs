@@ -13,13 +13,13 @@ namespace Impatient.EFCore.Tests
         {
         }
 
-        [Fact(Skip = "Need to clarify with EF Core team why they expect an entry from this.")]
+        [Fact(Skip = EFCoreSkipReasons.Punt)]
         public override Task Default_if_empty_top_level_arg()
         {
             return base.Default_if_empty_top_level_arg();
         }
 
-        [Fact(Skip = "Not sure what this is supposed to do")]
+        [Fact(Skip = EFCoreSkipReasons.Punt)]
         public override Task Where_nested_field_access_closure_via_query_cache_error_method_null()
         {
             return base.Where_nested_field_access_closure_via_query_cache_error_method_null();
@@ -37,7 +37,7 @@ namespace Impatient.EFCore.Tests
             return base.GroupBy_with_element_selector3();
         }
 
-        [Fact(Skip = "I don't want to support ambiguous ordering semantics")]
+        [Fact(Skip = EFCoreSkipReasons.TestReliesOnUnguaranteedOrder)]
         public override Task OrderBy_multiple()
         {
             return base.OrderBy_multiple();

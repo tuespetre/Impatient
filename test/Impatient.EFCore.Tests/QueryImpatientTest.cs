@@ -13,55 +13,55 @@ namespace Impatient.EFCore.Tests
         {
         }
 
-        [Fact(Skip = "Not sure I agree with this test.")]
+        [Fact(Skip = EFCoreSkipReasons.Punt)]
         public override void Average_with_division_on_decimal_no_significant_digits()
         {
             base.Average_with_division_on_decimal_no_significant_digits();
         }
 
-        [Fact(Skip = "We do not support the exception behavior.")]
+        [Fact(Skip = EFCoreSkipReasons.Punt)]
         public override void Average_no_data()
         {
             base.Average_no_data();
         }
 
-        [Fact(Skip = "We do not support the exception behavior.")]
+        [Fact(Skip = EFCoreSkipReasons.Punt)]
         public override void Average_no_data_subquery()
         {
             base.Average_no_data_subquery();
         }
 
-        [Fact(Skip = "We do not support the exception behavior.")]
+        [Fact(Skip = EFCoreSkipReasons.Punt)]
         public override void Max_no_data()
         {
             base.Max_no_data();
         }
 
-        [Fact(Skip = "We do not support the exception behavior.")]
+        [Fact(Skip = EFCoreSkipReasons.Punt)]
         public override void Max_no_data_subquery()
         {
             base.Max_no_data_subquery();
         }
 
-        [Fact(Skip = "We do not support the exception behavior.")]
+        [Fact(Skip = EFCoreSkipReasons.Punt)]
         public override void Min_no_data()
         {
             base.Min_no_data();
         }
 
-        [Fact(Skip = "We do not support the exception behavior.")]
+        [Fact(Skip = EFCoreSkipReasons.Punt)]
         public override void Min_no_data_subquery()
         {
             base.Min_no_data_subquery();
         }
-        
-        [Fact(Skip = "Need to clarify with EF Core team why they expect an entry from this.")]
+
+        [Fact(Skip = EFCoreSkipReasons.Punt)]
         public override void Default_if_empty_top_level_arg()
         {
             base.Default_if_empty_top_level_arg();
         }
 
-        [Fact(Skip = "Not sure what this is supposed to do")]
+        [Fact(Skip = EFCoreSkipReasons.Punt)]
         public override void Where_nested_field_access_closure_via_query_cache_error_method_null()
         {
             base.Where_nested_field_access_closure_via_query_cache_error_method_null();
@@ -85,7 +85,7 @@ namespace Impatient.EFCore.Tests
             base.GroupJoin_customers_orders();
         }
 
-        [Fact(Skip = "I don't want to support ambiguous ordering semantics")]
+        [Fact(Skip = EFCoreSkipReasons.TestReliesOnUnguaranteedOrder)]
         public override void OrderBy_multiple()
         {
             base.OrderBy_multiple();

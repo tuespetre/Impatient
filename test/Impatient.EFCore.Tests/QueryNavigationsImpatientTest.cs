@@ -41,19 +41,19 @@ namespace Impatient.EFCore.Tests
             base.Select_collection_navigation_simple();
         }
 
-        [Fact(Skip = "EF Core doesn't track the entities but that seems incorrect")]
+        [Fact(Skip = EFCoreSkipReasons.TestIncorrectlyAssumesReturnedEntitiesAreNotTracked)]
         public override void Select_collection_FirstOrDefault_project_entity()
         {
             base.Select_collection_FirstOrDefault_project_entity();
         }
 
-        [Fact(Skip = "EF Core doesn't track the entities but that seems incorrect")]
+        [Fact(Skip = EFCoreSkipReasons.TestIncorrectlyAssumesReturnedEntitiesAreNotTracked)]
         public override void Take_Select_Navigation()
         {
             base.Take_Select_Navigation();
         }
 
-        [Fact(Skip = "EF Core doesn't track the entities but that seems incorrect")]
+        [Fact(Skip = EFCoreSkipReasons.TestIncorrectlyAssumesReturnedEntitiesAreNotTracked)]
         public override void Skip_Select_Navigation()
         {
             base.Skip_Select_Navigation();

@@ -49,7 +49,7 @@ namespace Impatient.EFCore.Tests
             base.GroupJoin_on_a_subquery_containing_another_GroupJoin_projecting_outer();
         }
 
-        [Fact(Skip = EFCoreSkipReasons.NullNavigationProtection), Trait("Skipped by EFCore", "Unskipped by us")]
+        [Fact(Skip = EFCoreSkipReasons.NullNavigationProtection)]
         public override void GroupJoin_on_a_subquery_containing_another_GroupJoin_projecting_outer_with_client_method()
         {
             base.GroupJoin_on_a_subquery_containing_another_GroupJoin_projecting_outer_with_client_method();

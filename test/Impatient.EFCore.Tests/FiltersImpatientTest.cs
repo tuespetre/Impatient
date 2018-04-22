@@ -9,7 +9,7 @@ namespace Impatient.EFCore.Tests
         {
         }
 
-        [Fact(Skip = "Not currently supporting compiled queries.")]
+        [Fact(Skip = EFCoreSkipReasons.CompiledQueries)]
         public override void Compiled_query()
         {
             base.Compiled_query();

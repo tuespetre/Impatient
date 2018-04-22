@@ -6,6 +6,7 @@ using Xunit;
 
 namespace Impatient.EFCore.Tests
 {
+    // These tests seem to be broken at the fixture level
     public class OwnedQueryImpatientTest : OwnedQueryTestBase, IClassFixture<OwnedQueryImpatientFixture>
     {
         private readonly OwnedQueryImpatientFixture fixture;
@@ -20,31 +21,31 @@ namespace Impatient.EFCore.Tests
             return fixture.CreateContext();
         }
 
-        [Fact(Skip = "EF Core model issue for some reason")]
+        [Fact(Skip = EFCoreSkipReasons.TestMaybeBroken)]
         public override void Query_for_base_type_loads_all_owned_navs()
         {
             base.Query_for_base_type_loads_all_owned_navs();
         }
 
-        [Fact(Skip = "EF Core model issue for some reason")]
+        [Fact(Skip = EFCoreSkipReasons.TestMaybeBroken)]
         public override void Query_for_branch_type_loads_all_owned_navs()
         {
             base.Query_for_branch_type_loads_all_owned_navs();
         }
 
-        [Fact(Skip = "EF Core model issue for some reason")]
+        [Fact(Skip = EFCoreSkipReasons.TestMaybeBroken)]
         public override void Query_for_leaf_type_loads_all_owned_navs()
         {
             base.Query_for_leaf_type_loads_all_owned_navs();
         }
 
-        [Fact(Skip = "EF Core model issue for some reason")]
+        [Fact(Skip = EFCoreSkipReasons.TestMaybeBroken)]
         public override void Query_when_group_by()
         {
             base.Query_when_group_by();
         }
 
-        [Fact(Skip = "EF Core model issue for some reason")]
+        [Fact(Skip = EFCoreSkipReasons.TestMaybeBroken)]
         public override void Query_when_subquery()
         {
             base.Query_when_subquery();
