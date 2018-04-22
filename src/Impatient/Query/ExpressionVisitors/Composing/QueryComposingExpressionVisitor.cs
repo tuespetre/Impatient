@@ -2243,7 +2243,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                                         new SqlInExpression(constantExpression, outerSelectExpression),
                                                         Expression.Constant(true),
                                                         Expression.Constant(false)),
-                                                    "BIT",
                                                     typeof(bool)))));
                                 }
                             }
@@ -2322,21 +2321,13 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                                 outerProjection))));
                             }
 
-                            var desiredType = node.Method.ReturnType.UnwrapNullableType();
-
-                            var desiredTypeName
-                                = desiredType == typeof(decimal) ? "decimal"
-                                : desiredType == typeof(double) ? "float"
-                                : "real";
-
                             var sqlFunctionExpression
                                 = node.Method.Name == nameof(Queryable.Average)
                                     ? new SqlAggregateExpression(
                                         "AVG",
                                         new SqlCastExpression(
                                             outerProjection,
-                                            desiredTypeName,
-                                            outerProjection.Type),
+                                            node.Method.ReturnType),
                                         node.Method.ReturnType)
                                     : new SqlAggregateExpression(
                                         node.Method.Name.ToUpperInvariant(),
@@ -2584,7 +2575,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                         new SqlFunctionExpression("ROW_NUMBER", typeof(long)),
                         selectExpression.OrderBy ?? ComputeDefaultWindowOrderBy(selectExpression)),
                     Expression.Constant((long)1)),
-                "int",
                 typeof(int));
         }
 

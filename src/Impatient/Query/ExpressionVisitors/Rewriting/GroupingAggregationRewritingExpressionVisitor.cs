@@ -49,16 +49,9 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
                         if (node.Method.Name == nameof(Queryable.Average))
                         {
-                            var desiredType = node.Method.ReturnType.UnwrapNullableType();
-
-                            var desiredTypeName
-                                = desiredType == typeof(decimal) ? "decimal"
-                                : desiredType == typeof(double) ? "float"
-                                : "real";
-
                             return new SqlAggregateExpression(
                                 "AVG",
-                                new SqlCastExpression(selector, desiredTypeName, node.Method.ReturnType),
+                                new SqlCastExpression(selector, node.Method.ReturnType),
                                 node.Method.ReturnType,
                                 relationalGrouping.IsDistinct && node.Arguments.Count == 1);
                         }

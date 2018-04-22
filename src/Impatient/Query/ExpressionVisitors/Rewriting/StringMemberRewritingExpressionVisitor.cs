@@ -32,7 +32,6 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     {
                         return new SqlCastExpression(
                             new SqlFunctionExpression("LEN", typeof(long), expression),
-                            "int",
                             typeof(int));
                     }
                 }

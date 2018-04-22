@@ -532,7 +532,7 @@ WHERE ([d_1].[Id] IS NOT NULL) OR ([d_2].[Id] IS NOT NULL)",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN [d].[Id] IS NOT NULL THEN 1 ELSE 0 END) AS BIT)
+                @"SELECT CAST((CASE WHEN [d].[Id] IS NOT NULL THEN 1 ELSE 0 END) AS bit)
 FROM [dbo].[BaseAbstractType1] AS [b]
 LEFT JOIN [dbo].[DerivedConcreteType1] AS [d_0] ON [b].[Id] = [d_0].[Id]
 LEFT JOIN [dbo].[DerivedAbstractType1] AS [d_1] ON [b].[Id] = [d_1].[Id]
@@ -558,7 +558,7 @@ WHERE ([d_2].[Id] IS NOT NULL) OR ([d].[Id] IS NOT NULL)",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN [d].[Id] IS NOT NULL THEN 1 ELSE 0 END) AS BIT)
+                @"SELECT CAST((CASE WHEN [d].[Id] IS NOT NULL THEN 1 ELSE 0 END) AS bit)
 FROM [dbo].[BaseAbstractType1] AS [b]
 LEFT JOIN [dbo].[DerivedConcreteType1] AS [d_0] ON [b].[Id] = [d_0].[Id]
 LEFT JOIN [dbo].[DerivedAbstractType1] AS [d_1] ON [b].[Id] = [d_1].[Id]

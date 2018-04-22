@@ -532,7 +532,7 @@ WHERE [t].[$rownumber] < (
     FROM [dbo].[Orders] AS [o]
     INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
     WHERE [c].[ContactName] IS NULL
-) THEN 0 ELSE 1 END) AS BIT)",
+) THEN 0 ELSE 1 END) AS bit)",
                 context.SqlLog);
         }
 
@@ -547,7 +547,7 @@ WHERE [t].[$rownumber] < (
     FROM [dbo].[Orders] AS [o]
     INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
     WHERE [c].[ContactName] IS NOT NULL
-) THEN 1 ELSE 0 END) AS BIT)",
+) THEN 1 ELSE 0 END) AS bit)",
                 context.SqlLog);
         }
 

@@ -24,6 +24,7 @@ namespace Impatient.Query.Infrastructure
         private static readonly List<ITypeMapping> defaultMappings 
             = new List<ITypeMapping>
             {
+                new BooleanTypeMapping(),
                 new ByteTypeMapping(),
                 new ShortTypeMapping(),
                 new Int32TypeMapping(),
@@ -40,6 +41,13 @@ namespace Impatient.Query.Infrastructure
             };
 
         #region default mappings
+
+        private class BooleanTypeMapping : ITypeMapping
+        {
+            public Type ClrType => typeof(bool);
+
+            public string DbType => "bit";
+        }
 
         private class ByteTypeMapping : ITypeMapping
         {
@@ -87,7 +95,7 @@ namespace Impatient.Query.Infrastructure
         {
             public Type ClrType => typeof(decimal);
 
-            public string DbType => "money";
+            public string DbType => "decimal";
         }
 
         private class DateTimeTypeMapping : ITypeMapping

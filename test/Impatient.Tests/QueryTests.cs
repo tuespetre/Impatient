@@ -1118,7 +1118,7 @@ WHERE 1 = 1",
             Assert.AreEqual(
                 @"SELECT [z].[x] AS [x], [z].[y] AS [y]
 FROM (
-    SELECT TOP (10) [a].[Prop1] AS [x], CAST((CASE WHEN [a].[Prop2] < 9000 THEN 1 ELSE 0 END) AS BIT) AS [y]
+    SELECT TOP (10) [a].[Prop1] AS [x], CAST((CASE WHEN [a].[Prop2] < 9000 THEN 1 ELSE 0 END) AS bit) AS [y]
     FROM [dbo].[MyClass1] AS [a]
 ) AS [z]
 WHERE ([z].[x] IS NOT NULL) AND ([z].[y] = 1)",
@@ -1482,7 +1482,7 @@ OFFSET 1 ROWS",
     SELECT 1
     FROM [dbo].[MyClass1] AS [m]
     WHERE [m].[Prop2] > 88
-) THEN 1 ELSE 0 END) AS BIT)",
+) THEN 1 ELSE 0 END) AS bit)",
                 SqlLog);
         }
 
@@ -1498,7 +1498,7 @@ OFFSET 1 ROWS",
     SELECT 1
     FROM [dbo].[MyClass1] AS [m]
     WHERE [m].[Prop2] > 88
-) THEN 1 ELSE 0 END) AS BIT)",
+) THEN 1 ELSE 0 END) AS bit)",
                 SqlLog);
         }
 
@@ -1514,7 +1514,7 @@ OFFSET 1 ROWS",
     SELECT 1
     FROM [dbo].[MyClass1] AS [m]
     WHERE [m].[Prop2] <> 77
-) THEN 0 ELSE 1 END) AS BIT)",
+) THEN 0 ELSE 1 END) AS bit)",
                 SqlLog);
         }
 
@@ -1529,7 +1529,7 @@ OFFSET 1 ROWS",
                 @"SELECT CAST((CASE WHEN 77 IN (
     SELECT [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
-) THEN 1 ELSE 0 END) AS BIT)",
+) THEN 1 ELSE 0 END) AS bit)",
                 SqlLog);
         }
 
@@ -1541,7 +1541,7 @@ OFFSET 1 ROWS",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN 77 IN ([m].[Prop2]) THEN 1 ELSE 0 END) AS BIT)
+                @"SELECT CAST((CASE WHEN 77 IN ([m].[Prop2]) THEN 1 ELSE 0 END) AS bit)
 FROM [dbo].[MyClass1] AS [m]",
                 SqlLog);
         }
@@ -1554,7 +1554,7 @@ FROM [dbo].[MyClass1] AS [m]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN [m].[Prop2] IN (77) THEN 1 ELSE 0 END) AS BIT)
+                @"SELECT CAST((CASE WHEN [m].[Prop2] IN (77) THEN 1 ELSE 0 END) AS bit)
 FROM [dbo].[MyClass1] AS [m]",
                 SqlLog);
         }
@@ -1567,7 +1567,7 @@ FROM [dbo].[MyClass1] AS [m]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN [m].[Prop2] IN (77) THEN 1 ELSE 0 END) AS BIT)
+                @"SELECT CAST((CASE WHEN [m].[Prop2] IN (77) THEN 1 ELSE 0 END) AS bit)
 FROM [dbo].[MyClass1] AS [m]",
                 SqlLog);
         }
@@ -1582,7 +1582,7 @@ FROM [dbo].[MyClass1] AS [m]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN ([m].[Prop2] IN (@p0_0) OR [m].[Prop2] IS NULL) THEN 1 ELSE 0 END) AS BIT)
+                @"SELECT CAST((CASE WHEN ([m].[Prop2] IN (@p0_0) OR [m].[Prop2] IS NULL) THEN 1 ELSE 0 END) AS bit)
 FROM [dbo].[MyClass1] AS [m]",
                 SqlLog);
         }
@@ -1597,7 +1597,7 @@ FROM [dbo].[MyClass1] AS [m]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN [m].[Prop2] IN (@p0_0) THEN 1 ELSE 0 END) AS BIT)
+                @"SELECT CAST((CASE WHEN [m].[Prop2] IN (@p0_0) THEN 1 ELSE 0 END) AS bit)
 FROM [dbo].[MyClass1] AS [m]",
                 SqlLog);
         }
@@ -1612,7 +1612,7 @@ FROM [dbo].[MyClass1] AS [m]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN [m].[Prop2] IS NULL THEN 1 ELSE 0 END) AS BIT)
+                @"SELECT CAST((CASE WHEN [m].[Prop2] IS NULL THEN 1 ELSE 0 END) AS bit)
 FROM [dbo].[MyClass1] AS [m]",
                 SqlLog);
         }
@@ -1627,7 +1627,7 @@ FROM [dbo].[MyClass1] AS [m]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN [m].[Prop2] IN (NULL) THEN 1 ELSE 0 END) AS BIT)
+                @"SELECT CAST((CASE WHEN [m].[Prop2] IN (NULL) THEN 1 ELSE 0 END) AS bit)
 FROM [dbo].[MyClass1] AS [m]",
                 SqlLog);
         }
@@ -3042,7 +3042,7 @@ GROUP BY (CASE WHEN [mg].[Prop2] = 77 THEN 1 ELSE 0 END)",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN (([a].[Prop1] = [a].[Prop1]) AND ([a].[Prop2] = [a].[Prop2])) AND (([b].[Prop1] = [b].[Prop1]) AND ([b].[Prop2] = [b].[Prop2])) THEN 1 ELSE 0 END) AS BIT)
+                @"SELECT CAST((CASE WHEN (([a].[Prop1] = [a].[Prop1]) AND ([a].[Prop2] = [a].[Prop2])) AND (([b].[Prop1] = [b].[Prop1]) AND ([b].[Prop2] = [b].[Prop2])) THEN 1 ELSE 0 END) AS bit)
 FROM [dbo].[MyClass1] AS [a]
 INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
                 SqlLog);
@@ -3060,7 +3060,7 @@ INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN (([a].[Prop1] <> [a].[Prop1]) OR ([a].[Prop2] <> [a].[Prop2])) OR (([b].[Prop1] <> [b].[Prop1]) OR ([b].[Prop2] <> [b].[Prop2])) THEN 1 ELSE 0 END) AS BIT)
+                @"SELECT CAST((CASE WHEN (([a].[Prop1] <> [a].[Prop1]) OR ([a].[Prop2] <> [a].[Prop2])) OR (([b].[Prop1] <> [b].[Prop1]) OR ([b].[Prop2] <> [b].[Prop2])) THEN 1 ELSE 0 END) AS bit)
 FROM [dbo].[MyClass1] AS [a]
 INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
                 SqlLog);
@@ -3078,7 +3078,7 @@ INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN ([a].[Prop1] = [a].[Prop1]) AND ([b].[Prop2] = [b].[Prop2]) THEN 1 ELSE 0 END) AS BIT)
+                @"SELECT CAST((CASE WHEN ([a].[Prop1] = [a].[Prop1]) AND ([b].[Prop2] = [b].[Prop2]) THEN 1 ELSE 0 END) AS bit)
 FROM [dbo].[MyClass1] AS [a]
 INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
                 SqlLog);
@@ -3096,7 +3096,7 @@ INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN ([a].[Prop1] <> [a].[Prop1]) OR ([b].[Prop2] <> [b].[Prop2]) THEN 1 ELSE 0 END) AS BIT)
+                @"SELECT CAST((CASE WHEN ([a].[Prop1] <> [a].[Prop1]) OR ([b].[Prop2] <> [b].[Prop2]) THEN 1 ELSE 0 END) AS bit)
 FROM [dbo].[MyClass1] AS [a]
 INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
                 SqlLog);
@@ -3113,7 +3113,7 @@ INNER JOIN [dbo].[MyClass2] AS [b] ON [a].[Prop1] = [b].[Prop1]",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN [a].[Prop1] IS NULL THEN 1 ELSE 0 END) AS BIT)
+                @"SELECT CAST((CASE WHEN [a].[Prop1] IS NULL THEN 1 ELSE 0 END) AS bit)
 FROM [dbo].[MyClass1] AS [a]
 WHERE [a].[Prop1] IS NULL",
                 SqlLog);
@@ -3130,7 +3130,7 @@ WHERE [a].[Prop1] IS NULL",
             query.ToList();
 
             Assert.AreEqual(
-                @"SELECT CAST((CASE WHEN [a].[Prop1] IS NOT NULL THEN 1 ELSE 0 END) AS BIT)
+                @"SELECT CAST((CASE WHEN [a].[Prop1] IS NOT NULL THEN 1 ELSE 0 END) AS bit)
 FROM [dbo].[MyClass1] AS [a]
 WHERE [a].[Prop1] IS NOT NULL",
                 SqlLog);
@@ -4343,7 +4343,7 @@ INNER JOIN (
         FROM [dbo].[MyClass2] AS [m2]
     ) AS [t_0] ON [t].[$rownumber] = [t_0].[$rownumber]
     WHERE (([t].[$rownumber] IS NULL) OR ([t_0].[$rownumber] IS NULL)) OR (([t].[Prop1] <> [t_0].[Prop1]) OR ([t].[Prop2] <> [t_0].[Prop2]))
-) THEN 0 ELSE 1 END) AS BIT)",
+) THEN 0 ELSE 1 END) AS bit)",
                 SqlLog);
         }
 

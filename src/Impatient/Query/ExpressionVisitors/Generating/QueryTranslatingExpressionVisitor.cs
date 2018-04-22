@@ -13,6 +13,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 {
     public class QueryTranslatingExpressionVisitor : ExpressionVisitor
     {
+        private readonly ITypeMapper typeMapper = new DefaultTypeMapper();
         private readonly IComplexTypeSubqueryFormatter complexTypeSubqueryFormatter;
         private readonly HashSet<string> tableAliases = new HashSet<string>();
         private readonly IDictionary<AliasedTableExpression, string> aliasLookup = new Dictionary<AliasedTableExpression, string>();
@@ -626,8 +627,6 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 {
                     if (node.Operand.Type.UnwrapNullableType() != node.Type.UnwrapNullableType())
                     {
-                        var typeMapper = new DefaultTypeMapper();
-
                         var mapping = typeMapper.FindMapping(node.Type);
 
                         if (mapping != null)
@@ -694,7 +693,9 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                     EmitExpressionListExpression(expression);
 
-                    Builder.Append(" AS BIT)");
+                    var booleanMapping = typeMapper.FindMapping(typeof(bool));
+
+                    Builder.Append($" AS {booleanMapping.DbType})");
                 }
                 else
                 {
@@ -1014,11 +1015,31 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
         protected virtual Expression VisitSqlCastExpression(SqlCastExpression sqlCastExpression)
         {
-            Builder.Append("CAST(");
+            if (!string.IsNullOrWhiteSpace(sqlCastExpression.SqlType))
+            {
+                Builder.Append("CAST(");
 
-            Visit(sqlCastExpression.Expression);
+                Visit(sqlCastExpression.Expression);
 
-            Builder.Append($" AS {sqlCastExpression.SqlType})");
+                Builder.Append($" AS {sqlCastExpression.SqlType})");
+            }
+            else
+            { 
+                var mapping = typeMapper.FindMapping(sqlCastExpression.Type);
+
+                if (mapping != null)
+                {
+                    Builder.Append("CAST(");
+
+                    Visit(sqlCastExpression.Expression);
+
+                    Builder.Append($" AS {mapping.DbType})");
+                }
+                else
+                {
+                    Visit(sqlCastExpression.Expression);
+                }
+            }
 
             return sqlCastExpression;
         }

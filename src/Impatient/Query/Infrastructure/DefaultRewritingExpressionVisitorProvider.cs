@@ -40,8 +40,11 @@ namespace Impatient.Query.Infrastructure
 
             yield return new EnumerableQueryEqualityRewritingExpressionVisitor();
 
-            // TODO: Pull this from the Default provider.
+            // TODO: Consider pulling these from the Default provider.
+
             yield return new SqlServerCountRewritingExpressionVisitor();
+
+            yield return new SqlServerMathMethodRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor);
         }
     }
 }

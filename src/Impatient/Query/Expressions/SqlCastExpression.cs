@@ -5,10 +5,14 @@ namespace Impatient.Query.Expressions
 {
     public class SqlCastExpression : SqlExpression
     {
-        public SqlCastExpression(Expression expression, string sqlType, Type type)
+        public SqlCastExpression(Expression expression, string sqlType, Type type) : this(expression, type)
+        {
+            SqlType = sqlType;
+        }
+
+        public SqlCastExpression(Expression expression, Type type)
         {
             Expression = expression ?? throw new ArgumentNullException(nameof(expression));
-            SqlType = sqlType ?? throw new ArgumentNullException(nameof(sqlType));
             Type = type ?? throw new ArgumentNullException(nameof(type));
         }
 
@@ -30,6 +34,6 @@ namespace Impatient.Query.Expressions
             return this;
         }
 
-        public override int GetSemanticHashCode() => (IsNullable, SqlType).GetHashCode();
+        public override int GetSemanticHashCode() => (IsNullable, Type).GetHashCode();
     }
 }

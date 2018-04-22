@@ -11,7 +11,274 @@ namespace Impatient.EFCore.Tests
     {
         public QueryImpatientTest(NorthwindQueryImpatientFixture fixture) : base(fixture)
         {
+            Fixture.TestSqlLoggerFactory.Clear();
         }
+
+        #region math
+
+        [Fact]
+        public override void Select_math_round_int()
+        {
+            base.Select_math_round_int();
+
+            AssertSql(@"SELECT ROUND(CAST(CAST([o].[OrderID] AS float) AS float), 0) AS [A]
+FROM [Orders] AS [o]
+WHERE [o].[OrderID] < 10250");
+        }
+
+        [Fact]
+        public override void Select_math_truncate_int()
+        {
+            base.Select_math_truncate_int();
+
+            AssertSql(@"SELECT ROUND(CAST(CAST([o].[OrderID] AS float) AS float), 0, 1) AS [A]
+FROM [Orders] AS [o]
+WHERE [o].[OrderID] < 10250");
+        }
+
+        [Fact]
+        public override void Where_math_abs1()
+        {
+            base.Where_math_abs1();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE ABS([od].[ProductID]) > 10");
+        }
+
+        [Fact]
+        public override void Where_math_abs2()
+        {
+            base.Where_math_abs2();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE CAST(ABS([od].[Quantity]) AS int) > 10");
+        }
+
+        [Fact]
+        public override void Where_math_abs3()
+        {
+            base.Where_math_abs3();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE ABS([od].[UnitPrice]) > 10.0");
+        }
+
+        [Fact]
+        public override void Where_math_abs_uncorrelated()
+        {
+            base.Where_math_abs_uncorrelated();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE 10 < [od].[ProductID]");
+        }
+
+        [Fact]
+        public override void Where_math_acos()
+        {
+            base.Where_math_acos();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE ([od].[OrderID] = 11077) AND (ACOS(CAST([od].[Discount] AS float)) > 1)");
+        }
+
+        [Fact]
+        public override void Where_math_asin()
+        {
+            base.Where_math_asin();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE ([od].[OrderID] = 11077) AND (ASIN(CAST([od].[Discount] AS float)) > 0)");
+        }
+
+        [Fact]
+        public override void Where_math_atan()
+        {
+            base.Where_math_atan();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE ([od].[OrderID] = 11077) AND (ATAN(CAST([od].[Discount] AS float)) > 0)");
+        }
+
+        [Fact]
+        public override void Where_math_atan2()
+        {
+            base.Where_math_atan2();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE ([od].[OrderID] = 11077) AND (ATN2(CAST([od].[Discount] AS float), 1) > 0)");
+        }
+
+        [Fact]
+        public override void Where_math_ceiling1()
+        {
+            base.Where_math_ceiling1();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE CEILING(CAST([od].[Discount] AS float)) > 0");
+        }
+
+        [Fact]
+        public override void Where_math_ceiling2()
+        {
+            base.Where_math_ceiling2();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE CEILING([od].[UnitPrice]) > 10.0");
+        }
+
+        [Fact]
+        public override void Where_math_cos()
+        {
+            base.Where_math_cos();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE ([od].[OrderID] = 11077) AND (COS(CAST([od].[Discount] AS float)) > 0)");
+        }
+
+        [Fact]
+        public override void Where_math_exp()
+        {
+            base.Where_math_exp();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE ([od].[OrderID] = 11077) AND (EXP(CAST([od].[Discount] AS float)) > 1)");
+        }
+
+        [Fact]
+        public override void Where_math_floor()
+        {
+            base.Where_math_floor();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE FLOOR([od].[UnitPrice]) > 10.0");
+        }
+
+        [Fact]
+        public override void Where_math_log()
+        {
+            base.Where_math_log();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE (([od].[OrderID] = 11077) AND ([od].[Discount] > 0)) AND (LOG(CAST([od].[Discount] AS float)) < 0)");
+        }
+
+        [Fact]
+        public override void Where_math_log10()
+        {
+            base.Where_math_log10();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE (([od].[OrderID] = 11077) AND ([od].[Discount] > 0)) AND (LOG10(CAST([od].[Discount] AS float)) < 0)");
+        }
+
+        [Fact]
+        public override void Where_math_log_new_base()
+        {
+            base.Where_math_log_new_base();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE (([od].[OrderID] = 11077) AND ([od].[Discount] > 0)) AND (LOG(CAST([od].[Discount] AS float), 7) < 0)");
+        }
+
+        [Fact]
+        public override void Where_math_power()
+        {
+            base.Where_math_power();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE POWER(CAST([od].[Discount] AS float), 2) > 0.05000000074505806");
+        }
+
+        [Fact]
+        public override void Where_math_round()
+        {
+            base.Where_math_round();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE ROUND([od].[UnitPrice], 0) > 10.0");
+        }
+
+        [Fact]
+        public override void Where_math_round2()
+        {
+            base.Where_math_round2();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE ROUND([od].[UnitPrice], 2) > 100.0");
+        }
+
+        [Fact]
+        public override void Where_math_sign()
+        {
+            base.Where_math_sign();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE ([od].[OrderID] = 11077) AND (SIGN([od].[Discount]) > 0)");
+        }
+
+        [Fact]
+        public override void Where_math_sin()
+        {
+            base.Where_math_sin();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE ([od].[OrderID] = 11077) AND (SIN(CAST([od].[Discount] AS float)) > 0)");
+        }
+
+        [Fact]
+        public override void Where_math_sqrt()
+        {
+            base.Where_math_sqrt();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE ([od].[OrderID] = 11077) AND (SQRT(CAST([od].[Discount] AS float)) > 0)");
+        }
+
+        [Fact]
+        public override void Where_math_tan()
+        {
+            base.Where_math_tan();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE ([od].[OrderID] = 11077) AND (TAN(CAST([od].[Discount] AS float)) > 0)");
+        }
+
+        [Fact]
+        public override void Where_math_truncate()
+        {
+            base.Where_math_truncate();
+
+            AssertSql(@"SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
+FROM [Order Details] AS [od]
+WHERE ROUND([od].[UnitPrice], 0, 1) > 10.0");
+        }
+
+        #endregion
+
+        #region skips
 
         [Fact(Skip = EFCoreSkipReasons.Punt)]
         public override void Average_with_division_on_decimal_no_significant_digits()
@@ -260,6 +527,8 @@ namespace Impatient.EFCore.Tests
             base.Comparing_collection_navigation_to_null();
         }
 
+        #endregion
+
         [Fact]
         public override void String_Contains_Literal()
         {
@@ -308,5 +577,11 @@ namespace Impatient.EFCore.Tests
         {
             base.Compare_two_collection_navigations_using_equals();
         }
+
+        private void AssertSql(params string[] expected)
+            => Fixture.TestSqlLoggerFactory.AssertBaseline(expected);
+
+        protected override void ClearLog()
+            => Fixture.TestSqlLoggerFactory.Clear();
     }
 }
