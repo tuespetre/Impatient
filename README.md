@@ -1,195 +1,261 @@
 # Impatient
 
 > Ain't nobody got time for data
+--------------------------------
 
-## Summary
+- [Introduction](#introduction)
+- [Getting Started with Impatient.EntityFrameworkCore.SqlServer](#getting-started)
+	- [Implementation Differences](#implementation-differences)
+	- [Unsupported Features](#unsupported-features)
+- [Sample Query Translations](#sample-translations) (coming soon)
+- How Impatient Translates Queries
+	- [A Primer](#primer)
+	- [The Query Processing Pipeline](#pipeline)
 
-The (current) objective of this project is to provide a reusable, composable, and 
-performant implementation of `System.Linq.IQueryProvider` that targets 
-relational database providers. The aim, then, is not to provide a complete
-ORM solution but rather a robust component that can be used to build data
-access layers and ORM solutions. Accordingly, there are no plans for a high-level
-modelling API, a change tracker, migrations, or other similar ORM features.
+## <a name="introduction"></a> Introduction
 
-### Principles
+`Impatient` is a project that provides the tools needed to create powerful
+LINQ query providers that map to SQL. It offers support for mapping navigation
+properties to joins and subqueries. It offers support for translating
+almost all of the standard LINQ query operators, including SkipWhile/TakeWhile,
+SequenceEqual, Zip, and Select and Where with index arguments. It even supports
+materializing nested collections and complex-type columns within results instead 
+by taking advantage of database features like SQL Server's FOR JSON. 
+**The only currently supported database engine is SQL Server 2016 or newer** 
+but there are plans to expose certain extension points so that other 
+database engines could be supported.
 
--  Be as 'close to the metal' and 'out of the box' as possible: use 
-  `Expression`s and `ExpressionVisitor`s rather than a bespoke
-   AST model
-
--  Be immutable: all `Expression`s must be immutable and `ExpressionVisitor`s
-   should possess as little state as possible.
-
--  Be as robust as possible: try to compile queries in such a way 
-   that queries can 'never fail' 
-
-### Various notes regarding supported translations and future goals
-
--  `LEFT JOIN` and `OUTER APPLY` can be generated as expected:
-
-    ```
-	// LEFT JOIN
-	from X x in xs
-	join Y y in ys on x.z equals y.z into yg
-	from Y y in yg.DefaultIfEmpty()
-	select new { x, y }
-
-	// OUTER APPLY
-	from X x in xs
-	join Y y in ys on x.z equals y.z into yg
-	from Y y in yg.Take(3).DefaultIfEmpty()
-	select new { x, y }
-	```
-
--  `GROUP BY` can be generated as expected:
-
-    ```
-	// Will produce a GROUP BY query at the server:
-	from X x in xs
-	group x by x.z into xg
-	let maxA = xg.Max(x => x.a)
-	let minB = xg.Max(x => x.b)
-	let countDistinctC = xg.Select(x => x.c).Distinct().Count()
-	select new { xg.Key, maxA, minB, countDistinctC } into x
-	join Y y in ys on x.Key equals y.z
-	select new { x, y }
-
-	// Will produce a GROUP BY query at the server as well
-	// as appropriate subqueries for when an aggregation 'escapes'
-	// the GROUP BY context
-	from X x in xs
-	group x by x.z into xg
-	join Y y in ys on xg.Key equals y.z
-	let maxA = xg.Max(x => x.a)
-	select new { maxA, y }
-	```
-
-- Object equality translation is supported via an API that
-  allows consumers to define the key comparison expressions 
-  the equality expressions should be rewritten into.
-
-- Navigation property translation is supported via an API that
-  allows consumers to define the corresponding key selectors and 
-  query expressions to use in order to rewrite navigations into joins
-  and subqueries. One-to-one optional navigations are not yet supported.
-
-- Relational null semantics are partially addressed but still have some work to be done.
-
-- `Enum` types are not yet dealt with.
-
-- No `async` support is currently provided.
-
-- The project is currently structured around SQL Server; other providers
-  should be supported (including but not limited to Oracle, Postgres, 
-  and Sqlite.)
-
-- Translation of some common .NET APIs/idioms are supported:
-
-    - `DateTime` (`DateTime.Now`, `date.AddDays(x)`, etc.)
-	- `Nullable<T>` (`nullable.Value`, `nullable.HasValue`, `nullable.GetValueOrDefault()`)
-	- `string` (`Trim`, `Concat`, `Length`)
-
-- Some .NET APIs are not currently translated, like `Math` and `Convert`.
-
-- Support for nested (serialized) collections in projections 
-  (using `FOR JSON`, `FOR XML`, and similar) is a goal; the project 
-  currently includes some rough implementation using `FOR JSON`.
-
-- Currently unsupported `Queryable` operators:
-
-  - `Aggregate`
-  - Operators with `IComparer` and `IEqualityComparer` overloads
-
-  It is unclear how exactly `Aggregate` could be translated considering
-  that no relational database seems to offer a parallel (an aggregate
-  function that can be expressed as a function expression with an optional
-  seed value.) The operators with `IComparer` and `IEqualityComparer` overloads
-  are also interesting as it is unclear how they were ever intended to be
-  translatable to a remote data source of any kind.
-
-- Currently unsupported `Enumerable` operators (in a subquery context):
-
-    - `Empty`
-    - `Range`
-    - `Repeat`
-    - `ToDictionary`
-    - `ToLookup`
-
-- Upcoming and tentative operators from dotnet/corefx:
+`Impatient.EntityFrameworkCore.SqlServer` is a project that takes Impatient and
+extends it to provide a substitution for EF Core's default query compiler. There
+are some caveats to be aware of, but it is backed by EF Core's own specification
+test suites with over 2200 passing tests.
     
-    - `Append` [#15668](https://github.com/dotnet/corefx/pull/15668)
-    - `Prepend` [#15668](https://github.com/dotnet/corefx/pull/15668)
-    - `SkipLast` [#14186](https://github.com/dotnet/corefx/pull/14186)
-    - `TakeLast` [#14186](https://github.com/dotnet/corefx/pull/14186)
-    - `ToHashSet` [#13726](https://github.com/dotnet/corefx/pull/13726)
-    - `Yield` [#3093](https://github.com/dotnet/corefx/issues/3093)
-  
-### Examples and explanations
+## <a name="getting-started"></a> Getting Started with Impatient.EntityFrameworkCore.SqlServer
 
-#### Constructing a query
-
-This example shows what goes into constructing a very basic query.
-The bulk of the code written here would tend to be either written once and
-hidden behind a property or method to provide easy access, or generated 
-by another component that provides a high-level object-relational mapping 
-interface.
+The `Impatient.EntityFrameworkCore.SqlServer` package will be versioned according 
+to the minor version of EF Core that is supports; that is, a 2.0.x version will 
+support a 2.0.x version of EF Core, a 2.1.x version will support a 2.1.x version 
+of EF Core, and so on. After installing the package, use it like so:
 
 ```
-// Define the base table we are querying with the schema name, table name, 
-// default alias, and object type.
-var table = new BaseTableExpression("dbo", "MyClass1", "m", typeof(MyClass1));
+services.AddDbContext<NorthwindDbContext>(options =>
+{
+    options
+        .UseSqlServer(connectionString) // Be sure to enable MARS! (see below)
+        .UseImpatientQueryCompiler();
+});
+```
 
-// Define the materialization expression. The SqlColumnExpression instances
-// will be replaced with the appropriate calls to read values from a DataReader.
+The next two sections cover those aformentioned caveats.
+
+### <a name="implementation-differences"></a> Implementation Differences
+
+- Impatient currently relies on MARS (`MultipleActiveResultSets=True` in the
+  connection string) to execute parallel queries that may run during (for instance)
+  a client join operation or an N+1 query. Improvements to this area are planned.
+  
+- Impatient currently provides a naive implementation of async queries that
+  does not make use of the cancellation token argument. Improvements to this area
+  are planned.
+
+- Impatient takes a pessimistic approach to change tracking when client 
+  evaluation occurs. That means that when a selector is evaluated on the
+  client where an entity is passed as an argument to some kind of expression
+  like a method call or a constructor, Impatient is going to add that entity
+  to the change tracker whereas EF Core's query compiler would not.
+      
+### <a name="unsupported-features"></a> Unsupported Features
+
+- Certain translations like `System.Convert` calls and others are not
+  implemented *yet* but are definitely planned for the future. The 
+  section on sample translations will eventually be updated to enumerate
+  all of the supported translations.
+
+- `CompileQuery` is not supported but there are plans to implement support
+  for it.
+
+- Client evaluation warnings (and throwing behavior) are not supported
+  but there are plans to implement support for it.
+
+- `ROW_NUMBER` paging is not supported nor are there plans to support it.
+  `OFFSET`/`FETCH NEXT` is supported, however.
+
+- "Null reference protection" is not supported nor are there plans to support it.
+
+- `FromSql` is not supported nor are there plans to support it. If you want to use
+  `FromSql` you should check out Dapper.
+
+## <a name="sample-translations"></a> Sample Query Translations
+
+> This section is coming soon!
+
+## How Impatient Translates Queries
+
+### <a name="primer"></a> A Primer
+
+*Note: this section assumes some familiarity with `IQueryable`, `Expression`, and `ExpressionVisitor`.*
+
+A query begins with a `RelationalQueryExpression` which describes the resulting type of the query
+and contains a child `SelectExpression`. The `SelectExpression` is the `Expression` equivalent of 
+a SQL `SELECT` statement. Calls to `Queryable` methods like `Where`, `Select`, `GroupBy`, and so forth
+are then interpreted by Impatient to compose upon the `RelationalQueryExpression`'s `SelectExpression`.
+
+For instance, let's look at the Northwind database. We have a `Customers` table that we want to query.
+The first thing we will do is define a basic `SelectExpression` representing the very basic SQL query
+`SELECT [c].[CustomerID], [c].[CompanyName] /* and so on */ FROM [dbo].[Customers] AS [c]`:
+
+```
+var table = new BaseTableExpression("dbo", "Customer", "c", typeof(Customer));
+
 var materializer
     = Expression.MemberInit(
-        Expression.New(typeof(MyClass1)),
-        from property in new[]
-        {
-            typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop1)),
-            typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop2))
-        }
+        Expression.New(typeof(Customer)),
+        from property in GetWhateverProperties(typeof(Customer))
         let column = new SqlColumnExpression(table, property.Name, property.PropertyType)
-        select Expression.Bind(property, column))
-
-// Create a query expression, which itself receives a SelectExpression. The
-// SelectExpression requires at minimum a ProjectionExpression; in this case
-// we are querying a table so we supply a TableExpression as well.
+        select Expression.Bind(property, column));
+        
 var queryExpression
   = new EnumerableRelationalQueryExpression(
       new SelectExpression(
         new ServerProjectionExpression(materializer),
         table));
-
-// Obtain an instance of the ImpatientQueryProvider from our service container.
-var impatient = services.GetRequiredService<ImpatientQueryProvider>();
-
-// Query away!
-var results = (from m in impatient.CreateQuery<MyClass1>(queryExpression)
-               where m.Prop1 == "This example is really contrived"
-               select m).ToList();
 ```
 
-#### Using different materialization patterns
-
-In order to pass values into the constructor of an object rather than
-property setters, the materialization expression can be written this way:
+Then, we get an instance of our query provider and use `CreateQuery<Customer>(expression)` to 
+get our `IQueryable<Customer>`:
 
 ```
-var properties = new[]
+var customers 
+    = services
+        .GetRequiredService<ImpatientQueryProvider>()
+        .CreateQuery<Customer>(queryExpression);
+```
+
+Now that we have our customer query, we can... well, query on it:
+
+```
+var customers = 
+    (from c in customers 
+     where c.City == "Berlin" 
+     select new { c.CustomerID, c.CompanyName, c.ContactName }).ToList();
+```
+
+At this point, Impatient will translate and compile the query and execute it. Let's
+consider how it applies `Where` and `Select`. The expression tree contains a call
+to `Queryable.Where(customers, c => c.City == "Berlin")`. Impatient grabs the query
+expression from the first argument and the lambda expression from the second argument.
+
+The projection expression from the query looks like this:
+
+```
+new Customer()
 {
-    typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop1)),
-    typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop2)),
-};
-
-var materializer
-    = Expression.New(
-        constructor: typeof(MyClass1).GetConstructors().Single(),
-        arguments: from p in properties select new SqlColumnExpression(table, p.Name, p.PropertyType),
-        members: properties);
+    CustomerID = [SqlColumnExpression],
+    CompanyName = [SqlColumnExpression],
+    ContactName = [SqlColumnExpression],
+    City = [SqlColumnExpression],
+    // and so on.
+}
 ```
 
-A materialization expression should consist only of (possibly nested) 
-`MemberInitExpression`s and `NewExpression`s. Any `NewExpression` that 
-appears must include the `Members`, and any `MemberInitExpression` that 
-appears must not include a `MemberListBinding` node.
+In order to interpret the `Where` predicate, Impatient replaces all instances of the 
+parameter `c` with the current projection. So we get this:
+
+```
+new Customer()
+{
+    CustomerID = [SqlColumnExpression],
+    CompanyName = [SqlColumnExpression],
+    ContactName = [SqlColumnExpression],
+    City = [SqlColumnExpression],
+    // and so on.
+}.City == "Berlin"
+```
+
+Impatient then simplifies everything it can in the expression. There is a member access
+on the Customer to its `City` property, and because the Customer expression is a 
+`MemberInitExpression` with `City` as a binding, we reduce the member access down to the
+bound value:
+
+```
+[SqlColumnExpression] == "Berlin"
+```
+
+This is translatable to SQL, so it gets added to the `SelectExpression` and the call to
+`Where` has now been replaced by a `RelationalQueryExpression`. The same process takes
+place for the call to `Select`:
+
+```
+new { c.CustomerID, c.CompanyName, c.ContactName }
+```
+
+becomes
+
+```
+new { [SqlColumnExpression], [SqlColumnExpression], [SqlColumnExpression] }
+```
+
+which is translatable, so it replaces the projection on the `SelectExpression` and the
+call to `Select` has now been replaced with a `RelationalQueryExpression`.
+
+This is how all of the query operators are translated, although many are more involved,
+like `GroupBy` or `SelectMany`.
+
+### <a name="pipeline"></a> The Query Processing Pipeline
+
+There are three main stages to processing a query expression.
+
+1. Preparation
+
+    The query expression is **parameterized**, meaning all constant expressions
+    that are not literal constants are swapped out for parameter expressions.
+    Literal constants are constants like numeric literals, string literals, and
+    so forth. Basically, we look for closure instances and swap them out.
+    
+    The query expression is then **inlined**, meaning we look into all of the subtrees
+    of type `IQueryable`, re-swap the constants back into place, and see if new query
+    subtrees are produced. Those appear in lambda expressions, such as calls to `SelectMany`.
+    If we successfully inline a query subtree, we will parameterize that subtree because
+    it may reference new closures or other constants that were not present prior to inlining.
+    
+    Finally, the query expression is **hashed**, meaning we visit the entire tree and
+    build a hash code based on the structure and semantics of the tree. This hash code is used
+    to look up a previously compiled 'execution plan' for the query so it can just be run
+    using the parameterized constants instead of having to complete the rest of the pipeline.
+
+2. Composition
+
+    The query expression is **composed** by a sequence of composing expression visitors.
+    The default sequence of composing visitors consists of one that rewrites navigation properties
+    into calls to the appropriate `Join`/`GroupJoin`/ etc. method calls, one that visits
+    each call to a `Queryable` or `Enumerable` method with a lambda expression and uses
+    the lambda's parameter name(s) to set the table aliases in the corresponding `SelectExpression`,
+    and one that interprets calls to `Queryable` or `Enumerable` methods and uses them to
+    compose (build) `SelectExpression`s. 
+	
+	That last visitor is in a sense *the* composing expression visitor, and it employs the use of 
+	another sequence of expression visitors -- the **rewriting** expression visitors. They are named
+	so because they rewrite certain types of expressions like `DateTime.Now` or `string.IsNullOrEmpty`
+	into translatable forms using things like `SqlFunctionExpression`, `SqlAggregateExpression`, or
+	`SqlInExpression`. These visitors are used every time a lambda's parameters are expanded, and
+	afterward, the resulting expression is analyzed for translatability. The composing visitor then
+	uses the outcome of that analysis to determine whether or not it needs to fall back to client 
+	evaluation or in some cases take a hybrid approach.
+
+	There is also a sequence of visitors known as the **optimizing** expression visitors. This sequence
+	of visitors is applied before the composing visitors, between each of the composing visitors, and after
+	all of the composing visitors. They consist of simple expression tree optimizations, like reducing
+	or inverting some boolean-typed binary expressions, rewriting comparisons between conditional 
+	expressions into a binary expression tree, or removing unnecessary type conversions. These visitors
+	are run when they are run so that each composing visitor only needs to worry about applying
+	such optimizations as needed for its own purposes.
+
+3. Compilation
+
+    The query expression is **compiled** by a sequence of compiling expression visitors.
+    This is where the `SelectExpression`s are translated into SQL and the projection expressions
+    are converted into materializer delegates that read from a `DbDataReader` to produce results.
+    
+    The compiled query expression is then used as the body of a lambda expression which is 
+    given the parameters discovered in the preparation stage. The lambda expression is then compiled
+    into an executable delegate and cached using the hash code from the preparation stage.
