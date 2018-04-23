@@ -14,39 +14,45 @@
 
 ## <a name="introduction"></a> Introduction
 
-`Impatient` is a project that provides the tools needed to create powerful
+`Impatient` is a library that provides the infrastructure needed to create powerful
 LINQ query providers that map to SQL. It offers support for mapping navigation
 properties to joins and subqueries. It offers support for translating
-almost all of the standard LINQ query operators, including SkipWhile/TakeWhile,
-SequenceEqual, Zip, and Select and Where with index arguments. It even supports
-materializing nested collections and complex-type columns within results instead 
-by taking advantage of database features like SQL Server's FOR JSON. 
+almost all of the standard LINQ query operators, including `SkipWhile`/`TakeWhile`,
+`SequenceEqual`, `Zip`, and `Select`/`Where` with index arguments. It even supports
+materializing nested collections and complex-type columns within results 
+by taking advantage of database features like SQL Server's `FOR JSON`. 
 **The only currently supported database engine is SQL Server 2016 or newer** 
 but there are plans to expose certain extension points so that other 
-database engines could be supported.
+database engines could be supported. The library is currently using an 'unstable'
+version number because it is expected that the API will see some significant changes
+yet before settling down.
 
 `Impatient.EntityFrameworkCore.SqlServer` is a project that takes Impatient and
-extends it to provide a substitution for EF Core's default query compiler. There
-are some caveats to be aware of, but it is backed by EF Core's own specification
-test suites with over 2200 passing tests.
+extends it to provide a substitution for EF Core's default `IQueryCompiler`. It is 
+backed by EF Core's own specification test suites with over 2200 passing tests,
+though there are some caveats and implementation differences to be aware of.
     
 ## <a name="getting-started"></a> Getting Started with Impatient.EntityFrameworkCore.SqlServer
 
-The `Impatient.EntityFrameworkCore.SqlServer` package will be versioned according 
-to the minor version of EF Core that is supports; that is, a 2.0.x version will 
-support a 2.0.x version of EF Core, a 2.1.x version will support a 2.1.x version 
-of EF Core, and so on. After installing the package, use it like so:
+After installing the package and ensuring that your connection string enables MARS,
+use it like so:
 
 ```
 services.AddDbContext<NorthwindDbContext>(options =>
 {
     options
-        .UseSqlServer(connectionString) // Be sure to enable MARS! (see below)
+        .UseSqlServer(connectionString) // Be sure to enable MARS!
         .UseImpatientQueryCompiler();
 });
 ```
 
-The next two sections cover those aformentioned caveats.
+The `Impatient.EntityFrameworkCore.SqlServer` package will be versioned according 
+to the minor version of EF Core that is supports; that is, a 2.0.x version will 
+support a 2.0.x version of EF Core, a 2.1.x version will support a 2.1.x version 
+of EF Core, and so on. Unless expanded in the future, the `UseImpatientQueryCompiler`
+is the only designated stable public API in this package.
+
+The next two sections cover those aforementioned caveats.
 
 ### <a name="implementation-differences"></a> Implementation Differences
 
@@ -77,6 +83,9 @@ The next two sections cover those aformentioned caveats.
 - Client evaluation warnings (and throwing behavior) are not supported
   but there are plans to implement support for it.
 
+- Warnings for and forced client evaluation of exception-throwing aggregates 
+  used in subqueries are not supported nor are there plans to support them.
+
 - `ROW_NUMBER` paging is not supported nor are there plans to support it.
   `OFFSET`/`FETCH NEXT` is supported, however.
 
@@ -87,7 +96,35 @@ The next two sections cover those aformentioned caveats.
 
 ## <a name="sample-translations"></a> Sample Query Translations
 
-> This section is coming soon!
+> This section is coming soon! For now, here's a teaser taken from the test library:
+
+```csharp
+        [TestMethod]
+        public void SequenceEqual_simple()
+        {
+            var m1s = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m1 => new { m1.Prop1, m1.Prop2 });
+            var m2s = impatient.CreateQuery<MyClass2>(MyClass2QueryExpression).Select(m2 => new { m2.Prop1, m2.Prop2 });
+
+            var result = m1s.SequenceEqual(m2s);
+
+            Assert.IsTrue(result);
+
+            Assert.AreEqual(
+                @"SELECT CAST((CASE WHEN EXISTS (
+    SELECT 1
+    FROM (
+        SELECT [m1].[Prop1] AS [Prop1], [m1].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+        FROM [dbo].[MyClass1] AS [m1]
+    ) AS [t]
+    FULL JOIN (
+        SELECT [m2].[Prop1] AS [Prop1], [m2].[Prop2] AS [Prop2], ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) AS [$rownumber]
+        FROM [dbo].[MyClass2] AS [m2]
+    ) AS [t_0] ON [t].[$rownumber] = [t_0].[$rownumber]
+    WHERE (([t].[$rownumber] IS NULL) OR ([t_0].[$rownumber] IS NULL)) OR (([t].[Prop1] <> [t_0].[Prop1]) OR ([t].[Prop2] <> [t_0].[Prop2]))
+) THEN 0 ELSE 1 END) AS bit)",
+                SqlLog);
+        }
+```
 
 ## How Impatient Translates Queries
 
