@@ -3,17 +3,8 @@
   <PropertyGroup>    
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <OutputType>exe</OutputType>
+    <LangVersion>latest</LangVersion>
     <IsPackable>false</IsPackable>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <LangVersion>latest</LangVersion>
-    <Optimize>false</Optimize>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <LangVersion>latest</LangVersion>
-    <Optimize>false</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
