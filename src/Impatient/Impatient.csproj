@@ -10,10 +10,7 @@
     <Authors>tuespetre</Authors>
     <PackageProjectUrl>https://github.com/tuespetre/Impatient</PackageProjectUrl>
     <RepositoryUrl>https://github.com/tuespetre/Impatient</RepositoryUrl>
-    <Description>
-      A library that provides the infrastructure needed to create powerful
-      LINQ query providers that map to SQL.
-    </Description>
+    <Description>A library that provides the infrastructure needed to create powerful LINQ query providers that map to SQL.</Description>
     <PackageTags>LINQ;ORM;SQL</PackageTags>
   </PropertyGroup>
 
