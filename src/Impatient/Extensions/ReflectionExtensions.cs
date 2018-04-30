@@ -200,6 +200,19 @@ namespace Impatient.Extensions
             typeof(decimal),
             typeof(bool),
             typeof(string),
+            typeof(sbyte?),
+            typeof(byte?),
+            typeof(short?),
+            typeof(ushort?),
+            typeof(int?),
+            typeof(uint?),
+            typeof(long?),
+            typeof(ulong?),
+            typeof(char?),
+            typeof(float?),
+            typeof(double?),
+            typeof(decimal?),
+            typeof(bool?),
         };
 
         #endregion

@@ -22,7 +22,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            if (node.Type.UnwrapNullableType().IsConstantLiteralType() 
+            if (node.Type.IsConstantLiteralType() 
                 || node.Type.IsEnum()
                 || node.Value is null 
                 || node.Value is IQueryable)
