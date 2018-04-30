@@ -1,6 +1,7 @@
 ﻿using Impatient.Metadata;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -87,9 +88,12 @@ namespace Impatient.Query.Infrastructure
                 {
                     foreach (var parameter in parameterMapping.Values)
                     {
-                        hash += (hash * 397) ^ comparer.GetHashCode(parameter);
+                        hash = (hash * 16777619) ^ comparer.GetHashCode(parameter);
                     }
                 }
+
+                // TODO: have querycache accept the expression instead of the hash.
+                // Then implement equals for the comparer.
 
                 if (!QueryCache.TryGetValue(hash, out var compiled))
                 {
@@ -142,7 +146,23 @@ namespace Impatient.Query.Infrastructure
 
                     parameterMapping.Values.CopyTo(parameters, 1);
 
-                    compiled = Expression.Lambda(expression, parameters).Compile();
+                    var parameterArray = Expression.Parameter(typeof(object[]));
+
+                    compiled 
+                        = Expression
+                            .Lambda(
+                                Expression.Convert(
+                                    Expression.Invoke(
+                                        Expression.Lambda(expression, parameters),
+                                        parameters.Select((p, i) =>
+                                            Expression.Convert(
+                                            Expression.ArrayIndex(
+                                                parameterArray,
+                                                Expression.Constant(i)),
+                                                p.Type))), 
+                                    typeof(object)), 
+                                parameterArray)
+                            .Compile();
 
                     // Cache the compiled delegate.
 
@@ -157,7 +177,7 @@ namespace Impatient.Query.Infrastructure
 
                 parameterMapping.Keys.CopyTo(arguments, 1);
 
-                return compiled.DynamicInvoke(arguments);
+                return ((Func<object[], object>)compiled)(arguments);
             }
             catch (TargetInvocationException targetInvocationException)
             {
