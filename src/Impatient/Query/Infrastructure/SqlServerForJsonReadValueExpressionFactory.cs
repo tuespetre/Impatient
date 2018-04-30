@@ -18,8 +18,8 @@ namespace Impatient.Query.Infrastructure
     {
         #region reflection
 
-        private static readonly MethodInfo dbDataReaderGetFieldValueMethodInfo
-            = typeof(DbDataReader).GetTypeInfo().GetDeclaredMethod(nameof(DbDataReader.GetFieldValue));
+        private static readonly MethodInfo dbDataReaderGetTextReaderMethodInfo
+            = typeof(DbDataReader).GetTypeInfo().GetDeclaredMethod(nameof(DbDataReader.GetTextReader));
 
         private static readonly MethodInfo dbDataReaderIsDBNullMethodInfo
             = typeof(DbDataReader).GetTypeInfo().GetDeclaredMethod(nameof(DbDataReader.IsDBNull));
@@ -60,7 +60,7 @@ namespace Impatient.Query.Infrastructure
                         .MakeGenericMethod(source.Type),
                     Expression.Call(
                         reader,
-                        dbDataReaderGetFieldValueMethodInfo.MakeGenericMethod(typeof(string)),
+                        dbDataReaderGetTextReaderMethodInfo,
                         Expression.Constant(index)),
                     Expression.Lambda(
                         materializer,
@@ -68,10 +68,9 @@ namespace Impatient.Query.Infrastructure
                         new[] { jsonTextReaderVariable })));
         }
 
-        private static TResult Materialize<TResult>(string json, Func<JsonTextReader, TResult> materializer)
+        private static TResult Materialize<TResult>(TextReader textReader, Func<JsonTextReader, TResult> materializer)
         {
-            using (var stringReader = new StringReader(json))
-            using (var jsonTextReader = new JsonTextReader(stringReader))
+            using (var jsonTextReader = new JsonTextReader(textReader))
             {
                 jsonTextReader.DateParseHandling = DateParseHandling.None;
 
