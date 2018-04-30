@@ -9,7 +9,7 @@ using System.Reflection;
 
 namespace Impatient.Query.Expressions
 {
-    public class PolymorphicExpression : Expression, ISemanticallyHashable
+    public class PolymorphicExpression : Expression, ISemanticHashCodeProvider
     {
         public PolymorphicExpression(
             Type type,
@@ -91,6 +91,9 @@ namespace Impatient.Query.Expressions
 
         public override ExpressionType NodeType => ExpressionType.Extension;
 
-        public int GetSemanticHashCode() => 0;
+        public int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            return comparer.GetHashCode(Row);
+        }
     }
 }

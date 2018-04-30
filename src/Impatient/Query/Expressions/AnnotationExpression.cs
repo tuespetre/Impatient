@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public abstract class AnnotationExpression : Expression, ISemanticallyHashable
+    public abstract class AnnotationExpression : Expression, ISemanticHashCodeProvider
     {
         public AnnotationExpression(Expression expression)
         {
@@ -21,6 +21,9 @@ namespace Impatient.Query.Expressions
 
         public override Expression Reduce() => Expression;
 
-        public abstract int GetSemanticHashCode();
+        public virtual int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            return comparer.GetHashCode(Expression);
+        }
     }
 }

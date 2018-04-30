@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Impatient.Query.Infrastructure;
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
@@ -44,6 +45,19 @@ namespace Impatient.Query.Expressions
             }
 
             yield return current;
+        }
+
+        public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            unchecked
+            {
+                var hash = comparer.GetHashCode(Previous);
+
+                hash = (hash * 16777619) ^ comparer.GetHashCode(Expression);
+                hash = (hash * 16777619) ^ Descending.GetHashCode();
+
+                return hash;
+            }
         }
     }
 }

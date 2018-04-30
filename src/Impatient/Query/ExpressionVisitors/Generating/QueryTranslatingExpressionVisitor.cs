@@ -1268,11 +1268,9 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                 if (!needsWrapping)
                 {
-                    var hasher = new HashingExpressionVisitor();
+                    var hash = ExpressionEqualityComparer.Instance.GetHashCode(ordering.Expression);
 
-                    hasher.Visit(ordering.Expression);
-
-                    needsWrapping = !hashes.Add(hasher.HashCode) && !(ordering.Expression is RelationalQueryExpression);
+                    needsWrapping = !hashes.Add(hash) && !(ordering.Expression is RelationalQueryExpression);
                 }
 
                 if (needsWrapping)

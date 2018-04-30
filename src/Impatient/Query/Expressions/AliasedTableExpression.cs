@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public abstract class AliasedTableExpression : TableExpression, ISemanticallyHashable
+    public abstract class AliasedTableExpression : TableExpression, ISemanticHashCodeProvider
     {
         public AliasedTableExpression(string alias, Type type) : base(type)
         {
@@ -21,6 +21,9 @@ namespace Impatient.Query.Expressions
             yield return this;
         }
 
-        public virtual int GetSemanticHashCode() => Alias.GetHashCode();
+        public virtual int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            return Alias.GetHashCode();
+        }
     }
 }

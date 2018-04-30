@@ -78,6 +78,16 @@ namespace Impatient.Query.Expressions
                 typeof(IOrderedQueryableEnumerable<>).MakeGenericType(SelectExpression.Type));
         }
 
-        public override int GetSemanticHashCode() => ValueTuple.Create(TransformationMethod).GetHashCode();
+        public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            unchecked
+            {
+                var hash = TransformationMethod?.GetHashCode() ?? 0;
+
+                hash = (hash * 16777619) ^ comparer.GetHashCode(SelectExpression);
+
+                return hash;
+            }
+        }
     }
 }

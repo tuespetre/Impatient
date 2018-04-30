@@ -2,12 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public abstract class ExtraPropertiesExpression : Expression, ISemanticallyHashable
+    public abstract class ExtraPropertiesExpression : Expression, ISemanticHashCodeProvider
     {
         public ExtraPropertiesExpression(Expression expression)
         {
@@ -38,6 +37,20 @@ namespace Impatient.Query.Expressions
 
         public abstract ExtraPropertiesExpression Update(Expression expression, IEnumerable<Expression> properties);
 
-        public virtual int GetSemanticHashCode() => 0;
+        public virtual int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            unchecked
+            {
+                var hash = comparer.GetHashCode(Expression);
+
+                for (var i = 0; i < Names.Count; i++)
+                {
+                    hash = (hash * 16777619) ^ Names[i].GetHashCode();
+                    hash = (hash * 16777619) ^ comparer.GetHashCode(Properties[i]);
+                }
+
+                return hash;
+            }
+        }
     }
 }

@@ -76,18 +76,22 @@ namespace Impatient.Query.Infrastructure
                 // Because the expression is parameterized, the hash code will be identical
                 // for expressions that are structurally equivalent apart from any closure instances.
 
-                var hashingVisitor = new HashingExpressionVisitor();
-                hashingVisitor.Visit(expression);
+                var comparer = ExpressionEqualityComparer.Instance;
+
+                var hash = comparer.GetHashCode(expression);
 
                 // Some parameters may have been eliminated during query inlining,
                 // so we need to make sure all of our parameters' types are included
                 // in the hash code to avoid errors related to mismatched closure types.
-                foreach (var parameter in parameterMapping.Values)
+                unchecked
                 {
-                    hashingVisitor.Combine(parameter.Type.GetHashCode());
+                    foreach (var parameter in parameterMapping.Values)
+                    {
+                        hash += (hash * 397) ^ comparer.GetHashCode(parameter);
+                    }
                 }
 
-                if (!QueryCache.TryGetValue(hashingVisitor.HashCode, out var compiled))
+                if (!QueryCache.TryGetValue(hash, out var compiled))
                 {
                     var composingExpressionVisitors 
                         = ComposingExpressionVisitorProvider
@@ -142,7 +146,7 @@ namespace Impatient.Query.Infrastructure
 
                     // Cache the compiled delegate.
 
-                    QueryCache.Add(hashingVisitor.HashCode, compiled);
+                    QueryCache.Add(hash, compiled);
                 }
 
                 // Invoke the compiled delegate.
