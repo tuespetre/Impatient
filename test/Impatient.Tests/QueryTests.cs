@@ -1,9 +1,6 @@
-using Impatient.EntityFrameworkCore.SqlServer;
 using Impatient.Extensions;
 using Impatient.Metadata;
-using Impatient.Query;
 using Impatient.Query.Expressions;
-using Impatient.Query.ExpressionVisitors;
 using Impatient.Query.ExpressionVisitors.Composing;
 using Impatient.Query.ExpressionVisitors.Rewriting;
 using Impatient.Query.ExpressionVisitors.Utility;
@@ -15,13 +12,10 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Data.Common;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace Impatient.Tests
 {
@@ -1928,7 +1922,7 @@ GROUP BY [ms].[Prop1]",
     SELECT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m_0]
     WHERE [m].[Prop1] = [m_0].[Prop1]
-    FOR JSON PATH, INCLUDE_NULL_VALUES
+    FOR JSON PATH
 ) AS [Elements]
 FROM [dbo].[MyClass1] AS [m]
 GROUP BY [m].[Prop1]",
@@ -1950,7 +1944,7 @@ GROUP BY [m].[Prop1]",
     SELECT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m_0]
     WHERE [g].[Key] = [m_0].[Prop1]
-    FOR JSON PATH, INCLUDE_NULL_VALUES
+    FOR JSON PATH
 ) AS [g.Elements]
 FROM [dbo].[MyClass1] AS [m]
 CROSS JOIN (
@@ -2621,7 +2615,7 @@ OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
                 @"SELECT [m].[Prop2] AS [Prop2], (
     SELECT [m2].[Prop1] AS [Prop1], [m2].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass2] AS [m2]
-    FOR JSON PATH, INCLUDE_NULL_VALUES
+    FOR JSON PATH
 ) AS [m2s]
 FROM [dbo].[MyClass1] AS [m]",
                 SqlLog);
@@ -2666,10 +2660,10 @@ FROM [dbo].[MyClass1] AS [m]",
     SELECT [m2].[Prop1] AS [Prop1], [m2].[Prop2] AS [Prop2], (
         SELECT [m1].[Prop1] AS [a], [m1].[Prop2] AS [b], [m1].[Prop2] * [m2].[Prop2] AS [x.y]
         FROM [dbo].[MyClass1] AS [m1]
-        FOR JSON PATH, INCLUDE_NULL_VALUES
+        FOR JSON PATH
     ) AS [m1s]
     FROM [dbo].[MyClass2] AS [m2]
-    FOR JSON PATH, INCLUDE_NULL_VALUES
+    FOR JSON PATH
 ) AS [m2s]
 FROM [dbo].[MyClass1] AS [m]",
                 SqlLog);
@@ -2762,7 +2756,7 @@ INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop1] = [m2].[Prop1]",
     SELECT [m2_0].[Prop1] AS [Prop1], [m2_0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass2] AS [m2_0]
     WHERE [m1].[Prop1] = [m2_0].[Prop1]
-    FOR JSON PATH, INCLUDE_NULL_VALUES
+    FOR JSON PATH
 ) AS [sub.m2s], [m2_1].[Prop1] AS [m2.Prop1], [m2_1].[Prop2] AS [m2.Prop2]
 FROM [dbo].[MyClass1] AS [m1]
 INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop1] = [m2].[Prop1]
@@ -4316,7 +4310,7 @@ FROM (
             SELECT [z_0].[Prop1] AS [Prop1], [z_0].[Prop2] AS [Prop2]
             FROM [dbo].[MyClass2] AS [z_0]
             WHERE [z_0].[Prop2] = [x].[Prop2]
-            FOR JSON PATH, INCLUDE_NULL_VALUES
+            FOR JSON PATH
         ) AS [$c]
         FROM [dbo].[MyClass2] AS [y]
     ) AS [zs]
@@ -4507,13 +4501,18 @@ WHERE [m1].[$rownumber] < (
                 select (from b in impatient.CreateQuery<MyClass2>(MyClass2QueryExpression)
                         select b.Prop2).ToList();
 
-            query.ToList();
+            var results = query.ToList();
+
+            Assert.AreEqual(9, results[0][0]);
+            Assert.AreEqual(77, results[0][1]);
+            Assert.AreEqual(9, results[1][0]);
+            Assert.AreEqual(77, results[1][1]);
 
             Assert.AreEqual(
                 @"SELECT (
     SELECT [b].[Prop2]
     FROM [dbo].[MyClass2] AS [b]
-    FOR JSON PATH, INCLUDE_NULL_VALUES
+    FOR JSON PATH
 )
 FROM [dbo].[MyClass1] AS [a]",
                 SqlLog);
@@ -4533,7 +4532,7 @@ FROM [dbo].[MyClass1] AS [a]",
                 @"SELECT (
     SELECT [b].[Prop2]
     FROM [dbo].[MyClass2] AS [b]
-    FOR JSON PATH, INCLUDE_NULL_VALUES
+    FOR JSON PATH
 )
 FROM [dbo].[MyClass1] AS [a]",
                 SqlLog);

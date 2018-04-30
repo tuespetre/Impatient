@@ -2621,15 +2621,13 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                         return node;
                     }
 
-                    var pathString = $"$.{string.Join(".", path.Select(p => p.Name))}";
-
                     var openJsonTable
                         = new TableValuedExpressionTableExpression(
                             new SqlFunctionExpression(
                                 "OPENJSON", 
                                 memberExpression.Type, 
                                 sqlExpression,
-                                Expression.Constant(pathString)),
+                                Expression.Constant($"$.{string.Join(".", path.GetPropertyNamesForJson())}")),
                             "j",
                             memberExpression.Type);
 

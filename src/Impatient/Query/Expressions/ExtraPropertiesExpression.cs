@@ -26,6 +26,8 @@ namespace Impatient.Query.Expressions
 
         public override bool CanReduce => true;
 
+        public override Expression Reduce() => Expression;
+
         protected override Expression VisitChildren(ExpressionVisitor visitor)
         {
             var expression = visitor.Visit(Expression);

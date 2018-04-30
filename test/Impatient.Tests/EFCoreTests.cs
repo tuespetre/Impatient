@@ -220,7 +220,7 @@ SELECT TOP (1) [c].[CustomerID] AS [CustomerID], [c].[Address] AS [Address], [c]
     SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate]
     FROM [dbo].[Orders] AS [o]
     WHERE [c].[CustomerID] = [o].[CustomerID]
-    FOR JSON PATH, INCLUDE_NULL_VALUES
+    FOR JSON PATH
 ) AS [Orders]
 FROM [dbo].[Customers] AS [c]
 ".Trim(), log.ToString().Trim());
@@ -243,11 +243,11 @@ SELECT TOP (1) [c].[CustomerID] AS [CustomerID], [c].[Address] AS [Address], [c]
         SELECT [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[Discount] AS [Discount], [d].[Quantity] AS [Quantity], [d].[UnitPrice] AS [UnitPrice]
         FROM [dbo].[Order Details] AS [d]
         WHERE ([d].[UnitPrice] >= 5.0) AND ([o].[OrderID] = [d].[OrderID])
-        FOR JSON PATH, INCLUDE_NULL_VALUES
+        FOR JSON PATH
     ) AS [OrderDetails]
     FROM [dbo].[Orders] AS [o]
     WHERE [c].[CustomerID] = [o].[CustomerID]
-    FOR JSON PATH, INCLUDE_NULL_VALUES
+    FOR JSON PATH
 ) AS [Orders]
 FROM [dbo].[Customers] AS [c]
 ".Trim(), log.ToString().Trim());
@@ -548,7 +548,7 @@ FROM (
             SELECT [d_0].[OrderID] AS [OrderID], [d_0].[ProductID] AS [ProductID], [d_0].[Discount] AS [Discount], [d_0].[Quantity] AS [Quantity], [d_0].[UnitPrice] AS [UnitPrice]
             FROM [dbo].[Order Details] AS [d_0]
             WHERE ([d_0].[UnitPrice] >= 5.0) AND ([d_0].[OrderID] = [o].[OrderID])
-            FOR JSON PATH, INCLUDE_NULL_VALUES
+            FOR JSON PATH
         ) AS [d]
         FROM [dbo].[Orders] AS [o]
         WHERE ([o].[CustomerID] = [c].[CustomerID]) AND ([o].[Freight] IS NULL)

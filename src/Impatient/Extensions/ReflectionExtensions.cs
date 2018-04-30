@@ -1,4 +1,5 @@
 ﻿using Impatient.Query.Infrastructure;
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -439,6 +440,23 @@ namespace Impatient.Extensions
 
         private static readonly IEnumerable<MethodInfo> enumerableMethods
             = typeof(Enumerable).GetTypeInfo().DeclaredMethods;
+
+        public static IEnumerable<string> GetPropertyNamesForJson(this IEnumerable<MemberInfo> members)
+        {
+            foreach (var member in members)
+            {
+                var segment = member.Name;
+
+                var attribute = member.GetCustomAttribute<JsonPropertyAttribute>(true);
+
+                if (attribute != null)
+                {
+                    segment = attribute.PropertyName ?? segment;
+                }
+
+                yield return segment;
+            }
+        }
 
         #endregion
     }
