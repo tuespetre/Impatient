@@ -225,9 +225,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     continue;
                 }
 
-                // TODO: Make sure this gets into the include projection rewriting visitor!
-                // entityMaterializationExpression = entityMaterializationExpression.IncludeNavigation(navigation);
-
                 var includedExpression = Expression.MakeMemberAccess(baseExpression, includedProperty) as Expression;
 
                 var currentPath = previousPath.ToList();

@@ -237,7 +237,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                 path.Push(currentMember);
 
-                // TODO: Finding a new constructor to use that we can insert the include into?
+                // TODO: (EF Core 2.1) Constructor selection
 
                 return node.Update(arguments);
             }

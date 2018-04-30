@@ -61,7 +61,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 {
                     return base.VisitMethodCall(node);
                 }
-
+                
                 switch (node.Method.Name)
                 {
                     // Uncertain
@@ -70,10 +70,11 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                         break;
                     }
 
-                    // TODO: Implement ToDictionary/ToLookup navigation rewriting
                     case nameof(Enumerable.ToDictionary):
                     case nameof(Enumerable.ToLookup):
                     {
+                        // TODO: Handle ToDictionary
+                        // TODO: Handle ToLookup
                         break;
                     }
 

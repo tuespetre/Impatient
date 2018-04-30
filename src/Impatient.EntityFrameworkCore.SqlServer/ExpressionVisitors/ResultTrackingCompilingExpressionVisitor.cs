@@ -381,7 +381,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                             {
                                 foreach (var (key, value) in pathFinder.FoundPaths)
                                 {
-                                    // TODO: Verify that this is okay
                                     FoundPaths.Add(string.Join('.', GetNameParts().Append(key)), value);
                                 }
                             }

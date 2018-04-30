@@ -63,12 +63,6 @@ namespace Impatient.Query.Infrastructure
                 return false;
             }
 
-            /*if (expression.Contains<PolymorphicExpression>())
-            {
-                // TODO: Support polymorphic materialization
-                return false;
-            }*/
-
             return true;
         }
 

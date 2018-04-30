@@ -126,6 +126,7 @@ namespace Impatient.Extensions
             }
         }
 
+        // TODO: Have all usages consult with an ITypeMapper instead
         public static bool IsScalarType(this Type type)
         {
             if (scalarTypes.Contains(type) || type.IsEnum())
@@ -159,7 +160,7 @@ namespace Impatient.Extensions
             typeof(DateTimeOffset), // datetimeoffset
             typeof(Guid), // uniqueidentifer
 
-            typeof(char), // TODO: should this be here?
+            typeof(char), 
 
             // Reference types
             typeof(string), // nvarchar, varchar, nchar, char, ntext, text

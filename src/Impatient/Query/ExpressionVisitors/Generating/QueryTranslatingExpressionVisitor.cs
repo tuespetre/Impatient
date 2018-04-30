@@ -609,9 +609,8 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                                         Expression.Constant(null),
                                         node.Operand));
                             }
-
-                            // TODO: Handle nullable operand
-                            return base.Visit(Expression.Equal(Expression.Constant(false), node.Operand));
+                            
+                            return Visit(Expression.Equal(Expression.Constant(false), node.Operand));
                         }
                     }
                 }
@@ -1306,7 +1305,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                     Visit(expression);
 
-                    // TODO: Use mapper
+                    // TODO: Use ITypeMapper
                     Builder.Append(" AS real)");
 
                     return;
@@ -1315,12 +1314,12 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
             Visit(expression);
         }
-
+        
         protected virtual string FormatIdentifier(string identifier)
         {
             return $"[{identifier}]";
         }
-
+        
         protected virtual string FormatParameterName(string name)
         {
             return $"@{name}";

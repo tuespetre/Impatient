@@ -126,6 +126,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                         case nameof(Enumerable.ToArray):
                         case nameof(Enumerable.ToList):
                         {
+                            // TODO: Handle ToHashSet
                             return outerQuery.WithTransformationMethod(node.Method);
                         }
 
@@ -134,8 +135,8 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                         case nameof(Enumerable.ToDictionary):
                         case nameof(Enumerable.ToLookup):
                         {
-                            // TODO: Implement ToDictionary
-                            // TODO: Implement ToLookup
+                            // TODO: Handle ToDictionary
+                            // TODO: Handle ToLookup
                             break;
                         }
 
@@ -874,9 +875,9 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                         case nameof(Enumerable.Range):
                         case nameof(Enumerable.Repeat):
                         {
-                            // TODO: Implement Empty
-                            // TODO: Implement Range
-                            // TODO: Implement Repeat
+                            // TODO: Handle Empty
+                            // TODO: Handle Range
+                            // TODO: Handle Repeat
                             break;
                         }
 
@@ -2234,7 +2235,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                                 case ConstantExpression constantExpression:
                                 {
-                                    // TODO: Consider special rewriters for boolean types/casts for different providers (e.g. pgsql 'bool')
+                                    // TODO: We should be able to get rid of the Cast/Condition wrappers here
                                     return new SingleValueRelationalQueryExpression(
                                         new SelectExpression(
                                             new ServerProjectionExpression(
@@ -2295,8 +2296,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                             {
                                 return FallbackToEnumerable();
                             }
-
-                            // TODO: Use the Contains<T> extension instead
+                            
                             if (ContainsAggregateOrSubquery(outerProjection))
                             {
                                 var enumerableMethod
@@ -2588,6 +2588,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             return new OrderByExpression(SingleValueRelationalQueryExpression.SelectOne, false);
         }
 
+        // TODO: Make this an extension method
         private static bool ContainsAggregateOrSubquery(Expression expression)
         {
             var visitor = new AggregateOrSubqueryFindingExpressionVisitor();

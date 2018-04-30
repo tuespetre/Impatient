@@ -120,13 +120,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public static Expression CreateQueryExpression(Type elementType, IModel model)
         {
-            // TODO: (2.0) Owned entities split over multiple tables
+            // TODO: (EF Core 2.0) Owned entities split over multiple tables
 
-            // TODO: (2.0) Distinct entities split over a single table
+            // TODO: (EF Core 2.0) Distinct entities split over a single table
 
-            // TODO: (2.0) Handle model properties mapped to CLR fields
+            // TODO: (EF Core 2.0) Handle model properties mapped to CLR fields
 
-            // TODO: (2.1) Lazy loading / proxies
+            // TODO: (EF Core 2.1) Lazy loading / proxies
 
             var targetType = model.GetEntityTypes().SingleOrDefault(t => t.ClrType == elementType);
             var rootType = targetType.RootType();
@@ -240,9 +240,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 // Waiting on EF Core:
 
-                // TODO: Table-per-type polymorphism
+                // TODO: (EF Core ?.?) Table-per-type polymorphism
 
-                // TODO: Table-per-concrete polymorphism
+                // TODO: (EF Core ?.?) Table-per-concrete polymorphism
 
                 throw new NotSupportedException();
             }
@@ -292,9 +292,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private static NewExpression GetNewExpression(IEntityType type)
         {
-            // TODO: (2.1) Constructor selection with property-parameter mappings
+            // TODO: (EF Core 2.1) Constructor selection with property-parameter mappings
 
-            // TODO: (2.1) Constructor selection with dependency injection
+            // TODO: (EF Core 2.1) Constructor selection with dependency injection
 
             return Expression.New(type.ClrType);
         }
