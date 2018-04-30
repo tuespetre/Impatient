@@ -36,6 +36,8 @@ namespace Impatient.Tests
 
         public Expression MyClass1QueryExpression { get; }
 
+        public Expression MyClass1JsonQueryExpression { get; }
+
         public Expression MyClass2QueryExpression { get; }
 
         private static Expression CreateQueryExpression(Type type)
@@ -101,6 +103,23 @@ namespace Impatient.Tests
                                 let column = new SqlColumnExpression(myClass2Table, property.Name, property.PropertyType)
                                 select Expression.Bind(property, column))),
                         myClass2Table));
+
+            var myClass1JsonTable = new BaseTableExpression("dbo", "MyClass1Json", "m", typeof(MyClass1));
+
+            MyClass1JsonQueryExpression
+                = new EnumerableRelationalQueryExpression(
+                    new SelectExpression(
+                        new ServerProjectionExpression(
+                            Expression.MemberInit(
+                                Expression.New(typeof(MyClass1Json)),
+                                from property in new[]
+                                {
+                                    typeof(MyClass1Json).GetRuntimeProperty(nameof(MyClass1Json.Prop1)),
+                                    typeof(MyClass1Json).GetRuntimeProperty(nameof(MyClass1Json.Prop2))
+                                }
+                                let column = new SqlColumnExpression(myClass1JsonTable, property.Name, property.PropertyType)
+                                select Expression.Bind(property, column))),
+                        myClass1JsonTable));
         }
 
         [TestCleanup]
@@ -4283,20 +4302,29 @@ INNER JOIN [dbo].[MyClass1] AS [m1a] ON [x].[m1b.Prop2] = [m1a].[Prop2]",
                         from z in q.zs
                         select new { q.x, z };
 
-            query.ToList();
+            var results = query.ToList();
+
+            Assert.IsFalse(results.Any(r => r.z == null));
 
             Assert.AreEqual(
-                @"SELECT TOP (10) [x].[Prop1] AS [x.Prop1], [x].[Prop2] AS [x.Prop2], [zs].[$c] AS [zs]
-FROM [dbo].[MyClass1] AS [x]
+                @"SELECT [q].[x.Prop1] AS [x.Prop1], [q].[x.Prop2] AS [x.Prop2], [z].[value] AS [z]
+FROM (
+    SELECT TOP (10) [x].[Prop1] AS [x.Prop1], [x].[Prop2] AS [x.Prop2], [zs].[$c] AS [zs]
+    FROM [dbo].[MyClass1] AS [x]
+    CROSS APPLY (
+        SELECT (
+            SELECT [z_0].[Prop1] AS [Prop1], [z_0].[Prop2] AS [Prop2]
+            FROM [dbo].[MyClass2] AS [z_0]
+            WHERE [z_0].[Prop2] = [x].[Prop2]
+            FOR JSON PATH, INCLUDE_NULL_VALUES
+        ) AS [$c]
+        FROM [dbo].[MyClass2] AS [y]
+    ) AS [zs]
+) AS [q]
 CROSS APPLY (
-    SELECT (
-        SELECT [z].[Prop1] AS [Prop1], [z].[Prop2] AS [Prop2]
-        FROM [dbo].[MyClass2] AS [z]
-        WHERE [z].[Prop2] = [x].[Prop2]
-        FOR JSON PATH, INCLUDE_NULL_VALUES
-    ) AS [$c]
-    FROM [dbo].[MyClass2] AS [y]
-) AS [zs]",
+    SELECT [j].[value]
+    FROM OPENJSON([q].[zs]) AS [j]
+) AS [z]",
                 SqlLog);
         }
 
@@ -4560,6 +4588,60 @@ CROSS APPLY (
     SqlLog);
         }
 
+        [TestMethod]
+        public void Query_JsonArray_InJsonObjectProperty()
+        {
+            var m1js = impatient.CreateQuery<MyClass1Json>(MyClass1JsonQueryExpression);
+
+            var query = from x in m1js
+                        from y in x.Prop1.Test
+                        select new { x, y };
+
+            var results = query.ToList();
+
+            Assert.AreEqual(3, results.Count);
+            Assert.AreEqual("Value", results[0].y.Prop);
+            Assert.AreEqual("Value2", results[1].y.Prop);
+            Assert.AreEqual("Value3", results[2].y.Prop);
+
+            Assert.AreEqual(
+                @"SELECT [x].[Prop1] AS [x.Prop1], [x].[Prop2] AS [x.Prop2], [y].[value] AS [y]
+FROM [dbo].[MyClass1Json] AS [x]
+CROSS APPLY (
+    SELECT [j].[value]
+    FROM OPENJSON([x].[Prop1], N'$.Test') AS [j]
+) AS [y]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Query_JsonArray_InJsonObjectProperty_Crazy()
+        {
+            var m1js = impatient.CreateQuery<MyClass1Json>(MyClass1JsonQueryExpression);
+
+            var query = from x in m1js
+                        from y in x.Prop1.Test.Select(t => new { t, x })
+                        from z in y.x.Prop1.Test
+                        where z.Prop == y.t.Prop
+                        select new { x, y, z, x.Prop1.Test };
+
+            var results = query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [x].[Prop1] AS [x.Prop1], [x].[Prop2] AS [x.Prop2], [y].[t] AS [y.t], [y].[x.Prop1] AS [y.x.Prop1], [y].[x.Prop2] AS [y.x.Prop2], [z].[value] AS [z], JSON_QUERY([x].[Prop1], N'$.Test') AS [Test]
+FROM [dbo].[MyClass1Json] AS [x]
+CROSS APPLY (
+    SELECT [j].[value] AS [t], [x].[Prop1] AS [x.Prop1], [x].[Prop2] AS [x.Prop2]
+    FROM OPENJSON([x].[Prop1], N'$.Test') AS [j]
+) AS [y]
+CROSS APPLY (
+    SELECT [j_0].[value]
+    FROM OPENJSON([y].[x.Prop1], N'$.Test') AS [j_0]
+) AS [z]
+WHERE JSON_VALUE([z].[value], N'$.Prop') = JSON_VALUE([y].[t], N'$.Prop')",
+                SqlLog);
+        }
+
         private class QueryWrapper
         {
             public Expression Expression { get; set; }
@@ -4618,6 +4700,29 @@ CROSS APPLY (
             public int Prop2 { get; set; }
 
             public short Unmapped { get; set; }
+        }
+
+        private class MyClass1Json
+        {
+            public MyClass1Json()
+            {
+            }
+
+            public MyClass1JsonProperty Prop1 { get; set; }
+
+            public int Prop2 { get; set; }
+
+            public short Unmapped { get; set; }
+        }
+
+        public class MyClass1JsonProperty
+        {
+            public List<MyClass1JsonPropertyArray> Test { get; set; }
+        }
+
+        public class MyClass1JsonPropertyArray
+        {
+            public string Prop { get; set; }
         }
 
         private class MyClass2

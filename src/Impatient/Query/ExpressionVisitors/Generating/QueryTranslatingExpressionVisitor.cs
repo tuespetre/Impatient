@@ -513,6 +513,11 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                     return VisitSetOperatorExpression(setOperatorExpression);
                 }
 
+                case TableValuedExpressionTableExpression tableValuedExpressionTableExpression:
+                {
+                    return VisitTableValuedExpressionTableExpression(tableValuedExpressionTableExpression);
+                }
+
                 case SqlAggregateExpression sqlAggregateExpression:
                 {
                     return VisitSqlAggregateExpression(sqlAggregateExpression);
@@ -983,6 +988,16 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             Builder.Append(FormatIdentifier(GetTableAlias(setOperatorExpression)));
 
             return setOperatorExpression;
+        }
+
+        protected virtual Expression VisitTableValuedExpressionTableExpression(TableValuedExpressionTableExpression tableValuedExpressionTableExpression)
+        {
+            Visit(tableValuedExpressionTableExpression.Expression);
+
+            Builder.Append(" AS ");
+            Builder.Append(FormatIdentifier(GetTableAlias(tableValuedExpressionTableExpression)));
+
+            return tableValuedExpressionTableExpression;
         }
 
         protected virtual Expression VisitSqlAggregateExpression(SqlAggregateExpression sqlAggregateExpression)

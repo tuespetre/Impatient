@@ -2560,6 +2560,91 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     }
                 }
 
+                #region  Experimental OPENJSON support
+
+                case SqlFunctionExpression sqlFunctionExpression
+                when sqlFunctionExpression.FunctionName == "JSON_QUERY":
+                {
+                    var openJsonTable
+                        = new TableValuedExpressionTableExpression(
+                            new SqlFunctionExpression(
+                                "OPENJSON",
+                                sqlFunctionExpression.Type,
+                                sqlFunctionExpression.Arguments),
+                            "j",
+                            sqlFunctionExpression.Type);
+
+                    return new EnumerableRelationalQueryExpression(
+                        new SelectExpression(
+                            new ServerProjectionExpression(
+                                new SqlColumnExpression(
+                                    openJsonTable,
+                                    "value",
+                                    sqlFunctionExpression.Type.GetSequenceType())),
+                            openJsonTable));
+                }
+                
+                case SqlExpression sqlExpression:
+                {
+                    var openJsonTable
+                        = new TableValuedExpressionTableExpression(
+                            new SqlFunctionExpression("OPENJSON", sqlExpression.Type, sqlExpression),
+                            "j",
+                            sqlExpression.Type);
+
+                    return new EnumerableRelationalQueryExpression(
+                        new SelectExpression(
+                            new ServerProjectionExpression(
+                                new SqlColumnExpression(
+                                    openJsonTable,
+                                    "value",
+                                    sqlExpression.Type.GetSequenceType())),
+                            openJsonTable));
+                }
+
+                case MemberExpression memberExpression:
+                {
+                    var path = new List<MemberInfo>();
+                    var root = default(Expression);
+                    var current = memberExpression;
+
+                    do
+                    {
+                        path.Insert(0, current.Member);
+                        root = current.Expression;
+                        current = root as MemberExpression;
+                    }
+                    while (current != null);
+
+                    if (!(root is SqlExpression sqlExpression))
+                    {
+                        return node;
+                    }
+
+                    var pathString = $"$.{string.Join(".", path.Select(p => p.Name))}";
+
+                    var openJsonTable
+                        = new TableValuedExpressionTableExpression(
+                            new SqlFunctionExpression(
+                                "OPENJSON", 
+                                memberExpression.Type, 
+                                sqlExpression,
+                                Expression.Constant(pathString)),
+                            "j",
+                            memberExpression.Type);
+
+                    return new EnumerableRelationalQueryExpression(
+                        new SelectExpression(
+                            new ServerProjectionExpression(
+                                new SqlColumnExpression(
+                                    openJsonTable,
+                                    "value",
+                                    memberExpression.Type.GetSequenceType())),
+                            openJsonTable));
+                }
+
+                #endregion
+
                 default:
                 {
                     return node;

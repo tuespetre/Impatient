@@ -185,6 +185,25 @@ namespace Impatient.Query.Infrastructure
                     return ExtractProjectionExpression(body);
                 }
 
+                case SqlColumnExpression sqlColumnExpression
+                when sqlColumnExpression.Table is TableValuedExpressionTableExpression tableValuedExpressionTableExpression:
+                {
+                    var function = tableValuedExpressionTableExpression.Expression as SqlFunctionExpression;
+
+                    // TODO: Add a case for JSON_QUERY too.
+                    if (function?.FunctionName != "OPENJSON")
+                    {
+                        return node;
+                    }
+
+                    if (function.Arguments.Count() == 2)
+                    {
+                        return node;
+                    }
+
+                    return ExtractProjectionExpression(function.Arguments.First());
+                }
+
                 case EnumerableRelationalQueryExpression relationalQueryExpression:
                 {
                     return relationalQueryExpression.SelectExpression.Projection.Flatten().Body;
@@ -239,83 +258,178 @@ namespace Impatient.Query.Infrastructure
                 {
                     var sequenceType = node.Type.GetSequenceType();
                     var listVariable = Expression.Variable(typeof(List<>).MakeGenericType(sequenceType));
-                    var listAddMethod = listVariable.Type.GetRuntimeMethod(nameof(List<object>.Add), new[] { sequenceType });
-                    var breakLabelTarget = Expression.Label();
 
-                    Expression readItem;
+                    Expression materializer;
 
                     if (sequenceType.IsScalarType())
                     {
-                        readItem = Expression.Block(new[]
-                        {
-                            Expression.Call(
-                                listVariable,
-                                listAddMethod,
-                                SqlServerJsonValueReader.CreateExpression(sequenceType, jsonTextReader)),
-                            readExpression, // EndObject
-                            readExpression, // StartObject | EndArray
-                        });
-                    }
-                    else if (sequenceType.IsSequenceType())
-                    {
-                        readItem = Expression.Block(new[]
-                        {
-                            readExpression, // PropertyName
-                            Expression.Call(
-                                listVariable,
-                                listAddMethod,
-                                new ComplexTypeMaterializerBuildingExpressionVisitor(jsonTextReader)
-                                    .Visit(ExtractProjectionExpression(node))),
-                            readExpression, // EndObject
-                            readExpression, // StartObject | EndArray
-                        });
+                        materializer = SqlServerJsonValueReader.CreateExpression(sequenceType, jsonTextReader);
                     }
                     else
                     {
-                        readItem = Expression.Block(new[]
+                        var extracted = ExtractProjectionExpression(node);
+
+                        if (extracted == node)
                         {
-                            Expression.Call(
-                                listVariable,
-                                listAddMethod,
-                                new ComplexTypeMaterializerBuildingExpressionVisitor(jsonTextReader)
-                                    .Visit(ExtractProjectionExpression(node))),
-                            readExpression, // EndObject
-                            readExpression, // StartObject | EndArray
-                        });
+                            var readUnextractedComplexObjectMethodInfo
+                                = ReflectionExtensions.GetGenericMethodDefinition<object, object>(
+                                     o => ReadUnextractedComplexObject<object>(default));
+
+                            return Expression.Call(
+                                readUnextractedComplexObjectMethodInfo.MakeGenericMethod(node.Type),
+                                jsonTextReader);
+                        }
+
+                        var visitor = new ComplexTypeMaterializerBuildingExpressionVisitor(jsonTextReader);
+
+                        materializer = visitor.Visit(extracted);
+
+                        if (sequenceType.IsSequenceType())
+                        {
+                            materializer
+                                = Expression.Block(
+                                    readExpression, // PropertyName
+                                    materializer);
+                        }
                     }
 
-                    return Expression.Block(
-                        variables: new[]
-                        {
-                            listVariable
-                        },
-                        expressions: new[]
-                        {
-                            Expression.Assign(listVariable, Expression.New(listVariable.Type)),
-                            depth > 0 ? readExpression : Expression.Empty(), // PropertyName
-                            readExpression, // StartArray
-                            Expression.IfThen(
-                                Expression.Not(CurrentTokenIs(JsonToken.Null)),
-                                Expression.Block(
-                                    readExpression, // StartObject | EndArray
-                                    Expression.Loop(
-                                        Expression.IfThenElse(
-                                            test: CurrentTokenIs(JsonToken.EndArray),
-                                            ifTrue: Expression.Break(breakLabelTarget),
-                                            ifFalse: readItem),
-                                        breakLabelTarget))),
-                            node.Type.IsArray
-                                ? Expression.Call(
-                                    enumerableToArrayMethodInfo.MakeGenericMethod(sequenceType),
-                                    listVariable)
-                                : CreateSequenceExpression(listVariable, node.Type),
-                        });
+                    var expressions = new List<Expression>();
+
+                    if (depth > 0)
+                    {
+                        expressions.Add(readExpression); // PropertyName
+                    }
+
+                    expressions.Add(
+                        Expression.Assign(
+                            listVariable,
+                            Expression.Call(
+                                ReflectionExtensions
+                                    .GetGenericMethodDefinition<object, object>(
+                                        o => ReadComplexObjectList<object>(default, default))
+                                    .MakeGenericMethod(sequenceType),
+                                jsonTextReader,
+                                Expression.Lambda(
+                                    materializer,
+                                    $"Materialize_{string.Join("_", GetNameParts().DefaultIfEmpty("$root"))}",
+                                    Array.Empty<ParameterExpression>()))));
+
+                    if (node.Type.IsArray)
+                    {
+                        expressions.Add(
+                            Expression.Call(
+                                enumerableToArrayMethodInfo.MakeGenericMethod(sequenceType),
+                                listVariable));
+                    }
+                    else
+                    {
+                        expressions.Add(CreateSequenceExpression(listVariable, node.Type));
+                    }
+
+                    return Expression.Block(new[] { listVariable }, expressions);
                 }
                 else
                 {
-                    return new ComplexTypeMaterializerBuildingExpressionVisitor(jsonTextReader)
-                        .Visit(ExtractProjectionExpression(node));
+                    var extracted = ExtractProjectionExpression(node);
+
+                    var readUnextractedComplexObjectMethodInfo
+                        = ReflectionExtensions.GetGenericMethodDefinition<object, object>(
+                             o => ReadUnextractedComplexObject<object>(default));
+
+                    if (extracted == node)
+                    {
+                        return Expression.Call(
+                            readUnextractedComplexObjectMethodInfo.MakeGenericMethod(node.Type),
+                            jsonTextReader);
+                    }
+
+                    var visitor = new ComplexTypeMaterializerBuildingExpressionVisitor(jsonTextReader);
+                    var result = visitor.Visit(extracted);
+
+                    if (result is MethodCallExpression call
+                        && call.Method.IsGenericMethod
+                        && call.Method.GetGenericMethodDefinition() == readUnextractedComplexObjectMethodInfo)
+                    {
+                        return result;
+                    }
+
+                    return Expression.Call(
+                        ReflectionExtensions
+                            .GetGenericMethodDefinition<object, object>(
+                                o => ReadExtractedComplexObject<object>(default, default))
+                            .MakeGenericMethod(node.Type),
+                        jsonTextReader,
+                        Expression.Lambda(
+                            result,
+                            $"Materialize_{string.Join("_", GetNameParts().DefaultIfEmpty("$root"))}",
+                            Array.Empty<ParameterExpression>()));
                 }
+            }
+
+            private static TResult ReadUnextractedComplexObject<TResult>(JsonTextReader reader)
+            {
+                var serializer = new JsonSerializer();
+
+                var result = serializer.Deserialize<TResult>(reader);
+
+                return result;
+            }
+
+            private static TResult ReadExtractedComplexObject<TResult>(JsonTextReader reader, Func<TResult> materializer)
+            {
+                var result = default(TResult);
+
+                reader.Read();
+
+                Debug.Assert(reader.TokenType == JsonToken.StartObject || reader.TokenType == JsonToken.Null);
+
+                if (reader.TokenType == JsonToken.Null)
+                {
+                    return result;
+                }
+
+                result = materializer();
+
+                reader.Read();
+
+                Debug.Assert(reader.TokenType == JsonToken.EndObject);
+
+                return result;
+            }
+
+            private static List<TElement> ReadComplexObjectList<TElement>(JsonTextReader reader, Func<TElement> materializer)
+            {
+                var list = new List<TElement>();
+
+                reader.Read();
+
+                Debug.Assert(reader.TokenType == JsonToken.StartArray || reader.TokenType == JsonToken.Null);
+
+                if (reader.TokenType == JsonToken.Null)
+                {
+                    return list;
+                }
+
+                ReadElementOrEnd:
+
+                reader.Read();
+
+                Debug.Assert(reader.TokenType == JsonToken.StartObject || reader.TokenType == JsonToken.EndArray);
+
+                if (reader.TokenType == JsonToken.EndArray)
+                {
+                    return list;
+                }
+
+                var element = materializer();
+
+                list.Add(element);
+
+                reader.Read();
+
+                Debug.Assert(reader.TokenType == JsonToken.EndObject);
+
+                goto ReadElementOrEnd;
             }
 
             private Expression MaterializeObject(Expression visited, bool skipReadingEndObject = false)

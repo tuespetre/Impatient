@@ -45,6 +45,8 @@ namespace Impatient.Query.Infrastructure
             yield return new SqlServerCountRewritingExpressionVisitor();
 
             yield return new SqlServerMathMethodRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor);
+
+            yield return new SqlServerJsonMemberRewritingExpressionVisitor();
         }
     }
 }

@@ -513,6 +513,55 @@ Closed connection to
             }
         }
 
+        [TestMethod]
+        public void TrickyJson_ProperChangeTracking()
+        {
+            EfCoreTestCase((context, log) =>
+            {
+                var customers = context.Set<Customer>();
+                var orders = context.Set<Order>();
+                var details = context.Set<OrderDetail>();
+
+                var query = from t in (from c in customers
+                                       from t in (from o in orders
+                                                  where o.CustomerID == c.CustomerID
+                                                  let d = from d in details
+                                                          where d.OrderID == o.OrderID
+                                                          select d
+                                                  select new { o, d }).Where(x => x.o.Freight == null)
+                                       select new { c, t.o, t.d }).Take(10)
+                            from d in t.d
+                            select new { t.c, t.o, d };
+
+                var results = query.ToList();
+
+                Assert.IsTrue(results.All(r => r.c == r.o.Customer));
+                Assert.IsTrue(results.All(r => r.o == r.d.Order));
+
+                Assert.AreEqual(@"
+SELECT [t].[c.CustomerID] AS [c.CustomerID], [t].[c.Address] AS [c.Address], [t].[c.City] AS [c.City], [t].[c.CompanyName] AS [c.CompanyName], [t].[c.ContactName] AS [c.ContactName], [t].[c.ContactTitle] AS [c.ContactTitle], [t].[c.Country] AS [c.Country], [t].[c.Fax] AS [c.Fax], [t].[c.Phone] AS [c.Phone], [t].[c.PostalCode] AS [c.PostalCode], [t].[c.Region] AS [c.Region], [t].[o.OrderID] AS [o.OrderID], [t].[o.CustomerID] AS [o.CustomerID], [t].[o.EmployeeID] AS [o.EmployeeID], [t].[o.Freight] AS [o.Freight], [t].[o.OrderDate] AS [o.OrderDate], [t].[o.RequiredDate] AS [o.RequiredDate], [t].[o.ShipAddress] AS [o.ShipAddress], [t].[o.ShipCity] AS [o.ShipCity], [t].[o.ShipCountry] AS [o.ShipCountry], [t].[o.ShipName] AS [o.ShipName], [t].[o.ShipPostalCode] AS [o.ShipPostalCode], [t].[o.ShipRegion] AS [o.ShipRegion], [t].[o.ShipVia] AS [o.ShipVia], [t].[o.ShippedDate] AS [o.ShippedDate], [d].[value] AS [d]
+FROM (
+    SELECT TOP (10) [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Country] AS [c.Country], [c].[Fax] AS [c.Fax], [c].[Phone] AS [c.Phone], [c].[PostalCode] AS [c.PostalCode], [c].[Region] AS [c.Region], [t_0].[o.OrderID] AS [o.OrderID], [t_0].[o.CustomerID] AS [o.CustomerID], [t_0].[o.EmployeeID] AS [o.EmployeeID], [t_0].[o.Freight] AS [o.Freight], [t_0].[o.OrderDate] AS [o.OrderDate], [t_0].[o.RequiredDate] AS [o.RequiredDate], [t_0].[o.ShipAddress] AS [o.ShipAddress], [t_0].[o.ShipCity] AS [o.ShipCity], [t_0].[o.ShipCountry] AS [o.ShipCountry], [t_0].[o.ShipName] AS [o.ShipName], [t_0].[o.ShipPostalCode] AS [o.ShipPostalCode], [t_0].[o.ShipRegion] AS [o.ShipRegion], [t_0].[o.ShipVia] AS [o.ShipVia], [t_0].[o.ShippedDate] AS [o.ShippedDate], [t_0].[d] AS [d]
+    FROM [dbo].[Customers] AS [c]
+    CROSS APPLY (
+        SELECT [o].[OrderID] AS [o.OrderID], [o].[CustomerID] AS [o.CustomerID], [o].[EmployeeID] AS [o.EmployeeID], [o].[Freight] AS [o.Freight], [o].[OrderDate] AS [o.OrderDate], [o].[RequiredDate] AS [o.RequiredDate], [o].[ShipAddress] AS [o.ShipAddress], [o].[ShipCity] AS [o.ShipCity], [o].[ShipCountry] AS [o.ShipCountry], [o].[ShipName] AS [o.ShipName], [o].[ShipPostalCode] AS [o.ShipPostalCode], [o].[ShipRegion] AS [o.ShipRegion], [o].[ShipVia] AS [o.ShipVia], [o].[ShippedDate] AS [o.ShippedDate], (
+            SELECT [d_0].[OrderID] AS [OrderID], [d_0].[ProductID] AS [ProductID], [d_0].[Discount] AS [Discount], [d_0].[Quantity] AS [Quantity], [d_0].[UnitPrice] AS [UnitPrice]
+            FROM [dbo].[Order Details] AS [d_0]
+            WHERE ([d_0].[UnitPrice] >= 5.0) AND ([d_0].[OrderID] = [o].[OrderID])
+            FOR JSON PATH, INCLUDE_NULL_VALUES
+        ) AS [d]
+        FROM [dbo].[Orders] AS [o]
+        WHERE ([o].[CustomerID] = [c].[CustomerID]) AND ([o].[Freight] IS NULL)
+    ) AS [t_0]
+) AS [t]
+CROSS APPLY (
+    SELECT [j].[value]
+    FROM OPENJSON([t].[d]) AS [j]
+) AS [d]
+".Trim(), log.ToString().Trim());
+            });
+        }
+
         private void EfCoreTestCase(Action<NorthwindDbContext, StringBuilder> action)
         {
             var services = new ServiceCollection();
