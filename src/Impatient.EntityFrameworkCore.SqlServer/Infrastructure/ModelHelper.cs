@@ -219,7 +219,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     var descriptorMaterializer
                         = Expression.Lambda(
                             new EntityMaterializationExpression(
-                                targetType,
+                                type,
                                 IdentityMapMode.IdentityMap,
                                 keyExpression,
                                 shadowProperties.Select(s => s.property),

@@ -334,19 +334,19 @@ WHERE ROUND([od].[UnitPrice], 0, 1) > 10.0");
             base.Where_nested_field_access_closure_via_query_cache_error_method_null();
         }
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesGroupedEntitiesAreNotTracked)]
+        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
         public override void GroupBy_with_element_selector2()
         {
             base.GroupBy_with_element_selector2();
         }
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesGroupedEntitiesAreNotTracked)]
+        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
         public override void GroupBy_with_element_selector3()
         {
             base.GroupBy_with_element_selector3();
         }
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesGroupedEntitiesAreNotTracked)]
+        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
         public override void GroupJoin_customers_orders()
         {
             base.GroupJoin_customers_orders();
@@ -525,6 +525,30 @@ WHERE ROUND([od].[UnitPrice], 0, 1) > 10.0");
         public override void Comparing_collection_navigation_to_null()
         {
             base.Comparing_collection_navigation_to_null();
+        }
+
+        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
+        public override void Select_correlated_subquery_filtered()
+        {
+            base.Select_correlated_subquery_filtered();
+        }
+
+        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
+        public override void Select_correlated_subquery_ordered()
+        {
+            base.Select_correlated_subquery_ordered();
+        }
+
+        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
+        public override void Select_correlated_subquery_projection()
+        {
+            base.Select_correlated_subquery_projection();
+        }
+
+        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
+        public override void Select_subquery_recursive_trivial()
+        {
+            base.Select_subquery_recursive_trivial();
         }
 
         #endregion

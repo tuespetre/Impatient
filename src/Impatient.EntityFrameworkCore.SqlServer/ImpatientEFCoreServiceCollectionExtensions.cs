@@ -1,5 +1,4 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
-using Impatient.Query;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
@@ -13,13 +12,22 @@ namespace Impatient.EntityFrameworkCore.SqlServer
     {
         public static IServiceCollection AddImpatientEFCoreQueryCompiler(this IServiceCollection services)
         {
+            foreach (var descriptor in services.Where(s => s.ServiceType == typeof(IQueryCompiler)).ToArray())
+            {
+                services.Remove(descriptor);
+            }
+
             services.AddSingleton<IImpatientQueryCache, DefaultImpatientQueryCache>();
 
             services.AddSingleton<DescriptorSetCache>();
 
-            services.AddScoped<TranslatabilityAnalyzingExpressionVisitor>();
+            services.AddSingleton<ModelQueryExpressionCache>();
 
-            services.AddScoped<IReadValueExpressionFactoryProvider, DefaultReadValueExpressionFactoryProvider>();
+            services.AddSingleton<TranslatabilityAnalyzingExpressionVisitor>();
+
+            services.AddSingleton<IQueryTranslatingExpressionVisitorFactory, DefaultQueryTranslatingExpressionVisitorFactory>();
+
+            services.AddSingleton<IReadValueExpressionFactoryProvider, DefaultReadValueExpressionFactoryProvider>();
 
             services.AddScoped<IOptimizingExpressionVisitorProvider, DefaultOptimizingExpressionVisitorProvider>();
 
@@ -29,8 +37,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             services.AddScoped<ICompilingExpressionVisitorProvider, EFCoreCompilingExpressionVisitorProvider>();
 
-            services.AddScoped<IQueryTranslatingExpressionVisitorFactory, DefaultQueryTranslatingExpressionVisitorFactory>();
-
             services.AddScoped<IQueryableInliningExpressionVisitorFactory, EFCoreQueryableInliningExpressionVisitorFactory>();
 
             services.AddScoped<IDbCommandExecutorFactory, EFCoreDbCommandExecutorFactory>();
@@ -38,11 +44,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             services.AddScoped<IQueryProcessingContextFactory, EFCoreQueryProcessingContextFactory>();
 
             services.AddScoped<IImpatientQueryExecutor, DefaultImpatientQueryExecutor>();
-
-            foreach (var descriptor in services.Where(s => s.ServiceType == typeof(IQueryCompiler)).ToArray())
-            {
-                services.Remove(descriptor);
-            }
 
             services.AddScoped<IQueryCompiler, ImpatientQueryCompiler>();
 

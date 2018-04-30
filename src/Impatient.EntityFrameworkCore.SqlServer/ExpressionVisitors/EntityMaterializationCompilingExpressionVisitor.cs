@@ -54,6 +54,28 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         }
                     }
 
+                    var shadowPropertiesExpression = (Expression)Expression.Constant(new object[0]);
+                    var shadowProperties = entityMaterializationExpression.ShadowProperties;
+
+                    if (!shadowProperties.IsDefaultOrEmpty)
+                    {
+                        var values 
+                            = Enumerable
+                                .Repeat(Expression.Constant(null), entityType.PropertyCount())
+                                .Cast<Expression>()
+                                .ToArray();
+
+                        for (var i = 0; i < shadowProperties.Length; i++)
+                        {
+                            values[shadowProperties[i].GetIndex()]
+                                = Expression.Convert(
+                                    entityMaterializationExpression.Properties[i], 
+                                    typeof(object));
+                        }
+
+                        shadowPropertiesExpression = Expression.NewArrayInit(typeof(object), values);
+                    }
+
                     return Expression.Block(
                         variables: new ParameterExpression[]
                         {
@@ -64,10 +86,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         {
                             Expression.Assign(
                                 shadowPropertiesVariable,
-                                Expression.NewArrayInit(
-                                    typeof(object),
-                                    from s in entityMaterializationExpression.Properties
-                                    select Expression.Convert(s, typeof(object)))),
+                                shadowPropertiesExpression),
                             Expression.Assign(
                                 entityVariable,
                                 new CollectionNavigationFixupExpressionVisitor(model)
@@ -76,13 +95,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                 Expression.Call(
                                     getEntityMethodInfo,
                                     Expression.Convert(executionContextParameter, typeof(EFCoreDbCommandExecutor)),
-                                    Expression.Constant(entityType.RootType()),
-                                    Expression.Constant(entityType.FindPrimaryKey()),
+                                    Expression.Constant(entityType),
                                     entityMaterializationExpression.KeyExpression
                                         .UnwrapLambda()
                                         .ExpandParameters(entityVariable, shadowPropertiesVariable),
                                     entityVariable,
-                                    Expression.Constant(entityMaterializationExpression.ShadowProperties.ToArray()),
                                     shadowPropertiesVariable,
                                     Expression.Constant(entityMaterializationExpression.IncludedNavigations.ToList())),
                                 node.Type)

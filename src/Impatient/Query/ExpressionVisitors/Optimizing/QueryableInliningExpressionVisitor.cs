@@ -1,4 +1,5 @@
-﻿using Impatient.Query.Expressions;
+﻿using Impatient.Extensions;
+using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
@@ -28,11 +29,6 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                         kvp => Expression.Constant(kvp.Key) as Expression));
         }
 
-        protected Expression Reparameterize(Expression expression)
-        {
-            return new ConstantParameterizingExpressionVisitor(parameterMapping).Visit(expression);
-        }
-
         public override Expression Visit(Expression node)
         {
             if (node == null)
@@ -48,45 +44,63 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
             var visited = base.Visit(node);
 
+            if (visited.NodeType == ExpressionType.Constant)
+            {
+                return VisitConstant((ConstantExpression)visited);
+            }
+
             if (typeof(IQueryable).IsAssignableFrom(visited.Type))
             {
-                var evaluated = visited as ConstantExpression;
-
-                if (evaluated == null)
+                switch (visited)
                 {
-                    var expanded = replacingVisitor.Visit(visited);
-
-                    if (expanded != visited)
+                    case MethodCallExpression methodCallExpression
+                    when methodCallExpression.Method.IsQueryableOrEnumerableMethod():
                     {
-                        var revisited = Visit(expanded);
+                        return visited;
+                    }
 
-                        evaluated = revisited as ConstantExpression;
-
-                        if (evaluated == null)
-                        {
-                            return revisited;
-                        }
+                    case RelationalQueryExpression _:
+                    {
+                        return visited;
                     }
                 }
 
-                if (evaluated?.Value is IQueryable queryable && queryable.Provider == queryProvider)
-                {
-                    var query = queryable.Expression;
+                var expanded = replacingVisitor.Visit(visited);
 
-                    switch (query)
+                if (expanded != visited)
+                {
+                    var revisited = Visit(expanded);
+
+                    if (revisited.NodeType == ExpressionType.Constant)
                     {
-                        case RelationalQueryExpression _:
-                        case ConstantExpression constant when constant.Value == queryable:
-                        {
-                            return query;
-                        }
+                        return VisitConstant((ConstantExpression)revisited);
                     }
 
-                    return Visit(Reparameterize(query));
+                    return revisited;
                 }
             }
 
             return visited;
+        }
+
+        protected override Expression VisitConstant(ConstantExpression node)
+        {
+            if (node.Value is IQueryable queryable && queryable.Provider == queryProvider)
+            {
+                return InlineQueryable(queryable);
+            }
+
+            return node;
+        }
+
+        protected override Expression VisitExtension(Expression node)
+        {
+            if (node is RelationalQueryExpression)
+            {
+                return node;
+            }
+
+            return base.VisitExtension(node);
         }
 
         protected override Expression VisitMember(MemberExpression node)
@@ -150,10 +164,27 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             // This override ensures that materializers with parameterless constructors
             // are not botched by partial evaluation.
 
-            var newExpression = VisitAndConvert(node.NewExpression, nameof(VisitMemberInit));
+            var newExpression = node.NewExpression.Update(Visit(node.NewExpression.Arguments));
             var bindings = node.Bindings.Select(VisitMemberBinding);
 
             return node.Update(newExpression, bindings);
+        }
+
+        protected virtual Expression InlineQueryable(IQueryable queryable)
+        {
+            var query = queryable.Expression;
+
+            if (query is RelationalQueryExpression || query is ConstantExpression)
+            {
+                return query;
+            }
+
+            return Visit(Reparameterize(query));
+        }
+
+        protected Expression Reparameterize(Expression expression)
+        {
+            return new ConstantParameterizingExpressionVisitor(parameterMapping).Visit(expression);
         }
 
         private class SelectiveExpressionReplacingExpressionVisitor : ExpressionReplacingExpressionVisitor
@@ -164,6 +195,16 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
             public SelectiveExpressionReplacingExpressionVisitor(Expression target, Expression replacement) : base(target, replacement)
             {
+            }
+
+            protected override Expression VisitExtension(Expression node)
+            {
+                if (node is RelationalQueryExpression)
+                {
+                    return node;
+                }
+
+                return base.VisitExtension(node);
             }
 
             #region no-ops

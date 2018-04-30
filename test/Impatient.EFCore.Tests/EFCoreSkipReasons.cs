@@ -8,7 +8,7 @@
             "but we do not include the intermediate property without an " +
             "explicit Include.";
 
-        public const string TestAssumesGroupedEntitiesAreNotTracked =
+        public const string TestAssumesNestedSubqueryResultsAreNotTracked =
             "The EF Core test assumes that a grouping's entries are not " +
             "immediately added to the change tracker, but we do immediately " +
             "track them under certain circumstances (like when using FOR JSON.)";

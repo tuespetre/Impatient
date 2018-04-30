@@ -1,6 +1,7 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
@@ -13,6 +14,7 @@ using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
@@ -20,6 +22,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
     public class EFCoreDbCommandExecutor : IDbCommandExecutor
     {
         private readonly IDiagnosticsLogger<DbLoggerCategory.Database.Command> logger;
+
+        private readonly Dictionary<IEntityType, EntityLookups> entityLookups
+            = new Dictionary<IEntityType, EntityLookups>();
+
+        private IStateManager stateManager;
+        private IInternalEntityEntryFactory entryFactory;
 
         public EFCoreDbCommandExecutor(
             ICurrentDbContext currentDbContext,
@@ -30,6 +38,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         }
 
         public ICurrentDbContext CurrentDbContext { get; }
+
+        public IStateManager StateManager => stateManager 
+            ?? (stateManager = CurrentDbContext.GetDependencies().StateManager);
+
+        public IInternalEntityEntryFactory EntryFactory => entryFactory 
+            ?? (entryFactory = CurrentDbContext.Context.GetService<IInternalEntityEntryFactory>());
 
         public TResult ExecuteComplex<TResult>(Action<DbCommand> initializer, Func<DbDataReader, TResult> materializer)
         {
@@ -164,11 +178,19 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             CurrentDbContext.GetDependencies().StateManager.BeginTrackingQuery();
 
-            return new ReaderEnumerable<TElement>(
-                command,
-                connection,
-                reader,
-                materializer);
+            try
+            {
+                while (reader.Read())
+                {
+                    yield return materializer(reader);
+                }
+            }
+            finally
+            {
+                reader?.Close();
+                command.Dispose();
+                connection.Close();
+            }
         }
 
         public TResult ExecuteScalar<TResult>(Action<DbCommand> initializer)
@@ -247,209 +269,168 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return command;
         }
 
-        public EntityMaterializationInfo GetMaterializationInfo(object entity, IEntityType entityType)
+        public bool TryGetEntity(object entity, IEntityType entityType, out EntityMaterializationInfo info)
         {
-            if (entityLookups.TryGetValue(entityType, out var lookups))
+            info = default;
+
+            var rootType = entityType.RootType();
+
+            if (entityLookups.TryGetValue(rootType, out var lookups))
             {
-                if (lookups.EntityMap.TryGetValue(entity, out var info))
-                {
-                    return info;
-                }
-            }
-
-            return default;
-        }
-
-        public bool TryGetEntity(IEntityType entityType, object[] keyValues, ref object entity, List<INavigation> includes, out bool cachedIncludes)
-        {
-            cachedIncludes = false;
-
-            if (entityLookups.TryGetValue(entityType, out var lookups))
-            {
-                if (lookups.KeyMap.TryGetValue(keyValues, out var cached))
-                {
-                    entity = cached.Entity;
-
-                    if (cached.Includes.Contains(includes))
-                    {
-                        cachedIncludes = true;
-                    }
-                    else
-                    {
-                        cached.Includes.Add(includes);
-
-                        foreach (var include in includes)
-                        {
-                            cached.ForeignKeys.Add(include.ForeignKey);
-                        }
-                    }
-
-                    return true;
-                }
+                return lookups.EntityMap.TryGetValue(entity, out info);
             }
 
             return false;
         }
 
-        public void CacheEntity(
-            IEntityType entityType,
-            IKey key,
-            object[] keyValues,
-            object entity,
-            IProperty[] shadowProperties,
-            object[] shadowPropertyValues,
-            List<INavigation> includes)
+        public bool TryGetEntity(IEntityType entityType, object[] keyValues, out EntityMaterializationInfo info)
         {
-            if (!entityLookups.TryGetValue(entityType, out var lookups))
-            {
-                lookups = new EntityLookups
-                {
-                    KeyMap = new Dictionary<object[], EntityMaterializationInfo>(KeyValuesComparer.Instance),
-                    EntityMap = new ConditionalWeakTable<object, EntityMaterializationInfo>(),
-                };
+            info = default;
 
-                entityLookups[entityType] = lookups;
+            var rootType = entityType.RootType();
+
+            if (entityLookups.TryGetValue(rootType, out var lookups))
+            {
+                return lookups.KeyMap.TryGetValue(keyValues, out info);
             }
 
-            var info = new EntityMaterializationInfo
+            return false;
+        }
+
+        public void CacheEntity(IEntityType entityType, object[] keyValues, EntityMaterializationInfo info)
+        {
+            var rootType = entityType.RootType();
+
+            if (!entityLookups.TryGetValue(rootType, out var lookups))
             {
-                Entity = entity,
-                KeyValues = keyValues,
-                ShadowPropertyValues = shadowPropertyValues,
-                EntityType = entityType,
-                Key = key,
-                ShadowProperties = shadowProperties,
-                Includes = new List<List<INavigation>> { includes },
-                ForeignKeys = new HashSet<IForeignKey>(includes.Select(i => i.ForeignKey))
-            };
+                IEqualityComparer<object[]> instance;
+
+                switch (keyValues.Length)
+                {
+                    case 1:
+                    {
+                        instance = KeyValuesComparer1.Instance;
+                        break;
+                    }
+
+                    case 2:
+                    {
+                        instance = KeyValuesComparer2.Instance;
+                        break;
+                    }
+
+                    default:
+                    {
+                        instance = KeyValuesComparer.Create(keyValues.Length);
+                        break;
+                    }
+                }
+
+                entityLookups[rootType] = lookups = new EntityLookups
+                {
+                    KeyMap = new Dictionary<object[], EntityMaterializationInfo>(instance),
+                    EntityMap = new Dictionary<object, EntityMaterializationInfo>()
+                };
+            }
 
             lookups.KeyMap[keyValues] = info;
-
-            lookups.EntityMap.AddOrUpdate(entity, info);
+            lookups.EntityMap[info.Entity] = info;
         }
 
         private struct EntityLookups
         {
             public Dictionary<object[], EntityMaterializationInfo> KeyMap;
-            public ConditionalWeakTable<object, EntityMaterializationInfo> EntityMap;
+            public Dictionary<object, EntityMaterializationInfo> EntityMap;
         }
 
-        private readonly Dictionary<IEntityType, EntityLookups> entityLookups
-            = new Dictionary<IEntityType, EntityLookups>();
-
-        private class KeyValuesComparer : IEqualityComparer<object[]>
+        private class KeyValuesComparer1 : IEqualityComparer<object[]>
         {
-            private const int InitialHashCode = unchecked((int)2166136261);
-
-            public static KeyValuesComparer Instance { get; } = new KeyValuesComparer();
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static int Combine(int a, int b) => unchecked((a * 16777619) ^ b);
+            public static KeyValuesComparer1 Instance = new KeyValuesComparer1();
 
             public bool Equals(object[] x, object[] y)
             {
-                return x.SequenceEqual(y);
+                return x[0].Equals(y[0]);
             }
 
             public int GetHashCode(object[] obj)
             {
-                var hash = InitialHashCode;
-
-                for (var i = 0; i < obj.Length; i++)
-                {
-                    hash = Combine(hash, obj[i]?.GetHashCode() ?? 0);
-                }
-
-                return hash;
+                return obj[0].GetHashCode();
             }
         }
 
-        private class ReaderEnumerable<T> : IEnumerable<T>
+        private class KeyValuesComparer2 : IEqualityComparer<object[]>
         {
-            private readonly DbCommand command;
-            private readonly IRelationalConnection connection;
-            private readonly DbDataReader reader;
-            private readonly Func<DbDataReader, T> materializer;
+            public static KeyValuesComparer2 Instance = new KeyValuesComparer2();
 
-            public ReaderEnumerable(
-                DbCommand command,
-                IRelationalConnection connection,
-                DbDataReader reader,
-                Func<DbDataReader, T> materializer)
+            public bool Equals(object[] x, object[] y)
             {
-                this.command = command;
-                this.connection = connection;
-                this.reader = reader;
-                this.materializer = materializer;
+                return x[0].Equals(y[0]) && x[1].Equals(y[1]);
             }
 
-            public IEnumerator<T> GetEnumerator()
-                => new ReaderEnumerator<T>(
-                    command,
-                    connection,
-                    reader,
-                    materializer);
+            public int GetHashCode(object[] values)
+            {
+                unchecked
+                {
+                    var hash = KeyValuesComparer.InitialHashCode;
 
-            IEnumerator IEnumerable.GetEnumerator()
-                => GetEnumerator();
+                    hash = (hash * 16777619) ^ values[0].GetHashCode();
+                    hash = (hash * 16777619) ^ values[1].GetHashCode();
+
+                    return hash;
+                }
+            }
         }
 
-        private class ReaderEnumerator<T> : IEnumerator<T>
+        private class KeyValuesComparer : IEqualityComparer<object[]>
         {
-            private readonly DbCommand command;
-            private readonly IRelationalConnection connection;
-            private readonly DbDataReader reader;
-            private readonly Func<DbDataReader, T> materializer;
+            public const int InitialHashCode = -2128831035;
 
-            private bool finished;
+            private readonly Func<object[], object[], bool> compiled;
 
-            public ReaderEnumerator(
-                DbCommand command,
-                IRelationalConnection connection,
-                DbDataReader reader,
-                Func<DbDataReader, T> materializer)
+            private KeyValuesComparer(Func<object[], object[], bool> compiled)
             {
-                this.command = command;
-                this.connection = connection;
-                this.reader = reader;
-                this.materializer = materializer;
+                this.compiled = compiled;
             }
 
-            public T Current { get; private set; }
-
-            object IEnumerator.Current => Current;
-
-            public void Dispose()
+            public static KeyValuesComparer Create(int length)
             {
-                reader.Close();
-                command.Dispose();
-                connection.Close();
+                var p1 = Expression.Parameter(typeof(object[]));
+                var p2 = Expression.Parameter(typeof(object[]));
+                var comparisons = new BinaryExpression[length];
+
+                for (var i = 0; i < length; ++i)
+                {
+                    comparisons[i]
+                        = Expression.Equal(
+                            Expression.ArrayIndex(p1, Expression.Constant(i)),
+                            Expression.ArrayIndex(p2, Expression.Constant(i)));
+                }
+
+                return new KeyValuesComparer(
+                    (Func<object[], object[], bool>)Expression.Lambda(
+                        comparisons.Aggregate(Expression.AndAlso),
+                        new[] { p1, p2 }).Compile());
             }
 
-            public bool MoveNext()
+            public bool Equals(object[] x, object[] y)
             {
-                if (finished)
-                {
-                    return false;
-                }
-                else if (reader.Read())
-                {
-                    Current = materializer(reader);
-
-                    return true;
-                }
-                else
-                {
-                    finished = true;
-                    Current = default;
-
-                    return false;
-                }
+                return compiled(x, y);
             }
 
-            public void Reset()
+            public int GetHashCode(object[] values)
             {
-                throw new NotSupportedException();
+                unchecked
+                {
+                    var hash = InitialHashCode;
+
+                    for (var i = 0; i < values.Length; i++)
+                    {
+                        hash = (hash * 16777619) ^ values[0].GetHashCode();
+                        hash = (hash * 16777619) ^ values[1].GetHashCode();
+                    }
+
+                    return hash;
+                }
             }
         }
     }

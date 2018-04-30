@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -25,75 +25,106 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
             = typeof(EntityTrackingHelper)
                 .GetMethod(nameof(TrackEntities), BindingFlags.NonPublic | BindingFlags.Static);
 
-        private static object GetEntityUsingStateManager(
-            EFCoreDbCommandExecutor executor,
-            IEntityType entityType,
-            IKey key,
-            object[] keyValues,
-            object entity,
-            IProperty[] shadowProperties,
-            object[] shadowPropertyValues,
-            List<INavigation> loadedNavigations)
+        private static object GetEntityUsingStateManager(EFCoreDbCommandExecutor executor, IEntityType entityType, object[] keyValues, object entity, object[] shadowPropertyValues, List<INavigation> includes)
         {
-            var stateManager = executor.CurrentDbContext.GetDependencies().StateManager;
-
-            var entry = stateManager.TryGetEntry(key, keyValues);
+            var entry = executor.StateManager.TryGetEntry(entityType.FindPrimaryKey(), keyValues);
 
             if (entry == null)
             {
-                entry = stateManager.GetOrCreateEntry(entity);
-
-                for (var i = 0; i < shadowProperties.Length; i++)
+                if (shadowPropertyValues.Length == 0)
                 {
-                    entry.SetProperty(shadowProperties[i], shadowPropertyValues[i], false);
+                    entry 
+                        = executor.EntryFactory.Create(
+                            executor.StateManager, 
+                            entityType, 
+                            entity);
+                }
+                else
+                {
+                    entry 
+                        = executor.EntryFactory.Create(
+                            executor.StateManager, 
+                            entityType, 
+                            entity, 
+                            new ValueBuffer(shadowPropertyValues));
                 }
 
-                stateManager.StartTracking(entry);
+                executor.StateManager.StartTracking(entry);
 
                 entry.MarkUnchangedFromQuery(null);
-            }
 
-            foreach (var navigation in loadedNavigations)
+                for (var i = 0; i < includes.Count; i++)
+                {
+                    entry.SetIsLoaded(includes[i], true);
+                }
+            }
+            else
             {
-                entry.SetIsLoaded(navigation);
+                if (entry.EntityState == EntityState.Detached)
+                {
+                    entry.MarkUnchangedFromQuery(null);
+                }
+
+                for (var i = 0; i < includes.Count; i++)
+                {
+                    var include = includes[i];
+
+                    include.GetSetter().SetClrValue(entry.Entity, include.GetGetter().GetClrValue(entity));
+
+                    entry.SetIsLoaded(include, true);
+                }
             }
 
             return entry.Entity;
         }
 
-        private static object GetEntityUsingIdentityMap(
-            EFCoreDbCommandExecutor executor,
-            IEntityType entityType,
-            IKey key,
-            object[] keyValues,
-            object entity,
-            IProperty[] shadowProperties,
-            object[] shadowPropertyValues,
-            List<INavigation> includes)
+        private static object GetEntityUsingIdentityMap(EFCoreDbCommandExecutor executor, IEntityType entityType, object[] keyValues, object entity, object[] shadowPropertyValues, List<INavigation> includes)
         {
             if (entity == null)
             {
                 return null;
             }
 
-            var cached = entity;
-
-            if (!executor.TryGetEntity(entityType, keyValues, ref cached, includes, out var cachedIncludes))
+            if (!executor.TryGetEntity(entityType, keyValues, out var info))
             {
-                cachedIncludes = false;
+                Debug.Assert(info.Entity == null);
 
-                executor.CacheEntity(entityType, key, keyValues, entity, shadowProperties, shadowPropertyValues, includes);
+                info = new EntityMaterializationInfo
+                {
+                    Entity = entity,
+                    KeyValues = keyValues,
+                    ShadowPropertyValues = shadowPropertyValues,
+                    EntityType = entityType,
+                    Key = entityType.FindPrimaryKey()
+                };
+
+                if (includes.Count != 0)
+                {
+                    info.Includes = new HashSet<INavigation>();
+                }
+
+                executor.CacheEntity(entityType, keyValues, info);
+            }
+            else if (includes.Count != 0 && info.Includes == null)
+            {
+                info.Includes = new HashSet<INavigation>();
+
+                executor.CacheEntity(entityType, keyValues, info);
             }
 
-            if (!cachedIncludes)
+            for (var i = 0; i < includes.Count; i++)
             {
-                foreach (var navigation in includes)
+                var include = includes[i];
+
+                if (!info.Includes.Contains(include))
                 {
-                    FixupNavigation(navigation, entity, cached);
+                    FixupNavigation(include, entity, info.Entity);
+
+                    info.Includes.Add(include);
                 }
             }
 
-            return cached;
+            return info.Entity;
         }
 
         private static IEnumerable IterateSource(IEnumerable source)
@@ -205,58 +236,58 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 
         private static void HandleEntry<TEntity>(EFCoreDbCommandExecutor executor, ref TEntity entity, IEntityType entityType)
         {
-            if (entityType == null)
+            if (entityType == null || !executor.TryGetEntity(entity, entityType, out var info))
             {
                 return;
             }
-
-            var info = executor.GetMaterializationInfo(entity, entityType);
-
-            if (info == null)
-            {
-                return;
-            }
-
-            var stateManager = executor.CurrentDbContext.GetDependencies().StateManager;
-
-            var entry = stateManager.TryGetEntry(info.Key, info.KeyValues);
 
             var cached = entity;
 
+            var entry 
+                = executor.StateManager.TryGetEntry(info.Key, info.KeyValues) 
+                ?? executor.StateManager.TryGetEntry(entity);
+
             if (entry == null)
             {
-                var clrType = entity.GetType();
-
-                if (entityType.ClrType != entity.GetType())
+                if (info.ShadowPropertyValues.Length == 0)
                 {
-                    entityType = entityType.GetDerivedTypes().Single(t => t.ClrType == clrType);
+                    entry 
+                        = executor.EntryFactory.Create(
+                            executor.StateManager, 
+                            info.EntityType, 
+                            entity);
+                }
+                else
+                {
+                    entry 
+                        = executor.EntryFactory.Create(
+                            executor.StateManager, 
+                            info.EntityType, 
+                            entity, 
+                            new ValueBuffer(info.ShadowPropertyValues));
                 }
 
-                entry = stateManager.GetOrCreateEntry(entity, entityType);
-
-                for (var i = 0; i < info.ShadowProperties.Length; i++)
-                {
-                    entry.SetProperty(info.ShadowProperties[i], info.ShadowPropertyValues[i], false);
-                }
-
-                stateManager.StartTracking(entry);
+                executor.StateManager.StartTracking(entry);
 
                 entry.MarkUnchangedFromQuery(null);
             }
             else
             {
                 cached = (TEntity)entry.Entity;
+
+                if (entry.EntityState == EntityState.Detached)
+                {
+                    entry.MarkUnchangedFromQuery(null);
+                }
             }
 
-            foreach (var set in info.Includes)
+            if (info.Includes != null)
             {
-                foreach (var navigation in set)
+                foreach (INavigation include in info.Includes)
                 {
-                    entry.SetIsLoaded(navigation);
+                    entry.SetIsLoaded(include, true);
 
-                    // TODO: See if we can avoid the double fixup
-
-                    FixupNavigation(navigation, entity, cached);
+                    FixupNavigation(include, entity, cached);
                 }
             }
 

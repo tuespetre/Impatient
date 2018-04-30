@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Impatient.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -8,28 +9,14 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 {
     public class PartialEvaluatingExpressionVisitor : ExpressionVisitor
     {
-        private bool propagate;
-
-        protected void PropagateExceptions()
-        {
-            propagate = true;
-        }
-
         public override Expression Visit(Expression node)
         {
-            try
+            if (node == null || node.NodeType == ExpressionType.Constant)
             {
-                return base.Visit(node);
-            }
-            catch
-            {
-                if (propagate)
-                {
-                    throw;
-                }
-
                 return node;
             }
+
+            return base.Visit(node);
         }
 
         protected override Expression VisitBinary(BinaryExpression node)
@@ -37,7 +24,8 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             var visitedLeft = Visit(node.Left);
             var visitedRight = Visit(node.Right);
 
-            if (visitedLeft is ConstantExpression && visitedRight is ConstantExpression)
+            if (visitedLeft.NodeType == ExpressionType.Constant
+                && visitedRight.NodeType == ExpressionType.Constant)
             {
                 return TryEvaluateExpression(node.Update(visitedLeft, node.Conversion, visitedRight));
             }
@@ -56,7 +44,9 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             var visitedIfTrue = Visit(node.IfTrue);
             var visitedIfFalse = Visit(node.IfFalse);
 
-            if (visitedTest is ConstantExpression && visitedIfTrue is ConstantExpression && visitedIfFalse is ConstantExpression)
+            if (visitedTest.NodeType == ExpressionType.Constant
+                && visitedIfTrue.NodeType == ExpressionType.Constant
+                && visitedIfFalse.NodeType == ExpressionType.Constant)
             {
                 return TryEvaluateExpression(node.Update(visitedTest, visitedIfTrue, visitedIfFalse));
             }
@@ -66,54 +56,132 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
         protected override Expression VisitDefault(DefaultExpression node)
         {
-            return Expression.Constant(
-                node.Type.GetTypeInfo().IsValueType
-                    ? Activator.CreateInstance(node.Type)
-                    : null,
-                node.Type);
+            try
+            {
+                return Expression.Constant(
+                    node.Type.GetTypeInfo().IsValueType
+                        ? Activator.CreateInstance(node.Type)
+                        : null,
+                    node.Type);
+            }
+            catch
+            {
+                return node;
+            }
         }
 
         protected override Expression VisitIndex(IndexExpression node)
         {
-            var visitedObject = Visit(node.Object);
-            var visitedArguments = Visit(node.Arguments);
+            var @object = Visit(node.Object);
 
-            if (visitedObject is ConstantExpression objectConstant
-                && visitedArguments.All(a => a is ConstantExpression))
+            if (@object == null && @object.NodeType != ExpressionType.Constant)
             {
-                return Expression.Constant(
-                    node.Indexer.GetValue(
-                        objectConstant.Value,
-                        visitedArguments
-                            .Cast<ConstantExpression>()
-                            .Select(c => c.Value)
-                            .ToArray()));
+                return node.Update(@object, Visit(node.Arguments));
             }
 
-            return node.Update(visitedObject, visitedArguments);
+            var arguments = new Expression[node.Arguments.Count];
+            var shouldApply = true;
+
+            for (var i = 0; i < arguments.Length; i++)
+            {
+                var argument = Visit(node.Arguments[i]);
+
+                shouldApply &= argument.NodeType == ExpressionType.Constant;
+
+                arguments[i] = argument;
+            }
+
+            if (shouldApply)
+            {
+                try
+                {
+                    var index = new object[arguments.Length];
+
+                    for (var i = 0; i < index.Length; i++)
+                    {
+                        index[i] = ((ConstantExpression)arguments[i]).Value;
+                    }
+
+                    return Expression.Constant(
+                        node.Indexer.GetValue(
+                            ((ConstantExpression)@object).Value,
+                            index));
+                }
+                catch
+                {
+                    // no-op, proceed to update arguments
+                }
+            }
+
+            return node.Update(@object, arguments);
         }
 
         protected override Expression VisitListInit(ListInitExpression node)
         {
-            var visitedNewExpression = VisitNew(node.NewExpression);
-            var visitedInitializers = node.Initializers.Select(VisitElementInit).ToArray();
+            var initializers = new ElementInit[node.Initializers.Count];
+            var shouldApply = true;
 
-            if (visitedNewExpression is ConstantExpression objectConstant
-                && visitedInitializers.All(i => i.Arguments.All(a => a is ConstantExpression)))
+            for (var i = 0; i < node.Initializers.Count; i++)
             {
-                ApplyListInitializers(objectConstant.Value, visitedInitializers);
+                var initializer = node.Initializers[i];
+                var initializerArguments = new Expression[initializer.Arguments.Count];
 
-                return objectConstant;
+                for (var j = 0; j < initializer.Arguments.Count; j++)
+                {
+                    var argument = Visit(initializer.Arguments[j]);
+
+                    shouldApply &= argument.NodeType == ExpressionType.Constant;
+
+                    initializerArguments[j] = argument;
+                }
+
+                initializers[i] = initializer.Update(initializerArguments);
             }
 
-            return node.Update((NewExpression)visitedNewExpression, visitedInitializers);
+            if (shouldApply)
+            {
+                try
+                {
+                    if (Visit(node.NewExpression) is ConstantExpression @object)
+                    {
+                        for (var i = 0; i < initializers.Length; i++)
+                        {
+                            var initializer = initializers[i];
+                            var addArguments = new object[initializer.Arguments.Count];
+
+                            for (var j = 0; j < initializer.Arguments.Count; j++)
+                            {
+                                addArguments[j] = ((ConstantExpression)initializer.Arguments[j]).Value;
+                            }
+
+                            initializer.AddMethod.Invoke(@object.Value, addArguments);
+                        }
+
+                        return @object;
+                    }
+                }
+                catch
+                {
+                    // no-op, proceed to update initializers
+                }
+            }
+
+            var newExpression = node.NewExpression;
+            var newArguments = new Expression[newExpression.Arguments.Count];
+
+            for (var i = 0; i < newExpression.Arguments.Count; i++)
+            {
+                newArguments[i] = Visit(newExpression.Arguments[i]);
+            }
+
+            return node.Update(newExpression.Update(newArguments), initializers);
         }
 
         protected override Expression VisitMember(MemberExpression node)
         {
-            var visitedExpression = Visit(node.Expression);
+            var expression = node.Expression;
 
-            if (visitedExpression == null)
+            if (expression == null)
             {
                 if (node.Member is FieldInfo field && (field.IsInitOnly || !field.IsLiteral))
                 {
@@ -125,54 +193,148 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                     goto Finish;
                 }
             }
-
-            if (!unevaluableMembers.Contains(node.Member))
+            else
             {
-                if (visitedExpression == null || visitedExpression is ConstantExpression)
+                expression = Visit(node.Expression);
+            }
+
+            if (!unevaluableMembers.Contains(node.Member)
+                && (expression == null || expression.NodeType == ExpressionType.Constant))
+            {
+                object @object = null;
+
+                if (expression != null)
                 {
-                    var @object = (visitedExpression as ConstantExpression)?.Value;
+                    @object = ((ConstantExpression)expression).Value;
+                }
 
-                    switch (node.Member)
+                switch (node.Member)
+                {
+                    case PropertyInfo propertyInfo:
                     {
-                        case PropertyInfo propertyInfo:
-                        {
-                            return Expression.Constant(propertyInfo.GetValue(@object));
-                        }
+                        return Expression.Constant(propertyInfo.GetValue(@object));
+                    }
 
-                        case FieldInfo fieldInfo:
-                        {
-                            return Expression.Constant(fieldInfo.GetValue(@object));
-                        }
+                    case FieldInfo fieldInfo:
+                    {
+                        return Expression.Constant(fieldInfo.GetValue(@object));
                     }
                 }
             }
 
             Finish:
-            return node.Update(visitedExpression);
+            return node.Update(expression);
+        }
+
+        protected override MemberListBinding VisitMemberListBinding(MemberListBinding node)
+        {
+            return base.VisitMemberListBinding(node);
+        }
+
+        protected override MemberMemberBinding VisitMemberMemberBinding(MemberMemberBinding node)
+        {
+            return base.VisitMemberMemberBinding(node);
         }
 
         protected override Expression VisitMemberInit(MemberInitExpression node)
         {
-            var visitedNewExpression = VisitNew(node.NewExpression);
-            var visitedBindings = node.Bindings.Select(VisitMemberBinding).ToArray();
+            var bindings = new MemberBinding[node.Bindings.Count];
+            var shouldApply = true;
 
-            if (visitedNewExpression is ConstantExpression constantNewExpression
-                && ValidateBindings(visitedBindings))
+            for (var i = 0; i < bindings.Length; i++)
             {
-                ApplyBindings(constantNewExpression.Value, visitedBindings);
+                var binding = VisitMemberBinding(node.Bindings[i]);
 
-                return constantNewExpression;
+                shouldApply &= binding.BindingType == MemberBindingType.Assignment;
+                shouldApply &= ((MemberAssignment)binding).Expression.NodeType == ExpressionType.Constant;
+
+                bindings[i] = binding;
             }
 
-            return node.Update((NewExpression)visitedNewExpression, visitedBindings);
+            if (shouldApply)
+            {
+                try
+                {
+                    if (Visit(node.NewExpression) is ConstantExpression @object)
+                    {
+                        for (var i = 0; i < bindings.Length; i++)
+                        {
+                            var binding = (MemberAssignment)bindings[i];
+                            var value = ((ConstantExpression)binding.Expression).Value;
+
+                            switch (binding.Member)
+                            {
+                                case FieldInfo fieldInfo:
+                                {
+                                    fieldInfo.SetValue(@object.Value, value);
+                                    break;
+                                }
+
+                                case PropertyInfo propertyInfo:
+                                {
+                                    propertyInfo.SetValue(@object.Value, value);
+                                    break;
+                                }
+                            }
+                        }
+
+                        return @object;
+                    }
+                }
+                catch
+                {
+                    // no-op, proceed to update arguments and bindings
+                }
+            }
+
+            var newExpression = node.NewExpression;
+            var newArguments = new Expression[node.NewExpression.Arguments.Count];
+
+            for (var i = 0; i < newExpression.Arguments.Count; i++)
+            {
+                newArguments[i] = Visit(newExpression.Arguments[i]);
+            }
+
+            return node.Update(newExpression.Update(newArguments), bindings);
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            var visitedObject = Visit(node.Object);
-            var visitedArguments = Visit(node.Arguments);
+            var @object = Visit(node.Object);
 
-            if (unevaluableMethods.Contains(node.Method))
+            if (@object == null && node.Arguments.Count == 0)
+            {
+                return node;
+            }
+
+            var shouldApply = @object == null || @object.NodeType == ExpressionType.Constant;
+
+            if (!shouldApply)
+            {
+                return node.Update(@object, Visit(node.Arguments));
+            }
+
+            var arguments = new Expression[node.Arguments.Count];
+
+            for (var i = 0; i < arguments.Length; i++)
+            {
+                var argument = Visit(node.Arguments[i]);
+
+                shouldApply &= argument.NodeType == ExpressionType.Constant;
+                shouldApply &= !typeof(IQueryable).IsAssignableFrom(argument.Type);
+
+                arguments[i] = argument;
+            }
+
+            // If it's a method call that takes a queryable as an argument, we (for the most part)
+            // can't guarantee that evaluating the method call won't trigger a query. One would
+            // at first think that if the return type is also IQueryable it might be OK to evaluate,
+            // but the truth is that methods like Single() could still return an IQueryable.
+            // Calls like Queryable.Where and Queryable.Select and so forth may be ok, but 
+            // we would end up re-parsing the resulting expression trees anyways so it is pointless
+            // to evaluate them.
+
+            if (unevaluableMethods.Contains(node.Method) || node.Method.IsQueryableOrEnumerableMethod())
             {
                 // unevaluableMethods is a blacklist of nondeterministic methods
                 // or methods that otherwise have side effects. We could open it
@@ -180,55 +342,68 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                 goto Finish;
             }
 
-            if (visitedArguments.Any(a => typeof(IQueryable).IsAssignableFrom(a.Type)))
+            if (shouldApply)
             {
-                // If it's a method call that takes a queryable as an argument, we (for the most part)
-                // can't guarantee that evaluating the method call won't trigger a query. One would
-                // at first think that if the return type is also IQueryable it might be OK to evaluate,
-                // but the truth is that methods like Single() could still return an IQueryable.
-                // Calls like Queryable.Where and Queryable.Select and so forth may be ok, but 
-                // we would end up re-parsing the resulting expression trees anyways so it is pointless
-                // to evaluate them.
-                goto Finish;
-            }
+                var target = (@object as ConstantExpression)?.Value;
+                var parameters = new object[arguments.Length];
 
-            if (((visitedObject is null && visitedArguments.Any()) || visitedObject is ConstantExpression)
-                && visitedArguments.All(a => a is ConstantExpression))
-            {
-                var @object = (visitedObject as ConstantExpression)?.Value;
+                for (var i = 0; i < arguments.Length; i++)
+                {
+                    parameters[i] = ((ConstantExpression)arguments[i]).Value;
+                }
 
-                var result
-                    = node.Method.Invoke(
-                        @object,
-                        visitedArguments
-                            .Cast<ConstantExpression>()
-                            .Select(c => c.Value)
-                            .ToArray());
+                try
+                {
+                    var result = node.Method.Invoke(target, parameters);
 
-                return Expression.Constant(result);
+                    return Expression.Constant(result);
+                }
+                catch
+                {
+                    // no-op, proceed to update arguments
+                }
             }
 
             Finish:
-            return node.Update(visitedObject, visitedArguments);
+            return node.Update(@object, arguments);
         }
 
         protected override Expression VisitNew(NewExpression node)
         {
-            var visitedArguments = Visit(node.Arguments);
-
-            if (visitedArguments.All(a => a is ConstantExpression))
+            if (node.Constructor == null)
             {
-                if (node.Constructor == null)
+                return Expression.Constant(Activator.CreateInstance(node.Type));
+            }
+
+            var visitedArguments = new Expression[node.Arguments.Count];
+            var shouldApply = true;
+
+            for (var i = 0; i < node.Arguments.Count; i++)
+            {
+                var argument = Visit(node.Arguments[i]);
+
+                shouldApply &= argument.NodeType == ExpressionType.Constant;
+
+                visitedArguments[i] = argument;
+            }
+
+            if (shouldApply)
+            {
+                var arguments = new object[visitedArguments.Length];
+
+                for (var i = 0; i < arguments.Length; i++)
                 {
-                    return Expression.Constant(Activator.CreateInstance(node.Type));
+                    arguments[i] = ((ConstantExpression)visitedArguments[i]).Value;
                 }
 
-                return Expression.Constant(
-                    node.Constructor.Invoke(
-                        visitedArguments
-                            .Cast<ConstantExpression>()
-                            .Select(c => c.Value)
-                            .ToArray()));
+                try
+                {
+                    return Expression.Constant(node.Constructor.Invoke(arguments));
+                }
+                catch
+                {
+                    // no-op, proceed to update node with arguments
+                }
             }
 
             return node.Update(visitedArguments);
@@ -236,205 +411,100 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
         protected override Expression VisitNewArray(NewArrayExpression node)
         {
-            var visitedExpressions = Visit(node.Expressions);
+            var expressions = new Expression[node.Expressions.Count];
+            var shouldApply = true;
 
-            if (visitedExpressions.All(e => e is ConstantExpression))
+            for (var i = 0; i < expressions.Length; i++)
             {
-                switch (node.NodeType)
+                var expression = Visit(node.Expressions[i]);
+
+                shouldApply &= expression.NodeType == ExpressionType.Constant;
+
+                expressions[i] = expression;
+            }
+
+            if (shouldApply)
+            {
+                try
                 {
-                    case ExpressionType.NewArrayBounds:
+                    switch (node.NodeType)
                     {
-                        return Expression.Constant(
-                            Array.CreateInstance(
-                                node.Type.GetElementType(),
-                                visitedExpressions
-                                    .Cast<ConstantExpression>()
-                                    .Select(c => c.Value)
-                                    .Cast<int>()
-                                    .ToArray()));
-                    }
-
-                    case ExpressionType.NewArrayInit:
-                    {
-                        var array = Array.CreateInstance(
-                            node.Type.GetElementType(),
-                            visitedExpressions.Count);
-
-                        var values = visitedExpressions
-                            .Cast<ConstantExpression>()
-                            .Select((c, i) => (c.Value, i));
-
-                        foreach (var (value, index) in values)
+                        case ExpressionType.NewArrayBounds:
                         {
-                            array.SetValue(value, index);
+                            var lengths = new int[expressions.Length];
+
+                            for (var i = 0; i < expressions.Length; i++)
+                            {
+                                lengths[i] = (int)((ConstantExpression)expressions[i]).Value;
+                            }
+
+                            return Expression.Constant(
+                                Array.CreateInstance(
+                                    node.Type.GetElementType(),
+                                    lengths));
                         }
 
-                        return Expression.Constant(array);
+                        case ExpressionType.NewArrayInit:
+                        {
+                            var array
+                                = Array.CreateInstance(
+                                    node.Type.GetElementType(),
+                                    expressions.Length);
+
+                            for (var i = 0; i < expressions.Length; i++)
+                            {
+                                array.SetValue(((ConstantExpression)expressions[i]).Value, i);
+                            }
+
+                            return Expression.Constant(array);
+                        }
+
+                        default:
+                        {
+                            throw new NotSupportedException();
+                        }
                     }
+                }
+                catch
+                {
+                    // no-op, proceed to update expressions
                 }
             }
 
-            return node.Update(visitedExpressions);
+            return node.Update(expressions);
         }
 
         protected override Expression VisitTypeBinary(TypeBinaryExpression node)
         {
-            var visitedExpression = Visit(node.Expression);
+            var expression = Visit(node.Expression);
 
-            if (visitedExpression is ConstantExpression || visitedExpression is ParameterExpression)
+            if (expression is ConstantExpression || expression is ParameterExpression)
             {
-                if (node.TypeOperand.IsAssignableFrom(visitedExpression.Type))
+                if (node.TypeOperand.IsAssignableFrom(expression.Type))
                 {
                     return Expression.Constant(true);
                 }
-                else if (!visitedExpression.Type.IsAssignableFrom(node.TypeOperand))
+                else if (!expression.Type.IsAssignableFrom(node.TypeOperand))
                 {
                     return Expression.Constant(false);
                 }
             }
 
-            return node.Update(visitedExpression);
+            return node.Update(expression);
         }
 
         protected override Expression VisitUnary(UnaryExpression node)
         {
-            var visitedOperand = Visit(node.Operand);
+            var operand = Visit(node.Operand);
 
-            if (visitedOperand is ConstantExpression 
-                && node.NodeType != ExpressionType.Convert)
+            node = node.Update(operand);
+
+            if (operand.NodeType == ExpressionType.Constant && node.NodeType != ExpressionType.Convert)
             {
-                return TryEvaluateExpression(node.Update(visitedOperand));
+                return TryEvaluateExpression(node);
             }
 
-            return node.Update(visitedOperand);
-        }
-
-        private static void ApplyListInitializers(object @object, IEnumerable<ElementInit> initializers)
-        {
-            foreach (var initializer in initializers)
-            {
-                initializer.AddMethod.Invoke(
-                    @object,
-                    initializer.Arguments
-                        .Cast<ConstantExpression>()
-                        .Select(c => c.Value)
-                        .ToArray());
-            }
-        }
-
-        private static bool ValidateBindings(IEnumerable<MemberBinding> bindings)
-        {
-            foreach (var binding in bindings)
-            {
-                switch (binding)
-                {
-                    case MemberAssignment memberAssignment:
-                    {
-                        if (memberAssignment.Expression is ConstantExpression)
-                        {
-                            break;
-                        }
-
-                        return false;
-                    }
-
-                    case MemberListBinding memberListBinding:
-                    {
-                        if (memberListBinding.Initializers.All(i => i.Arguments.All(a => a is ConstantExpression)))
-                        {
-                            break;
-                        }
-
-                        return false;
-                    }
-
-                    case MemberMemberBinding memberMemberBinding:
-                    {
-                        if (ValidateBindings(memberMemberBinding.Bindings))
-                        {
-                            break;
-                        }
-
-                        return false;
-                    }
-
-                    default:
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-        }
-
-        private static void ApplyBindings(object @object, IEnumerable<MemberBinding> bindings)
-        {
-            foreach (var binding in bindings)
-            {
-                switch (binding)
-                {
-                    case MemberAssignment memberAssignment:
-                    {
-                        switch (memberAssignment.Member)
-                        {
-                            case PropertyInfo propertyInfo:
-                            {
-                                propertyInfo.SetValue(@object, ((ConstantExpression)memberAssignment.Expression).Value);
-                                break;
-                            }
-
-                            case FieldInfo fieldInfo:
-                            {
-                                fieldInfo.SetValue(@object, ((ConstantExpression)memberAssignment.Expression).Value);
-                                break;
-                            }
-                        }
-
-                        break;
-                    }
-
-                    case MemberListBinding memberListBinding:
-                    {
-                        switch (memberListBinding.Member)
-                        {
-                            case PropertyInfo propertyInfo:
-                            {
-                                ApplyListInitializers(propertyInfo.GetValue(@object), memberListBinding.Initializers);
-                                break;
-                            }
-
-                            case FieldInfo fieldInfo:
-                            {
-                                ApplyListInitializers(fieldInfo.GetValue(@object), memberListBinding.Initializers);
-                                break;
-                            }
-                        }
-
-                        break;
-                    }
-
-                    case MemberMemberBinding memberMemberBinding:
-                    {
-                        switch (memberMemberBinding.Member)
-                        {
-                            case PropertyInfo propertyInfo:
-                            {
-                                ApplyBindings(propertyInfo.GetValue(@object), memberMemberBinding.Bindings);
-                                break;
-                            }
-
-                            case FieldInfo fieldInfo:
-                            {
-                                ApplyBindings(fieldInfo.GetValue(@object), memberMemberBinding.Bindings);
-                                break;
-                            }
-                        }
-
-                        break;
-                    }
-                }
-            }
+            return node.Update(operand);
         }
 
         private static Expression TryEvaluateExpression(Expression expression)
@@ -449,7 +519,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             }
         }
 
-        private static readonly IReadOnlyCollection<MemberInfo> unevaluableMembers = new List<MemberInfo>
+        private static readonly List<MemberInfo> unevaluableMembers = new List<MemberInfo>
         {
             typeof(DateTime).GetRuntimeProperty(nameof(DateTime.Now)),
             typeof(DateTime).GetRuntimeProperty(nameof(DateTime.UtcNow)),
@@ -458,7 +528,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             typeof(Environment).GetRuntimeProperty(nameof(Environment.TickCount)),
         };
 
-        private static readonly IReadOnlyCollection<MethodInfo> unevaluableMethods = new List<MethodInfo>
+        private static readonly List<MethodInfo> unevaluableMethods = new List<MethodInfo>
         {
             typeof(Guid).GetRuntimeMethod(nameof(Guid.NewGuid), new Type[0]),
             typeof(Random).GetRuntimeMethod(nameof(Random.Next), new Type[0]),

@@ -11,19 +11,19 @@ namespace Impatient.EFCore.Tests
         {
         }
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesGroupedEntitiesAreNotTracked)]
+        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
         public override void Navigation_projection_on_groupjoin_qsre()
         {
             base.Navigation_projection_on_groupjoin_qsre();
         }
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesGroupedEntitiesAreNotTracked)]
+        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
         public override void Navigation_projection_on_groupjoin_qsre_no_outer_in_final_result()
         {
             base.Navigation_projection_on_groupjoin_qsre_no_outer_in_final_result();
         }
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesGroupedEntitiesAreNotTracked)]
+        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
         public override void Navigation_projection_on_groupjoin_qsre_with_empty_grouping()
         {
             base.Navigation_projection_on_groupjoin_qsre_with_empty_grouping();
