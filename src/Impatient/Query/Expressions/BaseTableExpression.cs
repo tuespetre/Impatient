@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Impatient.Query.Infrastructure;
+using System;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
@@ -19,6 +20,17 @@ namespace Impatient.Query.Expressions
 
         public BaseTableExpression Clone() => new BaseTableExpression(SchemaName, TableName, Alias, Type);
 
-        public override int GetSemanticHashCode() => (SchemaName, TableName, Alias).GetHashCode();
+        public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            unchecked
+            {
+                var hash = TableName.GetHashCode();
+
+                hash = (hash * 16777619) ^ Alias.GetHashCode();
+                hash = (hash * 16777619) ^ SchemaName?.GetHashCode() ?? 0;
+
+                return hash;
+            }
+        }
     }
 }

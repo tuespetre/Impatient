@@ -129,11 +129,9 @@ namespace Impatient.Query.Infrastructure
 
         public void AddParameter(Expression node, Func<string, string> formatter)
         {
-            var hasher = new HashingExpressionVisitor();
+            var hash = ExpressionEqualityComparer.Instance.GetHashCode(node);
 
-            hasher.Visit(node);
-
-            if (parameterCache.TryGetValue(hasher.HashCode, out var cachedIndex))
+            if (parameterCache.TryGetValue(hash, out var cachedIndex))
             {
                 Append(formatter($"p{cachedIndex}"));
 
@@ -141,8 +139,8 @@ namespace Impatient.Query.Infrastructure
             }
 
             var parameterName = formatter($"p{parameterIndex}");
-            
-            parameterCache.Add(hasher.HashCode, parameterIndex);
+
+            parameterCache[hash] = parameterIndex;
             parameterIndex++;
 
             Append(parameterName);

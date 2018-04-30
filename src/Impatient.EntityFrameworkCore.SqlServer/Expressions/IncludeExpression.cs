@@ -1,4 +1,5 @@
 ﻿using Impatient.Query.Expressions;
+using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
 using System.Collections.Generic;
@@ -54,6 +55,19 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
             return this;
         }
 
-        public override int GetSemanticHashCode() => 0;
+        public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            unchecked
+            {
+                var hash = comparer.GetHashCode(Expression);
+
+                for (var i = 0; i < Includes.Count; i++)
+                {
+                    hash = (hash * 16777619) ^ comparer.GetHashCode(Includes[i]);
+                }
+
+                return hash;
+            }
+        }
     }
 }

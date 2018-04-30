@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public class OrderByExpression : Expression, ISemanticallyHashable
+    public class OrderByExpression : Expression, ISemanticHashCodeProvider
     {
         public OrderByExpression(Expression expression, bool descending)
         {
@@ -61,6 +61,16 @@ namespace Impatient.Query.Expressions
             return result;
         }
 
-        public int GetSemanticHashCode() => Descending.GetHashCode();
+        public virtual int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            unchecked
+            {
+                var hash = comparer.GetHashCode(Expression);
+
+                hash = (hash * 16777619) ^ Descending.GetHashCode();
+
+                return hash;
+            }
+        }
     }
 }

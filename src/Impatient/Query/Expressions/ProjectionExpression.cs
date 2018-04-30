@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public abstract class ProjectionExpression : Expression, ISemanticallyHashable
+    public abstract class ProjectionExpression : Expression, ISemanticHashCodeProvider
     {
         public abstract LambdaExpression ResultLambda { get; }
 
@@ -15,6 +15,9 @@ namespace Impatient.Query.Expressions
 
         protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
 
-        public int GetSemanticHashCode() => 0;
+        public virtual int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            return comparer.GetHashCode(ResultLambda);
+        }
     }
 }

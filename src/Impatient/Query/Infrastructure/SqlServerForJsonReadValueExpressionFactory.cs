@@ -18,8 +18,8 @@ namespace Impatient.Query.Infrastructure
     {
         #region reflection
 
-        private static readonly MethodInfo dbDataReaderGetFieldValueMethodInfo
-            = typeof(DbDataReader).GetTypeInfo().GetDeclaredMethod(nameof(DbDataReader.GetFieldValue));
+        private static readonly MethodInfo dbDataReaderGetTextReaderMethodInfo
+            = typeof(DbDataReader).GetTypeInfo().GetDeclaredMethod(nameof(DbDataReader.GetTextReader));
 
         private static readonly MethodInfo dbDataReaderIsDBNullMethodInfo
             = typeof(DbDataReader).GetTypeInfo().GetDeclaredMethod(nameof(DbDataReader.IsDBNull));
@@ -30,30 +30,6 @@ namespace Impatient.Query.Infrastructure
         private static readonly MethodInfo enumerableToArrayMethodInfo
             = ReflectionExtensions.GetGenericMethodDefinition((IEnumerable<object> e) => e.ToArray());
 
-        private static readonly MethodInfo queryableAsQueryableMethodInfo
-            = ReflectionExtensions.GetGenericMethodDefinition((IEnumerable<object> e) => e.AsQueryable());
-
-        private static readonly ConstructorInfo jsonTextReaderConstructorInfo
-            = typeof(JsonTextReader).GetConstructor(new[] { typeof(StringReader) });
-
-        private static readonly MethodInfo jsonTextReaderReadMethodInfo
-            = typeof(JsonTextReader).GetRuntimeMethod(nameof(JsonTextReader.Read), new Type[0]);
-
-        private static readonly PropertyInfo jsonTextReaderTokenTypePropertyInfo
-            = typeof(JsonTextReader).GetRuntimeProperty(nameof(JsonTextReader.TokenType));
-
-        private static readonly PropertyInfo jsonTextReaderValuePropertyInfo
-            = typeof(JsonTextReader).GetRuntimeProperty(nameof(JsonTextReader.Value));
-
-        private static readonly PropertyInfo jsonTextReaderDateParseHandlingPropertyInfo
-            = typeof(JsonTextReader).GetRuntimeProperty(nameof(JsonTextReader.DateParseHandling));
-
-        private static readonly ConstructorInfo stringReaderConstructorInfo
-            = typeof(StringReader).GetConstructor(new[] { typeof(string) });
-
-        private static readonly MethodInfo disposableDisposeMethodInfo
-            = typeof(IDisposable).GetTypeInfo().GetDeclaredMethod(nameof(IDisposable.Dispose));
-
         #endregion
 
         public bool CanReadExpression(Expression expression)
@@ -62,12 +38,6 @@ namespace Impatient.Query.Infrastructure
             {
                 return false;
             }
-
-            /*if (expression.Contains<PolymorphicExpression>())
-            {
-                // TODO: Support polymorphic materialization
-                return false;
-            }*/
 
             return true;
         }
@@ -83,42 +53,46 @@ namespace Impatient.Query.Infrastructure
 
             return Expression.Condition(
                 Expression.Call(reader, dbDataReaderIsDBNullMethodInfo, Expression.Constant(index)),
-                CreateDefaultValueExpression(source.Type),
-                Expression.Block(
-                    variables: new[]
-                    {
-                        jsonTextReaderVariable
-                    },
-                    expressions: new Expression[]
-                    {
-                        Expression.Assign(
-                            jsonTextReaderVariable,
-                            Expression.New(
-                                jsonTextReaderConstructorInfo,
-                                Expression.New(
-                                    stringReaderConstructorInfo,
-                                    Expression.Call(
-                                        reader,
-                                        dbDataReaderGetFieldValueMethodInfo.MakeGenericMethod(typeof(string)),
-                                        Expression.Constant(index))))),
-                        Expression.TryFinally(
-                            body: Expression.Block(
-                                Expression.Assign(
-                                    Expression.Property(jsonTextReaderVariable, jsonTextReaderDateParseHandlingPropertyInfo),
-                                    Expression.Constant(DateParseHandling.None)),
-                                materializer),
-                            @finally: Expression.Call(
-                                Expression.Convert(jsonTextReaderVariable, typeof(IDisposable)),
-                                disposableDisposeMethodInfo)),
-                    }));
+                Expression.Convert(CreateDefaultValueExpression(source.Type), source.Type),
+                Expression.Call(
+                    GetType()
+                        .GetMethod(nameof(Materialize), BindingFlags.Static | BindingFlags.NonPublic)
+                        .MakeGenericMethod(source.Type),
+                    Expression.Call(
+                        reader,
+                        dbDataReaderGetTextReaderMethodInfo,
+                        Expression.Constant(index)),
+                    Expression.Lambda(
+                        materializer,
+                        "JsonMaterializer",
+                        new[] { jsonTextReaderVariable })));
+        }
+
+        private static TResult Materialize<TResult>(TextReader textReader, Func<JsonTextReader, TResult> materializer)
+        {
+            using (var jsonTextReader = new JsonTextReader(textReader))
+            {
+                jsonTextReader.DateParseHandling = DateParseHandling.None;
+
+                var result = materializer(jsonTextReader);
+
+                return result;
+            }
         }
 
         private static Expression CreateSequenceExpression(Expression expression, Type type)
         {
+            var sequenceType = type.GetSequenceType();
+
+            if (type.IsArray)
+            {
+                return Expression.Call(
+                    enumerableToArrayMethodInfo.MakeGenericMethod(sequenceType),
+                    expression);
+            }
+
             if (type.IsGenericType(typeof(IQueryable<>)))
             {
-                var sequenceType = type.GetSequenceType();
-
                 // Calling AsQueryable creates a self-referencing
                 // EnumerableQuery whose inner list/array/etc. cannot
                 // be accessed without reflection. We want other visitors
@@ -191,6 +165,24 @@ namespace Impatient.Query.Infrastructure
                     return ExtractProjectionExpression(body);
                 }
 
+                case SqlColumnExpression sqlColumnExpression
+                when sqlColumnExpression.Table is TableValuedExpressionTableExpression tableValuedExpressionTableExpression:
+                {
+                    var function = tableValuedExpressionTableExpression.Expression as SqlFunctionExpression;
+
+                    if (function?.FunctionName != "OPENJSON" || function?.FunctionName != "JSON_QUERY")
+                    {
+                        return node;
+                    }
+
+                    if (function.Arguments.Count() == 2)
+                    {
+                        return node;
+                    }
+
+                    return ExtractProjectionExpression(function.Arguments.First());
+                }
+
                 case EnumerableRelationalQueryExpression relationalQueryExpression:
                 {
                     return relationalQueryExpression.SelectExpression.Projection.Flatten().Body;
@@ -217,193 +209,128 @@ namespace Impatient.Query.Infrastructure
         private class ComplexTypeMaterializerBuildingExpressionVisitor : ProjectionExpressionVisitor
         {
             private readonly ParameterExpression jsonTextReader;
-            private readonly Expression readExpression;
-            private readonly Expression currentTokenType;
             private int depth = 0;
             private bool extraProperties;
 
             public ComplexTypeMaterializerBuildingExpressionVisitor(ParameterExpression jsonTextReader)
             {
                 this.jsonTextReader = jsonTextReader;
-
-                readExpression = Expression.Call(jsonTextReader, jsonTextReaderReadMethodInfo);
-                currentTokenType = Expression.Property(jsonTextReader, jsonTextReaderTokenTypePropertyInfo);
             }
 
-            private Expression CurrentTokenIs(JsonToken token)
+            private string GetMaterializerName()
             {
-                return Expression.Equal(currentTokenType, Expression.Constant(token));
+                return $"Materialize_{string.Join("_", GetNameParts().DefaultIfEmpty("$root"))}";
             }
 
             protected override Expression VisitLeaf(Expression node)
             {
                 if (node.Type.IsScalarType())
                 {
-                    return SqlServerJsonValueReader.CreateExpression(node.Type, jsonTextReader);
+                    return SqlServerJsonValueReader.CreateReadScalarExpression(
+                        node.Type,
+                        jsonTextReader,
+                        GetNameParts().Last());
                 }
                 else if (node.Type.IsSequenceType())
                 {
                     var sequenceType = node.Type.GetSequenceType();
-                    var listVariable = Expression.Variable(typeof(List<>).MakeGenericType(sequenceType));
-                    var listAddMethod = listVariable.Type.GetRuntimeMethod(nameof(List<object>.Add), new[] { sequenceType });
-                    var breakLabelTarget = Expression.Label();
+                    var extracted = ExtractProjectionExpression(node);
 
-                    Expression readItem;
+                    Expression materializer;
 
                     if (sequenceType.IsScalarType())
                     {
-                        readItem = Expression.Block(new[]
+                        var name = default(string);
+
+                        switch (extracted)
                         {
-                            Expression.Call(
-                                listVariable,
-                                listAddMethod,
-                                SqlServerJsonValueReader.CreateExpression(sequenceType, jsonTextReader)),
-                            readExpression, // EndObject
-                            readExpression, // StartObject | EndArray
-                        });
-                    }
-                    else if (sequenceType.IsSequenceType())
-                    {
-                        readItem = Expression.Block(new[]
-                        {
-                            readExpression, // PropertyName
-                            Expression.Call(
-                                listVariable,
-                                listAddMethod,
-                                new ComplexTypeMaterializerBuildingExpressionVisitor(jsonTextReader)
-                                    .Visit(ExtractProjectionExpression(node))),
-                            readExpression, // EndObject
-                            readExpression, // StartObject | EndArray
-                        });
+                            case SqlColumnExpression sqlColumnExpression:
+                            {
+                                name = sqlColumnExpression.ColumnName;
+                                break;
+                            }
+
+                            case SqlAliasExpression sqlAliasExpression:
+                            {
+                                name = sqlAliasExpression.Alias;
+                                break;
+                            }
+                        }
+
+                        materializer = SqlServerJsonValueReader.CreateReadScalarExpression(sequenceType, jsonTextReader, name);
                     }
                     else
                     {
-                        readItem = Expression.Block(new[]
+                        if (extracted == node)
                         {
-                            Expression.Call(
-                                listVariable,
-                                listAddMethod,
-                                new ComplexTypeMaterializerBuildingExpressionVisitor(jsonTextReader)
-                                    .Visit(ExtractProjectionExpression(node))),
-                            readExpression, // EndObject
-                            readExpression, // StartObject | EndArray
-                        });
+                            return SqlServerJsonValueReader.CreateReadOpaqueObjectExpression(node.Type, jsonTextReader);
+                        }
+
+                        var visitor = new ComplexTypeMaterializerBuildingExpressionVisitor(jsonTextReader);
+
+                        materializer = visitor.Visit(extracted);
                     }
 
-                    return Expression.Block(
-                        variables: new[]
-                        {
-                            listVariable
-                        },
-                        expressions: new[]
-                        {
-                            Expression.Assign(listVariable, Expression.New(listVariable.Type)),
-                            depth > 0 ? readExpression : Expression.Empty(), // PropertyName
-                            readExpression, // StartArray
-                            Expression.IfThen(
-                                Expression.Not(CurrentTokenIs(JsonToken.Null)),
-                                Expression.Block(
-                                    readExpression, // StartObject | EndArray
-                                    Expression.Loop(
-                                        Expression.IfThenElse(
-                                            test: CurrentTokenIs(JsonToken.EndArray),
-                                            ifTrue: Expression.Break(breakLabelTarget),
-                                            ifFalse: readItem),
-                                        breakLabelTarget))),
-                            node.Type.IsArray
-                                ? Expression.Call(
-                                    enumerableToArrayMethodInfo.MakeGenericMethod(sequenceType),
-                                    listVariable)
-                                : CreateSequenceExpression(listVariable, node.Type),
-                        });
+                    return CreateSequenceExpression(
+                        SqlServerJsonValueReader.CreateReadArrayExpression(
+                            sequenceType,
+                            jsonTextReader,
+                            GetNameParts().LastOrDefault(),
+                            Expression.Lambda(
+                                materializer,
+                                GetMaterializerName(),
+                                Array.Empty<ParameterExpression>())),
+                        node.Type);
                 }
                 else
                 {
-                    return new ComplexTypeMaterializerBuildingExpressionVisitor(jsonTextReader)
-                        .Visit(ExtractProjectionExpression(node));
+                    var extracted = ExtractProjectionExpression(node);
+
+                    if (extracted == node)
+                    {
+                        return SqlServerJsonValueReader.CreateReadOpaqueObjectExpression(node.Type, jsonTextReader);
+                    }
+
+                    var visitor = new ComplexTypeMaterializerBuildingExpressionVisitor(jsonTextReader);
+                    var result = visitor.Visit(extracted);
+
+                    if (result is MethodCallExpression call 
+                        && call.Method.DeclaringType == typeof(SqlServerJsonValueReader))
+                    {
+                        return result;
+                    }
+
+                    return SqlServerJsonValueReader.CreateReadComplexObjectExpression(
+                        node.Type,
+                        jsonTextReader,
+                        Expression.Lambda(
+                            result, 
+                            GetMaterializerName(), 
+                            Array.Empty<ParameterExpression>()));
                 }
             }
 
-            private Expression MaterializeObject(Expression visited, bool skipReadingEndObject = false)
+            private Expression MaterializeObject(Expression visited)
             {
                 if (depth > 0 && !extraProperties)
                 {
-                    var temporaryVariableExpression = Expression.Variable(visited.Type);
-
-                    return Expression.Block(
-                        new[] { temporaryVariableExpression },
-                        readExpression, // PropertyName
-                        readExpression, // StartObject | Null
-                        Expression.Condition(
-                            test: CurrentTokenIs(JsonToken.Null),
-                            ifTrue: Expression.Default(visited.Type),
-                            ifFalse: skipReadingEndObject
-                                ? visited
-                                : Expression.Block(
-                                    Expression.Assign(temporaryVariableExpression, visited),
-                                    readExpression, // EndObject
-                                    temporaryVariableExpression)));
+                    return SqlServerJsonValueReader.CreateReadComplexPropertyExpression(
+                        visited.Type,
+                        jsonTextReader,
+                        GetNameParts().LastOrDefault(),
+                        Expression.Lambda(
+                            visited, 
+                            GetMaterializerName(), 
+                            Array.Empty<ParameterExpression>()));
                 }
 
                 return visited;
             }
 
-            private static void SkipToEndOfObject(JsonTextReader reader)
-            {
-                var depth = reader.Depth;
-
-                Scan:
-                while (reader.TokenType != JsonToken.EndObject)
-                {
-                    reader.Read();
-                }
-
-                if (reader.Depth + 1 != depth)
-                {
-                    goto Scan;
-                }
-            }
-
-            private Expression MaybeRead => depth > 0 && !extraProperties ? readExpression : Expression.Empty();
-
             public override Expression Visit(Expression node)
             {
                 switch (node)
                 {
-                    case DefaultIfEmptyExpression defaultIfEmptyExpression:
-                    {
-                        var flag = extraProperties;
-
-                        extraProperties = true;
-
-                        var visited = Visit(defaultIfEmptyExpression.Expression);
-
-                        extraProperties = flag;
-
-                        var variable = Expression.Variable(node.Type);
-
-                        var expressions = new List<Expression>
-                        {
-                            readExpression, // PropertyName
-                            readExpression, // Value (DefaultIfEmpty flag)
-                            Expression.Condition(
-                                CurrentTokenIs(JsonToken.Null),
-                                Expression.Block(
-                                    Expression.Call(
-                                        GetType().GetMethod(nameof(SkipToEndOfObject), BindingFlags.Static | BindingFlags.NonPublic),
-                                        jsonTextReader),
-                                    Expression.Default(node.Type)),
-                                Expression.Block(
-                                    Expression.Assign(variable, visited),
-                                    MaybeRead,
-                                    variable)),
-                        };
-
-                        var block = Expression.Block(new[] { variable }, expressions);
-
-                        return MaterializeObject(block, skipReadingEndObject: true);
-                    }
-
                     case ExtraPropertiesExpression extraPropertiesExpression:
                     {
                         var flag = extraProperties;
@@ -450,34 +377,37 @@ namespace Impatient.Query.Infrastructure
 
                         if (rowValue is ExtraPropertiesExpression extraPropertiesExpression)
                         {
+                            // We visit the entire ExtraPropertiesExpression below with extraProperties = false
+                            // for correctness of the extra property expressions, but that causes the inner row
+                            // to be incorrect, so we cache the inner row here so it can be correctly visited
+                            // after this block. We should see if there is a way to safely remove the 
+                            // extraProperties/depth checks altogether.
+
+                            rowValue = extraPropertiesExpression.Expression;
+
                             extraProperties = false;
+
+                            extraPropertiesExpression = (ExtraPropertiesExpression)base.Visit(extraPropertiesExpression);
 
                             var properties = new List<Expression>();
 
                             for (var i = 0; i < extraPropertiesExpression.Names.Count; i++)
                             {
                                 var propertyName = extraPropertiesExpression.Names[i];
-                                var propertyValue = Visit(extraPropertiesExpression.Properties[i]);
+                                var propertyValue = extraPropertiesExpression.Properties[i];
                                 var propertyVariable = Expression.Variable(propertyValue.Type, propertyName);
 
                                 variables.Add(propertyVariable);
                                 properties.Add(propertyVariable);
                                 expressions.Add(Expression.Assign(propertyVariable, propertyValue));
                             }
-
-                            extraProperties = true;
-
-                            rowValue = Visit(extraPropertiesExpression.Expression);
-                            rowVariable = Expression.Variable(rowValue.Type, "row");
+                            
                             rowParameterExpansion = extraPropertiesExpression.Update(rowVariable, properties);
-
                         }
-                        else
-                        {
-                            extraProperties = true;
 
-                            rowValue = Visit(rowValue);
-                        }
+                        extraProperties = true;
+
+                        rowValue = Visit(rowValue);
 
                         extraProperties = flag;
 
@@ -514,345 +444,723 @@ namespace Impatient.Query.Infrastructure
 
     internal static class SqlServerJsonValueReader
     {
-        private static void ReadPropertyName(JsonTextReader reader)
-        {
-            reader.Read();
-
-            Debug.Assert(reader.TokenType == JsonToken.PropertyName);
-        }
-
-        public static string ReadString(JsonTextReader reader)
-        {
-            ReadPropertyName(reader);
-
-            return reader.ReadAsString();
-        }
-
-        public static byte[] ReadBytes(JsonTextReader reader)
-        {
-            ReadPropertyName(reader);
-
-            return reader.ReadAsBytes();
-        }
-
-        public static byte ReadByte(JsonTextReader reader)
-        {
-            return ReadNullableByte(reader).GetValueOrDefault();
-        }
-
-        public static byte? ReadNullableByte(JsonTextReader reader)
-        {
-            ReadPropertyName(reader);
-
-            return unchecked((byte?)reader.ReadAsInt32());
-        }
-
-        public static short ReadShort(JsonTextReader reader)
-        {
-            return ReadNullableShort(reader).GetValueOrDefault();
-        }
-
-        public static short? ReadNullableShort(JsonTextReader reader)
-        {
-            ReadPropertyName(reader);
-
-            return unchecked((short?)reader.ReadAsInt32());
-        }
-
-        public static int ReadInteger(JsonTextReader reader)
-        {
-            return ReadNullableInteger(reader).GetValueOrDefault();
-        }
-
-        public static int? ReadNullableInteger(JsonTextReader reader)
-        {
-            ReadPropertyName(reader);
-
-            return reader.ReadAsInt32();
-        }
-
-        public static long ReadLong(JsonTextReader reader)
-        {
-            return ReadNullableLong(reader).GetValueOrDefault();
-        }
-
-        public static long? ReadNullableLong(JsonTextReader reader)
-        {
-            ReadPropertyName(reader);
-
-            return (long?)reader.ReadAsDouble();
-        }
-
-        public static decimal ReadDecimal(JsonTextReader reader)
-        {
-            return ReadNullableDecimal(reader).GetValueOrDefault();
-        }
-
-        public static decimal? ReadNullableDecimal(JsonTextReader reader)
-        {
-            ReadPropertyName(reader);
-
-            return reader.ReadAsDecimal();
-        }
-
-        public static float ReadFloat(JsonTextReader reader)
-        {
-            return ReadNullableFloat(reader).GetValueOrDefault();
-        }
-
-        public static float? ReadNullableFloat(JsonTextReader reader)
-        {
-            ReadPropertyName(reader);
-
-            return (float?)reader.ReadAsDouble();
-        }
-
-        public static double ReadDouble(JsonTextReader reader)
-        {
-            return ReadNullableDouble(reader).GetValueOrDefault();
-        }
-
-        public static double? ReadNullableDouble(JsonTextReader reader)
-        {
-            ReadPropertyName(reader);
-
-            return reader.ReadAsDouble();
-        }
-
-        public static bool ReadBoolean(JsonTextReader reader)
-        {
-            return ReadNullableBoolean(reader).GetValueOrDefault();
-        }
-
-        public static bool? ReadNullableBoolean(JsonTextReader reader)
-        {
-            ReadPropertyName(reader);
-
-            return reader.ReadAsBoolean();
-        }
-
-        public static Guid ReadGuid(JsonTextReader reader)
-        {
-            return ReadNullableGuid(reader).GetValueOrDefault();
-        }
-
-        public static Guid? ReadNullableGuid(JsonTextReader reader)
-        {
-            ReadPropertyName(reader);
-
-            var value = reader.ReadAsString();
-
-            if (Guid.TryParse(value, out var result))
-            {
-                return result;
-            }
-
-            return default;
-        }
-
-        public static DateTime ReadDateTime(JsonTextReader reader)
-        {
-            return ReadNullableDateTime(reader).GetValueOrDefault();
-        }
-
-        public static DateTime? ReadNullableDateTime(JsonTextReader reader)
-        {
-            ReadPropertyName(reader);
-
-            var value = reader.ReadAsString();
-
-            if (DateTime.TryParse(value, out var result))
-            {
-                return result;
-            }
-
-            return default;
-        }
-
-        public static DateTimeOffset ReadDateTimeOffset(JsonTextReader reader)
-        {
-            return ReadNullableDateTimeOffset(reader).GetValueOrDefault();
-        }
-
-        public static DateTimeOffset? ReadNullableDateTimeOffset(JsonTextReader reader)
-        {
-            ReadPropertyName(reader);
-
-            var value = reader.ReadAsString();
-
-            if (DateTimeOffset.TryParse(value, out var result))
-            {
-                return result;
-            }
-
-            return default;
-        }
-
-        public static TimeSpan ReadTimeSpan(JsonTextReader reader)
-        {
-            return ReadNullableTimeSpan(reader).GetValueOrDefault();
-        }
-
-        public static TimeSpan? ReadNullableTimeSpan(JsonTextReader reader)
-        {
-            ReadPropertyName(reader);
-
-            var value = reader.ReadAsString();
-
-            if (TimeSpan.TryParse(value, out var result))
-            {
-                return result;
-            }
-
-            return default;
-        }
-
-        public static TEnum ReadEnum<TEnum>(JsonTextReader reader) where TEnum : struct
-        {
-            return ReadNullableEnum<TEnum>(reader).GetValueOrDefault();
-        }
-
-        public static TEnum? ReadNullableEnum<TEnum>(JsonTextReader reader) where TEnum : struct
-        {
-            ReadPropertyName(reader);
-
-            reader.Read();
-
-            if (reader.Value == null)
-            {
-                return default;
-            }
-            else
-            {
-                return (TEnum?)Enum.ToObject(typeof(TEnum), reader.Value);
-            }
-        }
-
-        private static Expression MakeCall(string method, Expression reader)
-        {
-            return Expression.Call(typeof(SqlServerJsonValueReader).GetMethod(method), reader);
-        }
-
-        public static Expression CreateExpression(Type type, Expression reader)
+        public static Expression CreateReadScalarExpression(
+            Type type, 
+            Expression reader, 
+            string name)
         {
             Debug.Assert(reader.Type == typeof(JsonTextReader));
 
             if (type == typeof(string))
             {
-                return MakeCall(nameof(ReadString), reader);
+                return MakeCall(nameof(ReadString), reader, name);
             }
             else if (type == typeof(byte[]))
             {
-                return MakeCall(nameof(ReadBytes), reader);
+                return MakeCall(nameof(ReadBytes), reader, name);
             }
             else if (type == typeof(byte))
             {
-                return MakeCall(nameof(ReadByte), reader);
+                return MakeCall(nameof(ReadByte), reader, name);
             }
             else if (type == typeof(short))
             {
-                return MakeCall(nameof(ReadShort), reader);
+                return MakeCall(nameof(ReadShort), reader, name);
             }
             else if (type == typeof(int))
             {
-                return MakeCall(nameof(ReadInteger), reader);
+                return MakeCall(nameof(ReadInteger), reader, name);
             }
             else if (type == typeof(long))
             {
-                return MakeCall(nameof(ReadLong), reader);
+                return MakeCall(nameof(ReadLong), reader, name);
             }
             else if (type == typeof(decimal))
             {
-                return MakeCall(nameof(ReadDecimal), reader);
+                return MakeCall(nameof(ReadDecimal), reader, name);
             }
             else if (type == typeof(float))
             {
-                return MakeCall(nameof(ReadFloat), reader);
+                return MakeCall(nameof(ReadFloat), reader, name);
             }
             else if (type == typeof(double))
             {
-                return MakeCall(nameof(ReadDouble), reader);
+                return MakeCall(nameof(ReadDouble), reader, name);
             }
             else if (type == typeof(bool))
             {
-                return MakeCall(nameof(ReadBoolean), reader);
+                return MakeCall(nameof(ReadBoolean), reader, name);
             }
             else if (type == typeof(Guid))
             {
-                return MakeCall(nameof(ReadGuid), reader);
+                return MakeCall(nameof(ReadGuid), reader, name);
             }
             else if (type == typeof(DateTime))
             {
-                return MakeCall(nameof(ReadDateTime), reader);
+                return MakeCall(nameof(ReadDateTime), reader, name);
             }
             else if (type == typeof(DateTimeOffset))
             {
-                return MakeCall(nameof(ReadDateTimeOffset), reader);
+                return MakeCall(nameof(ReadDateTimeOffset), reader, name);
             }
             else if (type == typeof(TimeSpan))
             {
-                return MakeCall(nameof(ReadTimeSpan), reader);
+                return MakeCall(nameof(ReadTimeSpan), reader, name);
             }
             else if (type == typeof(byte?))
             {
-                return MakeCall(nameof(ReadNullableByte), reader);
+                return MakeCall(nameof(ReadNullableByte), reader, name);
             }
             else if (type == typeof(short?))
             {
-                return MakeCall(nameof(ReadNullableShort), reader);
+                return MakeCall(nameof(ReadNullableShort), reader, name);
             }
             else if (type == typeof(int?))
             {
-                return MakeCall(nameof(ReadNullableInteger), reader);
+                return MakeCall(nameof(ReadNullableInteger), reader, name);
             }
             else if (type == typeof(long?))
             {
-                return MakeCall(nameof(ReadNullableLong), reader);
+                return MakeCall(nameof(ReadNullableLong), reader, name);
             }
             else if (type == typeof(decimal?))
             {
-                return MakeCall(nameof(ReadNullableDecimal), reader);
+                return MakeCall(nameof(ReadNullableDecimal), reader, name);
             }
             else if (type == typeof(float?))
             {
-                return MakeCall(nameof(ReadNullableFloat), reader);
+                return MakeCall(nameof(ReadNullableFloat), reader, name);
             }
             else if (type == typeof(double?))
             {
-                return MakeCall(nameof(ReadNullableDouble), reader);
+                return MakeCall(nameof(ReadNullableDouble), reader, name);
             }
             else if (type == typeof(bool?))
             {
-                return MakeCall(nameof(ReadNullableBoolean), reader);
+                return MakeCall(nameof(ReadNullableBoolean), reader, name);
             }
             else if (type == typeof(Guid?))
             {
-                return MakeCall(nameof(ReadNullableGuid), reader);
+                return MakeCall(nameof(ReadNullableGuid), reader, name);
             }
             else if (type == typeof(DateTime?))
             {
-                return MakeCall(nameof(ReadNullableDateTime), reader);
+                return MakeCall(nameof(ReadNullableDateTime), reader, name);
             }
             else if (type == typeof(DateTimeOffset?))
             {
-                return MakeCall(nameof(ReadNullableDateTimeOffset), reader);
+                return MakeCall(nameof(ReadNullableDateTimeOffset), reader, name);
             }
             else if (type == typeof(TimeSpan?))
             {
-                return MakeCall(nameof(ReadNullableTimeSpan), reader);
+                return MakeCall(nameof(ReadNullableTimeSpan), reader, name);
             }
             else if (type.IsEnum())
             {
-                return Expression.Call(typeof(SqlServerJsonValueReader).GetMethod(nameof(ReadEnum)).MakeGenericMethod(type), reader);
+                return Expression.Call(typeof(SqlServerJsonValueReader).GetMethod(nameof(ReadEnum)).MakeGenericMethod(type), reader, Expression.Constant(name));
             }
             else if (type.UnwrapNullableType().IsEnum())
             {
-                return Expression.Call(typeof(SqlServerJsonValueReader).GetMethod(nameof(ReadEnum)).MakeGenericMethod(type.UnwrapNullableType()), reader);
+                return Expression.Call(typeof(SqlServerJsonValueReader).GetMethod(nameof(ReadEnum)).MakeGenericMethod(type.UnwrapNullableType()), reader, Expression.Constant(name));
             }
             else
             {
                 throw new NotSupportedException();
             }
+        }
+
+        public static Expression CreateReadArrayExpression(
+            Type elementType, 
+            Expression reader, 
+            string name, 
+            LambdaExpression materializer)
+        {
+            return Expression.Call(
+                typeof(SqlServerJsonValueReader)
+                    .GetMethod(nameof(ReadComplexList))
+                    .MakeGenericMethod(elementType),
+                reader,
+                Expression.Constant(name, typeof(string)),
+                materializer);
+        }
+
+        public static Expression CreateReadComplexPropertyExpression(
+            Type type,
+            Expression reader,
+            string name,
+            LambdaExpression materializer)
+        {
+            return Expression.Call(
+                typeof(SqlServerJsonValueReader)
+                    .GetMethod(nameof(ReadComplexProperty))
+                    .MakeGenericMethod(type),
+                reader,
+                Expression.Constant(name, typeof(string)),
+                materializer);
+        }
+
+        public static Expression CreateReadComplexObjectExpression(
+            Type type,
+            Expression reader,
+            LambdaExpression materializer)
+        {
+            return Expression.Call(
+                typeof(SqlServerJsonValueReader)
+                    .GetMethod(nameof(ReadComplexObject))
+                    .MakeGenericMethod(type),
+                reader,
+                materializer);
+        }
+
+        public static Expression CreateReadOpaqueObjectExpression(
+            Type type,
+            Expression reader)
+        {
+            return Expression.Call(
+                typeof(SqlServerJsonValueReader)
+                    .GetMethod(nameof(ReadOpaqueObject))
+                    .MakeGenericMethod(type),
+                reader);
+        }
+
+        public static Expression MakeCall(string method, Expression reader, string name)
+        {
+            return Expression.Call(typeof(SqlServerJsonValueReader).GetMethod(method), reader, Expression.Constant(name));
+        }
+
+        public static bool ReadPropertyName(JsonTextReader reader, string name)
+        {
+            switch (reader.TokenType)
+            {
+                case JsonToken.PropertyName:
+                {
+                    break;
+                }
+
+                case JsonToken.EndObject:
+                case JsonToken.EndArray:
+                {
+                    return false;
+                }
+
+                case JsonToken.Boolean:
+                case JsonToken.Bytes:
+                case JsonToken.Date:
+                case JsonToken.Float:
+                case JsonToken.Integer:
+                case JsonToken.Null:
+                case JsonToken.String:
+                {
+                    reader.Read();
+
+                    if (reader.TokenType == JsonToken.EndObject ||
+                        reader.TokenType == JsonToken.EndArray)
+                    {
+                        return false;
+                    }
+
+                    break;
+                }
+
+                default:
+                {
+                    throw new InvalidOperationException();
+                }
+            }
+            
+            Debug.Assert(reader.TokenType == JsonToken.PropertyName);
+
+            return name.Equals(reader.Value);
+        }
+
+        public static string ReadString(JsonTextReader reader, string name)
+        {
+            if (ReadPropertyName(reader, name))
+            {
+                return reader.ReadAsString();
+            }
+
+            return default;
+        }
+
+        public static byte[] ReadBytes(JsonTextReader reader, string name)
+        {
+            if (ReadPropertyName(reader, name))
+            {
+                return reader.ReadAsBytes();
+            }
+
+            return default;
+        }
+
+        public static byte ReadByte(JsonTextReader reader, string name)
+        {
+            return ReadNullableByte(reader, name).GetValueOrDefault();
+        }
+
+        public static byte? ReadNullableByte(JsonTextReader reader, string name)
+        {
+            if (ReadPropertyName(reader, name))
+            {
+                return (byte?)reader.ReadAsInt32();
+            }
+
+            return default;
+        }
+
+        public static short ReadShort(JsonTextReader reader, string name)
+        {
+            return ReadNullableShort(reader, name).GetValueOrDefault();
+        }
+
+        public static short? ReadNullableShort(JsonTextReader reader, string name)
+        {
+            if (ReadPropertyName(reader, name))
+            {
+                return (short?)reader.ReadAsInt32();
+            }
+
+            return default;
+        }
+
+        public static int ReadInteger(JsonTextReader reader, string name)
+        {
+            return ReadNullableInteger(reader, name).GetValueOrDefault();
+        }
+
+        public static int? ReadNullableInteger(JsonTextReader reader, string name)
+        {
+            if (ReadPropertyName(reader, name))
+            {
+                return reader.ReadAsInt32();
+            }
+
+            return default;
+        }
+
+        public static long ReadLong(JsonTextReader reader, string name)
+        {
+            return ReadNullableLong(reader, name).GetValueOrDefault();
+        }
+
+        public static long? ReadNullableLong(JsonTextReader reader, string name)
+        {
+            if (ReadPropertyName(reader, name))
+            {
+                return (long?)reader.ReadAsDouble();
+            }
+
+            return default;
+        }
+
+        public static decimal ReadDecimal(JsonTextReader reader, string name)
+        {
+            return ReadNullableDecimal(reader, name).GetValueOrDefault();
+        }
+
+        public static decimal? ReadNullableDecimal(JsonTextReader reader, string name)
+        {
+            if (ReadPropertyName(reader, name))
+            {
+                return reader.ReadAsDecimal();
+            }
+
+            return default;
+        }
+
+        public static float ReadFloat(JsonTextReader reader, string name)
+        {
+            return ReadNullableFloat(reader, name).GetValueOrDefault();
+        }
+
+        public static float? ReadNullableFloat(JsonTextReader reader, string name)
+        {
+            if (ReadPropertyName(reader, name))
+            {
+                return (float?)reader.ReadAsDouble();
+            }
+
+            return default;
+        }
+
+        public static double ReadDouble(JsonTextReader reader, string name)
+        {
+            return ReadNullableDouble(reader, name).GetValueOrDefault();
+        }
+
+        public static double? ReadNullableDouble(JsonTextReader reader, string name)
+        {
+            if (ReadPropertyName(reader, name))
+            {
+                return reader.ReadAsDouble();
+            }
+
+            return default;
+        }
+
+        public static bool ReadBoolean(JsonTextReader reader, string name)
+        {
+            return ReadNullableBoolean(reader, name).GetValueOrDefault();
+        }
+
+        public static bool? ReadNullableBoolean(JsonTextReader reader, string name)
+        {
+            if (ReadPropertyName(reader, name))
+            {
+                return reader.ReadAsBoolean();
+            }
+
+            return default;
+        }
+
+        public static Guid ReadGuid(JsonTextReader reader, string name)
+        {
+            return ReadNullableGuid(reader, name).GetValueOrDefault();
+        }
+
+        public static Guid? ReadNullableGuid(JsonTextReader reader, string name)
+        {
+            if (ReadPropertyName(reader, name))
+            {
+                var value = reader.ReadAsString();
+
+                if (Guid.TryParse(value, out var result))
+                {
+                    return result;
+                }
+            }
+
+            return default;
+        }
+
+        public static DateTime ReadDateTime(JsonTextReader reader, string name)
+        {
+            return ReadNullableDateTime(reader, name).GetValueOrDefault();
+        }
+
+        public static DateTime? ReadNullableDateTime(JsonTextReader reader, string name)
+        {
+            if (ReadPropertyName(reader, name))
+            {
+                var value = reader.ReadAsString();
+
+                if (DateTime.TryParse(value, out var result))
+                {
+                    return result;
+                }
+            }
+
+            return default;
+        }
+
+        public static DateTimeOffset ReadDateTimeOffset(JsonTextReader reader, string name)
+        {
+            return ReadNullableDateTimeOffset(reader, name).GetValueOrDefault();
+        }
+
+        public static DateTimeOffset? ReadNullableDateTimeOffset(JsonTextReader reader, string name)
+        {
+            if (ReadPropertyName(reader, name))
+            {
+                var value = reader.ReadAsString();
+
+                if (DateTimeOffset.TryParse(value, out var result))
+                {
+                    return result;
+                }
+            }
+
+            return default;
+        }
+
+        public static TimeSpan ReadTimeSpan(JsonTextReader reader, string name)
+        {
+            return ReadNullableTimeSpan(reader, name).GetValueOrDefault();
+        }
+
+        public static TimeSpan? ReadNullableTimeSpan(JsonTextReader reader, string name)
+        {
+            if (ReadPropertyName(reader, name))
+            {
+                var value = reader.ReadAsString();
+
+                if (TimeSpan.TryParse(value, out var result))
+                {
+                    return result;
+                }
+            }
+
+            return default;
+        }
+
+        public static TEnum ReadEnum<TEnum>(JsonTextReader reader, string name) where TEnum : struct
+        {
+            return ReadNullableEnum<TEnum>(reader, name).GetValueOrDefault();
+        }
+
+        public static TEnum? ReadNullableEnum<TEnum>(JsonTextReader reader, string name) where TEnum : struct
+        {
+            if (ReadPropertyName(reader, name))
+            {
+                reader.Read();
+
+                if (reader.Value != null)
+                {
+                    return (TEnum?)Enum.ToObject(typeof(TEnum), reader.Value);
+                }
+            }
+
+            return default;
+        }
+
+        public static TResult ReadOpaqueObject<TResult>(
+            JsonTextReader reader)
+        {
+            var serializer = new JsonSerializer();
+
+            var result = serializer.Deserialize<TResult>(reader);
+
+            return result;
+        }
+
+        public static TResult ReadComplexObject<TResult>(
+            JsonTextReader reader, Func<TResult> materializer)
+        {
+            var result = default(TResult);
+
+            reader.Read();
+
+            Debug.Assert(reader.TokenType == JsonToken.StartObject || reader.TokenType == JsonToken.Null);
+
+            if (reader.TokenType == JsonToken.Null)
+            {
+                return result;
+            }
+
+            result = materializer();
+
+            reader.Read();
+
+            Debug.Assert(reader.TokenType == JsonToken.EndObject);
+
+            return result;
+        }
+
+        public static TResult ReadComplexProperty<TResult>(
+            JsonTextReader reader, string name, Func<TResult> materializer)
+        {
+            var result = default(TResult);
+
+            switch (reader.TokenType)
+            {
+                case JsonToken.PropertyName:
+                {
+                    Debug.Assert(reader.Value.Equals(name));
+
+                    reader.Read();
+
+                    if (reader.TokenType == JsonToken.Null)
+                    {
+                        return result;
+                    }
+
+                    break;
+                }
+
+                case JsonToken.Boolean:
+                case JsonToken.Bytes:
+                case JsonToken.Date:
+                case JsonToken.Float:
+                case JsonToken.Integer:
+                case JsonToken.Null:
+                case JsonToken.String:
+                case JsonToken.EndArray:
+                case JsonToken.EndObject:
+                {
+                    reader.Read();
+
+                    if (reader.TokenType == JsonToken.PropertyName)
+                    {
+                        goto case JsonToken.PropertyName;
+                    }
+
+                    return result;
+                }
+
+                default:
+                {
+                    throw new InvalidOperationException();
+                }
+            }
+
+            Debug.Assert(reader.TokenType == JsonToken.StartObject);
+
+            reader.Read();
+
+            Debug.Assert(reader.TokenType == JsonToken.PropertyName);
+
+            var objectDepth = reader.Depth;
+
+            result = materializer();
+
+            while (reader.Depth > objectDepth)
+            {
+                reader.Read();
+
+                Debug.Assert(reader.TokenType == JsonToken.EndObject);
+            }
+
+            if (reader.Depth == objectDepth)
+            {
+                reader.Read();
+
+                Debug.Assert(reader.TokenType == JsonToken.EndObject);
+            }
+
+            if (reader.Depth == objectDepth - 1 && reader.TokenType == JsonToken.EndObject)
+            {
+                reader.Read();
+
+                Debug.Assert(
+                    reader.TokenType == JsonToken.PropertyName || // next property in parent object
+                    reader.TokenType == JsonToken.StartObject || // next object in parent array
+                    reader.TokenType == JsonToken.EndObject || // end of parent object
+                    reader.TokenType == JsonToken.EndArray); // end of parent array
+            }
+
+            return result;
+        }
+
+        public static List<TElement> ReadComplexList<TElement>(
+            JsonTextReader reader, string name, Func<TElement> materializer)
+        {
+            var list = new List<TElement>();
+
+            switch (reader.TokenType)
+            {
+                case JsonToken.None:
+                {
+                    Debug.Assert(reader.LineNumber == 0 && reader.LinePosition == 0);
+
+                    reader.Read();
+
+                    Debug.Assert(reader.TokenType == JsonToken.StartArray);
+
+                    break;
+                }
+
+                case JsonToken.StartArray:
+                {
+                    Debug.Assert(name == null);
+
+                    break;
+                }
+
+                case JsonToken.PropertyName:
+                {
+                    Debug.Assert(name == null || reader.Value.Equals(name));
+
+                    reader.Read();
+
+                    if (reader.TokenType == JsonToken.Null)
+                    {
+                        return list;
+                    }
+
+                    Debug.Assert(reader.TokenType == JsonToken.StartArray);
+
+                    break;
+                }
+
+                case JsonToken.Boolean:
+                case JsonToken.Bytes:
+                case JsonToken.Date:
+                case JsonToken.Float:
+                case JsonToken.Integer:
+                case JsonToken.Null:
+                case JsonToken.String:
+                case JsonToken.EndArray:
+                case JsonToken.EndObject:
+                {
+                    reader.Read();
+
+                    if (reader.TokenType == JsonToken.PropertyName)
+                    {
+                        goto case JsonToken.PropertyName;
+                    }
+
+                    return list;
+                }
+
+                default:
+                {
+                    throw new InvalidOperationException();
+                }
+            }
+
+            var arrayDepth = reader.Depth + 1;
+
+            ReadElementOrEnd:
+
+            switch (reader.TokenType)
+            {
+                case JsonToken.EndArray:
+                {
+                    goto EndArray;
+                }
+
+                case JsonToken.StartArray:
+                case JsonToken.EndObject:
+                {
+                    reader.Read();
+
+                    if (reader.TokenType == JsonToken.EndArray)
+                    {
+                        goto EndArray;
+                    }
+
+                    break;
+                }
+            }
+
+            ReadElement:
+
+            Debug.Assert(reader.TokenType == JsonToken.StartObject);
+
+            reader.Read();
+
+            Debug.Assert(reader.TokenType == JsonToken.PropertyName);
+
+            var element = materializer();
+
+            list.Add(element);
+
+            if (reader.TokenType == JsonToken.StartObject)
+            {
+                goto ReadElement;
+            }
+
+            while (reader.Depth > arrayDepth)
+            {
+                reader.Read();
+
+                Debug.Assert(reader.TokenType == JsonToken.EndObject);
+            }
+
+            goto ReadElementOrEnd;
+
+            EndArray:
+
+            reader.Read();
+
+            Debug.Assert(
+                reader.TokenType == JsonToken.PropertyName || // next property in parent object
+                reader.TokenType == JsonToken.StartArray || // next array in parent array
+                reader.TokenType == JsonToken.EndObject || // end of parent object
+                reader.TokenType == JsonToken.EndArray || // end of parent array
+                reader.TokenType == JsonToken.None); // end of json
+
+            return list;
         }
     }
 }

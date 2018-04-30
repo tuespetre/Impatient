@@ -1,6 +1,7 @@
 ﻿using Impatient.Metadata;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -76,18 +77,25 @@ namespace Impatient.Query.Infrastructure
                 // Because the expression is parameterized, the hash code will be identical
                 // for expressions that are structurally equivalent apart from any closure instances.
 
-                var hashingVisitor = new HashingExpressionVisitor();
-                hashingVisitor.Visit(expression);
+                var comparer = ExpressionEqualityComparer.Instance;
+
+                var hash = comparer.GetHashCode(expression);
 
                 // Some parameters may have been eliminated during query inlining,
                 // so we need to make sure all of our parameters' types are included
                 // in the hash code to avoid errors related to mismatched closure types.
-                foreach (var parameter in parameterMapping.Values)
+                unchecked
                 {
-                    hashingVisitor.Combine(parameter.Type.GetHashCode());
+                    foreach (var parameter in parameterMapping.Values)
+                    {
+                        hash = (hash * 16777619) ^ comparer.GetHashCode(parameter);
+                    }
                 }
 
-                if (!QueryCache.TryGetValue(hashingVisitor.HashCode, out var compiled))
+                // TODO: have querycache accept the expression instead of the hash.
+                // Then implement equals for the comparer.
+
+                if (!QueryCache.TryGetValue(hash, out var compiled))
                 {
                     var composingExpressionVisitors 
                         = ComposingExpressionVisitorProvider
@@ -138,11 +146,27 @@ namespace Impatient.Query.Infrastructure
 
                     parameterMapping.Values.CopyTo(parameters, 1);
 
-                    compiled = Expression.Lambda(expression, parameters).Compile();
+                    var parameterArray = Expression.Parameter(typeof(object[]));
+
+                    compiled 
+                        = Expression
+                            .Lambda(
+                                Expression.Convert(
+                                    Expression.Invoke(
+                                        Expression.Lambda(expression, parameters),
+                                        parameters.Select((p, i) =>
+                                            Expression.Convert(
+                                            Expression.ArrayIndex(
+                                                parameterArray,
+                                                Expression.Constant(i)),
+                                                p.Type))), 
+                                    typeof(object)), 
+                                parameterArray)
+                            .Compile();
 
                     // Cache the compiled delegate.
 
-                    QueryCache.Add(hashingVisitor.HashCode, compiled);
+                    QueryCache.Add(hash, compiled);
                 }
 
                 // Invoke the compiled delegate.
@@ -153,7 +177,7 @@ namespace Impatient.Query.Infrastructure
 
                 parameterMapping.Keys.CopyTo(arguments, 1);
 
-                return compiled.DynamicInvoke(arguments);
+                return ((Func<object[], object>)compiled)(arguments);
             }
             catch (TargetInvocationException targetInvocationException)
             {

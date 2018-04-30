@@ -25,13 +25,13 @@ namespace Impatient.EFCore.Tests
             return base.Where_nested_field_access_closure_via_query_cache_error_method_null();
         }
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesGroupedEntitiesAreNotTracked)]
+        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
         public override Task GroupBy_with_element_selector2()
         {
             return base.GroupBy_with_element_selector2();
         }
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesGroupedEntitiesAreNotTracked)]
+        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
         public override Task GroupBy_with_element_selector3()
         {
             return base.GroupBy_with_element_selector3();

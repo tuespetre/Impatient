@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Impatient.Query.Infrastructure;
+using System;
 
 namespace Impatient.Query.Expressions
 {
@@ -18,6 +19,16 @@ namespace Impatient.Query.Expressions
 
         public override Type Type { get; }
 
-        public override int GetSemanticHashCode() => (IsNullable, Fragment).GetHashCode();
+        public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            unchecked
+            {
+                var hash = Fragment.GetHashCode();
+                
+                hash = (hash * 16777619) ^ IsNullable.GetHashCode();
+
+                return hash;
+            }
+        }
     }
 }

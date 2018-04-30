@@ -23,11 +23,18 @@ namespace Impatient.Query.Infrastructure
                                 "$c")));
             }
 
+            // Strip DefaultIfEmptyExpressions out because FOR JSON will leave out the null values
+
+            var strippingVisitor = new DefaultIfEmptyStrippingExpressionVisitor();
+
+            subquery = strippingVisitor.VisitAndConvert(subquery, nameof(Format));
+
+            // Visit and print the subquery
+
             subquery = visitor.VisitAndConvert(subquery, nameof(Format));
 
             builder.AppendLine();
-            // TODO: Don't use INCLUDE_NULL_VALUES
-            builder.Append("FOR JSON PATH, INCLUDE_NULL_VALUES");
+            builder.Append("FOR JSON PATH");
 
             builder.DecreaseIndent();
             builder.AppendLine();
@@ -35,6 +42,19 @@ namespace Impatient.Query.Infrastructure
             builder.Append(")");
 
             return subquery;
+        }
+
+        private class DefaultIfEmptyStrippingExpressionVisitor : ExpressionVisitor
+        {
+            protected override Expression VisitExtension(Expression node)
+            {
+                if (node is DefaultIfEmptyExpression defaultIfEmptyExpression)
+                {
+                    return Visit(defaultIfEmptyExpression.Expression);
+                }
+
+                return base.VisitExtension(node);
+            }
         }
     }
 }

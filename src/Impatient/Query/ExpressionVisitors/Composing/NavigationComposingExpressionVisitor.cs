@@ -61,7 +61,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 {
                     return base.VisitMethodCall(node);
                 }
-
+                
                 switch (node.Method.Name)
                 {
                     // Uncertain
@@ -70,9 +70,17 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                         break;
                     }
 
-                    // TODO: Implement ToDictionary/ToLookup navigation rewriting
                     case nameof(Enumerable.ToDictionary):
                     case nameof(Enumerable.ToLookup):
+                    {
+                        // TODO: Handle ToDictionary
+                        // TODO: Handle ToLookup
+                        break;
+                    }
+
+                    // These will need more consideration
+                    case nameof(Queryable.Cast):
+                    case nameof(Queryable.OfType):
                     {
                         break;
                     }
@@ -80,8 +88,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     // Pass-through methods (just need a generic type change)
                     case nameof(Enumerable.AsEnumerable):
                     case nameof(Queryable.AsQueryable):
-                    case nameof(Queryable.Cast):
-                    case nameof(Queryable.OfType):
                     case nameof(Queryable.Reverse):
                     case nameof(Queryable.Skip):
                     case nameof(Queryable.Take):

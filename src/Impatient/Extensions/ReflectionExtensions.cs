@@ -1,4 +1,5 @@
 ﻿using Impatient.Query.Infrastructure;
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -126,6 +127,7 @@ namespace Impatient.Extensions
             }
         }
 
+        // TODO: Have all usages consult with an ITypeMapper instead
         public static bool IsScalarType(this Type type)
         {
             if (scalarTypes.Contains(type) || type.IsEnum())
@@ -159,7 +161,7 @@ namespace Impatient.Extensions
             typeof(DateTimeOffset), // datetimeoffset
             typeof(Guid), // uniqueidentifer
 
-            typeof(char), // TODO: should this be here?
+            typeof(char), 
 
             // Reference types
             typeof(string), // nvarchar, varchar, nchar, char, ntext, text
@@ -198,6 +200,19 @@ namespace Impatient.Extensions
             typeof(decimal),
             typeof(bool),
             typeof(string),
+            typeof(sbyte?),
+            typeof(byte?),
+            typeof(short?),
+            typeof(ushort?),
+            typeof(int?),
+            typeof(uint?),
+            typeof(long?),
+            typeof(ulong?),
+            typeof(char?),
+            typeof(float?),
+            typeof(double?),
+            typeof(decimal?),
+            typeof(bool?),
         };
 
         #endregion
@@ -438,6 +453,23 @@ namespace Impatient.Extensions
 
         private static readonly IEnumerable<MethodInfo> enumerableMethods
             = typeof(Enumerable).GetTypeInfo().DeclaredMethods;
+
+        public static IEnumerable<string> GetPropertyNamesForJson(this IEnumerable<MemberInfo> members)
+        {
+            foreach (var member in members)
+            {
+                var segment = member.Name;
+
+                var attribute = member.GetCustomAttribute<JsonPropertyAttribute>(true);
+
+                if (attribute != null)
+                {
+                    segment = attribute.PropertyName ?? segment;
+                }
+
+                yield return segment;
+            }
+        }
 
         #endregion
     }

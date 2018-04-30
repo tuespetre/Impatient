@@ -1,7 +1,6 @@
 ﻿using Impatient.Metadata;
-using Impatient.Query.ExpressionVisitors;
 using Impatient.Query.ExpressionVisitors.Rewriting;
-using Impatient.Query.ExpressionVisitors.Utility;
+using Impatient.Query.Infrastructure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
@@ -223,17 +222,9 @@ namespace Impatient.Tests.ExpressionVisitors.Rewriting
 
             var result = visitor.Visit(input.Body);
 
-            var hasher = new HashingExpressionVisitor();
+            var inputHash = ExpressionEqualityComparer.Instance.GetHashCode(result);
 
-            hasher.Visit(result);
-
-            var inputHash = hasher.HashCode;
-
-            hasher.Reset();
-
-            hasher.Visit(output.Body);
-
-            var outputHash = hasher.HashCode;
+            var outputHash = ExpressionEqualityComparer.Instance.GetHashCode(output.Body);
 
             Assert.AreEqual(inputHash, outputHash, "Output expression trees do not match");
         }

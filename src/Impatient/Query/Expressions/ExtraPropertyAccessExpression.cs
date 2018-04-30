@@ -1,10 +1,11 @@
 ﻿using Impatient.Query.Infrastructure;
 using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public class ExtraPropertyAccessExpression : Expression, ISemanticallyHashable
+    public class ExtraPropertyAccessExpression : Expression, ISemanticHashCodeProvider
     {
         public ExtraPropertyAccessExpression(Expression expression, string property, Type type)
         {
@@ -41,6 +42,16 @@ namespace Impatient.Query.Expressions
             property = Property;
         }
 
-        public int GetSemanticHashCode() => Property.GetHashCode();
+        public int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            unchecked
+            {
+                var hash = comparer.GetHashCode(Expression);
+
+                hash = (hash * 16777619) ^ Property.GetHashCode();
+
+                return hash;
+            }
+        }
     }
 }

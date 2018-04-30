@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Impatient.Query.Infrastructure;
+using System;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
@@ -43,6 +44,17 @@ namespace Impatient.Query.Expressions
             return this;
         }
 
-        public override int GetSemanticHashCode() => (IsNullable, FunctionName, IsDistinct).GetHashCode();
+        public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            unchecked
+            {
+                var hash = FunctionName.GetHashCode();
+
+                hash = (hash * 16777619) ^ IsDistinct.GetHashCode();
+                hash = (hash * 16777619) ^ IsNullable.GetHashCode();
+
+                return hash;
+            }
+        }
     }
 }

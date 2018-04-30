@@ -41,6 +41,7 @@
     <Tables Include="**/SubqueryTableExpression.cs" />
     <Tables Include="**/UnionAllExpression.cs" />
     <Tables Include="**/UnionExpression.cs" />
+    <Tables Include="**/Table*Expression.cs" Exclude="**/TableExpression.cs" />
     <Compile Update="@(Tables)">
       <DependentUpon>TableExpression.cs</DependentUpon>
     </Compile>

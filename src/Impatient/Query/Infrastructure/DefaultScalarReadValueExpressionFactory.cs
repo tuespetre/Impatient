@@ -16,13 +16,15 @@ namespace Impatient.Query.Infrastructure
 
         public static TValue ReadNullable<TValue>(DbDataReader reader, int index)
         {
-            if (reader.IsDBNull(index))
+            var value = reader.GetValue(index);
+
+            if (DBNull.Value.Equals(value))
             {
                 return default;
             }
             else
             {
-                return reader.GetFieldValue<TValue>(index);
+                return (TValue)value;
             }
         }
 

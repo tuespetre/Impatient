@@ -71,26 +71,6 @@ namespace Impatient.Tests
         }
 
         [TestMethod]
-        public void Hashing()
-        {
-            var hasher = new HashingExpressionVisitor();
-
-            Expression<Func<string>> expr1 = () => "hello".ToString().Substring(0, 1);
-            Expression<Func<string>> expr2 = () => "hello".ToString().Substring(0, 1);
-
-            hasher.Visit(expr1);
-            var hashCode1 = hasher.HashCode;
-            hasher.Reset();
-
-            hasher.Visit(expr2);
-            var hashCode2 = hasher.HashCode;
-            hasher.Reset();
-
-            Assert.AreNotEqual(expr1, expr2);
-            Assert.AreEqual(hashCode1, hashCode2);
-        }
-
-        [TestMethod]
         public void ClosureDiscovery()
         {
             var set1 = new List<object>().AsQueryable();

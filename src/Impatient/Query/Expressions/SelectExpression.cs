@@ -1,5 +1,4 @@
-﻿using Impatient.Query.ExpressionVisitors;
-using Impatient.Query.ExpressionVisitors.Utility;
+﻿using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using System;
 using System.Linq;
@@ -7,7 +6,7 @@ using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public class SelectExpression : Expression, ISemanticallyHashable
+    public class SelectExpression : Expression, ISemanticHashCodeProvider
     {
         public SelectExpression(ProjectionExpression projection) : this(projection, null)
         {
@@ -220,6 +219,23 @@ namespace Impatient.Query.Expressions
             return new SelectExpression(Projection, Table, Predicate, OrderBy, Offset, Limit, IsDistinct, Grouping, true);
         }
 
-        public int GetSemanticHashCode() => 0;
+        public int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            unchecked
+            {
+                var hash = comparer.GetHashCode(Projection);
+                
+                hash = (hash * 16777619) ^ comparer.GetHashCode(Table);
+                hash = (hash * 16777619) ^ comparer.GetHashCode(Predicate);
+                hash = (hash * 16777619) ^ comparer.GetHashCode(OrderBy);
+                hash = (hash * 16777619) ^ comparer.GetHashCode(Offset);
+                hash = (hash * 16777619) ^ comparer.GetHashCode(Limit);
+                hash = (hash * 16777619) ^ comparer.GetHashCode(Grouping);
+                hash = (hash * 16777619) ^ IsDistinct.GetHashCode();
+                hash = (hash * 16777619) ^ IsWindowed.GetHashCode();
+
+                return hash;
+            }
+        }
     }
 }

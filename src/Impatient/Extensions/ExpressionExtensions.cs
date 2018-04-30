@@ -1,6 +1,7 @@
 ﻿using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.ExpressionVisitors.Utility;
+using Impatient.Query.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,19 +15,8 @@ namespace Impatient.Extensions
     {
         public static bool IsSemanticallyEqualTo(this Expression expression, Expression other)
         {
-            var hasher = new HashingExpressionVisitor();
-
-            hasher.Visit(expression);
-
-            var hashA = hasher.HashCode;
-
-            hasher.Reset();
-
-            hasher.Visit(other);
-
-            var hashB = hasher.HashCode;
-
-            return hashA == hashB;
+            return ExpressionEqualityComparer.Instance.GetHashCode(expression)
+                == ExpressionEqualityComparer.Instance.GetHashCode(other);
         }
 
         public static bool IsNullConstant(this Expression expression)

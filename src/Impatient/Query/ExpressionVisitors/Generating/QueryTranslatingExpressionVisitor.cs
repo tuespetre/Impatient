@@ -513,6 +513,11 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                     return VisitSetOperatorExpression(setOperatorExpression);
                 }
 
+                case TableValuedExpressionTableExpression tableValuedExpressionTableExpression:
+                {
+                    return VisitTableValuedExpressionTableExpression(tableValuedExpressionTableExpression);
+                }
+
                 case SqlAggregateExpression sqlAggregateExpression:
                 {
                     return VisitSqlAggregateExpression(sqlAggregateExpression);
@@ -609,9 +614,8 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                                         Expression.Constant(null),
                                         node.Operand));
                             }
-
-                            // TODO: Handle nullable operand
-                            return base.Visit(Expression.Equal(Expression.Constant(false), node.Operand));
+                            
+                            return Visit(Expression.Equal(Expression.Constant(false), node.Operand));
                         }
                     }
                 }
@@ -986,6 +990,16 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return setOperatorExpression;
         }
 
+        protected virtual Expression VisitTableValuedExpressionTableExpression(TableValuedExpressionTableExpression tableValuedExpressionTableExpression)
+        {
+            Visit(tableValuedExpressionTableExpression.Expression);
+
+            Builder.Append(" AS ");
+            Builder.Append(FormatIdentifier(GetTableAlias(tableValuedExpressionTableExpression)));
+
+            return tableValuedExpressionTableExpression;
+        }
+
         protected virtual Expression VisitSqlAggregateExpression(SqlAggregateExpression sqlAggregateExpression)
         {
             Builder.Append(sqlAggregateExpression.FunctionName);
@@ -1254,11 +1268,9 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                 if (!needsWrapping)
                 {
-                    var hasher = new HashingExpressionVisitor();
+                    var hash = ExpressionEqualityComparer.Instance.GetHashCode(ordering.Expression);
 
-                    hasher.Visit(ordering.Expression);
-
-                    needsWrapping = !hashes.Add(hasher.HashCode) && !(ordering.Expression is RelationalQueryExpression);
+                    needsWrapping = !hashes.Add(hash) && !(ordering.Expression is RelationalQueryExpression);
                 }
 
                 if (needsWrapping)
@@ -1306,7 +1318,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                     Visit(expression);
 
-                    // TODO: Use mapper
+                    // TODO: Use ITypeMapper
                     Builder.Append(" AS real)");
 
                     return;
@@ -1315,12 +1327,12 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
             Visit(expression);
         }
-
+        
         protected virtual string FormatIdentifier(string identifier)
         {
             return $"[{identifier}]";
         }
-
+        
         protected virtual string FormatParameterName(string name)
         {
             return $"@{name}";

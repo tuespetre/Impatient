@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Impatient.Query.Infrastructure;
+using System;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
@@ -26,6 +27,17 @@ namespace Impatient.Query.Expressions
         // 'child node' of the column and thus should not be visited.
         protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
 
-        public override int GetSemanticHashCode() => (IsNullable, ColumnName, Table.Alias).GetHashCode();
+        public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            unchecked
+            {
+                var hash = Table.Alias.GetHashCode();
+
+                hash = (hash * 16777619) ^ ColumnName.GetHashCode();
+                hash = (hash * 16777619) ^ IsNullable.GetHashCode();
+
+                return hash;
+            }
+        }
     }
 }

@@ -254,12 +254,6 @@ namespace Impatient.Tests
             var tupleNewExpression = ValueTupleHelper.CreateNewExpression(tupleType, columnExpressions);
             var tupleParameter = Expression.Parameter(tupleType);
 
-            // TODO: Use ExpandParameters instead
-            // Use ExpandParameters on a LambdaExpression representing
-            // the materializer for the concrete type. Expand it the
-            // LambdaExpression so that all of the bindings are bound
-            // to the tuple's field accessors.
-
             var polymorphicTypeDescriptors
                 = (from node in hierarchyRoot.Flatten()
                    where !node.Type.GetTypeInfo().IsAbstract
@@ -289,12 +283,6 @@ namespace Impatient.Tests
                                      ValueTupleHelper.CreateMemberExpression(tupleType, tupleParameter, x.i),
                                      x.c.SourceMember.GetMemberType())))),
                          tupleParameter))).ToArray();
-
-            // TODO: Use ExpandParameters instead
-            // Use ExpandParameters on a LambdaExpression representing
-            // the primary key accessor for the root type. Expand it
-            // once for the parent table and once for the child table
-            // and use an Equal expression to compare the two.
 
             var tableExpression
                 = hierarchyRoot

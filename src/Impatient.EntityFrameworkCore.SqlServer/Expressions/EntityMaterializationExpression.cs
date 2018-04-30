@@ -1,5 +1,6 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 using Impatient.Query.Expressions;
+using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
 using System.Collections.Generic;
@@ -87,6 +88,16 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 IncludedNavigations.Append(navigation).Distinct());
         }
 
-        public override int GetSemanticHashCode() => EntityType.GetHashCode();
+        public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            unchecked
+            {
+                var hash = EntityType.GetHashCode();
+
+                hash = (hash * 16777619) ^ comparer.GetHashCode(Expression);
+
+                return hash;
+            }
+        }
     }
 }

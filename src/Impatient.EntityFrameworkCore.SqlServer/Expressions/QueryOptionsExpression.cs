@@ -1,4 +1,5 @@
 ﻿using Impatient.Query.Expressions;
+using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -39,7 +40,18 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
             return this;
         }
 
-        public override int GetSemanticHashCode() => 
-            (QueryTrackingBehavior, IgnoreQueryFilters, UseRelationalNullSemantics).GetHashCode();
+        public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            unchecked
+            {
+                var hash = comparer.GetHashCode(Expression);
+
+                hash = (hash * 16777619) ^ QueryTrackingBehavior.GetHashCode();
+                hash = (hash * 16777619) ^ IgnoreQueryFilters.GetHashCode();
+                hash = (hash * 16777619) ^ UseRelationalNullSemantics.GetHashCode();
+
+                return hash;
+            }
+        }
     }
 }

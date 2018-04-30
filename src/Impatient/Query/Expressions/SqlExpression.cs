@@ -6,7 +6,7 @@ namespace Impatient.Query.Expressions
     /// <summary>
     /// Any type of Expression that inherits from this type will be considered translatable.
     /// </summary>
-    public abstract class SqlExpression : Expression, ISemanticallyHashable
+    public abstract class SqlExpression : Expression, ISemanticHashCodeProvider
     {
         public virtual bool IsNullable { get; }
 
@@ -14,6 +14,9 @@ namespace Impatient.Query.Expressions
 
         protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
 
-        public virtual int GetSemanticHashCode() => IsNullable.GetHashCode();
+        public virtual int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            return IsNullable.GetHashCode();
+        }
     }
 }

@@ -1,5 +1,5 @@
 ﻿using Impatient.Query.ExpressionVisitors.Optimizing;
-using Impatient.Query.ExpressionVisitors.Utility;
+using Impatient.Query.Infrastructure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
@@ -823,17 +823,9 @@ namespace Impatient.Tests.ExpressionVisitors.Optimizing
 
             var result = visitor.Visit(input);
 
-            var hasher = new HashingExpressionVisitor();
+            var inputHash = ExpressionEqualityComparer.Instance.GetHashCode(result);
 
-            hasher.Visit(result);
-
-            var inputHash = hasher.HashCode;
-
-            hasher.Reset();
-
-            hasher.Visit(output);
-
-            var outputHash = hasher.HashCode;
+            var outputHash = ExpressionEqualityComparer.Instance.GetHashCode(output);
 
             if (inputHash != outputHash)
             {

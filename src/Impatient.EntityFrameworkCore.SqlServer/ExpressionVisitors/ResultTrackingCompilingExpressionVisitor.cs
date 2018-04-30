@@ -41,6 +41,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             var unwrapped = node.UnwrapInnerExpression();
 
+            if (unwrapped is RelationalQueryExpression relationalQueryExpression
+                && relationalQueryExpression.SelectExpression.Projection is ServerProjectionExpression)
+            {
+                return node;
+            }
+
             var visitor = new ProjectionBubblingExpressionVisitor();
 
             if (visitor.Visit(unwrapped) is ProjectionExpression projection)
@@ -249,7 +255,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 accessorInfos.Add(new MaterializerAccessorInfo
                 {
-                    EntityType = entityType?.RootType(),
+                    EntityType = entityType,
                     GetValue = getter,
                     SetValue = setter,
                     SubAccessors = subAccessors,
@@ -381,7 +387,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                             {
                                 foreach (var (key, value) in pathFinder.FoundPaths)
                                 {
-                                    // TODO: Verify that this is okay
                                     FoundPaths.Add(string.Join('.', GetNameParts().Append(key)), value);
                                 }
                             }

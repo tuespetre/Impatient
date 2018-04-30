@@ -19,6 +19,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
     {
         private readonly ICurrentDbContext currentDbContext;
         private IImpatientQueryExecutor queryExecutor;
+        private IAsyncQueryProvider queryProvider;
 
         public ImpatientQueryCompiler(ICurrentDbContext currentDbContext)
         {
@@ -27,9 +28,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public TResult Execute<TResult>(Expression query)
         {
-            return (TResult)GetQueryExecutor().Execute(
-                currentDbContext.GetDependencies().QueryProvider,
-                PrepareQuery(query));
+            var executor = GetQueryExecutor();
+
+            var provider = GetQueryProvider();
+
+            var preparedQuery = PrepareQuery(query);
+
+            return (TResult)executor.Execute(provider, preparedQuery);
         }
 
         public IAsyncEnumerable<TResult> ExecuteAsync<TResult>(Expression query)
@@ -95,6 +100,16 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
 
             return queryExecutor;
+        }
+
+        private IAsyncQueryProvider GetQueryProvider()
+        {
+            if (queryProvider == null)
+            {
+                queryProvider = currentDbContext.GetDependencies().QueryProvider;
+            }
+
+            return queryProvider;
         }
     }
 
