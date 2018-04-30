@@ -78,11 +78,16 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                         break;
                     }
 
+                    // These will need more consideration
+                    case nameof(Queryable.Cast):
+                    case nameof(Queryable.OfType):
+                    {
+                        break;
+                    }
+
                     // Pass-through methods (just need a generic type change)
                     case nameof(Enumerable.AsEnumerable):
                     case nameof(Queryable.AsQueryable):
-                    case nameof(Queryable.Cast):
-                    case nameof(Queryable.OfType):
                     case nameof(Queryable.Reverse):
                     case nameof(Queryable.Skip):
                     case nameof(Queryable.Take):
