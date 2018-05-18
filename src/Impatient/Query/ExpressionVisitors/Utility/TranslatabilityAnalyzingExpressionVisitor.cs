@@ -129,7 +129,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                     return node;
                 }
 
-                case SqlExpression sqlExpression:
+                case SqlExpression _:
                 {
                     return new TranslatableExpression(node);
                 }
@@ -140,28 +140,20 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                 }
 
                 case GroupByResultExpression query
-                when ComplexNestedQueriesSupported
-                    && !(query.SelectExpression.Projection is ClientProjectionExpression):
+                when ComplexNestedQueriesSupported && query.SelectExpression.Projection is ServerProjectionExpression:
                 {
                     return new TranslatableExpression(node);
                 }
 
-                case GroupedRelationalQueryExpression query
-                when ComplexNestedQueriesSupported
-                    && !(query.SelectExpression.Projection is ClientProjectionExpression):
-                {
-                    return new TranslatableExpression(node);
-                }
-
-                case SingleValueRelationalQueryExpression singleValueRelationalQueryExpression
-                when singleValueRelationalQueryExpression.Type.IsScalarType() || ComplexNestedQueriesSupported:
+                case SingleValueRelationalQueryExpression query
+                when query.Type.IsScalarType() 
+                    || (ComplexNestedQueriesSupported && query.SelectExpression.Projection is ServerProjectionExpression):
                 {
                     return new TranslatableExpression(node);
                 }
 
                 case EnumerableRelationalQueryExpression query
-                when ComplexNestedQueriesSupported
-                    && !(query.SelectExpression.Projection is ClientProjectionExpression):
+                when ComplexNestedQueriesSupported && query.SelectExpression.Projection is ServerProjectionExpression:
                 {
                     return new TranslatableExpression(node);
                 }
