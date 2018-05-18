@@ -666,15 +666,15 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             var joinExpression
                 = handleAsJoin
                     ? defaultIfEmpty
-                        ? new LeftJoinExpression(outerTable, innerTable, joinPredicate, selector.Type)
-                        : new InnerJoinExpression(outerTable, innerTable, joinPredicate, selector.Type)
+                        ? new LeftJoinTableExpression(outerTable, innerTable, joinPredicate, selector.Type)
+                        : new InnerJoinTableExpression(outerTable, innerTable, joinPredicate, selector.Type)
                             as TableExpression
                     : handleAsCorrelated
                         ? defaultIfEmpty
-                            ? new OuterApplyExpression(outerTable, innerTable, selector.Type)
-                            : new CrossApplyExpression(outerTable, innerTable, selector.Type)
+                            ? new OuterApplyTableExpression(outerTable, innerTable, selector.Type)
+                            : new CrossApplyTableExpression(outerTable, innerTable, selector.Type)
                                 as TableExpression
-                        : new CrossJoinExpression(outerTable, innerTable, selector.Type);
+                        : new CrossJoinTableExpression(outerTable, innerTable, selector.Type);
 
             return outerQuery
                 .UpdateSelectExpression(outerSelectExpression
@@ -761,7 +761,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                         resultLambda) as ProjectionExpression;
 
             var table
-                = new InnerJoinExpression(
+                = new InnerJoinTableExpression(
                     outerSelectExpression.Table,
                     innerSelectExpression.Table as AliasedTableExpression,
                     Expression.Equal(
@@ -1257,7 +1257,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                 outerProjection))));
 
             var joinExpression
-                = new LeftJoinExpression(
+                = new LeftJoinTableExpression(
                     emptySubquery,
                     innerSubquery,
                     Expression.Equal(Expression.Constant(1), Expression.Constant(1)),
@@ -2372,31 +2372,31 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 return fallbackToEnumerable();
             }*/
 
-            var setOperatorExpression = default(SetOperatorExpression);
+            var setOperatorExpression = default(SetOperatorTableExpression);
 
             switch (node.Method.Name)
             {
                 case nameof(Queryable.Concat):
                 {
-                    setOperatorExpression = new UnionAllExpression(outerSelectExpression, innerSelectExpression);
+                    setOperatorExpression = new UnionAllTableExpression(outerSelectExpression, innerSelectExpression);
                     break;
                 }
 
                 case nameof(Queryable.Except):
                 {
-                    setOperatorExpression = new ExceptExpression(outerSelectExpression, innerSelectExpression);
+                    setOperatorExpression = new ExceptTableExpression(outerSelectExpression, innerSelectExpression);
                     break;
                 }
 
                 case nameof(Queryable.Intersect):
                 {
-                    setOperatorExpression = new IntersectExpression(outerSelectExpression, innerSelectExpression);
+                    setOperatorExpression = new IntersectTableExpression(outerSelectExpression, innerSelectExpression);
                     break;
                 }
 
                 case nameof(Queryable.Union):
                 {
-                    setOperatorExpression = new UnionExpression(outerSelectExpression, innerSelectExpression);
+                    setOperatorExpression = new UnionTableExpression(outerSelectExpression, innerSelectExpression);
                     break;
                 }
             }
@@ -2514,7 +2514,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                         resultSelectorLambda) as ProjectionExpression;
 
             var table
-                = new InnerJoinExpression(
+                = new InnerJoinTableExpression(
                     outerSelectExpression.Table,
                     innerSelectExpression.Table as AliasedTableExpression,
                     predicate,
@@ -2594,7 +2594,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 = new SelectExpression(
                     new ServerProjectionExpression(
                         Expression.Constant(1)),
-                    new FullJoinExpression(
+                    new FullJoinTableExpression(
                         outerSelectExpression.Table,
                         innerSelectExpression.Table as AliasedTableExpression,
                         Expression.Equal(outerRowNumber, innerRowNumber),

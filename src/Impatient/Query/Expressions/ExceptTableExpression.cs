@@ -2,9 +2,9 @@
 
 namespace Impatient.Query.Expressions
 {
-    public class UnionExpression : SetOperatorExpression
+    public class ExceptTableExpression : SetOperatorTableExpression
     {
-        public UnionExpression(SelectExpression set1, SelectExpression set2)
+        public ExceptTableExpression(SelectExpression set1, SelectExpression set2)
             : base(set1, set2)
         {
         }
@@ -16,7 +16,7 @@ namespace Impatient.Query.Expressions
 
             if (set1 != Set1 || set2 != Set2)
             {
-                return new UnionExpression(set1, set2);
+                return new ExceptTableExpression(set1, set2);
             }
 
             return this;

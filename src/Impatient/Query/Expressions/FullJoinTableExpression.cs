@@ -3,9 +3,9 @@ using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public class FullJoinExpression : PredicateJoinExpression
+    public class FullJoinTableExpression : PredicateJoinTableExpression
     {
-        public FullJoinExpression(
+        public FullJoinTableExpression(
             TableExpression outerTable,
             AliasedTableExpression innerTable,
             Expression predicate,
@@ -14,13 +14,13 @@ namespace Impatient.Query.Expressions
         {
         }
 
-        protected override PredicateJoinExpression Recreate(
+        protected override PredicateJoinTableExpression Recreate(
             TableExpression outerTable,
             AliasedTableExpression innerTable,
             Expression predicate,
             Type type)
         {
-            return new FullJoinExpression(
+            return new FullJoinTableExpression(
                 outerTable,
                 innerTable,
                 predicate,

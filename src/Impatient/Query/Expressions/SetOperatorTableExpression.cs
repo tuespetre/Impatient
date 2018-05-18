@@ -2,11 +2,11 @@
 
 namespace Impatient.Query.Expressions
 {
-    public abstract class SetOperatorExpression : AliasedTableExpression
+    public abstract class SetOperatorTableExpression : AliasedTableExpression
     {
         private const string SetOperatorAlias = "set";
 
-        public SetOperatorExpression(SelectExpression set1, SelectExpression set2)
+        public SetOperatorTableExpression(SelectExpression set1, SelectExpression set2)
             : base(SetOperatorAlias, set1?.Type ?? typeof(object))
         {
             Set1 = set1 ?? throw new ArgumentNullException(nameof(set1));

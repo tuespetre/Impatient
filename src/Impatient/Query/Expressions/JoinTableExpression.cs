@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace Impatient.Query.Expressions
 {
-    public abstract class JoinExpression : TableExpression
+    public abstract class JoinTableExpression : TableExpression
     {
-        public JoinExpression(TableExpression outerTable, AliasedTableExpression innerTable, Type type) : base(type)
+        public JoinTableExpression(TableExpression outerTable, AliasedTableExpression innerTable, Type type) : base(type)
         {
             OuterTable = outerTable ?? throw new ArgumentNullException(nameof(outerTable));
             InnerTable = innerTable ?? throw new ArgumentNullException(nameof(innerTable));

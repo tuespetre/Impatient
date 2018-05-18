@@ -1,14 +1,13 @@
-﻿using Impatient.Query.ExpressionVisitors;
-using Impatient.Query.ExpressionVisitors.Utility;
+﻿using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public abstract class PredicateJoinExpression : JoinExpression
+    public abstract class PredicateJoinTableExpression : JoinTableExpression
     {
-        public PredicateJoinExpression(
+        public PredicateJoinTableExpression(
             TableExpression outerTable,
             AliasedTableExpression innerTable,
             Expression predicate,
@@ -20,7 +19,7 @@ namespace Impatient.Query.Expressions
 
         public Expression Predicate { get; }
 
-        protected abstract PredicateJoinExpression Recreate(
+        protected abstract PredicateJoinTableExpression Recreate(
             TableExpression outerTable,
             AliasedTableExpression innerTable,
             Expression predicate,

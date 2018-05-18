@@ -6,9 +6,9 @@ using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public class OuterApplyExpression : JoinExpression
+    public class CrossJoinTableExpression : JoinTableExpression
     {
-        public OuterApplyExpression(TableExpression outerTable, AliasedTableExpression innerTable, Type type)
+        public CrossJoinTableExpression(TableExpression outerTable, AliasedTableExpression innerTable, Type type)
             : base(outerTable, innerTable, type)
         {
         }
@@ -30,7 +30,7 @@ namespace Impatient.Query.Expressions
                     innerTable = updater.VisitAndConvert(innerTable, nameof(VisitChildren));
                 }
 
-                return new OuterApplyExpression(outerTable, innerTable, Type);
+                return new CrossJoinTableExpression(outerTable, innerTable, Type);
             }
 
             return this;

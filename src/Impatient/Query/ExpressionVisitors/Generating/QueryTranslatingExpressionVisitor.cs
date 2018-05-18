@@ -486,132 +486,132 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             {
                 case SelectExpression selectExpression:
                 {
-                    return VisitSelectExpression(selectExpression);
+                    return VisitSelect(selectExpression);
                 }
 
                 case SingleValueRelationalQueryExpression singleValueRelationalQueryExpression:
                 {
-                    return VisitSingleValueRelationalQueryExpression(singleValueRelationalQueryExpression);
+                    return VisitSingleValueRelationalQuery(singleValueRelationalQueryExpression);
                 }
 
                 case EnumerableRelationalQueryExpression enumerableRelationalQueryExpression:
                 {
-                    return VisitEnumerableRelationalQueryExpression(enumerableRelationalQueryExpression);
+                    return VisitEnumerableRelationalQuery(enumerableRelationalQueryExpression);
                 }
 
                 case BaseTableExpression baseTableExpression:
                 {
-                    return VisitBaseTableExpression(baseTableExpression);
+                    return VisitBaseTable(baseTableExpression);
                 }
 
                 case SubqueryTableExpression subqueryTableExpression:
                 {
-                    return VisitSubqueryTableExpression(subqueryTableExpression);
+                    return VisitSubqueryTable(subqueryTableExpression);
                 }
 
-                case InnerJoinExpression innerJoinExpression:
+                case InnerJoinTableExpression innerJoinExpression:
                 {
-                    return VisitInnerJoinExpression(innerJoinExpression);
+                    return VisitInnerJoin(innerJoinExpression);
                 }
 
-                case LeftJoinExpression leftJoinExpression:
+                case LeftJoinTableExpression leftJoinExpression:
                 {
-                    return VisitLeftJoinExpression(leftJoinExpression);
+                    return VisitLeftJoin(leftJoinExpression);
                 }
 
-                case FullJoinExpression fullJoinExpression:
+                case FullJoinTableExpression fullJoinExpression:
                 {
-                    return VisitFullJoinExpression(fullJoinExpression);
+                    return VisitFullJoin(fullJoinExpression);
                 }
 
-                case CrossJoinExpression crossJoinExpression:
+                case CrossJoinTableExpression crossJoinExpression:
                 {
-                    return VisitCrossJoinExpression(crossJoinExpression);
+                    return VisitCrossJoin(crossJoinExpression);
                 }
 
-                case CrossApplyExpression crossApplyExpression:
+                case CrossApplyTableExpression crossApplyExpression:
                 {
-                    return VisitCrossApplyExpression(crossApplyExpression);
+                    return VisitCrossApply(crossApplyExpression);
                 }
 
-                case OuterApplyExpression outerApplyExpression:
+                case OuterApplyTableExpression outerApplyExpression:
                 {
-                    return VisitOuterApplyExpression(outerApplyExpression);
+                    return VisitOuterApply(outerApplyExpression);
                 }
 
-                case SetOperatorExpression setOperatorExpression:
+                case SetOperatorTableExpression setOperatorExpression:
                 {
-                    return VisitSetOperatorExpression(setOperatorExpression);
+                    return VisitSetOperator(setOperatorExpression);
                 }
 
                 case TableValuedExpressionTableExpression tableValuedExpressionTableExpression:
                 {
-                    return VisitTableValuedExpressionTableExpression(tableValuedExpressionTableExpression);
+                    return VisitTableValuedExpressionTable(tableValuedExpressionTableExpression);
                 }
 
                 case SqlAggregateExpression sqlAggregateExpression:
                 {
-                    return VisitSqlAggregateExpression(sqlAggregateExpression);
+                    return VisitSqlAggregate(sqlAggregateExpression);
                 }
 
                 case SqlAliasExpression sqlAliasExpression:
                 {
-                    return VisitSqlAliasExpression(sqlAliasExpression);
+                    return VisitSqlAlias(sqlAliasExpression);
                 }
 
                 case SqlCastExpression sqlCastExpression:
                 {
-                    return VisitSqlCastExpression(sqlCastExpression);
+                    return VisitSqlCast(sqlCastExpression);
                 }
 
                 case SqlColumnExpression sqlColumnExpression:
                 {
-                    return VisitSqlColumnExpression(sqlColumnExpression);
+                    return VisitSqlColumn(sqlColumnExpression);
                 }
 
                 case SqlConcatExpression sqlConcatExpression:
                 {
-                    return VisitSqlConcatExpression(sqlConcatExpression);
+                    return VisitSqlConcat(sqlConcatExpression);
                 }
 
                 case SqlExistsExpression sqlExistsExpression:
                 {
-                    return VisitSqlExistsExpression(sqlExistsExpression);
+                    return VisitSqlExists(sqlExistsExpression);
                 }
 
                 case SqlFragmentExpression sqlFragmentExpression:
                 {
-                    return VisitSqlFragmentExpression(sqlFragmentExpression);
+                    return VisitSqlFragment(sqlFragmentExpression);
                 }
 
                 case SqlFunctionExpression sqlFunctionExpression:
                 {
-                    return VisitSqlFunctionExpression(sqlFunctionExpression);
+                    return VisitSqlFunction(sqlFunctionExpression);
                 }
 
                 case SqlInExpression sqlInExpression:
                 {
-                    return VisitSqlInExpression(sqlInExpression);
+                    return VisitSqlIn(sqlInExpression);
                 }
 
                 case SqlLikeExpression sqlLikeExpression:
                 {
-                    return VisitSqlLikeExpression(sqlLikeExpression);
+                    return VisitSqlLike(sqlLikeExpression);
                 }
 
                 case SqlParameterExpression sqlParameterExpression:
                 {
-                    return VisitSqlParameterExpression(sqlParameterExpression);
+                    return VisitSqlParameter(sqlParameterExpression);
                 }
 
                 case SqlWindowFunctionExpression sqlWindowFunctionExpression:
                 {
-                    return VisitSqlWindowFunctionExpression(sqlWindowFunctionExpression);
+                    return VisitSqlWindowFunction(sqlWindowFunctionExpression);
                 }
 
                 case OrderByExpression orderByExpression:
                 {
-                    return VisitOrderByExpression(orderByExpression);
+                    return VisitOrderBy(orderByExpression);
                 }
 
                 default:
@@ -696,7 +696,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
         #region Extension Expression visiting methods
 
-        protected virtual Expression VisitSelectExpression(SelectExpression selectExpression)
+        protected virtual Expression VisitSelect(SelectExpression selectExpression)
         {
             Builder.Append("SELECT ");
 
@@ -716,9 +716,10 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
             var projectionExpressions
                 = FlattenProjection(selectExpression.Projection)
-                    .Select((e, i) => (i, e.alias, e.expression));
+                    .Select((e, i) => (i, e.alias, e.expression))
+                    .DefaultIfEmpty((0, null, Expression.Constant(0)));
 
-            foreach (var (index, alias, expression) in projectionExpressions.DefaultIfEmpty((0, null, Expression.Constant(0))))
+            foreach (var (index, alias, expression) in projectionExpressions)
             {
                 if (index > 0)
                 {
@@ -813,7 +814,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return selectExpression;
         }
 
-        protected virtual Expression VisitSingleValueRelationalQueryExpression(SingleValueRelationalQueryExpression singleValueRelationalQueryExpression)
+        protected virtual Expression VisitSingleValueRelationalQuery(SingleValueRelationalQueryExpression singleValueRelationalQueryExpression)
         {
             if (!singleValueRelationalQueryExpression.Type.IsScalarType())
             {
@@ -844,7 +845,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return singleValueRelationalQueryExpression;
         }
 
-        protected virtual Expression VisitEnumerableRelationalQueryExpression(EnumerableRelationalQueryExpression enumerableRelationalQueryExpression)
+        protected virtual Expression VisitEnumerableRelationalQuery(EnumerableRelationalQueryExpression enumerableRelationalQueryExpression)
         {
             queryFormattingProvider.FormatComplexTypeSubquery(
                 enumerableRelationalQueryExpression.SelectExpression,
@@ -854,7 +855,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return enumerableRelationalQueryExpression;
         }
 
-        protected virtual Expression VisitBaseTableExpression(BaseTableExpression baseTableExpression)
+        protected virtual Expression VisitBaseTable(BaseTableExpression baseTableExpression)
         {
             if (!string.IsNullOrEmpty(baseTableExpression.SchemaName))
             {
@@ -869,7 +870,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return baseTableExpression;
         }
 
-        protected virtual Expression VisitSubqueryTableExpression(SubqueryTableExpression subqueryTableExpression)
+        protected virtual Expression VisitSubqueryTable(SubqueryTableExpression subqueryTableExpression)
         {
             Builder.Append("(");
 
@@ -887,7 +888,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return subqueryTableExpression;
         }
 
-        protected virtual Expression VisitInnerJoinExpression(InnerJoinExpression innerJoinExpression)
+        protected virtual Expression VisitInnerJoin(InnerJoinTableExpression innerJoinExpression)
         {
             Visit(innerJoinExpression.OuterTable);
 
@@ -903,7 +904,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return innerJoinExpression;
         }
 
-        protected virtual Expression VisitLeftJoinExpression(LeftJoinExpression leftJoinExpression)
+        protected virtual Expression VisitLeftJoin(LeftJoinTableExpression leftJoinExpression)
         {
             Visit(leftJoinExpression.OuterTable);
 
@@ -919,7 +920,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return leftJoinExpression;
         }
 
-        protected virtual Expression VisitFullJoinExpression(FullJoinExpression fullJoinExpression)
+        protected virtual Expression VisitFullJoin(FullJoinTableExpression fullJoinExpression)
         {
             Visit(fullJoinExpression.OuterTable);
 
@@ -935,7 +936,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return fullJoinExpression;
         }
 
-        protected virtual Expression VisitCrossJoinExpression(CrossJoinExpression crossJoinExpression)
+        protected virtual Expression VisitCrossJoin(CrossJoinTableExpression crossJoinExpression)
         {
             Visit(crossJoinExpression.OuterTable);
 
@@ -947,7 +948,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return crossJoinExpression;
         }
 
-        protected virtual Expression VisitCrossApplyExpression(CrossApplyExpression crossApplyExpression)
+        protected virtual Expression VisitCrossApply(CrossApplyTableExpression crossApplyExpression)
         {
             Visit(crossApplyExpression.OuterTable);
 
@@ -959,7 +960,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return crossApplyExpression;
         }
 
-        protected virtual Expression VisitOuterApplyExpression(OuterApplyExpression outerApplyExpression)
+        protected virtual Expression VisitOuterApply(OuterApplyTableExpression outerApplyExpression)
         {
             Visit(outerApplyExpression.OuterTable);
 
@@ -971,7 +972,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return outerApplyExpression;
         }
 
-        protected virtual Expression VisitSetOperatorExpression(SetOperatorExpression setOperatorExpression)
+        protected virtual Expression VisitSetOperator(SetOperatorTableExpression setOperatorExpression)
         {
             Builder.Append("(");
 
@@ -984,25 +985,25 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
             switch (setOperatorExpression)
             {
-                case ExceptExpression exceptExpression:
+                case ExceptTableExpression exceptExpression:
                 {
                     Builder.Append("EXCEPT");
                     break;
                 }
 
-                case IntersectExpression intersectExpression:
+                case IntersectTableExpression intersectExpression:
                 {
                     Builder.Append("INTERSECT");
                     break;
                 }
 
-                case UnionAllExpression unionAllExpression:
+                case UnionAllTableExpression unionAllExpression:
                 {
                     Builder.Append("UNION ALL");
                     break;
                 }
 
-                case UnionExpression unionExpression:
+                case UnionTableExpression unionExpression:
                 {
                     Builder.Append("UNION");
                     break;
@@ -1027,7 +1028,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return setOperatorExpression;
         }
 
-        protected virtual Expression VisitTableValuedExpressionTableExpression(TableValuedExpressionTableExpression tableValuedExpressionTableExpression)
+        protected virtual Expression VisitTableValuedExpressionTable(TableValuedExpressionTableExpression tableValuedExpressionTableExpression)
         {
             Visit(tableValuedExpressionTableExpression.Expression);
 
@@ -1037,7 +1038,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return tableValuedExpressionTableExpression;
         }
 
-        protected virtual Expression VisitSqlAggregateExpression(SqlAggregateExpression sqlAggregateExpression)
+        protected virtual Expression VisitSqlAggregate(SqlAggregateExpression sqlAggregateExpression)
         {
             var aggregatedExpression = sqlAggregateExpression.Expression;
 
@@ -1065,7 +1066,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return sqlAggregateExpression;
         }
 
-        protected virtual Expression VisitSqlAliasExpression(SqlAliasExpression sqlAliasExpression)
+        protected virtual Expression VisitSqlAlias(SqlAliasExpression sqlAliasExpression)
         {
             Visit(sqlAliasExpression.Expression);
 
@@ -1075,7 +1076,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return sqlAliasExpression;
         }
 
-        protected virtual Expression VisitSqlCastExpression(SqlCastExpression sqlCastExpression)
+        protected virtual Expression VisitSqlCast(SqlCastExpression sqlCastExpression)
         {
             if (!string.IsNullOrWhiteSpace(sqlCastExpression.SqlType))
             {
@@ -1106,7 +1107,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return sqlCastExpression;
         }
 
-        protected virtual Expression VisitSqlColumnExpression(SqlColumnExpression sqlColumnExpression)
+        protected virtual Expression VisitSqlColumn(SqlColumnExpression sqlColumnExpression)
         {
             Builder.Append(FormatIdentifier(GetTableAlias(sqlColumnExpression.Table)));
             Builder.Append(".");
@@ -1115,7 +1116,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return sqlColumnExpression;
         }
 
-        protected virtual Expression VisitSqlConcatExpression(SqlConcatExpression sqlConcatExpression)
+        protected virtual Expression VisitSqlConcat(SqlConcatExpression sqlConcatExpression)
         {
             Visit(sqlConcatExpression.Segments.First());
 
@@ -1129,7 +1130,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return sqlConcatExpression;
         }
 
-        protected virtual Expression VisitSqlExistsExpression(SqlExistsExpression sqlExistsExpression)
+        protected virtual Expression VisitSqlExists(SqlExistsExpression sqlExistsExpression)
         {
             Builder.Append("EXISTS (");
 
@@ -1146,14 +1147,14 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return sqlExistsExpression;
         }
 
-        protected virtual Expression VisitSqlFragmentExpression(SqlFragmentExpression sqlFragmentExpression)
+        protected virtual Expression VisitSqlFragment(SqlFragmentExpression sqlFragmentExpression)
         {
             Builder.Append(sqlFragmentExpression.Fragment);
 
             return sqlFragmentExpression;
         }
 
-        protected virtual Expression VisitSqlFunctionExpression(SqlFunctionExpression sqlFunctionExpression)
+        protected virtual Expression VisitSqlFunction(SqlFunctionExpression sqlFunctionExpression)
         {
             if (!string.IsNullOrWhiteSpace(sqlFunctionExpression.SchemaName))
             {
@@ -1185,7 +1186,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return sqlFunctionExpression;
         }
 
-        protected virtual Expression VisitSqlInExpression(SqlInExpression sqlInExpression)
+        protected virtual Expression VisitSqlIn(SqlInExpression sqlInExpression)
         {
             switch (sqlInExpression.Values)
             {
@@ -1281,7 +1282,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return sqlInExpression;
         }
 
-        protected virtual Expression VisitSqlLikeExpression(SqlLikeExpression sqlLikeExpression)
+        protected virtual Expression VisitSqlLike(SqlLikeExpression sqlLikeExpression)
         {
             Visit(sqlLikeExpression.Target);
 
@@ -1299,14 +1300,14 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return sqlLikeExpression;
         }
 
-        protected virtual Expression VisitSqlParameterExpression(SqlParameterExpression sqlParameterExpression)
+        protected virtual Expression VisitSqlParameter(SqlParameterExpression sqlParameterExpression)
         {
             Builder.AddParameter(sqlParameterExpression);
 
             return sqlParameterExpression;
         }
 
-        protected virtual Expression VisitSqlWindowFunctionExpression(SqlWindowFunctionExpression sqlWindowFunctionExpression)
+        protected virtual Expression VisitSqlWindowFunction(SqlWindowFunctionExpression sqlWindowFunctionExpression)
         {
             Visit(sqlWindowFunctionExpression.Function);
 
@@ -1322,7 +1323,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             return sqlWindowFunctionExpression;
         }
 
-        protected virtual Expression VisitOrderByExpression(OrderByExpression orderByExpression)
+        protected virtual Expression VisitOrderBy(OrderByExpression orderByExpression)
         {
             var orderings = orderByExpression.Iterate().Reverse().ToArray();
             var hashes = new HashSet<int>();

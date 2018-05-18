@@ -301,7 +301,7 @@ namespace Impatient.Tests
                                       new SqlColumnExpression(parent.Table, l.ColumnName, l.Type, l.IsNullable, null),
                                       new SqlColumnExpression(child.Table, r.ColumnName, r.Type, r.IsNullable, null));
 
-                            return new LeftJoinExpression(
+                            return new LeftJoinTableExpression(
                                 accumulate,
                                 child.Table,
                                 keyComparisons.Aggregate(Expression.AndAlso),

@@ -1,14 +1,13 @@
-﻿using Impatient.Query.ExpressionVisitors;
-using Impatient.Query.ExpressionVisitors.Utility;
+﻿using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
 {
-    public class CrossJoinExpression : JoinExpression
+    public class OuterApplyTableExpression : JoinTableExpression
     {
-        public CrossJoinExpression(TableExpression outerTable, AliasedTableExpression innerTable, Type type)
+        public OuterApplyTableExpression(TableExpression outerTable, AliasedTableExpression innerTable, Type type)
             : base(outerTable, innerTable, type)
         {
         }
@@ -30,7 +29,7 @@ namespace Impatient.Query.Expressions
                     innerTable = updater.VisitAndConvert(innerTable, nameof(VisitChildren));
                 }
 
-                return new CrossJoinExpression(outerTable, innerTable, Type);
+                return new OuterApplyTableExpression(outerTable, innerTable, Type);
             }
 
             return this;
