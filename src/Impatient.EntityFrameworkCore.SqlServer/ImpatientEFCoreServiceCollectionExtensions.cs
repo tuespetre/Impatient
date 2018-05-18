@@ -19,6 +19,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             services.AddSingleton<IImpatientQueryCache, DefaultImpatientQueryCache>();
 
+            services.AddSingleton<ModelExpressionProvider>();
+
             services.AddSingleton<DescriptorSetCache>();
 
             services.AddSingleton<ModelQueryExpressionCache>();
@@ -28,6 +30,10 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             services.AddSingleton<IQueryTranslatingExpressionVisitorFactory, DefaultQueryTranslatingExpressionVisitorFactory>();
 
             services.AddSingleton<IReadValueExpressionFactoryProvider, DefaultReadValueExpressionFactoryProvider>();
+
+            services.AddSingleton<ITypeMappingProvider, EFCoreTypeMappingProvider>();
+
+            services.AddSingleton<IQueryFormattingProvider, SqlServerQueryFormattingProvider>();
 
             services.AddScoped<IOptimizingExpressionVisitorProvider, DefaultOptimizingExpressionVisitorProvider>();
 
@@ -43,16 +49,16 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             services.AddScoped<IQueryProcessingContextFactory, EFCoreQueryProcessingContextFactory>();
 
-            services.AddScoped<IImpatientQueryExecutor, DefaultImpatientQueryExecutor>();
+            services.AddScoped<IImpatientQueryProcessor, DefaultImpatientQueryProcessor>();
 
             services.AddScoped<IQueryCompiler, ImpatientQueryCompiler>();
 
             services.AddScoped(provider =>
             {
                 var cache = provider.GetRequiredService<DescriptorSetCache>();
-                var model = provider.GetRequiredService<ICurrentDbContext>().Context.Model;
+                var context = provider.GetRequiredService<ICurrentDbContext>().Context;
 
-                return cache.GetDescriptorSet(model);
+                return cache.GetDescriptorSet(context);
             });
 
             return services;

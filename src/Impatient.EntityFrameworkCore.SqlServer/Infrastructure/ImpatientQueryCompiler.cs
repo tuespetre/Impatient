@@ -1,5 +1,5 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Expressions;
-using Impatient.Query;
+using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
@@ -8,17 +8,18 @@ using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
-    // TODO: Make use of the execution strategy
     public partial class ImpatientQueryCompiler : IQueryCompiler
     {
         private readonly ICurrentDbContext currentDbContext;
-        private IImpatientQueryExecutor queryExecutor;
+        private IImpatientQueryProcessor queryProcessor;
         private IAsyncQueryProvider queryProvider;
 
         public ImpatientQueryCompiler(ICurrentDbContext currentDbContext)
@@ -28,19 +29,17 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public TResult Execute<TResult>(Expression query)
         {
-            var executor = GetQueryExecutor();
+            var processor = GetQueryProcessor();
 
             var provider = GetQueryProvider();
 
             var preparedQuery = PrepareQuery(query);
 
-            return (TResult)executor.Execute(provider, preparedQuery);
+            return (TResult)processor.Execute(provider, preparedQuery);
         }
 
         public IAsyncEnumerable<TResult> ExecuteAsync<TResult>(Expression query)
         {
-            // TODO: Proper async support
-
             return new BadAsyncEnumerable<TResult>(async () =>
             {
                 var enumerable = await ExecuteAsync<IEnumerable<TResult>>(query, default);
@@ -51,32 +50,151 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public Task<TResult> ExecuteAsync<TResult>(Expression query, CancellationToken cancellationToken)
         {
-            // TODO: Proper async support
-
             return Task.Run(() => Execute<TResult>(query), cancellationToken);
         }
 
         public Func<QueryContext, IAsyncEnumerable<TResult>> CreateCompiledAsyncEnumerableQuery<TResult>(Expression query)
         {
-            ThrowCompiledQueryNotSupported();
-            return default;
+            var compiled = CreateCompiledAsyncTaskQuery<IEnumerable<TResult>>(query);
+
+            return (QueryContext queryContext) =>
+            {
+                return new BadAsyncEnumerable<TResult>(async () =>
+                {
+                    var enumerable = await compiled(queryContext);
+
+                    return enumerable.GetEnumerator();
+                });
+            };
         }
 
         public Func<QueryContext, Task<TResult>> CreateCompiledAsyncTaskQuery<TResult>(Expression query)
         {
-            ThrowCompiledQueryNotSupported();
-            return default;
+            var compiled = CreateCompiledQuery<TResult>(query);
+
+            return (QueryContext queryContext) =>
+            {
+                return Task.Run(() => compiled(queryContext), queryContext.CancellationToken);
+            };
         }
 
         public Func<QueryContext, TResult> CreateCompiledQuery<TResult>(Expression query)
         {
-            ThrowCompiledQueryNotSupported();
-            return default;
-        }
+            var provider = GetQueryProvider();
 
-        private static void ThrowCompiledQueryNotSupported()
-        {
-            throw new NotSupportedException("Impatient does not currently support ad-hoc compiled queries.");
+            var context 
+                = currentDbContext.Context
+                    .GetService<IQueryProcessingContextFactory>()
+                    .CreateQueryProcessingContext(provider);
+
+            var inlined 
+                = currentDbContext.Context
+                    .GetService<IQueryableInliningExpressionVisitorFactory>()
+                    .Create(context).Visit(query);
+
+            var visited = inlined;
+            
+            var composingExpressionVisitors
+                = currentDbContext.Context
+                    .GetService<IComposingExpressionVisitorProvider>()
+                    .CreateExpressionVisitors(context)
+                    .ToArray();
+
+            var optimizingExpressionVisitors
+                = currentDbContext.Context
+                    .GetService<IOptimizingExpressionVisitorProvider>()
+                    .CreateExpressionVisitors(context)
+                    .ToArray();
+
+            var compilingExpressionVisitors
+                = currentDbContext.Context
+                    .GetService<ICompilingExpressionVisitorProvider>()
+                    .CreateExpressionVisitors(context)
+                    .ToArray();
+
+            // Apply all optimizing visitors before each composing visitor and then apply all
+            // optimizing visitors one last time.
+
+            foreach (var optimizingVisitor in optimizingExpressionVisitors)
+            {
+                visited = optimizingVisitor.Visit(visited);
+            }
+
+            foreach (var composingVisitor in composingExpressionVisitors)
+            {
+                visited = composingVisitor.Visit(visited);
+
+                foreach (var optimizingVisitor in optimizingExpressionVisitors)
+                {
+                    visited = optimizingVisitor.Visit(visited);
+                }
+            }
+
+            // Transform the expression by rewriting all composed query expressions into 
+            // executable expressions that make database calls and perform result materialization.
+
+            foreach (var compilingVisitor in compilingExpressionVisitors)
+            {
+                visited = compilingVisitor.Visit(visited);
+            }
+
+            var discoverer = new FreeVariableDiscoveringExpressionVisitor();
+
+            discoverer.Visit(visited);
+
+            var discovered = discoverer.DiscoveredVariables.ToArray();
+
+            var parameters = new ParameterExpression[context.ParameterMapping.Count + 1 + discovered.Length];
+
+            parameters[0] = context.ExecutionContextParameter;
+
+            context.ParameterMapping.Values.CopyTo(parameters, 1);
+
+            discovered.CopyTo(parameters, 2);
+
+            var parameterArray = Expression.Parameter(typeof(object[]));
+
+            // Wrap the actual lambda in a static invocation.
+            // This is faster than just compiling it and calling DynamicInvoke.
+
+            var compiled = Expression
+                .Lambda<Func<object[], object>>(
+                    Expression.Convert(
+                        Expression.Invoke(
+                            Expression.Lambda(visited, parameters),
+                            parameters.Select((p, i) =>
+                                Expression.Convert(
+                                Expression.ArrayIndex(
+                                    parameterArray,
+                                    Expression.Constant(i)),
+                                    p.Type))),
+                        typeof(object)),
+                    parameterArray)
+                .Compile();
+
+            return (QueryContext queryContext) =>
+            {
+                var arguments = new object[2 + discovered.Length];
+
+                arguments[0] = queryContext.Context.GetService<IDbCommandExecutorFactory>().Create();
+                arguments[1] = queryContext.Context;
+
+                for (var i = 0; i < discovered.Length; i++)
+                {
+                    arguments[i + 2] = queryContext.ParameterValues[discovered[i].Name];
+                }
+
+                try
+                {
+                    var result = compiled(arguments);
+
+                    return (TResult)result;
+                }
+                catch (TargetInvocationException targetInvocationException)
+                {
+                    throw targetInvocationException.InnerException;
+                }
+            };
         }
 
         private Expression PrepareQuery(Expression query)
@@ -90,16 +208,16 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     .UseRelationalNulls);
         }
 
-        private IImpatientQueryExecutor GetQueryExecutor()
+        private IImpatientQueryProcessor GetQueryProcessor()
         {
-            if (queryExecutor == null)
+            if (queryProcessor == null)
             {
-                queryExecutor
+                queryProcessor
                     = ((IInfrastructure<IServiceProvider>)currentDbContext.Context)
-                        .Instance.GetRequiredService<IImpatientQueryExecutor>();
+                        .Instance.GetRequiredService<IImpatientQueryProcessor>();
             }
 
-            return queryExecutor;
+            return queryProcessor;
         }
 
         private IAsyncQueryProvider GetQueryProvider()
@@ -110,50 +228,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
 
             return queryProvider;
-        }
-    }
-
-    internal class BadAsyncEnumerable<TResult> : IAsyncEnumerable<TResult>
-    {
-        private readonly Func<Task<IEnumerator<TResult>>> func;
-
-        public BadAsyncEnumerable(Func<Task<IEnumerator<TResult>>> func)
-        {
-            this.func = func;
-        }
-
-        public IAsyncEnumerator<TResult> GetEnumerator()
-        {
-            return new BadAsyncEnumerator<TResult>(func());
-        }
-    }
-
-    internal class BadAsyncEnumerator<TResult> : IAsyncEnumerator<TResult>
-    {
-        private readonly Task<IEnumerator<TResult>> task;
-        private IEnumerator<TResult> enumerator;
-
-        public BadAsyncEnumerator(Task<IEnumerator<TResult>> task)
-        {
-            this.task = task;
-        }
-
-        public TResult Current => enumerator.Current;
-
-        public void Dispose()
-        {
-            task.Dispose();
-            enumerator?.Dispose();
-        }
-
-        public async Task<bool> MoveNext(CancellationToken cancellationToken)
-        {
-            if (enumerator == null)
-            {
-                enumerator = await task;
-            }
-
-            return enumerator.MoveNext();
         }
     }
 }

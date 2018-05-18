@@ -13,6 +13,25 @@ namespace Impatient.Extensions
     {
         #region Type extensions
 
+        public static IEnumerable<MemberInfo> FindAllInstanceMembers(this Type type)
+        {
+            foreach (var member in type.GetMembers(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            {
+                if (member is FieldInfo || member is PropertyInfo)
+                {
+                    yield return member;
+                }
+            }
+
+            if (type.GetTypeInfo().BaseType is Type baseType)
+            {
+                foreach (var member in FindAllInstanceMembers(baseType))
+                {
+                    yield return member;
+                }
+            }
+        }
+
         public static bool IsEnum(this Type type)
         {
             return type.GetTypeInfo().IsEnum;
@@ -110,15 +129,15 @@ namespace Impatient.Extensions
             {
                 GetBaseType:
 
-                var baseType = type.GetTypeInfo().BaseType;
+                type = type.GetTypeInfo().BaseType;
 
-                if (baseType == null || baseType == typeof(object))
+                if (type == null || type == typeof(object))
                 {
                     return null;
                 }
-                else if (baseType.IsConstructedGenericType && baseType.GetGenericTypeDefinition() == definition)
+                else if (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == definition)
                 {
-                    return baseType;
+                    return type;
                 }
                 else
                 {
@@ -127,7 +146,8 @@ namespace Impatient.Extensions
             }
         }
 
-        // TODO: Have all usages consult with an ITypeMapper instead
+        // TODO: Have all usages of IsScalarType/IsNumericType/IsTextType/etc. consult with an ITypeMapper instead
+
         public static bool IsScalarType(this Type type)
         {
             if (scalarTypes.Contains(type) || type.IsEnum())
@@ -177,6 +197,48 @@ namespace Impatient.Extensions
             // - int
             // - long
             // - string (explicitly)
+
+            // Hmmmm
+            typeof(uint),
+            typeof(sbyte),
+            typeof(ushort),
+            typeof(ulong),
+        };
+
+        public static bool IsTimeType(this Type type)
+        {
+            type = type.UnwrapNullableType();
+
+            return type == typeof(DateTime)
+                || type == typeof(DateTimeOffset)
+                || type == typeof(TimeSpan);
+        }
+
+        public static bool IsTextType(this Type type)
+        {
+            return type == typeof(string)
+                || type == typeof(char)
+                || type == typeof(char?);
+        }
+
+        public static bool IsNumericType(this Type type)
+        {
+            return numericTypes.Contains(type.UnwrapNullableType());
+        }
+
+        private static readonly Type[] numericTypes =
+        {
+            typeof(byte),
+            typeof(sbyte),
+            typeof(ushort),
+            typeof(short),
+            typeof(uint),
+            typeof(int),
+            typeof(ulong),
+            typeof(long),
+            typeof(float),
+            typeof(double),
+            typeof(decimal),
         };
 
         public static bool IsConstantLiteralType(this Type type)
@@ -219,9 +281,26 @@ namespace Impatient.Extensions
 
         #region 
 
+        public static FieldInfo FindBackingField(this PropertyInfo property)
+        {
+            var fields = property.DeclaringType.FindAllInstanceMembers().OfType<FieldInfo>();
+
+            return fields.FirstOrDefault(f => f.Name == $"<{property.Name}>k__BackingField")
+                ?? fields.FirstOrDefault(f => f.Name == $"<{property.Name}>i__Field")
+                ?? fields.FirstOrDefault(f => f.Name.Equals(property.Name, StringComparison.OrdinalIgnoreCase))
+                ?? fields.FirstOrDefault(f => f.Name.Equals($"_{property.Name}", StringComparison.OrdinalIgnoreCase))
+                ?? fields.FirstOrDefault(f => f.Name.Equals($"__{property.Name}", StringComparison.OrdinalIgnoreCase))
+                ?? fields.FirstOrDefault(f => f.Name.Equals($"m_{property.Name}", StringComparison.OrdinalIgnoreCase));
+        }
+
         public static MethodInfo GetGenericMethodDefinition<TArg, TResult>(Expression<Func<TArg, TResult>> expression)
         {
             return ((MethodCallExpression)expression.Body).Method.GetGenericMethodDefinition();
+        }
+
+        public static MethodInfo GetMethodInfo<TResult>(Expression<Func<TResult>> expression)
+        {
+            return ((MethodCallExpression)expression.Body).Method;
         }
 
         public static bool HasSelector(this MethodInfo methodInfo)
@@ -321,6 +400,11 @@ namespace Impatient.Extensions
 
         public static string GetPathSegmentName(this MemberInfo memberInfo)
         {
+            if (memberInfo is null)
+            {
+                return null;
+            }
+
             return memberInfo.IsDefined(typeof(PathSegmentNameAttribute))
                 ? memberInfo.GetCustomAttribute<PathSegmentNameAttribute>().Name
                 : memberInfo.Name;
@@ -448,7 +532,14 @@ namespace Impatient.Extensions
 
                             select m).ToList();
 
-            return matching.Single().MakeGenericMethod(method.GetGenericArguments());
+            var match = matching.SingleOrDefault();
+
+            if (match != null)
+            {
+                return match.MakeGenericMethod(method.GetGenericArguments());
+            }
+
+            return method;
         }
 
         private static readonly IEnumerable<MethodInfo> enumerableMethods

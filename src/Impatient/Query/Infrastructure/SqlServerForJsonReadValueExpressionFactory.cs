@@ -32,6 +32,13 @@ namespace Impatient.Query.Infrastructure
 
         #endregion
 
+        private readonly ITypeMappingProvider typeMappingProvider;
+
+        public SqlServerForJsonReadValueExpressionFactory(ITypeMappingProvider typeMappingProvider)
+        {
+            this.typeMappingProvider = typeMappingProvider ?? throw new ArgumentNullException(nameof(typeMappingProvider));
+        }
+
         public bool CanReadExpression(Expression expression)
         {
             if (expression.Type.IsScalarType())
@@ -48,7 +55,7 @@ namespace Impatient.Query.Infrastructure
             var resultVariable = Expression.Variable(source.Type, "result");
 
             var materializer
-                = new ComplexTypeMaterializerBuildingExpressionVisitor(jsonTextReaderVariable)
+                = new ComplexTypeMaterializerBuildingExpressionVisitor(jsonTextReaderVariable, typeMappingProvider)
                     .Visit(source);
 
             return Expression.Condition(
@@ -209,12 +216,16 @@ namespace Impatient.Query.Infrastructure
         private class ComplexTypeMaterializerBuildingExpressionVisitor : ProjectionExpressionVisitor
         {
             private readonly ParameterExpression jsonTextReader;
+            private readonly ITypeMappingProvider typeMappingProvider;
             private int depth = 0;
             private bool extraProperties;
 
-            public ComplexTypeMaterializerBuildingExpressionVisitor(ParameterExpression jsonTextReader)
+            public ComplexTypeMaterializerBuildingExpressionVisitor(
+                ParameterExpression jsonTextReader,
+                ITypeMappingProvider typeMappingProvider)
             {
                 this.jsonTextReader = jsonTextReader;
+                this.typeMappingProvider = typeMappingProvider;
             }
 
             private string GetMaterializerName()
@@ -226,10 +237,35 @@ namespace Impatient.Query.Infrastructure
             {
                 if (node.Type.IsScalarType())
                 {
-                    return SqlServerJsonValueReader.CreateReadScalarExpression(
-                        node.Type,
-                        jsonTextReader,
-                        GetNameParts().Last());
+                    var sqlColumnExpression = node as SqlColumnExpression;
+                    var typeMapping = sqlColumnExpression?.TypeMapping ?? typeMappingProvider.FindMapping(node.Type);
+
+                    if (typeMapping?.TargetConversion is null)
+                    {
+                        return SqlServerJsonValueReader.CreateReadScalarExpression(
+                            node.Type,
+                            jsonTextReader,
+                            GetNameParts().Last());
+                    }
+
+                    var result 
+                        = SqlServerJsonValueReader.CreateReadScalarExpression(
+                            typeMapping.SourceType,
+                            jsonTextReader,
+                            GetNameParts().Last());
+
+                    var mappingParameter = typeMapping.TargetConversion.Parameters.Single();
+
+                    result
+                        = Expression.Block(
+                            variables: new[] { mappingParameter },
+                            expressions: new Expression[]
+                            {
+                                Expression.Assign(mappingParameter, result),
+                                Expression.Convert(typeMapping.TargetConversion.Body, node.Type),
+                            });
+
+                    return result;
                 }
                 else if (node.Type.IsSequenceType())
                 {
@@ -240,7 +276,8 @@ namespace Impatient.Query.Infrastructure
 
                     if (sequenceType.IsScalarType())
                     {
-                        var name = default(string);
+                        // TODO: Get rid of the need to put this constant multiple places.
+                        var name = "$c";
 
                         switch (extracted)
                         {
@@ -266,7 +303,7 @@ namespace Impatient.Query.Infrastructure
                             return SqlServerJsonValueReader.CreateReadOpaqueObjectExpression(node.Type, jsonTextReader);
                         }
 
-                        var visitor = new ComplexTypeMaterializerBuildingExpressionVisitor(jsonTextReader);
+                        var visitor = new ComplexTypeMaterializerBuildingExpressionVisitor(jsonTextReader, typeMappingProvider);
 
                         materializer = visitor.Visit(extracted);
                     }
@@ -291,7 +328,7 @@ namespace Impatient.Query.Infrastructure
                         return SqlServerJsonValueReader.CreateReadOpaqueObjectExpression(node.Type, jsonTextReader);
                     }
 
-                    var visitor = new ComplexTypeMaterializerBuildingExpressionVisitor(jsonTextReader);
+                    var visitor = new ComplexTypeMaterializerBuildingExpressionVisitor(jsonTextReader, typeMappingProvider);
                     var result = visitor.Visit(extracted);
 
                     if (result is MethodCallExpression call 
@@ -346,6 +383,8 @@ namespace Impatient.Query.Infrastructure
 
                     case NewExpression newExpression when IsNotLeaf(newExpression):
                     case MemberInitExpression memberInitExpression when IsNotLeaf(memberInitExpression):
+                    case ExtendedNewExpression _:
+                    case ExtendedMemberInitExpression _:
                     {
                         var flag = extraProperties;
 
@@ -625,7 +664,7 @@ namespace Impatient.Query.Infrastructure
 
         public static Expression MakeCall(string method, Expression reader, string name)
         {
-            return Expression.Call(typeof(SqlServerJsonValueReader).GetMethod(method), reader, Expression.Constant(name));
+            return Expression.Call(typeof(SqlServerJsonValueReader).GetMethod(method), reader, Expression.Constant(name, typeof(string)));
         }
 
         public static bool ReadPropertyName(JsonTextReader reader, string name)
@@ -955,7 +994,10 @@ namespace Impatient.Query.Infrastructure
             {
                 case JsonToken.PropertyName:
                 {
-                    Debug.Assert(reader.Value.Equals(name));
+                    if (!reader.Value.Equals(name))
+                    {
+                        return result;
+                    }
 
                     reader.Read();
 
@@ -1051,14 +1093,17 @@ namespace Impatient.Query.Infrastructure
 
                 case JsonToken.StartArray:
                 {
-                    Debug.Assert(name == null);
+                    //Debug.Assert(name == null);
 
                     break;
                 }
 
                 case JsonToken.PropertyName:
                 {
-                    Debug.Assert(name == null || reader.Value.Equals(name));
+                    if (name != null && !reader.Value.Equals(name))
+                    {
+                        return list;
+                    }
 
                     reader.Read();
 

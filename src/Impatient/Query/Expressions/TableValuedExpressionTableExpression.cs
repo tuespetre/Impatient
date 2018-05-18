@@ -14,7 +14,7 @@ namespace Impatient.Query.Expressions
                 throw new ArgumentNullException(nameof(expression));
             }
 
-            if (!expression.Type.IsSequenceType() || expression.Type == typeof(string))
+            if (!expression.Type.IsSequenceType())
             {
                 throw new ArgumentOutOfRangeException(nameof(expression));
             }

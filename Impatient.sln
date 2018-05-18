@@ -22,7 +22,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "etc", "etc", "{72BCC91D-502
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Impatient.EntityFrameworkCore.SqlServer", "src\Impatient.EntityFrameworkCore.SqlServer\Impatient.EntityFrameworkCore.SqlServer.csproj", "{E12FDD7B-382F-4E53-83BF-22AD3C06E782}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Impatient.EFCore.Tests", "test\Impatient.EFCore.Tests\Impatient.EFCore.Tests.csproj", "{9B6B4799-D876-4379-8CBD-E7C8595031CB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Impatient.EFCore.Tests", "test\Impatient.EFCore.Tests\Impatient.EFCore.Tests.csproj", "{9B6B4799-D876-4379-8CBD-E7C8595031CB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

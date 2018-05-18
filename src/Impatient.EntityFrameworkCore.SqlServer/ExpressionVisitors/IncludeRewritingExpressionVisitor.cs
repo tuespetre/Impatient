@@ -3,7 +3,6 @@ using Impatient.Extensions;
 using Impatient.Metadata;
 using Impatient.Query.Expressions;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -68,7 +67,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                 IEnumerable<INavigation> path)
             {
                 this.includedExpression
-                    = path.Last().PropertyInfo.GetMemberType().IsCollectionType()
+                    = path.Last().GetReadableMemberInfo().GetMemberType().IsCollectionType()
                         ? includedExpression.AsCollectionType()
                         : includedExpression;
 
@@ -105,30 +104,46 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                         return visited;
                     }
 
+                    case ExtendedNewExpression extendedNewExpression:
+                    {
+                        return VisitExtendedNew(extendedNewExpression);
+                    }
+
+                    case ExtendedMemberInitExpression extendedMemberInitExpression:
+                    {
+                        return VisitExtendedMemberInit(extendedMemberInitExpression);
+                    }
+
                     case SimpleExtraPropertiesExpression extraPropertiesExpression:
                     {
                         var navigation = path.Pop();
 
-                        for (var i = 0; i < extraPropertiesExpression.Names.Count; i++)
+                        try
                         {
-                            var name = extraPropertiesExpression.Names[i];
-
-                            if (name == navigation.PropertyInfo.Name)
+                            for (var i = 0; i < extraPropertiesExpression.Names.Count; i++)
                             {
-                                var expression = Visit(extraPropertiesExpression.Properties[i]);
+                                var name = extraPropertiesExpression.Names[i];
 
-                                if (Finished)
+                                if (name == navigation.Name
+                                    || name == $"<{navigation.DeclaringType.ClrType.Name}>{navigation.Name}")
                                 {
-                                    return extraPropertiesExpression.SetProperty(name, expression);
-                                }
-                                else
-                                {
-                                    return extraPropertiesExpression;
+                                    var expression = Visit(extraPropertiesExpression.Properties[i]);
+
+                                    if (Finished)
+                                    {
+                                        return extraPropertiesExpression.SetProperty(name, expression);
+                                    }
+                                    else
+                                    {
+                                        return extraPropertiesExpression;
+                                    }
                                 }
                             }
                         }
-
-                        path.Push(navigation);
+                        finally
+                        {
+                            path.Push(navigation);
+                        }
 
                         return base.VisitExtension(node);
                     }
@@ -153,16 +168,25 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                         var navigation = path.Peek();
 
+                        var member = navigation.GetReadableMemberInfo();
+
                         var hasCompatibleDescriptor
                             = polymorphicExpression.Descriptors
-                                .Any(d => d.Type.IsAssignableFrom(navigation.PropertyInfo.DeclaringType));
+                                .Any(d => d.Type.IsAssignableFrom(member.DeclaringType));
 
                         if (!hasCompatibleDescriptor)
                         {
                             return polymorphicExpression.Update(row, polymorphicExpression.Descriptors);
                         }
 
-                        extraProperties = extraProperties.SetProperty(navigation.PropertyInfo.Name, includedExpression);
+                        var propertyName = member.Name;
+
+                        if (member.DeclaringType.IsSubclassOf(node.Type))
+                        {
+                            propertyName = $"<{member.DeclaringType.Name}>{member.Name}";
+                        }
+
+                        extraProperties = extraProperties.SetProperty(propertyName, includedExpression);
 
                         var descriptors = polymorphicExpression.Descriptors.ToArray();
 
@@ -179,8 +203,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                             includedExpression
                                 = new ExtraPropertyAccessExpression(
                                     parameter,
-                                    navigation.PropertyInfo.Name,
-                                    navigation.PropertyInfo.PropertyType);
+                                    propertyName,
+                                    member.GetMemberType());
 
                             var materializer
                                 = Expression.Lambda(
@@ -202,7 +226,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                             return polymorphicExpression.Update(extraProperties, descriptors);
                         }
-                        
+
                         return polymorphicExpression.Update(row, polymorphicExpression.Descriptors);
                     }
 
@@ -228,7 +252,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                     var argument = arguments[i];
                     var member = node.Members[i];
 
-                    if (member == currentMember.PropertyInfo)
+                    if (member == currentMember.GetReadableMemberInfo())
                     {
                         arguments[i] = Visit(argument);
                         break;
@@ -236,8 +260,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                 }
 
                 path.Push(currentMember);
-
-                // TODO: (EF Core 2.1) Constructor selection
 
                 return node.Update(arguments);
             }
@@ -253,19 +275,20 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                 var bindings = node.Bindings.ToList();
                 var currentMember = path.Pop();
+                var currentMemberInfo = currentMember.GetReadableMemberInfo();
                 var foundMember = false;
 
                 for (var i = 0; i < bindings.Count; i++)
                 {
                     var binding = bindings[i];
 
-                    if (binding.Member == currentMember.PropertyInfo)
+                    if (binding.Member == currentMemberInfo)
                     {
                         foundMember = true;
 
                         if (path.Count == 0)
                         {
-                            bindings[i] = Expression.Bind(currentMember.PropertyInfo, includedExpression);
+                            bindings[i] = Expression.Bind(currentMemberInfo, includedExpression);
                             Finished = true;
                         }
                         else
@@ -277,15 +300,106 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                     }
                 }
 
-                if (!foundMember && currentMember.PropertyInfo.DeclaringType.IsAssignableFrom(node.Type))
+                if (!foundMember && currentMemberInfo.DeclaringType.IsAssignableFrom(node.Type))
                 {
-                    bindings.Add(Expression.Bind(currentMember.PropertyInfo, includedExpression));
+                    bindings.Add(Expression.Bind(currentMember.GetWritableMemberInfo(), includedExpression));
                     Finished = true;
                 }
 
                 path.Push(currentMember);
 
                 return node.Update(newExpression, bindings);
+            }
+
+            protected virtual Expression VisitExtendedNew(ExtendedNewExpression node)
+            {
+                var arguments = node.Arguments.ToArray();
+                var currentMember = path.Pop();
+
+                for (var i = 0; i < node.Arguments.Count; i++)
+                {
+                    var argument = arguments[i];
+                    var member = node.ReadableMembers[i];
+
+                    if (member == currentMember.GetReadableMemberInfo())
+                    {
+                        arguments[i] = Visit(argument);
+                        break;
+                    }
+                }
+
+                path.Push(currentMember);
+
+                return node.Update(arguments);
+            }
+
+            protected virtual Expression VisitExtendedMemberInit(ExtendedMemberInitExpression node)
+            {
+                var newExpression = VisitAndConvert(node.NewExpression, nameof(VisitExtendedMemberInit));
+
+                if (Finished)
+                {
+                    return node.Update(newExpression, node.Arguments);
+                }
+
+                var arguments = node.Arguments.ToList();
+                var readableMembers = node.ReadableMembers.ToList();
+                var writableMembers = node.WritableMembers.ToList();
+
+                var currentMember = path.Pop();
+                var currentMemberInfo = currentMember.GetReadableMemberInfo();
+                var foundMember = false;
+
+                for (var i = 0; i < arguments.Count; i++)
+                {
+                    var argument = arguments[i];
+
+                    if (node.ReadableMembers[i] == currentMemberInfo)
+                    {
+                        foundMember = true;
+
+                        if (path.Count == 0)
+                        {
+                            arguments[i] = includedExpression;
+                            Finished = true;
+                        }
+                        else
+                        {
+                            arguments[i] = Visit(argument);
+                        }
+
+                        break;
+                    }
+                }
+
+                path.Push(currentMember);
+
+                if (!foundMember && currentMemberInfo.DeclaringType.IsAssignableFrom(node.Type))
+                {
+                    Finished = true;
+
+                    var writableMemberInfo = currentMember.GetWritableMemberInfo();
+
+                    arguments.Add(
+                        writableMemberInfo.GetMemberType().IsCollectionType()
+                            ? includedExpression.AsCollectionType()
+                            : includedExpression);
+                    
+                    readableMembers.Add(currentMember.GetReadableMemberInfo());
+                    writableMembers.Add(writableMemberInfo);
+
+                    return new ExtendedMemberInitExpression(
+                        node.Type,
+                        node.NewExpression, 
+                        arguments, 
+                        readableMembers, 
+                        writableMembers);
+                }
+                else
+                {
+
+                    return node.Update(newExpression, arguments);
+                }
             }
         }
     }

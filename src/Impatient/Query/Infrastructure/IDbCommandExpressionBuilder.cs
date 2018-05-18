@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Impatient.Query.Expressions;
+using System;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Infrastructure
@@ -17,9 +18,9 @@ namespace Impatient.Query.Infrastructure
 
         string StopCapture();
 
-        void AddParameter(Expression expression, Func<string, string> parameterNameFormatter);
+        void AddParameter(SqlParameterExpression expression);
 
-        void AddDynamicParameters(string fragment, Expression expression, Func<string, string> parameterNameFormatter);
+        void AddDynamicParameters(string fragment, Expression expression);
 
         LambdaExpression Build();
     }

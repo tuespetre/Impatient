@@ -34,7 +34,7 @@ namespace Impatient.Tests.Utilities
                                 (property.PropertyType.IsNullableType())
                                 || (!property.PropertyType.GetTypeInfo().IsValueType
                                     && property.GetCustomAttribute<RequiredAttribute>() == null)
-                            let column = new SqlColumnExpression(table, property.Name, property.PropertyType, nullable)
+                            let column = new SqlColumnExpression(table, property.Name, property.PropertyType, nullable, null)
                             select Expression.Bind(property, column))),
                     table));
         }

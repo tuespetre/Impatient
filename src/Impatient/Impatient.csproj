@@ -6,18 +6,20 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionPrefix>0.2.0</VersionPrefix>
     <Authors>tuespetre</Authors>
     <PackageProjectUrl>https://github.com/tuespetre/Impatient</PackageProjectUrl>
     <RepositoryUrl>https://github.com/tuespetre/Impatient</RepositoryUrl>
-    <Description>A library that provides the infrastructure needed to create powerful LINQ query providers that map to SQL.</Description>
+    <Description>A library that provides the infrastructure needed to build powerful LINQ query providers for SQL databases.</Description>
     <PackageTags>LINQ;ORM;SQL</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.3.0" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
+    <PackageReference Include="System.Buffers" Version="4.4.0" />
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
+    <PackageReference Include="System.Diagnostics.StackTrace" Version="4.3.0" />
     <PackageReference Include="System.Dynamic.Runtime" Version="4.3.0" />
     <PackageReference Include="System.Linq.Queryable" Version="4.3.0" />
     <PackageReference Include="System.Reflection.TypeExtensions" Version="4.3.0" />
@@ -25,23 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Tables Include="**/AliasedTableExpression.cs" />
-    <Tables Include="**/BaseTableExpression.cs" />
-    <Tables Include="**/CrossApplyExpression.cs" />
-    <Tables Include="**/CrossJoinExpression.cs" />
-    <Tables Include="**/ExceptExpression.cs" />
-    <Tables Include="**/FullJoinExpression.cs" />
-    <Tables Include="**/InnerJoinExpression.cs" />
-    <Tables Include="**/IntersectExpression.cs" />
-    <Tables Include="**/JoinExpression.cs" />
-    <Tables Include="**/LeftJoinExpression.cs" />
-    <Tables Include="**/OuterApplyExpression.cs" />
-    <Tables Include="**/PredicateJoinExpression.cs" />
-    <Tables Include="**/SetOperatorExpression.cs" />
-    <Tables Include="**/SubqueryTableExpression.cs" />
-    <Tables Include="**/UnionAllExpression.cs" />
-    <Tables Include="**/UnionExpression.cs" />
-    <Tables Include="**/Table*Expression.cs" Exclude="**/TableExpression.cs" />
+    <Tables Include="**/*TableExpression.cs" Exclude="**/TableExpression.cs; **/TranslatableExpression.cs" />
     <Compile Update="@(Tables)">
       <DependentUpon>TableExpression.cs</DependentUpon>
     </Compile>
@@ -63,6 +49,7 @@
 
   <ItemGroup>
     <QueryExpressions Include="**/*QueryExpression.cs; **/GroupByResultExpression.cs" Exclude="**/RelationalQueryExpression.cs" />
+    <SqlExpressions Remove="Query\Expressions\SqlLikeExpression.cs" />
     <Compile Update="@(QueryExpressions)">
       <DependentUpon>RelationalQueryExpression.cs</DependentUpon>
     </Compile>

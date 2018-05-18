@@ -12,17 +12,8 @@ namespace Impatient.Query.ExpressionVisitors.Utility
     /// </summary>
     public class TableUpdatingExpressionVisitor : ExpressionVisitor
     {
-        private AliasedTableExpression[] oldTables;
-        private AliasedTableExpression[] newTables;
-
-        // TODO: Update references to the other constructor to use this one instead.
-        public TableUpdatingExpressionVisitor(
-            TableExpression oldTable, 
-            TableExpression newTable)
-        {
-            oldTables = oldTable.Flatten().ToArray();
-            newTables = newTable.Flatten().ToArray();
-        }
+        private readonly AliasedTableExpression[] oldTables;
+        private readonly AliasedTableExpression[] newTables;
 
         public TableUpdatingExpressionVisitor(
             AliasedTableExpression[] oldTables, 
@@ -46,7 +37,8 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                             newTables[index],
                             sqlColumnExpression.ColumnName,
                             sqlColumnExpression.Type,
-                            sqlColumnExpression.IsNullable);
+                            sqlColumnExpression.IsNullable,
+                            sqlColumnExpression.TypeMapping);
                     }
 
                     return sqlColumnExpression;

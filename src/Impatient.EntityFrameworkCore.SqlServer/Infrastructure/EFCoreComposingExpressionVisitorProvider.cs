@@ -42,7 +42,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             // a navigation property to themselves, so that the navigation composing
             // visitor can then rewrite those into appropriate joins/etc.
 
+            yield return new KeyEqualityComposingExpressionVisitor(context.DescriptorSet);
+
             yield return new NavigationComposingExpressionVisitor(context.DescriptorSet.NavigationDescriptors);
+
+            yield return new OwnedTypeIncludeComposingExpressionVisitor(currentDbContext.Context.Model);
 
             yield return new IncludeComposingExpressionVisitor(currentDbContext.Context.Model, context.DescriptorSet);
 

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Extensions.Internal;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
-using System;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -51,7 +51,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                             = currentType.DefiningEntityType.FindNavigation(
                                 currentType.DefiningNavigationName);
 
-                        if (definingNavigation?.MemberInfo != memberExpression.Member)
+                        if (definingNavigation?.GetReadableMemberInfo() != memberExpression.Member)
                         {
                             return node.Update(@object, arguments);
                         }

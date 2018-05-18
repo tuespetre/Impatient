@@ -1,7 +1,5 @@
 ﻿using Impatient.Extensions;
 using Impatient.Query.Expressions;
-using Impatient.Query.ExpressionVisitors.Utility;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -15,15 +13,8 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
         private static readonly MethodInfo enumerableContainsMethodInfo
             = GetGenericMethodDefinition((IEnumerable<object> e) => e.Contains(null));
 
-        private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
-
-        public EnumerableContainsRewritingExpressionVisitor(
-            TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor)
-        {
-            this.translatabilityAnalyzingExpressionVisitor
-                = translatabilityAnalyzingExpressionVisitor
-                    ?? throw new ArgumentNullException(nameof(translatabilityAnalyzingExpressionVisitor));
-        }
+        private static readonly MethodInfo queryableContainsMethodInfo
+            = GetGenericMethodDefinition((IQueryable<object> e) => e.Contains(null));
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
@@ -31,42 +22,45 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
             var arguments = Visit(node.Arguments);
 
             if (node.Method.IsGenericMethod
-                && node.Method.GetGenericMethodDefinition() == enumerableContainsMethodInfo
-                && arguments[0].Type.GetSequenceType().IsScalarType()
-                && translatabilityAnalyzingExpressionVisitor.Visit(arguments[1]) is TranslatableExpression)
+                && (node.Method.GetGenericMethodDefinition() == enumerableContainsMethodInfo
+                    || node.Method.GetGenericMethodDefinition() == queryableContainsMethodInfo))
             {
-                var canUseValues = false;
-
-                switch (arguments[0])
+                // The separate ifs are here for breakpoint purposes.
+                if (arguments[0].Type.GetSequenceType().IsScalarType())
                 {
-                    case ConstantExpression constantExpression:
+                    var canUseValues = false;
+
+                    switch (arguments[0])
                     {
-                        canUseValues = constantExpression.Value != null;
-                        break;
+                        case ConstantExpression constantExpression:
+                        {
+                            canUseValues = constantExpression.Value != null;
+                            break;
+                        }
+
+                        case NewArrayExpression newArrayExpression:
+                        {
+                            canUseValues = true;
+                            break;
+                        }
+
+                        case ListInitExpression listInitExpression:
+                        {
+                            canUseValues = listInitExpression.Initializers.All(i => i.Arguments.Count == 1);
+                            break;
+                        }
+
+                        case Expression expression:
+                        {
+                            canUseValues = true;
+                            break;
+                        }
                     }
 
-                    case NewArrayExpression newArrayExpression:
+                    if (canUseValues)
                     {
-                        canUseValues = true;
-                        break;
+                        return new SqlInExpression(arguments[1], arguments[0]);
                     }
-
-                    case ListInitExpression listInitExpression:
-                    {
-                        canUseValues = listInitExpression.Initializers.All(i => i.Arguments.Count == 1);
-                        break;
-                    }
-
-                    case Expression expression:
-                    {
-                        canUseValues = true;
-                        break;
-                    }
-                }
-
-                if (canUseValues)
-                {
-                    return new SqlInExpression(arguments[1], arguments[0]);
                 }
             }
 

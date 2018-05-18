@@ -21,6 +21,8 @@ namespace Impatient.Query.Infrastructure
 
         public virtual IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
         {
+            yield return new KeyEqualityComposingExpressionVisitor(context.DescriptorSet);
+
             yield return new NavigationComposingExpressionVisitor(context.DescriptorSet.NavigationDescriptors);
             
             yield return new TableAliasComposingExpressionVisitor();

@@ -85,7 +85,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                             sqlColumnExpression.Table,
                             sqlColumnExpression.ColumnName,
                             sqlColumnExpression.Type,
-                            isNullable: false);
+                            isNullable: false,
+                            typeMapping: sqlColumnExpression.TypeMapping);
                     }
 
                     case SqlParameterExpression sqlParameterExpression:

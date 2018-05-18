@@ -8,14 +8,13 @@ using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using System;
-using System.Collections;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
@@ -28,6 +27,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private IStateManager stateManager;
         private IInternalEntityEntryFactory entryFactory;
+        private BufferingDbDataReader unbufferedReader;
 
         public EFCoreDbCommandExecutor(
             ICurrentDbContext currentDbContext,
@@ -39,22 +39,28 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public ICurrentDbContext CurrentDbContext { get; }
 
-        public IStateManager StateManager => stateManager 
+        public IStateManager StateManager => stateManager
             ?? (stateManager = CurrentDbContext.GetDependencies().StateManager);
 
-        public IInternalEntityEntryFactory EntryFactory => entryFactory 
+        public IInternalEntityEntryFactory EntryFactory => entryFactory
             ?? (entryFactory = CurrentDbContext.Context.GetService<IInternalEntityEntryFactory>());
 
         public TResult ExecuteComplex<TResult>(Action<DbCommand> initializer, Func<DbDataReader, TResult> materializer)
         {
+            if (unbufferedReader != null)
+            {
+                unbufferedReader.Buffer();
+                unbufferedReader = null;
+            }
+
             var result = default(object);
             var connection = CurrentDbContext.Context.Database.GetService<IRelationalConnection>();
+
+            connection.Open();
 
             using (var command = CreateCommand(connection))
             {
                 initializer(command);
-
-                connection.Open();
 
                 var commandId = Guid.NewGuid();
                 var startTime = DateTimeOffset.UtcNow;
@@ -112,13 +118,19 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public IEnumerable<TElement> ExecuteEnumerable<TElement>(Action<DbCommand> initializer, Func<DbDataReader, TElement> materializer)
         {
+            if (unbufferedReader != null)
+            {
+                unbufferedReader.Buffer();
+                unbufferedReader = null;
+            }
+
             var connection = CurrentDbContext.Context.Database.GetService<IRelationalConnection>();
+
+            connection.Open();
 
             var command = CreateCommand(connection);
 
             initializer(command);
-
-            connection.Open();
 
             var commandId = Guid.NewGuid();
             var startTime = DateTimeOffset.UtcNow;
@@ -170,7 +182,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 if (caughtException)
                 {
-                    reader?.Close();
+                    reader?.Dispose();
                     command.Dispose();
                     connection.Close();
                 }
@@ -180,6 +192,15 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             try
             {
+                if (!connection.IsMultipleActiveResultSetsEnabled)
+                {
+                    var buffer = new BufferingDbDataReader(reader, ArrayPool<object>.Shared);
+
+                    unbufferedReader = buffer;
+
+                    reader = buffer;
+                }
+
                 while (reader.Read())
                 {
                     yield return materializer(reader);
@@ -187,7 +208,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
             finally
             {
-                reader?.Close();
+                if (unbufferedReader == reader)
+                {
+                    unbufferedReader = null;
+                }
+
+                reader?.Dispose();
                 command.Dispose();
                 connection.Close();
             }
@@ -195,13 +221,19 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public TResult ExecuteScalar<TResult>(Action<DbCommand> initializer)
         {
+            if (unbufferedReader != null)
+            {
+                unbufferedReader.Buffer();
+                unbufferedReader = null;
+            }
+
             var connection = CurrentDbContext.Context.Database.GetService<IRelationalConnection>();
+
+            connection.Open();
 
             using (var command = CreateCommand(connection))
             {
                 initializer(command);
-
-                connection.Open();
 
                 var commandId = Guid.NewGuid();
                 var startTime = DateTimeOffset.UtcNow;
@@ -297,7 +329,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return false;
         }
 
-        public void CacheEntity(IEntityType entityType, object[] keyValues, EntityMaterializationInfo info)
+        public void CacheEntity(IEntityType entityType, object[] keyValues, in EntityMaterializationInfo info)
         {
             var rootType = entityType.RootType();
 
@@ -329,7 +361,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 entityLookups[rootType] = lookups = new EntityLookups
                 {
                     KeyMap = new Dictionary<object[], EntityMaterializationInfo>(instance),
-                    EntityMap = new Dictionary<object, EntityMaterializationInfo>()
+                    EntityMap = new Dictionary<object, EntityMaterializationInfo>(ReferenceEqualityComparer.Instance)
                 };
             }
 

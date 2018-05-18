@@ -2,7 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Impatient.Query.Expressions
 {
@@ -34,6 +36,8 @@ namespace Impatient.Query.Expressions
 
             return Update(expression, properties);
         }
+
+        public virtual IEnumerable<MemberInfo> GetMemberPath(int index) => Enumerable.Empty<MemberInfo>();
 
         public abstract ExtraPropertiesExpression Update(Expression expression, IEnumerable<Expression> properties);
 

@@ -3,14 +3,22 @@ using Impatient.Metadata;
 using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using static Impatient.Extensions.ReflectionExtensions;
 
 namespace Impatient.Query.ExpressionVisitors.Rewriting
 {
     public class KeyEqualityRewritingExpressionVisitor : ExpressionVisitor
     {
+        private static readonly MethodInfo enumerableSelect
+            = GetGenericMethodDefinition((IEnumerable<object> e) => e.Select(x => x));
+
+        private static readonly MethodInfo queryableSelect
+            = GetGenericMethodDefinition((IQueryable<object> e) => e.Select(x => x));
+
         private readonly DescriptorSet descriptorSet;
 
         public KeyEqualityRewritingExpressionVisitor(DescriptorSet descriptorSet)
@@ -21,108 +29,108 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
         protected override Expression VisitBinary(BinaryExpression node)
         {
             // TODO: Write an explicit test case for PolymorphicExpression key comparison
-            if (node.NodeType == ExpressionType.Equal || node.NodeType == ExpressionType.NotEqual)
+            if (node.NodeType != ExpressionType.Equal && node.NodeType != ExpressionType.NotEqual)
             {
-                var left = Visit(node.Left).UnwrapInnerExpression();
-                var right = Visit(node.Right).UnwrapInnerExpression();
-                var leftIsNullConstant = left is ConstantExpression leftConstant && leftConstant.Value == null;
-                var rightIsNullConstant = right is ConstantExpression rightConstant && rightConstant.Value == null;
-                var canRewriteLeft = CanRewrite(left);
-                var canRewriteRight = CanRewrite(right);
-
-                if ((leftIsNullConstant && rightIsNullConstant)
-                    || (!canRewriteLeft && !leftIsNullConstant)
-                    || (!canRewriteRight && !rightIsNullConstant))
-                {
-                    if (left.Type != node.Left.Type)
-                    {
-                        left = Expression.Convert(left, node.Left.Type);
-                    }
-
-                    if (right.Type != node.Right.Type)
-                    {
-                        right = Expression.Convert(right, node.Right.Type);
-                    }
-
-                    return node.Update(left, node.Conversion, right);
-                }
-
-                left = TryReduceNavigationKey(left, out var rewroteLeft);
-                right = TryReduceNavigationKey(right, out var rewroteRight);
-
-                if (rewroteLeft && rewroteRight)
-                {
-                    return Expression.MakeBinary(node.NodeType, left, right);
-                }
-
-                var targetType = leftIsNullConstant ? right.Type : left.Type;
-
-                var primaryKeyDescriptor
-                    = descriptorSet
-                        .PrimaryKeyDescriptors
-                        .FirstOrDefault(d => d.TargetType.IsAssignableFrom(targetType));
-
-                if (primaryKeyDescriptor == null)
-                {
-                    return Expression.MakeBinary(
-                        node.NodeType, 
-                        Expression.Convert(left, node.Left.Type), 
-                        Expression.Convert(right, node.Right.Type));
-                }
-
-                if (!rewroteLeft && canRewriteLeft)
-                {
-                    left = primaryKeyDescriptor.KeySelector.ExpandParameters(left);
-                }
-
-                if (!rewroteRight && canRewriteRight)
-                {
-                    right = primaryKeyDescriptor.KeySelector.ExpandParameters(right);
-                }
-
-                if (leftIsNullConstant || rightIsNullConstant)
-                {
-                    var nonNullExpression = leftIsNullConstant ? right : left;
-
-                    switch (nonNullExpression)
-                    {
-                        case NewExpression newExpression:
-                        {
-                            nonNullExpression 
-                                = newExpression.Arguments
-                                    .Select(a => a.UnwrapInnerExpression())
-                                    .First(a => a.Type.IsScalarType());
-                            break;
-                        }
-
-                        case NewArrayExpression newArrayExpression:
-                        {
-                            nonNullExpression 
-                                = newArrayExpression.Expressions
-                                    .Select(a => a.UnwrapInnerExpression())
-                                    .First(a => a.Type.IsScalarType());
-                            break;
-                        }
-                    }
-
-                    nonNullExpression = nonNullExpression.AsNullable();
-
-                    if (leftIsNullConstant)
-                    {
-                        left = Expression.Constant(null, nonNullExpression.Type);
-                        right = nonNullExpression;
-                    }
-                    else
-                    {
-                        left = nonNullExpression;
-                        right = Expression.Constant(null, nonNullExpression.Type);
-                    }
-                }
-                
-                return Expression.MakeBinary(node.NodeType, left, right);
+                return base.VisitBinary(node);
             }
 
-            return base.VisitBinary(node);
+            var visitedLeft = Visit(node.Left);
+            var visitedRight = Visit(node.Right);
+
+            var left = visitedLeft.UnwrapInnerExpression();
+            var right = visitedRight.UnwrapInnerExpression();
+            var leftIsNullConstant = left is ConstantExpression leftConstant && leftConstant.Value == null;
+            var rightIsNullConstant = right is ConstantExpression rightConstant && rightConstant.Value == null;
+            var canRewriteLeft = CanRewrite(left);
+            var canRewriteRight = CanRewrite(right);
+
+            if ((leftIsNullConstant && rightIsNullConstant)
+                || (!canRewriteLeft && !leftIsNullConstant)
+                || (!canRewriteRight && !rightIsNullConstant))
+            {
+                if (left.Type != node.Left.Type)
+                {
+                    left = Expression.Convert(left, node.Left.Type);
+                }
+
+                if (right.Type != node.Right.Type)
+                {
+                    right = Expression.Convert(right, node.Right.Type);
+                }
+
+                return node.Update(left, node.Conversion, right);
+            }
+
+            left = TryReduceNavigationKey(left, out var rewroteLeft);
+            right = TryReduceNavigationKey(right, out var rewroteRight);
+
+            if (rewroteLeft && rewroteRight)
+            {
+                return node.UpdateWithConversion(left, right);
+            }
+
+            var targetType = leftIsNullConstant ? right.Type : left.Type;
+
+            var primaryKeyDescriptor
+                = descriptorSet
+                    .PrimaryKeyDescriptors
+                    .FirstOrDefault(d => d.TargetType.IsAssignableFrom(targetType));
+
+            if (primaryKeyDescriptor == null)
+            {
+                return node.Update(visitedLeft, node.Conversion, visitedRight);
+            }
+
+            if (!rewroteLeft && canRewriteLeft)
+            {
+                left = primaryKeyDescriptor.KeySelector.ExpandParameters(left);
+            }
+
+            if (!rewroteRight && canRewriteRight)
+            {
+                right = primaryKeyDescriptor.KeySelector.ExpandParameters(right);
+            }
+
+            if (leftIsNullConstant || rightIsNullConstant)
+            {
+                var nonNullExpression = leftIsNullConstant ? right : left;
+
+                switch (nonNullExpression)
+                {
+                    case NewExpression newExpression:
+                    {
+                        nonNullExpression
+                            = newExpression.Arguments
+                                .Select(a => a.UnwrapInnerExpression())
+                                .First(a => a.Type.IsScalarType());
+                        break;
+                    }
+
+                    case NewArrayExpression newArrayExpression:
+                    {
+                        nonNullExpression
+                            = newArrayExpression.Expressions
+                                .Select(a => a.UnwrapInnerExpression())
+                                .First(a => a.Type.IsScalarType());
+                        break;
+                    }
+                }
+
+                nonNullExpression = nonNullExpression.AsNullable();
+
+                if (leftIsNullConstant)
+                {
+                    left = Expression.Constant(null, nonNullExpression.Type);
+                    right = nonNullExpression;
+                }
+                else
+                {
+                    left = nonNullExpression;
+                    right = Expression.Constant(null, nonNullExpression.Type);
+                }
+            }
+
+            return node.UpdateWithConversion(left, right);
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
@@ -141,12 +149,12 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
                         if (CanRewrite(outerKeySelector?.Body) && CanRewrite(innerKeySelector?.Body))
                         {
-                            arguments[2] =
+                            outerKeySelector =
                                 Expression.Lambda(
                                     TryReduceNavigationKey(outerKeySelector.Body, out var rewroteOuter),
                                     outerKeySelector.Parameters[0]);
 
-                            arguments[3] =
+                            innerKeySelector =
                                 Expression.Lambda(
                                     TryReduceNavigationKey(innerKeySelector.Body, out var rewroteInner),
                                     innerKeySelector.Parameters[0]);
@@ -162,7 +170,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                                 {
                                     if (!rewroteOuter)
                                     {
-                                        arguments[2]
+                                        outerKeySelector
                                             = Expression.Lambda(
                                                 primaryKeyDescriptor.KeySelector.ExpandParameters(outerKeySelector.Body),
                                                 outerKeySelector.Parameters[0]);
@@ -170,7 +178,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
                                     if (!rewroteInner)
                                     {
-                                        arguments[3]
+                                        innerKeySelector
                                             = Expression.Lambda(
                                                 primaryKeyDescriptor.KeySelector.ExpandParameters(innerKeySelector.Body),
                                                 innerKeySelector.Parameters[0]);
@@ -178,13 +186,36 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                                 }
                             }
 
-                            if (node.Method.IsQueryableMethod())
+                            if (outerKeySelector.ReturnType != innerKeySelector.ReturnType)
                             {
-                                arguments[2] = Expression.Quote(arguments[2]);
-                                arguments[3] = Expression.Quote(arguments[3]);
+                                if (outerKeySelector.ReturnType.IsNullableType())
+                                {
+                                    innerKeySelector
+                                        = Expression.Lambda(
+                                            Expression.Convert(innerKeySelector.Body, outerKeySelector.ReturnType),
+                                            innerKeySelector.Parameters);
+                                }
+                                else
+                                {
+                                    outerKeySelector
+                                        = Expression.Lambda(
+                                            Expression.Convert(outerKeySelector.Body, innerKeySelector.ReturnType),
+                                            outerKeySelector.Parameters);
+                                }
                             }
 
-                            genericArguments[2] = arguments[2].UnwrapLambda().ReturnType;
+                            genericArguments[2] = outerKeySelector.ReturnType;
+
+                            if (node.Method.IsQueryableMethod())
+                            {
+                                arguments[2] = Expression.Quote(outerKeySelector);
+                                arguments[3] = Expression.Quote(innerKeySelector);
+                            }
+                            else
+                            {
+                                arguments[2] = outerKeySelector;
+                                arguments[3] = innerKeySelector;
+                            }
 
                             return Expression.Call(
                                 node.Method.GetGenericMethodDefinition().MakeGenericMethod(genericArguments),
@@ -192,6 +223,38 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                         }
 
                         break;
+                    }
+
+                    case nameof(Queryable.Contains):
+                    {
+                        var sequenceType = node.Arguments[0].Type.GetSequenceType();
+
+                        var primaryKeyDescriptor
+                            = descriptorSet
+                                .PrimaryKeyDescriptors
+                                .FirstOrDefault(d => d.TargetType.IsAssignableFrom(sequenceType));
+
+                        if (primaryKeyDescriptor is null || !primaryKeyDescriptor.KeySelector.ReturnType.IsScalarType())
+                        {
+                            break;
+                        }
+
+                        var keyType = primaryKeyDescriptor.KeySelector.ReturnType;
+                        var arguments = Visit(node.Arguments).ToArray();
+
+                        var setSelector = (Expression)primaryKeyDescriptor.KeySelector;
+                        var selectMethod = enumerableSelect.MakeGenericMethod(sequenceType, keyType);
+
+                        if (node.Method.IsQueryableMethod())
+                        {
+                            setSelector = Expression.Quote(setSelector);
+                            selectMethod = queryableSelect.MakeGenericMethod(sequenceType, keyType);
+                        }
+
+                        return Expression.Call(
+                            node.Method.GetGenericMethodDefinition().MakeGenericMethod(keyType),
+                            Expression.Call(selectMethod, arguments[0], setSelector),
+                            primaryKeyDescriptor.KeySelector.ExpandParameters(arguments[1]));
                     }
                 }
             }
@@ -205,6 +268,8 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
             {
                 case NewExpression _:
                 case MemberInitExpression _:
+                case ExtendedNewExpression _:
+                case ExtendedMemberInitExpression _:
                 case ParameterExpression _:
                 case PolymorphicExpression _:
                 case ExtraPropertiesExpression _:
@@ -228,7 +293,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
         {
             if (expression is MemberExpression memberExpression)
             {
-                var navigationDescriptor 
+                var navigationDescriptor
                     = descriptorSet
                         .NavigationDescriptors
                         .FirstOrDefault(n => n.Member == memberExpression.Member);
@@ -237,8 +302,16 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                 {
                     reduced = true;
 
-                    return new SqlColumnNullabilityExpressionVisitor(true)
-                        .Visit(navigationDescriptor.OuterKeySelector.ExpandParameters(memberExpression.Expression));
+                    if (memberExpression.Member.GetMemberType().IsSequenceType())
+                    {
+                        return new SqlColumnNullabilityExpressionVisitor(true)
+                            .Visit(navigationDescriptor.OuterKeySelector.ExpandParameters(memberExpression.Expression));
+                    }
+                    /*else
+                    {
+                        return new SqlColumnNullabilityExpressionVisitor(true)
+                            .Visit(navigationDescriptor.InnerKeySelector.ExpandParameters(memberExpression));
+                    }*/
                 }
             }
 

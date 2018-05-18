@@ -1,5 +1,6 @@
 ﻿using Impatient.Extensions;
 using Impatient.Query.Expressions;
+using Impatient.Query.Infrastructure;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -7,13 +8,12 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 {
     public class TranslatabilityAnalyzingExpressionVisitor : ExpressionVisitor
     {
-        public TranslatabilityAnalyzingExpressionVisitor()
-        {
-        }
+        private readonly IQueryFormattingProvider queryFormattingProvider;
 
-        // TODO: Refer to registered or supplied services' existence and
-        // analyses instead of using a simple boolean.
-        public virtual bool ComplexNestedQueriesSupported => true;
+        public TranslatabilityAnalyzingExpressionVisitor(IQueryFormattingProvider queryFormattingProvider)
+        {
+            this.queryFormattingProvider = queryFormattingProvider ?? throw new System.ArgumentNullException(nameof(queryFormattingProvider));
+        }
 
         protected override Expression VisitBinary(BinaryExpression node)
         {
@@ -29,6 +29,25 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                         return new TranslatableExpression(node);
                     }
 
+                    // Math
+                    case ExpressionType.Add:
+                    case ExpressionType.Subtract:
+                    case ExpressionType.Multiply:
+                    case ExpressionType.Divide:
+                    case ExpressionType.Modulo:
+                    case ExpressionType.Power:
+                    {
+                        if (t1.Type.IsScalarType() 
+                            && t2.Type.IsScalarType()
+                            && !t1.Type.IsTimeType()
+                            && !t2.Type.IsTimeType())
+                        {
+                            return new TranslatableExpression(node);
+                        }
+
+                        break;
+                    }
+
                     // Comparison
                     case ExpressionType.GreaterThan:
                     case ExpressionType.GreaterThanOrEqual:
@@ -37,12 +56,6 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                     // Logical
                     case ExpressionType.AndAlso:
                     case ExpressionType.OrElse:
-                    // Math
-                    case ExpressionType.Add:
-                    case ExpressionType.Subtract:
-                    case ExpressionType.Multiply:
-                    case ExpressionType.Divide:
-                    case ExpressionType.Modulo:
                     // Bitwise
                     case ExpressionType.And:
                     case ExpressionType.Or:
@@ -91,6 +104,31 @@ namespace Impatient.Query.ExpressionVisitors.Utility
         {
             switch (node)
             {
+                case SqlConcatExpression sqlConcatExpression
+                when sqlConcatExpression.Segments.All(IsTranslatable):
+                {
+                    return new TranslatableExpression(node);
+                }
+
+                case SqlFunctionExpression sqlFunctionExpression
+                when sqlFunctionExpression.Arguments.All(IsTranslatable):
+                {
+                    return new TranslatableExpression(node);
+                }
+
+                case SqlInExpression sqlInExpression
+                when IsTranslatable(sqlInExpression.Value):
+                {
+                    return new TranslatableExpression(node);
+                }
+
+                case SqlConcatExpression _:
+                case SqlFunctionExpression _:
+                case SqlInExpression _:
+                {
+                    return node;
+                }
+
                 case SqlExpression _:
                 {
                     return new TranslatableExpression(node);
@@ -102,28 +140,23 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                 }
 
                 case GroupByResultExpression query
-                when ComplexNestedQueriesSupported
-                    && !(query.SelectExpression.Projection is ClientProjectionExpression):
+                when queryFormattingProvider.SupportsComplexTypeSubqueries 
+                    && query.SelectExpression.Projection is ServerProjectionExpression:
                 {
                     return new TranslatableExpression(node);
                 }
 
-                case GroupedRelationalQueryExpression query
-                when ComplexNestedQueriesSupported
-                    && !(query.SelectExpression.Projection is ClientProjectionExpression):
-                {
-                    return new TranslatableExpression(node);
-                }
-
-                case SingleValueRelationalQueryExpression singleValueRelationalQueryExpression
-                when singleValueRelationalQueryExpression.Type.IsScalarType() || ComplexNestedQueriesSupported:
+                case SingleValueRelationalQueryExpression query
+                when query.Type.IsScalarType() 
+                    || (queryFormattingProvider.SupportsComplexTypeSubqueries
+                        && query.SelectExpression.Projection is ServerProjectionExpression):
                 {
                     return new TranslatableExpression(node);
                 }
 
                 case EnumerableRelationalQueryExpression query
-                when ComplexNestedQueriesSupported
-                    && !(query.SelectExpression.Projection is ClientProjectionExpression):
+                when queryFormattingProvider.SupportsComplexTypeSubqueries
+                    && query.SelectExpression.Projection is ServerProjectionExpression:
                 {
                     return new TranslatableExpression(node);
                 }
@@ -131,6 +164,13 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                 case ExtraPropertiesExpression extraPropertiesExpression:
                 {
                     return Visit(extraPropertiesExpression.Expression);
+                }
+
+                case ExtendedMemberInitExpression _:
+                case ExtendedNewExpression _:
+                case LateBoundProjectionLeafExpression _:
+                {
+                    return new TranslatableExpression(node);
                 }
 
                 case AnnotationExpression annotationExpression:

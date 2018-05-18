@@ -1,5 +1,4 @@
 ﻿using Impatient.Metadata;
-using Impatient.Query;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +18,10 @@ namespace Impatient.Tests.Utilities
 
             services.AddSingleton<TranslatabilityAnalyzingExpressionVisitor>();
 
+            services.AddSingleton<ITypeMappingProvider, DefaultTypeMappingProvider>();
+
+            services.AddSingleton<IQueryFormattingProvider, SqlServerQueryFormattingProvider>();
+
             services.AddScoped<IReadValueExpressionFactoryProvider, DefaultReadValueExpressionFactoryProvider>();
 
             services.AddScoped<IRewritingExpressionVisitorProvider, DefaultRewritingExpressionVisitorProvider>();
@@ -37,7 +40,7 @@ namespace Impatient.Tests.Utilities
 
             services.AddScoped<IDbCommandExecutorFactory>(provider => provider.GetRequiredService<TestDbCommandExecutorFactory>());
 
-            services.AddScoped<IImpatientQueryExecutor, DefaultImpatientQueryExecutor>();
+            services.AddScoped<IImpatientQueryProcessor, DefaultImpatientQueryProcessor>();
 
             #endregion
 

@@ -31,7 +31,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 case SelectExpression selectExpression:
                 {
                     var readerParameter
-                        = Expression.Parameter(typeof(DbDataReader));
+                        = Expression.Parameter(typeof(DbDataReader), "dbDataReader");
 
                     var visitor
                         = new MaterializerBuildingExpressionVisitor(
@@ -95,6 +95,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             private int readerIndex;
 
             private readonly Dictionary<string, Expression> readValueExpressions = new Dictionary<string, Expression>();
+            private readonly Dictionary<string, int> identifierCounts = new Dictionary<string, int>();
 
             public MaterializerBuildingExpressionVisitor(
                 TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor,
@@ -191,25 +192,100 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                         expressions.Add(Expression.Assign(rowVariable, rowValue));
 
-                        var result = Expression.Default(polymorphicExpression.Type) as Expression;
+                        var useSwitchBlock
+                            = polymorphicExpression.Descriptors
+                                .All(d => d.Test.Body.NodeType == ExpressionType.Equal
+                                    && ((BinaryExpression)d.Test.Body).Right is ConstantExpression constant
+                                    && constant.Type.IsConstantLiteralType());
 
-                        foreach (var descriptor in polymorphicExpression.Descriptors)
+                        if (useSwitchBlock)
                         {
-                            var test = descriptor.Test.ExpandParameters(rowParameterExpansion);
-                            var materializer = descriptor.Materializer.ExpandParameters(rowParameterExpansion);
-                            var expansion = Expression.Convert(materializer, polymorphicExpression.Type);
+                            var result = Expression.Parameter(polymorphicExpression.Type);
+                            var cases = new SwitchCase[polymorphicExpression.Descriptors.Count()];
+                            //var breakTarget = Expression.Label();
+                            var i = 0;
 
-                            result = Expression.Condition(test, expansion, result, polymorphicExpression.Type);
+                            foreach (var descriptor in polymorphicExpression.Descriptors)
+                            {
+                                var materializer = descriptor.Materializer.ExpandParameters(rowParameterExpansion);
+                                var expansion = Expression.Convert(materializer, polymorphicExpression.Type);
+                                var assignment = Expression.Assign(result, expansion);
+                                var testValue = ((BinaryExpression)descriptor.Test.Body).Right;
+                                var body = assignment; //Expression.Block(assignment, Expression.Break(breakTarget));
+
+                                cases[i] = Expression.SwitchCase(body, testValue);
+                                i++;
+                            }
+
+                            variables.Add(result);
+
+                            expressions.Add(
+                                Expression.Switch(
+                                    ((BinaryExpression)polymorphicExpression.Descriptors.First().Test.ExpandParameters(rowParameterExpansion)).Left,
+                                    Expression.Assign(result, Expression.Default(polymorphicExpression.Type)),
+                                    cases));
+
+                            //expressions.Add(Expression.Label(breakTarget));
+                            expressions.Add(result);
                         }
+                        else
+                        {
+                            var result = Expression.Default(polymorphicExpression.Type) as Expression;
 
-                        expressions.Add(result);
+                            foreach (var descriptor in polymorphicExpression.Descriptors)
+                            {
+                                var test = descriptor.Test.ExpandParameters(rowParameterExpansion);
+                                var materializer = descriptor.Materializer.ExpandParameters(rowParameterExpansion);
+                                var expansion = Expression.Convert(materializer, polymorphicExpression.Type);
+
+                                result = Expression.Condition(test, expansion, result, polymorphicExpression.Type);
+                            }
+
+                            expressions.Add(result);
+                        }
 
                         return Expression.Block(variables, expressions);
                     }
 
                     default:
                     {
-                        return base.Visit(node);
+                        var visited = base.Visit(node);
+
+                        if (visited is ExtraPropertiesExpression || visited is NewExpression)
+                        {
+                            return visited;
+                        }
+
+                        var parts = GetNameParts().ToArray();
+                        var identifier = $"Materialize_";
+
+                        if (parts.Length == 0)
+                        {
+                            identifier += "$root";
+                        }
+                        else if (parts.Length == 1)
+                        {
+                            identifier += parts[0];
+                        }
+                        else
+                        {
+                            identifier += $"{parts.First()}_{{{parts.Length - 2}}}_{parts.Last()}";
+                        }
+
+                        if (identifierCounts.TryGetValue(identifier, out var count))
+                        {
+                            identifierCounts[identifier] = count + 1;
+
+                            identifier += $"_{count}";
+                        }
+                        else
+                        {
+                            identifierCounts[identifier] = 1;
+
+                            identifier += "_0";
+                        }
+
+                        return MaterializationUtilities.Invoke(visited, identifier);
                     }
                 }
             }

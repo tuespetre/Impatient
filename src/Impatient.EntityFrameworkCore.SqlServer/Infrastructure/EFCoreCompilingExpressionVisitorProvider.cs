@@ -45,6 +45,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 context.ExecutionContextParameter);
 
             yield return new IncludeCompilingExpressionVisitor();
+
+            yield return new ConcurrencyDetectionCompilingExpressionVisitor();
         }
     }
 }

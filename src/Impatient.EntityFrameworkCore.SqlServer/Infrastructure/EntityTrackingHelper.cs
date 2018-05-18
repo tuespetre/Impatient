@@ -182,9 +182,23 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
                         continue;
                     }
 
-                    if (value is IQueryable queryable && queryable.Expression is ConstantExpression constant)
+                    if (value is IQueryable queryable)
                     {
-                        value = constant.Value;
+                        var expression = queryable.Expression;
+
+                        if (expression is MethodCallExpression methodCall
+                            && methodCall.Method.DeclaringType == typeof(Queryable)
+                            && methodCall.Method.Name.Equals(nameof(Queryable.AsQueryable)))
+                        {
+                            Debug.Assert(methodCall.Arguments.Count == 1);
+
+                            expression = methodCall.Arguments[0];
+                        }
+
+                        if (expression is ConstantExpression constant)
+                        {
+                            value = constant.Value;
+                        }
                     }
 
                     if (value is IList list)
@@ -287,6 +301,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
                 {
                     entry.SetIsLoaded(include, true);
 
+                    // Test that demonstrates the necessity of fixup:
+                    // Include_collection_principal_already_tracked
                     FixupNavigation(include, entity, cached);
                 }
             }
@@ -303,7 +319,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
                 return;
             }
 
-            navigation.GetSetter().SetClrValue(cached, value);
+            if (navigation.FieldInfo != null)
+            {
+                navigation.FieldInfo.SetValue(cached, value);
+            }
+            else
+            {
+                navigation.GetSetter().SetClrValue(cached, value);
+            }
 
             var inverse = navigation.FindInverse();
 

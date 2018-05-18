@@ -6,12 +6,18 @@ namespace Impatient.Query.Expressions
 {
     public class SqlColumnExpression : SqlExpression
     {
-        public SqlColumnExpression(AliasedTableExpression table, string columnName, Type type, bool isNullable = false)
+        public SqlColumnExpression(
+            AliasedTableExpression table, 
+            string columnName, 
+            Type type, 
+            bool isNullable,
+            ITypeMapping typeMapping)
         {
             Table = table ?? throw new ArgumentNullException(nameof(table));
             ColumnName = columnName ?? throw new ArgumentNullException(nameof(columnName));
             Type = type ?? throw new ArgumentNullException(nameof(type));
             IsNullable = isNullable;
+            TypeMapping = typeMapping;
         }
 
         public AliasedTableExpression Table { get; }
@@ -21,6 +27,8 @@ namespace Impatient.Query.Expressions
         public override Type Type { get; }
 
         public override bool IsNullable { get; }
+
+        public ITypeMapping TypeMapping { get; }
 
         // The SqlColumnExpression holds a reference to a AliasedTableExpression only in
         // a semantic sense, not a structural one -- that is to say, the table is not a proper

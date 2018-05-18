@@ -30,6 +30,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                 if (arguments[0].TryResolvePath(propertyName, out var resolved))
                 {
+                    if (resolved.Type != node.Type)
+                    {
+                        resolved = Expression.Convert(resolved, node.Type);
+                    }
+
                     return resolved;
                 }
 
@@ -43,14 +48,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                     if (property != null && !property.IsShadowProperty)
                     {
-                        result = Expression.MakeMemberAccess(arguments[0], property.GetMemberInfo(false, false));
+                        result = Expression.MakeMemberAccess(arguments[0], property.GetReadableMemberInfo());
                     }
 
                     var navigation = entityType.FindNavigation(propertyName);
 
                     if (navigation != null && !navigation.IsShadowProperty)
                     {
-                        result = Expression.MakeMemberAccess(arguments[0], navigation.GetMemberInfo(false, false));
+                        result = Expression.MakeMemberAccess(arguments[0], navigation.GetReadableMemberInfo());
                     }
 
                     if (result != null)

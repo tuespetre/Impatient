@@ -1,5 +1,4 @@
 ﻿using Impatient.Extensions;
-using Impatient.Query;
 using Impatient.Query.Infrastructure;
 using System;
 using System.Collections.Generic;
@@ -11,12 +10,12 @@ namespace Impatient
 {
     public class ImpatientQueryProvider : IQueryProvider
     {
-        public ImpatientQueryProvider(IImpatientQueryExecutor queryExecutor)
-        {
-            QueryExecutor = queryExecutor ?? throw new ArgumentNullException(nameof(queryExecutor));
-        }
+        private readonly IImpatientQueryProcessor queryProcessor;
 
-        public IImpatientQueryExecutor QueryExecutor { get; }
+        public ImpatientQueryProvider(IImpatientQueryProcessor queryProcessor)
+        {
+            this.queryProcessor = queryProcessor ?? throw new ArgumentNullException(nameof(queryProcessor));
+        }
 
         public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
         {
@@ -64,9 +63,25 @@ namespace Impatient
             return (IQueryable)Activator.CreateInstance(queryableType, expression, this);
         }
 
-        object IQueryProvider.Execute(Expression expression) => QueryExecutor.Execute(this, expression);
+        object IQueryProvider.Execute(Expression expression)
+        {
+            if (expression == null)
+            {
+                throw new ArgumentNullException(nameof(expression));
+            }
 
-        TResult IQueryProvider.Execute<TResult>(Expression expression) => (TResult)QueryExecutor.Execute(this, expression);
+            return queryProcessor.Execute(this, expression);
+        }
+
+        TResult IQueryProvider.Execute<TResult>(Expression expression)
+        {
+            if (expression == null)
+            {
+                throw new ArgumentNullException(nameof(expression));
+            }
+
+            return (TResult)queryProcessor.Execute(this, expression);
+        }
 
         private class ImpatientOrderedQueryable<TElement> : ImpatientQueryable<TElement>, IOrderedQueryable<TElement>
         {

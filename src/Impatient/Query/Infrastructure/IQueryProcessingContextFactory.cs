@@ -5,6 +5,6 @@ namespace Impatient.Query.Infrastructure
 {
     public interface IQueryProcessingContextFactory
     {
-        QueryProcessingContext CreateQueryProcessingContext(IQueryProvider queryProvider, DescriptorSet descriptorSet);
+        QueryProcessingContext CreateQueryProcessingContext(IQueryProvider queryProvider);
     }
 }

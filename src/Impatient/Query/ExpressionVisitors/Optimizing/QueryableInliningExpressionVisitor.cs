@@ -11,7 +11,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 {
     public class QueryableInliningExpressionVisitor : PartialEvaluatingExpressionVisitor
     {
-        private readonly IQueryProvider queryProvider;
+        protected readonly IQueryProvider queryProvider;
         private readonly IDictionary<object, ParameterExpression> parameterMapping;
         private readonly ExpressionVisitor replacingVisitor;
 
@@ -101,62 +101,6 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             }
 
             return base.VisitExtension(node);
-        }
-
-        protected override Expression VisitMember(MemberExpression node)
-        {
-            // This block ensures that IQueryables coming from chained 
-            // member accesses rooted at a static member can be inlined.
-
-            if (typeof(IQueryable).IsAssignableFrom(node.Type))
-            {
-                var memberStack = new Stack<MemberInfo>();
-
-                memberStack.Push(node.Member);
-
-                var expression = node.Expression;
-
-                while (expression is MemberExpression inner)
-                {
-                    memberStack.Push(inner.Member);
-
-                    expression = inner.Expression;
-                }
-
-                if (expression == null || expression is ConstantExpression)
-                {
-                    try
-                    {
-                        var value = (expression as ConstantExpression)?.Value;
-
-                        foreach (var member in memberStack)
-                        {
-                            switch (member)
-                            {
-                                case PropertyInfo propertyInfo:
-                                {
-                                    value = propertyInfo.GetValue(value);
-                                    break;
-                                }
-
-                                case FieldInfo fieldInfo:
-                                {
-                                    value = fieldInfo.GetValue(value);
-                                    break;
-                                }
-                            }
-                        }
-
-                        return Expression.Constant(value);
-                    }
-                    catch
-                    {
-                        return base.VisitMember(node);
-                    }
-                }
-            }
-
-            return base.VisitMember(node);
         }
 
         protected override Expression VisitMemberInit(MemberInitExpression node)

@@ -17,7 +17,7 @@ namespace Impatient.Query.Infrastructure
             QueryProvider = queryProvider;
             DescriptorSet = descriptorSet;
             ParameterMapping = new Dictionary<object, ParameterExpression>();
-            ExecutionContextParameter = Expression.Parameter(typeof(IDbCommandExecutor), "executor");
+            //ExecutionContextParameter = Expression.Parameter(typeof(IDbCommandExecutor), "executor");
         }
 
         public IQueryProvider QueryProvider { get; }
@@ -26,7 +26,7 @@ namespace Impatient.Query.Infrastructure
 
         public IDictionary<object, ParameterExpression> ParameterMapping { get; }
 
-        public ParameterExpression ExecutionContextParameter { get; }
+        public ParameterExpression ExecutionContextParameter => Infrastructure.ExecutionContextParameter.Instance;
 
         public TExtension GetExtension<TExtension>() where TExtension : class
         {

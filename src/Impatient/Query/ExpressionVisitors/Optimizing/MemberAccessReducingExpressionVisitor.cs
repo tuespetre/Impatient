@@ -41,6 +41,18 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
             switch (expression)
             {
+                case ExtendedMemberInitExpression extendedMemberInitExpression
+                when FindExpressionForMember(extendedMemberInitExpression, node.Member, out var foundExpression):
+                {
+                    return Visit(foundExpression);
+                }
+
+                case ExtendedNewExpression extendedNewExpression
+                when FindExpressionForMember(extendedNewExpression, node.Member, out var foundExpression):
+                {
+                    return Visit(foundExpression);
+                }
+
                 case MemberInitExpression memberInitExpression
                 when FindExpressionForMember(memberInitExpression, node.Member, out var foundExpression):
                 {
@@ -140,18 +152,18 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
         private static bool FindExpressionForMember(MemberInitExpression memberInitExpression, MemberInfo memberInfo, out Expression expression)
         {
-            var memberBinding
-                = memberInitExpression.Bindings
-                    .OfType<MemberAssignment>()
-                    .SingleOrDefault(b =>
-                        b.Member.DeclaringType == memberInfo.DeclaringType
-                            && b.Member.Name == memberInfo.Name);
-
-            if (memberBinding != null)
+            for (var i = 0; i < memberInitExpression.Bindings.Count; i++)
             {
-                expression = memberBinding.Expression;
+                var binding = memberInitExpression.Bindings[i];
 
-                return true;
+                if (binding is MemberAssignment assignment
+                    && binding.Member.DeclaringType == memberInfo.DeclaringType
+                    && binding.Member.Name == memberInfo.Name)
+                {
+                    expression = assignment.Expression;
+
+                    return true;
+                }
             }
 
             return FindExpressionForMember(memberInitExpression.NewExpression, memberInfo, out expression);
@@ -172,6 +184,45 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
                         return true;
                     }
+                }
+            }
+
+            expression = null;
+
+            return false;
+        }
+
+        private static bool FindExpressionForMember(ExtendedMemberInitExpression extendedMemberInitExpression, MemberInfo memberInfo, out Expression expression)
+        {
+            for (var i = 0; i < extendedMemberInitExpression.ReadableMembers.Count; i++)
+            {
+                var member = extendedMemberInitExpression.ReadableMembers[i];
+
+                if (member.DeclaringType == memberInfo.DeclaringType
+                    && member.Name == memberInfo.Name)
+                {
+                    expression = extendedMemberInitExpression.Arguments[i];
+
+                    return true;
+                }
+            }
+
+            return FindExpressionForMember(extendedMemberInitExpression.NewExpression, memberInfo, out expression);
+        }
+
+        private static bool FindExpressionForMember(ExtendedNewExpression extendedNewExpression, MemberInfo memberInfo, out Expression expression)
+        {
+            for (var i = 0; i < extendedNewExpression.ReadableMembers.Count; i++)
+            {
+                var member = extendedNewExpression.ReadableMembers[i];
+
+                if (member != null
+                    && member.DeclaringType == memberInfo.DeclaringType
+                    && member.Name == memberInfo.Name)
+                {
+                    expression = extendedNewExpression.Arguments[i];
+
+                    return true;
                 }
             }
 

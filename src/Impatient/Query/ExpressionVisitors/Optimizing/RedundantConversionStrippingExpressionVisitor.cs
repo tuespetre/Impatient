@@ -25,7 +25,8 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                         sqlColumnExpression.Table,
                         sqlColumnExpression.ColumnName,
                         node.Type,
-                        sqlColumnExpression.IsNullable);
+                        sqlColumnExpression.IsNullable,
+                        sqlColumnExpression.TypeMapping);
                 }
             }
 

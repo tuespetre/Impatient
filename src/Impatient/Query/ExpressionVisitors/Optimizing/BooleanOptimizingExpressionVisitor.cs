@@ -283,7 +283,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                     }
                 }
 
-                return node.Update(left, right);
+                return node.UpdateWithConversion(left, right);
             }
         }
 
