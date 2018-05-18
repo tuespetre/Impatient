@@ -20,6 +20,8 @@ namespace Impatient.Tests.Utilities
 
             services.AddSingleton<ITypeMappingProvider, DefaultTypeMappingProvider>();
 
+            services.AddSingleton<IQueryFormattingProvider, SqlServerQueryFormattingProvider>();
+
             services.AddScoped<IReadValueExpressionFactoryProvider, DefaultReadValueExpressionFactoryProvider>();
 
             services.AddScoped<IRewritingExpressionVisitorProvider, DefaultRewritingExpressionVisitorProvider>();

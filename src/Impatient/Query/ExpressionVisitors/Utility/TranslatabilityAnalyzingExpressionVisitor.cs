@@ -1,5 +1,6 @@
 ﻿using Impatient.Extensions;
 using Impatient.Query.Expressions;
+using Impatient.Query.Infrastructure;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -7,13 +8,12 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 {
     public class TranslatabilityAnalyzingExpressionVisitor : ExpressionVisitor
     {
-        public TranslatabilityAnalyzingExpressionVisitor()
-        {
-        }
+        private readonly IQueryFormattingProvider queryFormattingProvider;
 
-        // TODO: Refer to registered or supplied services' existence and
-        // analyses instead of using a simple boolean.
-        public virtual bool ComplexNestedQueriesSupported => true;
+        public TranslatabilityAnalyzingExpressionVisitor(IQueryFormattingProvider queryFormattingProvider)
+        {
+            this.queryFormattingProvider = queryFormattingProvider ?? throw new System.ArgumentNullException(nameof(queryFormattingProvider));
+        }
 
         protected override Expression VisitBinary(BinaryExpression node)
         {
@@ -140,20 +140,23 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                 }
 
                 case GroupByResultExpression query
-                when ComplexNestedQueriesSupported && query.SelectExpression.Projection is ServerProjectionExpression:
+                when queryFormattingProvider.SupportsComplexTypeSubqueries 
+                    && query.SelectExpression.Projection is ServerProjectionExpression:
                 {
                     return new TranslatableExpression(node);
                 }
 
                 case SingleValueRelationalQueryExpression query
                 when query.Type.IsScalarType() 
-                    || (ComplexNestedQueriesSupported && query.SelectExpression.Projection is ServerProjectionExpression):
+                    || (queryFormattingProvider.SupportsComplexTypeSubqueries
+                        && query.SelectExpression.Projection is ServerProjectionExpression):
                 {
                     return new TranslatableExpression(node);
                 }
 
                 case EnumerableRelationalQueryExpression query
-                when ComplexNestedQueriesSupported && query.SelectExpression.Projection is ServerProjectionExpression:
+                when queryFormattingProvider.SupportsComplexTypeSubqueries
+                    && query.SelectExpression.Projection is ServerProjectionExpression:
                 {
                     return new TranslatableExpression(node);
                 }

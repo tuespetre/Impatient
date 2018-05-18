@@ -33,6 +33,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             services.AddSingleton<ITypeMappingProvider, EFCoreTypeMappingProvider>();
 
+            services.AddSingleton<IQueryFormattingProvider, SqlServerQueryFormattingProvider>();
+
             services.AddScoped<IOptimizingExpressionVisitorProvider, DefaultOptimizingExpressionVisitorProvider>();
 
             services.AddScoped<IComposingExpressionVisitorProvider, EFCoreComposingExpressionVisitorProvider>();

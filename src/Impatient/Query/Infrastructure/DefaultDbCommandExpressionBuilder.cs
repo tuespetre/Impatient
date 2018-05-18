@@ -38,10 +38,14 @@ namespace Impatient.Query.Infrastructure
             = typeof(DbCommand).GetTypeInfo().GetDeclaredProperty(nameof(DbCommand.CommandText));
 
         private readonly ITypeMappingProvider typeMappingProvider;
+        private readonly IQueryFormattingProvider queryFormattingProvider;
 
-        public DefaultDbCommandExpressionBuilder(ITypeMappingProvider typeMappingProvider)
+        public DefaultDbCommandExpressionBuilder(
+            ITypeMappingProvider typeMappingProvider,
+            IQueryFormattingProvider queryFormattingProvider)
         {
             this.typeMappingProvider = typeMappingProvider ?? throw new ArgumentNullException(nameof(typeMappingProvider));
+            this.queryFormattingProvider = queryFormattingProvider ?? throw new ArgumentNullException(nameof(queryFormattingProvider));
         }
 
         public void Append(string sql)
@@ -102,18 +106,18 @@ namespace Impatient.Query.Infrastructure
             return valueToSet;
         }
 
-        public void AddParameter(SqlParameterExpression node, Func<string, string> formatter)
+        public void AddParameter(SqlParameterExpression node)
         {
             var hash = ExpressionEqualityComparer.Instance.GetHashCode(node);
 
             if (parameterCache.TryGetValue(hash, out var cachedIndex))
             {
-                Append(formatter($"p{cachedIndex}"));
+                Append(queryFormattingProvider.FormatParameterName($"p{cachedIndex}"));
 
                 return;
             }
 
-            var parameterName = formatter($"p{parameterIndex}");
+            var parameterName = queryFormattingProvider.FormatParameterName($"p{parameterIndex}");
 
             parameterCache[hash] = parameterIndex;
             parameterIndex++;
@@ -173,7 +177,7 @@ namespace Impatient.Query.Infrastructure
             dbParameterExpressions.Add(expression);
         }
 
-        public void AddDynamicParameters(string fragment, Expression expression, Func<string, string> formatter)
+        public void AddDynamicParameters(string fragment, Expression expression)
         {
             Debug.Assert(expression != null && typeof(IEnumerable).IsAssignableFrom(expression.Type));
 
@@ -210,7 +214,7 @@ namespace Impatient.Query.Infrastructure
                 Expression.Constant(fragment),
                 Expression.Lambda(typeof(Func<IEnumerable>), expression),
                 Expression.Constant($"p{parameterIndex}"),
-                Expression.Constant(formatter),
+                Expression.Constant(queryFormattingProvider),
                 Expression.Constant(typeMapping.DbType, typeof(DbType?)),
                 conversion));
 
@@ -317,7 +321,7 @@ namespace Impatient.Query.Infrastructure
             string fragment,
             Func<IEnumerable> values,
             string name,
-            Func<string, string> formatter,
+            IQueryFormattingProvider queryFormattingProvider,
             DbType? dbType,
             Func<object, object> conversion)
         {
@@ -350,7 +354,7 @@ namespace Impatient.Query.Infrastructure
                         }
 
                         addedParameter = true;
-                        formattedName = formatter($"{name}_{index++}");
+                        formattedName = queryFormattingProvider.FormatParameterName($"{name}_{index++}");
                         stringBuilder.Append(formattedName);
                         parameter = dbCommand.CreateParameter();
                         parameter.ParameterName = formattedName;
@@ -380,7 +384,7 @@ namespace Impatient.Query.Infrastructure
                         }
                         else
                         {
-                            formattedName = formatter($"{name}_{index++}");
+                            formattedName = queryFormattingProvider.FormatParameterName($"{name}_{index++}");
 
                             if (!addedParameter)
                             {

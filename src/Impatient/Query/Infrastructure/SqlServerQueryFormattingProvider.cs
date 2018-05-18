@@ -1,14 +1,22 @@
-﻿using Impatient.Extensions;
-using Impatient.Query.Expressions;
+﻿using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Infrastructure
 {
-    public class SqlServerForJsonComplexTypeSubqueryFormatter : IComplexTypeSubqueryFormatter
+    public class SqlServerQueryFormattingProvider : IQueryFormattingProvider
     {
-        public SelectExpression Format(SelectExpression subquery, IDbCommandExpressionBuilder builder, ExpressionVisitor visitor)
+        public string FormatIdentifier(string identifier) => $"[{identifier}]";
+
+        public string FormatParameterName(string name) => $"@{name}";
+
+        public bool SupportsComplexTypeSubqueries => true;
+
+        public SelectExpression FormatComplexTypeSubquery(
+            SelectExpression subquery, 
+            IDbCommandExpressionBuilder builder, 
+            ExpressionVisitor visitor)
         {
             builder.Append("(");
 
@@ -35,11 +43,11 @@ namespace Impatient.Query.Infrastructure
 
             var strippingVisitor = new DefaultIfEmptyStrippingExpressionVisitor();
 
-            subquery = strippingVisitor.VisitAndConvert(subquery, nameof(Format));
+            subquery = strippingVisitor.VisitAndConvert(subquery, nameof(FormatComplexTypeSubquery));
 
             // Visit and print the subquery
 
-            subquery = visitor.VisitAndConvert(subquery, nameof(Format));
+            subquery = visitor.VisitAndConvert(subquery, nameof(FormatComplexTypeSubquery));
 
             builder.AppendLine();
             builder.Append("FOR JSON PATH");

@@ -15,18 +15,18 @@ namespace Impatient.Query.ExpressionVisitors.Generating
     public class QueryTranslatingExpressionVisitor : ExpressionVisitor
     {
         private readonly ITypeMappingProvider typeMappingProvider;
-        private readonly IComplexTypeSubqueryFormatter complexTypeSubqueryFormatter;
+        private readonly IQueryFormattingProvider queryFormattingProvider;
         private readonly HashSet<string> tableAliases = new HashSet<string>();
         private readonly IDictionary<AliasedTableExpression, string> aliasLookup = new Dictionary<AliasedTableExpression, string>();
 
         public QueryTranslatingExpressionVisitor(
             IDbCommandExpressionBuilder dbCommandExpressionBuilder,
             ITypeMappingProvider typeMappingProvider,
-            IComplexTypeSubqueryFormatter complexTypeSubqueryFormatter)
+            IQueryFormattingProvider queryFormattingProvider)
         {
-            Builder = dbCommandExpressionBuilder;
-            this.typeMappingProvider = typeMappingProvider;
-            this.complexTypeSubqueryFormatter = complexTypeSubqueryFormatter;
+            Builder = dbCommandExpressionBuilder ?? throw new ArgumentNullException(nameof(dbCommandExpressionBuilder));
+            this.typeMappingProvider = typeMappingProvider ?? throw new ArgumentNullException(nameof(typeMappingProvider));
+            this.queryFormattingProvider = queryFormattingProvider ?? throw new ArgumentNullException(nameof(queryFormattingProvider));
         }
 
         protected IDbCommandExpressionBuilder Builder { get; }
@@ -817,7 +817,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
         {
             if (!singleValueRelationalQueryExpression.Type.IsScalarType())
             {
-                complexTypeSubqueryFormatter.Format(
+                queryFormattingProvider.FormatComplexTypeSubquery(
                     singleValueRelationalQueryExpression.SelectExpression,
                     Builder,
                     this);
@@ -846,7 +846,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
         protected virtual Expression VisitEnumerableRelationalQueryExpression(EnumerableRelationalQueryExpression enumerableRelationalQueryExpression)
         {
-            complexTypeSubqueryFormatter.Format(
+            queryFormattingProvider.FormatComplexTypeSubquery(
                 enumerableRelationalQueryExpression.SelectExpression,
                 Builder,
                 this);
@@ -1265,7 +1265,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                     var value = Builder.StopCapture();
 
-                    Builder.AddDynamicParameters(value, expression, FormatParameterName);
+                    Builder.AddDynamicParameters(value, expression);
 
                     break;
                 }
@@ -1301,7 +1301,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
         protected virtual Expression VisitSqlParameterExpression(SqlParameterExpression sqlParameterExpression)
         {
-            Builder.AddParameter(sqlParameterExpression, FormatParameterName);
+            Builder.AddParameter(sqlParameterExpression);
 
             return sqlParameterExpression;
         }
@@ -1403,17 +1403,9 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             Visit(expression);
         }
 
-        protected virtual string FormatIdentifier(string identifier)
-        {
-            return $"[{identifier}]";
-        }
-
-        protected virtual string FormatParameterName(string name)
-        {
-            return $"@{name}";
-        }
-
         #endregion
+
+        private string FormatIdentifier(string identifier) => queryFormattingProvider.FormatIdentifier(identifier);
 
         private void HandleSqlInExpression(Expression valueExpression, IEnumerable<Expression> values)
         {
