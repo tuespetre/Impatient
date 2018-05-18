@@ -41,9 +41,7 @@ namespace Impatient.Query.Infrastructure
 
                 using (var reader = command.ExecuteReader(CommandBehavior.CloseConnection))
                 {
-                    // TODO: Can the logic really be this simple?
-                    // - Related to 'DefaultIfEmpty' and '___OrDefault' behavior
-                    // - Currently relying on the queries themselves to supply:
+                    // - 'DefaultIfEmpty' and '___OrDefault' behavior currently relying on the queries for:
                     //   - The default value, through the materializer
                     //   - Exceptions for First/Single/SingleOrDefault/Last/ElementAt
 

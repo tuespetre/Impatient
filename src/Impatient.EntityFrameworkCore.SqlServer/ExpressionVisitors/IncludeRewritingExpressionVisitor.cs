@@ -11,7 +11,6 @@ using System.Reflection;
 
 namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 {
-    // TODO: Cover ExtendedNewExpression and ExtendedMemberInitExpression
     public class IncludeRewritingExpressionVisitor : ExpressionVisitor
     {
         public override Expression Visit(Expression node)
@@ -262,8 +261,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                 path.Push(currentMember);
 
-                // TODO: (EF Core 2.1) Constructor selection
-
                 return node.Update(arguments);
             }
 
@@ -332,8 +329,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                 }
 
                 path.Push(currentMember);
-
-                // TODO: (EF Core 2.1) Constructor selection
 
                 return node.Update(arguments);
             }

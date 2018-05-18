@@ -153,12 +153,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public Expression CreateQueryExpression(Type elementType, DbContext context)
         {
-            // TODO: (EF Core 2.0) Distinct entities split over a single table
-
-            // TODO: (EF Core 2.0) Handle model properties mapped to CLR fields
-
-            // TODO: (EF Core 2.1) Lazy loading / proxies
-
             var targetType = context.Model.GetEntityTypes().SingleOrDefault(t => t.ClrType == elementType);
 
             Expression queryExpression;

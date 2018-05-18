@@ -18,8 +18,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
         private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor;
         private readonly IEnumerable<ExpressionVisitor> rewritingExpressionVisitors;
         private readonly ExpressionVisitor parameterizingExpressionVisitor;
-
-        // TODO: Use separate visitors to be stateless/remove the topLevel condition.
+        
         private bool topLevel = true;
 
         public QueryComposingExpressionVisitor(
@@ -1052,8 +1051,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 // Msg 164, Level 15, State 1, Line 3
                 // Each GROUP BY expression must contain at least one column that is not an outer reference.
                 return fallbackToEnumerable();
-
-                // TODO: Push down into a subquery instead of falling back to enumerable.
             }
 
             if (outerSelectExpression.RequiresPushdownForGrouping())

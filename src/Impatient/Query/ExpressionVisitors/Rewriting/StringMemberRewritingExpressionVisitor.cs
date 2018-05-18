@@ -42,8 +42,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     {
                         var segments = arguments.ToArray();
                         var parameters = node.Method.GetParameters();
-
-                        // TODO: Support other overloads of string.Concat
+                        
                         if (parameters.Select(p => p.ParameterType).All(t => t == typeof(string)))
                         {
                                 return new SqlConcatExpression(segments);
@@ -184,10 +183,6 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     case nameof(string.StartsWith)
                     when arguments.Count == 1:
                     {
-                        // TODO: consider LIKE for StartsWith instead
-
-                        // TODO: consider char argument
-
                         Expression result
                             = Expression.Equal(
                                 new SqlFunctionExpression(
@@ -227,12 +222,6 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     case nameof(string.EndsWith)
                     when arguments.Count == 1:
                     {
-                        // Note: 
-                        // Don't bother using LIKE, because patterns that contain wildcards
-                        // anywhere except the end cannot use an index anyways.
-
-                        // TODO: consider char argument
-
                         Expression result
                             = Expression.Equal(
                                 new SqlFunctionExpression(
