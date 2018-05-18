@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Impatient.EFCore.Tests.Utilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using System;
@@ -896,8 +897,6 @@ WHERE [o].[ProductID] = 42
         }
 
         [Fact]
-        [Trait("Impatient", "Improve SQL")]
-        [Trait("Impatient", "Medium priority")]
         public override void Contains_over_entityType_should_rewrite_to_identity_equality()
         {
             base.Contains_over_entityType_should_rewrite_to_identity_equality();
@@ -907,9 +906,13 @@ SELECT TOP (2) [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o]
 FROM [Orders] AS [o]
 WHERE [o].[OrderID] = 10248
 
-SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
-FROM [Orders] AS [o]
-WHERE [o].[CustomerID] = N'VINET'
+@p0='10248'
+
+SELECT CAST((CASE WHEN @p0 IN (
+    SELECT [o].[OrderID]
+    FROM [Orders] AS [o]
+    WHERE [o].[CustomerID] = N'VINET'
+) THEN 1 ELSE 0 END) AS bit)
 ");
         }
 
@@ -1212,18 +1215,17 @@ FROM [Order Details] AS [o]
         }
 
         [Fact]
-        [Trait("Impatient", "Improve SQL")]
-        [Trait("Impatient", "High priority")]
         public override void Contains_with_subquery()
         {
             base.Contains_with_subquery();
 
-            AssertSqlStartsWith(@"
+            Fixture.AssertSql(@"
 SELECT [c].[CustomerID] AS [CustomerID], [c].[Address] AS [Address], [c].[City] AS [City], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Country] AS [Country], [c].[Fax] AS [Fax], [c].[Phone] AS [Phone], [c].[PostalCode] AS [PostalCode], [c].[Region] AS [Region]
 FROM [Customers] AS [c]
-
-SELECT [o].[CustomerID]
-FROM [Orders] AS [o]
+WHERE [c].[CustomerID] IN (
+    SELECT [o].[CustomerID]
+    FROM [Orders] AS [o]
+)
 ");
         }
 
@@ -1261,21 +1263,19 @@ WHERE (
         }
 
         [Fact]
-        [Trait("Impatient", "Improve SQL")]
-        [Trait("Impatient", "High priority")]
         public override void Contains_with_subquery_involving_join_binds_to_correct_table()
         {
             base.Contains_with_subquery_involving_join_binds_to_correct_table();
 
-            AssertSqlStartsWith(@"
+            Fixture.AssertSql(@"
 SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
 FROM [Orders] AS [o]
-WHERE [o].[OrderID] > 11000
-
-SELECT [od].[OrderID]
-FROM [Order Details] AS [od]
-INNER JOIN [Products] AS [p] ON [od].[ProductID] = [p].[ProductID]
-WHERE [p].[ProductName] = N'Chai'
+WHERE ([o].[OrderID] > 11000) AND [o].[OrderID] IN (
+    SELECT [od].[OrderID]
+    FROM [Order Details] AS [od]
+    INNER JOIN [Products] AS [p] ON [od].[ProductID] = [p].[ProductID]
+    WHERE [p].[ProductName] = N'Chai'
+)
 ");
         }
 
@@ -1308,8 +1308,6 @@ ORDER BY (
         }
 
         [Fact]
-        [Trait("Impatient", "Improve SQL")]
-        [Trait("Impatient", "High priority")]
         public override void Where_contains_on_navigation()
         {
             base.Where_contains_on_navigation();
@@ -1317,56 +1315,57 @@ ORDER BY (
             AssertSqlStartsWith(@"
 SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
 FROM [Orders] AS [o]
-
-SELECT [c].[CustomerID] AS [$outer.CustomerID], [c].[Address] AS [$outer.Address], [c].[City] AS [$outer.City], [c].[CompanyName] AS [$outer.CompanyName], [c].[ContactName] AS [$outer.ContactName], [c].[ContactTitle] AS [$outer.ContactTitle], [c].[Country] AS [$outer.Country], [c].[Fax] AS [$outer.Fax], [c].[Phone] AS [$outer.Phone], [c].[PostalCode] AS [$outer.PostalCode], [c].[Region] AS [$outer.Region], (
-    SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
-    FROM [Orders] AS [o]
-    WHERE [c].[CustomerID] = [o].[CustomerID]
-    FOR JSON PATH
-) AS [$inner]
-FROM [Customers] AS [c]
+WHERE (
+    SELECT CAST((CASE WHEN EXISTS (
+        SELECT 1
+        FROM [Customers] AS [c]
+        WHERE [o].[OrderID] IN (
+            SELECT [o_0].[OrderID]
+            FROM [Orders] AS [o_0]
+            WHERE [c].[CustomerID] = [o_0].[CustomerID]
+        )
+    ) THEN 1 ELSE 0 END) AS bit)
+) = 1
 ");
         }
 
         [Fact]
-        [Trait("Impatient", "Improve SQL")]
-        [Trait("Impatient", "High priority")]
         public override void Where_multiple_contains_in_subquery_with_and()
         {
             base.Where_multiple_contains_in_subquery_with_and();
 
-            AssertSqlStartsWith(@"
+            Fixture.AssertSql(@"
 SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
 FROM [Order Details] AS [od]
-
-SELECT TOP (20) [p].[ProductID]
-FROM [Products] AS [p]
-ORDER BY [p].[ProductID] ASC
-
-SELECT TOP (10) [o].[OrderID]
-FROM [Orders] AS [o]
-ORDER BY [o].[OrderID] ASC
+WHERE [od].[ProductID] IN (
+    SELECT TOP (20) [p].[ProductID]
+    FROM [Products] AS [p]
+    ORDER BY [p].[ProductID] ASC
+) AND [od].[OrderID] IN (
+    SELECT TOP (10) [o].[OrderID]
+    FROM [Orders] AS [o]
+    ORDER BY [o].[OrderID] ASC
+)
 ");
         }
 
         [Fact]
-        [Trait("Impatient", "Improve SQL")]
-        [Trait("Impatient", "High priority")]
         public override void Where_multiple_contains_in_subquery_with_or()
         {
             base.Where_multiple_contains_in_subquery_with_or();
 
-            AssertSqlStartsWith(@"
+            Fixture.AssertSql(@"
 SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
 FROM [Order Details] AS [od]
-
-SELECT TOP (1) [p].[ProductID]
-FROM [Products] AS [p]
-ORDER BY [p].[ProductID] ASC
-
-SELECT TOP (1) [o].[OrderID]
-FROM [Orders] AS [o]
-ORDER BY [o].[OrderID] ASC
+WHERE [od].[ProductID] IN (
+    SELECT TOP (1) [p].[ProductID]
+    FROM [Products] AS [p]
+    ORDER BY [p].[ProductID] ASC
+) OR [od].[OrderID] IN (
+    SELECT TOP (1) [o].[OrderID]
+    FROM [Orders] AS [o]
+    ORDER BY [o].[OrderID] ASC
+)
 ");
         }
 
@@ -1377,10 +1376,7 @@ ORDER BY [o].[OrderID] ASC
         {
             base.Where_navigation_contains();
 
-            // The EF Core Sql Server provider issues three queries.
-            // We are ultimately doing the same thing as them here,
-            // but we could be rewriting the second query so that it 
-            // has a WHERE clause:
+            // We want the WHERE clause in the second query to be this instead:
             // WHERE [o].[CustomerID] = @p0
 
             AssertSql(@"
@@ -1393,9 +1389,17 @@ SELECT TOP (2) [c].[CustomerID] AS [CustomerID], [c].[Address] AS [Address], [c]
 FROM [Customers] AS [c]
 WHERE [c].[CustomerID] = N'ALFKI'
 
-SELECT [od].[OrderID] AS [$outer.OrderID], [od].[ProductID] AS [$outer.ProductID], [od].[Discount] AS [$outer.Discount], [od].[Quantity] AS [$outer.Quantity], [od].[UnitPrice] AS [$outer.UnitPrice], [o].[OrderID] AS [$inner.OrderID], [o].[CustomerID] AS [$inner.CustomerID], [o].[EmployeeID] AS [$inner.EmployeeID], [o].[OrderDate] AS [$inner.OrderDate]
+@p0_0='10643'
+@p0_1='10692'
+@p0_2='10702'
+@p0_3='10835'
+@p0_4='10952'
+@p0_5='11011'
+
+SELECT [od].[OrderID] AS [OrderID], [od].[ProductID] AS [ProductID], [od].[Discount] AS [Discount], [od].[Quantity] AS [Quantity], [od].[UnitPrice] AS [UnitPrice]
 FROM [Order Details] AS [od]
 INNER JOIN [Orders] AS [o] ON [od].[OrderID] = [o].[OrderID]
+WHERE [o].[OrderID] IN (@p0_0, @p0_1, @p0_2, @p0_3, @p0_4, @p0_5)
 ");
         }
 
@@ -3967,28 +3971,9 @@ ORDER BY [c].[CustomerID] ASC, [o].[OrderID] ASC
 
         protected override void ClearLog() => Fixture.TestSqlLoggerFactory.Clear();
 
-        private void AssertSql(string sql)
-        {
-            var expected = sql.Trim();
-            var actual = Fixture.TestSqlLoggerFactory.Sql;
+        private void AssertSql(string sql) => Fixture.AssertSql(sql);
 
-            if (actual != expected)
-            {
-                throw new Exception($@"Expected:
-{expected}
-
-Actual:
-{actual}");
-            }
-        }
-
-        private void AssertSqlStartsWith(string sql)
-        {
-            var expected = sql.Trim();
-            var actual = Fixture.TestSqlLoggerFactory.Sql;
-
-            Assert.StartsWith(expected, actual);
-        }
+        private void AssertSqlStartsWith(string sql) => Fixture.AssertSqlStartsWith(sql);
 
         #endregion
     }

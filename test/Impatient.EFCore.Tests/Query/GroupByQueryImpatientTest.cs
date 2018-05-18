@@ -1,6 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore.Query;
+﻿using Impatient.EFCore.Tests.Utilities;
+using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
-using System;
 using System.Linq;
 using Xunit;
 using Xunit.Sdk;
@@ -75,22 +75,22 @@ ORDER BY [o].[CustomerID] ASC
         {
             base.GroupBy_aggregate_Contains();
 
-            AssertSqlStartsWith(@"
+            Fixture.AssertSql(@"
 SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
 FROM [Orders] AS [o]
-
-SELECT [g].[Key]
-FROM (
-    SELECT [g_0].[CustomerID] AS [Key]
-    FROM [Orders] AS [g_0]
-    GROUP BY [g_0].[CustomerID]
-) AS [g]
-WHERE (
-    SELECT COUNT(*)
-    FROM [Orders] AS [g_1]
-    WHERE (([g].[Key] IS NULL AND [g_1].[CustomerID] IS NULL) OR ([g].[Key] = [g_1].[CustomerID]))
-) > 30
-");
+WHERE [o].[CustomerID] IN (
+    SELECT [g].[Key]
+    FROM (
+        SELECT [g_0].[CustomerID] AS [Key]
+        FROM [Orders] AS [g_0]
+        GROUP BY [g_0].[CustomerID]
+    ) AS [g]
+    WHERE (
+        SELECT COUNT(*)
+        FROM [Orders] AS [g_1]
+        WHERE (([g].[Key] IS NULL AND [g_1].[CustomerID] IS NULL) OR ([g].[Key] = [g_1].[CustomerID]))
+    ) > 30
+)");
         }
 
         [Fact]
@@ -2198,28 +2198,9 @@ GROUP BY [set].[City]
 
         protected override void ClearLog() => Fixture.TestSqlLoggerFactory.Clear();
 
-        private void AssertSql(string sql)
-        {
-            var expected = sql.Trim();
-            var actual = Fixture.TestSqlLoggerFactory.Sql;
+        private void AssertSql(string sql) => Fixture.AssertSql(sql);
 
-            if (actual != expected)
-            {
-                throw new Exception($@"Expected:
-{expected}
-
-Actual:
-{actual}");
-            }
-        }
-
-        private void AssertSqlStartsWith(string sql)
-        {
-            var expected = sql.Trim();
-            var actual = Fixture.TestSqlLoggerFactory.Sql;
-
-            Assert.StartsWith(expected, actual);
-        }
+        private void AssertSqlStartsWith(string sql) => Fixture.AssertSqlStartsWith(sql);
 
         #endregion
     }

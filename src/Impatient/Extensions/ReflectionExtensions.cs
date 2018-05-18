@@ -129,15 +129,15 @@ namespace Impatient.Extensions
             {
                 GetBaseType:
 
-                var baseType = type.GetTypeInfo().BaseType;
+                type = type.GetTypeInfo().BaseType;
 
-                if (baseType == null || baseType == typeof(object))
+                if (type == null || type == typeof(object))
                 {
                     return null;
                 }
-                else if (baseType.IsConstructedGenericType && baseType.GetGenericTypeDefinition() == definition)
+                else if (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == definition)
                 {
-                    return baseType;
+                    return type;
                 }
                 else
                 {

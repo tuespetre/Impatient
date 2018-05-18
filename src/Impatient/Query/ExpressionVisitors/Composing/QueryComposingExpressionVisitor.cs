@@ -2734,31 +2734,25 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 return fallbackToEnumerable();
             }
 
-            var valuesExpression = Visit(node.Arguments[1]);
+            var valueExpression 
+                = node.Arguments[1]
+                    .VisitWith(ServerPostExpansionVisitors);
 
-            switch (valuesExpression)
+            if (!IsTranslatable(valueExpression))
             {
-                case SingleValueRelationalQueryExpression singleValueRelationalQueryExpression:
-                {
-                    throw new NotImplementedException();
-                }
-
-                case ConstantExpression constantExpression:
-                {
-                    // TODO: Consider special rewriters for boolean types/casts for different providers (e.g. pgsql 'bool')
-                    return new SingleValueRelationalQueryExpression(
-                        new SelectExpression(
-                            new ServerProjectionExpression(
-                                new SqlCastExpression(
-                                    Expression.Condition(
-                                        new SqlInExpression(constantExpression, outerSelectExpression),
-                                        Expression.Constant(true),
-                                        Expression.Constant(false)),
-                                    typeof(bool)))));
-                }
+                return fallbackToEnumerable();
             }
 
-            return fallbackToEnumerable();
+            // TODO: Test with a scalar subquery as the value e.g. (SELECT 1) IN (SELECT 1)
+            return new SingleValueRelationalQueryExpression(
+                new SelectExpression(
+                    new ServerProjectionExpression(
+                        new SqlCastExpression(
+                            Expression.Condition(
+                                new SqlInExpression(valueExpression, outerSelectExpression),
+                                Expression.Constant(true),
+                                Expression.Constant(false)),
+                            typeof(bool)))));
         }
 
         protected Expression HandlePredefinedAggregate(

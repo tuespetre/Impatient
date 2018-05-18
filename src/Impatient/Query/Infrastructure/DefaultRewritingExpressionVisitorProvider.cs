@@ -20,7 +20,13 @@ namespace Impatient.Query.Infrastructure
 
         public virtual IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
         {
+            // 'Simple' replacement rewriters
+
+            yield return new ListContainsToEnumerableContainsRewritingExpressionVisitor();
+
             yield return new EqualsMethodRewritingExpressionVisitor();
+
+            // 'Core' rewriters
 
             yield return new KeyEqualityRewritingExpressionVisitor(context.DescriptorSet);
 
@@ -40,7 +46,7 @@ namespace Impatient.Query.Infrastructure
 
             yield return new EnumerableQueryEqualityRewritingExpressionVisitor();
 
-            // TODO: Consider pulling these from the Default provider.
+            // SQL Server specific rewriters (should be pulled from the default provider at some point)
 
             yield return new StringToNumberAsciiRewritingExpressionVisitor();
 

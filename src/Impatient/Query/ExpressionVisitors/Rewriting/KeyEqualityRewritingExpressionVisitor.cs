@@ -3,14 +3,22 @@ using Impatient.Metadata;
 using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Utility;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using static Impatient.Extensions.ReflectionExtensions;
 
 namespace Impatient.Query.ExpressionVisitors.Rewriting
 {
     public class KeyEqualityRewritingExpressionVisitor : ExpressionVisitor
     {
+        private static readonly MethodInfo enumerableSelect
+            = GetGenericMethodDefinition((IEnumerable<object> e) => e.Select(x => x));
+
+        private static readonly MethodInfo queryableSelect
+            = GetGenericMethodDefinition((IQueryable<object> e) => e.Select(x => x));
+
         private readonly DescriptorSet descriptorSet;
 
         public KeyEqualityRewritingExpressionVisitor(DescriptorSet descriptorSet)
@@ -177,7 +185,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                                     }
                                 }
                             }
-                            
+
                             if (outerKeySelector.ReturnType != innerKeySelector.ReturnType)
                             {
                                 if (outerKeySelector.ReturnType.IsNullableType())
@@ -215,6 +223,38 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                         }
 
                         break;
+                    }
+
+                    case nameof(Queryable.Contains):
+                    {
+                        var sequenceType = node.Arguments[0].Type.GetSequenceType();
+
+                        var primaryKeyDescriptor
+                            = descriptorSet
+                                .PrimaryKeyDescriptors
+                                .FirstOrDefault(d => d.TargetType.IsAssignableFrom(sequenceType));
+
+                        if (primaryKeyDescriptor is null || !primaryKeyDescriptor.KeySelector.ReturnType.IsScalarType())
+                        {
+                            break;
+                        }
+
+                        var keyType = primaryKeyDescriptor.KeySelector.ReturnType;
+                        var arguments = Visit(node.Arguments).ToArray();
+
+                        var setSelector = (Expression)primaryKeyDescriptor.KeySelector;
+                        var selectMethod = enumerableSelect.MakeGenericMethod(sequenceType, keyType);
+
+                        if (node.Method.IsQueryableMethod())
+                        {
+                            setSelector = Expression.Quote(setSelector);
+                            selectMethod = queryableSelect.MakeGenericMethod(sequenceType, keyType);
+                        }
+
+                        return Expression.Call(
+                            node.Method.GetGenericMethodDefinition().MakeGenericMethod(keyType),
+                            Expression.Call(selectMethod, arguments[0], setSelector),
+                            primaryKeyDescriptor.KeySelector.ExpandParameters(arguments[1]));
                     }
                 }
             }
