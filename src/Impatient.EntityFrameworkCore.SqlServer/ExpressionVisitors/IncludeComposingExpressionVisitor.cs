@@ -213,7 +213,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             IEnumerable<IEnumerable<PropertyInfo>> paths,
             IList<INavigation> previousPath)
         {            
-            foreach (var pathset in paths.GroupBy(p => p.First(), p => p.Skip(1)))
+            foreach (var pathset in paths.Where(p => p.Any()).GroupBy(p => p.First(), p => p.Skip(1)))
             {
                 var includedProperty = pathset.Key;
 

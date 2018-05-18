@@ -44,6 +44,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             yield return new NavigationComposingExpressionVisitor(context.DescriptorSet.NavigationDescriptors);
 
+            yield return new OwnedTypeIncludeComposingExpressionVisitor(currentDbContext.Context.Model);
+
             yield return new IncludeComposingExpressionVisitor(currentDbContext.Context.Model, context.DescriptorSet);
 
             yield return new NavigationComposingExpressionVisitor(context.DescriptorSet.NavigationDescriptors);

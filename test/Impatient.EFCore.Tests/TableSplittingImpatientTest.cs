@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestModels.TransportationModel;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using Xunit;
 
 #pragma warning disable xUnit1024 // Test methods cannot have overloads
 
@@ -14,8 +13,6 @@ namespace Impatient.EFCore.Tests
         public override TransportationContext CreateContext(ImpatientTestStore testStore, Action<ModelBuilder> onModelCreating)
         {
             var services = new ServiceCollection();
-
-            new ImpatientDbContextOptionsExtension().ApplyServices(services);
 
             var provider
                 = services
@@ -30,8 +27,7 @@ namespace Impatient.EFCore.Tests
                     .UseSqlServer(testStore.Connection)
                     .Options;
 
-            using (var temp = new TransportationContext(
-                new DbContextOptionsBuilder(options).UseSqlServer(testStore.Connection).Options))
+            using (var temp = new TransportationContext(new DbContextOptionsBuilder(options).Options))
             {
                 if (temp.Database.EnsureCreated())
                 {

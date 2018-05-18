@@ -75,12 +75,27 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public static IEnumerable<NavigationDescriptor> CreateNavigationDescriptors(IModel model)
         {
-            var fks = from t in model.GetEntityTypes()
-                      from f in t.GetForeignKeys()
-                      where !f.IsOwnership
-                      select f;
+            var fks = new List<IForeignKey>();
 
-            var hashset = new HashSet<MemberInfo>();
+            foreach (var type in model.GetEntityTypes())
+            {
+                foreach (var navigation in type.GetNavigations())
+                {
+                    if (navigation.ForeignKey.IsOwnership)
+                    {
+                        var source = type.Relational();
+                        var target = navigation.GetTargetType().Relational();
+
+                        if (source.Schema == target.Schema
+                            && source.TableName == target.TableName)
+                        {
+                            continue;
+                        }
+                    }
+
+                    fks.Add(navigation.ForeignKey);
+                }
+            }
 
             foreach (var fk in fks.Distinct())
             {
@@ -313,23 +328,30 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             foreach (var navigation in type.GetNavigations())
             {
-                if (navigation.ForeignKey.IsOwnership)
+                if (navigation.ForeignKey.IsOwnership && !navigation.IsDependentToPrincipal())
                 {
-                    var navigationType = navigation.GetTargetType();
-                    var newExpression = GetNewExpression(navigationType);
-                    var bindings = GetMemberAssignments(navigationType, func);
+                    var targetType = navigation.GetTargetType();
+
+                    if (targetType.Relational().Schema != type.Relational().Schema
+                        || targetType.Relational().TableName != type.Relational().TableName)
+                    {
+                        continue;
+                    }
+
+                    var newExpression = GetNewExpression(targetType);
+                    var bindings = GetMemberAssignments(targetType, func);
 
                     var shadowProperties
-                        = from s in navigationType.GetProperties()
+                        = from s in targetType.GetProperties()
                           where s.IsShadowProperty
                           select (property: s, expression: func(s));
 
                     yield return Expression.Bind(
                         GetMemberInfo(navigation),
                         new EntityMaterializationExpression(
-                            navigationType,
+                            targetType,
                             IdentityMapMode.IdentityMap,
-                            CreateMaterializationKeySelector(navigationType),
+                            CreateMaterializationKeySelector(targetType),
                             shadowProperties.Select(s => s.property),
                             shadowProperties.Select(s => s.expression),
                             Expression.MemberInit(newExpression, bindings)));
@@ -346,8 +368,16 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             foreach (var navigation in type.GetNavigations())
             {
-                if (navigation.ForeignKey.IsOwnership)
+                if (navigation.ForeignKey.IsOwnership && !navigation.IsDependentToPrincipal())
                 {
+                    var targetType = navigation.GetTargetType();
+
+                    if (targetType.Relational().Schema != type.Relational().Schema
+                        || targetType.Relational().TableName != type.Relational().TableName)
+                    {
+                        continue;
+                    }
+
                     foreach (var property in IterateAllProperties(navigation.GetTargetType()))
                     {
                         yield return property;
