@@ -481,7 +481,7 @@ FROM [dbo].[Products] AS [p]
             services.AddDbContext<NorthwindDbContext>(options =>
             {
                 options
-                    .UseSqlServer(@"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=true; MultipleActiveResultSets=True")
+                    .UseSqlServer(@"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=true")
                     .UseImpatientQueryCompiler();
             });
 
@@ -491,7 +491,11 @@ FROM [dbo].[Products] AS [p]
             using (var context = scope.ServiceProvider.GetRequiredService<NorthwindDbContext>())
             {
                 var result = (from o in context.Set<Order>()
-                              select new { o, Customer = ForceNonTranslatable(context, o) }).Take(5).ToArray();
+                              select new
+                              {
+                                  o,
+                                  Customer = context.Set<Customer>().Where(ClientPredicate).FirstOrDefault()
+                              }).Take(5).ToArray();
 
                 Assert.AreEqual(@"Opening connection t
 Opened connection to
@@ -680,7 +684,7 @@ CROSS APPLY (
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
             {
                 var message = formatter(state, exception);
-                
+
                 StringBuilder.AppendLine(message.Substring(0, 20));
             }
         }

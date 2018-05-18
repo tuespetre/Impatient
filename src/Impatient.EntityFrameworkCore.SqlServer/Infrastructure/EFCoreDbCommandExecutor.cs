@@ -8,14 +8,13 @@ using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using System;
-using System.Collections;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
@@ -28,6 +27,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private IStateManager stateManager;
         private IInternalEntityEntryFactory entryFactory;
+        private BufferingDbDataReader unbufferedReader;
 
         public EFCoreDbCommandExecutor(
             ICurrentDbContext currentDbContext,
@@ -112,6 +112,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public IEnumerable<TElement> ExecuteEnumerable<TElement>(Action<DbCommand> initializer, Func<DbDataReader, TElement> materializer)
         {
+            if (unbufferedReader != null)
+            {
+                unbufferedReader.Buffer();
+                unbufferedReader = null;
+            }
+
             var connection = CurrentDbContext.Context.Database.GetService<IRelationalConnection>();
 
             var command = CreateCommand(connection);
@@ -170,7 +176,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 if (caughtException)
                 {
-                    reader?.Close();
+                    reader?.Dispose();
                     command.Dispose();
                     connection.Close();
                 }
@@ -180,6 +186,15 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             try
             {
+                if (!connection.IsMultipleActiveResultSetsEnabled)
+                {
+                    var buffer = new BufferingDbDataReader(reader, ArrayPool<object>.Shared);
+
+                    unbufferedReader = buffer;
+
+                    reader = buffer;
+                }
+
                 while (reader.Read())
                 {
                     yield return materializer(reader);
@@ -187,7 +202,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
             finally
             {
-                reader?.Close();
+                if (unbufferedReader == reader)
+                {
+                    unbufferedReader = null;
+                }
+
+                reader?.Dispose();
                 command.Dispose();
                 connection.Close();
             }
