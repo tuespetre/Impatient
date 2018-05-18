@@ -5,6 +5,8 @@
 
 - [Introduction](#introduction)
 - [Getting Started with Impatient.EntityFrameworkCore.SqlServer](#getting-started)
+- [Versioning & Compatibility](#versioning)
+- [More About EF Core](#ef-core)
 	- [Implementation Differences](#implementation-differences)
 	- [Unsupported Features](#unsupported-features)
 - [Sample Query Translations](#sample-translations) (coming soon)
@@ -14,51 +16,73 @@
 
 ## <a name="introduction"></a> Introduction
 
-`Impatient` is a library that provides the infrastructure needed to create powerful
-LINQ query providers that map to SQL. It offers support for mapping navigation
-properties to joins and subqueries. It offers support for translating
-almost all of the standard LINQ query operators, including `SkipWhile`/`TakeWhile`,
-`SequenceEqual`, `Zip`, and `Select`/`Where` with index arguments. It even supports
-materializing nested collections and complex-type columns within results 
-by taking advantage of database features like SQL Server's `FOR JSON`. 
-**The only currently supported database engine is SQL Server 2016 or newer** 
-but there are plans to expose certain extension points so that other 
-database engines could be supported. The library is currently using an 'unstable'
-version number because it is expected that the API will see some significant changes
-yet before settling down.
+`Impatient` is a library that provides the infrastructure needed to build powerful
+LINQ query providers for SQL databases. It offers support for:
+
+- Navigation properties
+
+- Almost every standard LINQ query operator, including (but not limited to):
+
+	- `Select`/`Where` and their 'index argument' variants
+	- `OrderBy`/`ThenBy` and their `Descending` variants
+	- `Join`/`GroupJoin`/`SelectMany`/`GroupBy`
+	- `Average`/`Count`/`LongCount`/`Max`/`Min`/`Sum`
+	- `All`/`Any`/`Contains`
+	- `First`/`Last`/`Single`/`ElementAt` and their `OrDefault` variants
+	- `Concat`/`Except`/`Intersect`/`Union`
+	- `SkipWhile`/`TakeWhile` and their 'index argument' variants
+	- `Distinct`
+	- `Reverse`
+	- `SequenceEqual`
+	- `Zip`
+
+- Database native JSON support (like SQL Server's `FOR JSON`):
+
+	- Materialize *nested collections* and complex-type columns within results instead of issuing n+1 queries
+	- Query against properties of JSON objects
+	- Query against elements of JSON arrays, treating them as if they were any other queryable sequence
 
 `Impatient.EntityFrameworkCore.SqlServer` is a project that takes Impatient and
 extends it to provide a substitution for EF Core's default `IQueryCompiler`. It is 
-backed by EF Core's own specification test suites with over 2200 passing tests,
-though there are some caveats and implementation differences to be aware of.
+backed by EF Core's own specification test suites with over 5500 passing tests,
+many of which demonstrate `Impatient`'s ability to translate some of the toughest 
+LINQ queries that other query providers and ORMs cannot.
     
 ## <a name="getting-started"></a> Getting Started with Impatient.EntityFrameworkCore.SqlServer
 
-After installing the package and ensuring that your connection string enables MARS,
-use it like so:
+1. Install `Impatient.EntityFrameworkCore.SqlServer`
 
-```
-services.AddDbContext<NorthwindDbContext>(options =>
-{
-    options
-        .UseSqlServer(connectionString) // Be sure to enable MARS!
-        .UseImpatientQueryCompiler();
-});
-```
+2. Add `UseImpatientQueryCompiler()` to your `DbContextOptions`:
+
+	```diff
+	 services.AddDbContext<NorthwindDbContext>(options =>
+	 {
+		 options
+			 .UseSqlServer(connectionString)
+	+        .UseImpatientQueryCompiler();
+	 });
+	```
+
+3. Cross arms, tap foot, run queries
+
+## <a name="versioning"></a> Versioning & Compatibility
+
+**The only currently supported database engine is SQL Server 2016 or newer** 
+but it is a goal of the project to be extensible enough to foster the development
+of support for other database engines.
+
+The `Impatient` package is currently using an 'unstable' version number because 
+it is expected that the API will see some significant changes yet before settling down.
 
 The `Impatient.EntityFrameworkCore.SqlServer` package will be versioned according 
 to the minor version of EF Core that is supports; that is, a 2.0.x version will 
 support a 2.0.x version of EF Core, a 2.1.x version will support a 2.1.x version 
-of EF Core, and so on. Unless expanded in the future, the `UseImpatientQueryCompiler`
-is the only designated stable public API in this package.
+of EF Core, and so on. Until further notice, the `UseImpatientQueryCompiler`
+extension method is the only designated stable public API in this package.
 
-The next two sections cover those aforementioned caveats.
+## <a name="ef-core"></a> More About EF Core
 
 ### <a name="implementation-differences"></a> Implementation Differences
-
-- Impatient currently relies on MARS (`MultipleActiveResultSets=True` in the
-  connection string) to execute parallel queries that may run during (for instance)
-  a client join operation or an N+1 query. Improvements to this area are planned.
   
 - Impatient currently provides a naive implementation of async queries that
   does not make use of the cancellation token argument. Improvements to this area
@@ -69,6 +93,21 @@ The next two sections cover those aforementioned caveats.
   client where an entity is passed as an argument to some kind of expression
   like a method call or a constructor, Impatient is going to add that entity
   to the change tracker whereas EF Core's query compiler would not.
+
+- The "manual left join" pattern of `GroupBy`/`SelectMany`/`DefaultIfEmpty`
+  will not propagate nullability for navigations. This may or may not be 
+  supported in the future. For now, the recommended course of action would be
+  to either use navigations all the way or manual joins all the way.
+  (See: the EFCore unit test `Manually_created_left_join_propagates_nullability_to_navigations`.)
+
+- Calling `OrderBy` two times in a row will not perform a stable sort. 
+  This is `Queryable`; we don't have to match the implementation of `Enumerable` here
+  and it doesn't really make sense to. (See: the EFCore unit test `OrderBy_Multiple`.)
+
+- Any exceptions thrown at runtime by expressions being applied to `DbParameter`
+  values will be wrapped in an `InvalidOperationException` and rethrown with the
+  original exception as the `InnerException`. This will probably not be an issue
+  for anybody, but it is a difference nonetheless.
       
 ### <a name="unsupported-features"></a> Unsupported Features
 
@@ -77,9 +116,6 @@ The next two sections cover those aforementioned caveats.
   section on sample translations will eventually be updated to enumerate
   all of the supported translations.
 
-- `CompileQuery` is not supported but there are plans to implement support
-  for it.
-
 - Client evaluation warnings (and throwing behavior) are not supported
   but there are plans to implement support for it.
 
@@ -87,7 +123,7 @@ The next two sections cover those aforementioned caveats.
   used in subqueries are not supported nor are there plans to support them.
 
 - `ROW_NUMBER` paging is not supported nor are there plans to support it.
-  `OFFSET`/`FETCH NEXT` is supported, however.
+  Only the 'modern' `OFFSET`/`FETCH NEXT` is supported.
 
 - "Null reference protection" is not supported nor are there plans to support it.
 
