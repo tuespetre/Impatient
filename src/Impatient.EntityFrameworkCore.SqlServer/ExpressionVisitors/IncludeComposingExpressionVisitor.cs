@@ -244,9 +244,18 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private IEnumerable<MemberInfo> ProcessIncludeLambda(LambdaExpression lambdaExpression)
         {
-            var properties
-                = lambdaExpression
-                    .GetComplexPropertyAccess(nameof(EntityFrameworkQueryableExtensions.Include));
+            IReadOnlyList<PropertyInfo> properties;
+
+            try
+            {
+                properties
+                    = lambdaExpression
+                        .GetComplexPropertyAccess(nameof(EntityFrameworkQueryableExtensions.Include));
+            }
+            catch (ArgumentException argumentException)
+            {
+                throw new InvalidOperationException(argumentException.Message, argumentException);
+            }
 
             var entityType
                 = model.GetEntityTypes()

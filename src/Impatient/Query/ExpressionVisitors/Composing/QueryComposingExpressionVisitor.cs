@@ -102,6 +102,19 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                             body);
                 }
 
+                if (node.ReturnType.IsGenericType(typeof(IOrderedQueryable<>))
+                    && !body.Type.IsGenericType(typeof(IOrderedQueryable<>)))
+                {
+                    body
+                        = Expression.New(
+                            typeof(StubOrderedQueryableEnumerable<>)
+                                .MakeGenericType(body.Type.GetSequenceType())
+                                .GetTypeInfo()
+                                .DeclaredConstructors
+                                .Single(),
+                            body);
+                }
+
                 return node.Update(body, parameters);
             }
 

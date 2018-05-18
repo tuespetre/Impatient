@@ -36,21 +36,9 @@ namespace Impatient.EFCore.Tests.Query
         }
 
         [Fact(Skip = EFCoreSkipReasons.Punt)]
-        public override Task Where_nested_field_access_closure_via_query_cache_error_method_null()
-        {
-            return base.Where_nested_field_access_closure_via_query_cache_error_method_null();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.Punt)]
         public override Task Mixed_sync_async_query()
         {
             return base.Mixed_sync_async_query();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.Punt)]
-        public override Task Where_nested_field_access_closure_via_query_cache_error_null()
-        {
-            return base.Where_nested_field_access_closure_via_query_cache_error_null();
         }
 
         [Fact(Skip = EFCoreSkipReasons.Punt)]
@@ -78,37 +66,76 @@ namespace Impatient.EFCore.Tests.Query
             return base.Select_query_where_navigation_multi_level();
         }
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override Task Select_correlated_subquery_filtered()
-        {
-            return base.Select_correlated_subquery_filtered();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override Task Select_correlated_subquery_ordered()
-        {
-            return base.Select_correlated_subquery_ordered();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override Task Select_correlated_subquery_projection()
-        {
-            return base.Select_correlated_subquery_projection();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override Task Select_subquery_recursive_trivial()
-        {
-            return base.Select_subquery_recursive_trivial();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override Task GroupJoin_customers_orders()
-        {
-            return base.GroupJoin_customers_orders();
-        }
-
         #endregion
+
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override async Task GroupJoin_customers_orders()
+        {
+            await AssertQuery<Customer, Order>(
+                (cs, os) =>
+                    from c in cs
+                    join o in os.OrderBy(o => o.OrderID) on c.CustomerID equals o.CustomerID into orders
+                    select new { customer = c, orders = orders.ToList() },
+                e => e.customer.CustomerID,
+                elementAsserter: (e, a) =>
+                {
+                    Assert.Equal(e.customer.CustomerID, a.customer.CustomerID);
+                    CollectionAsserter<Order>(o => o.OrderID)(e.orders, a.orders);
+                },
+                entryCount: 921);
+        }
+
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override async Task Select_correlated_subquery_filtered()
+        {
+            await AssertQuery<Customer, Order>(
+                (cs, os) =>
+                    from c in cs
+                    where c.CustomerID.StartsWith("A")
+                    orderby c.CustomerID
+                    select os.Where(o => o.CustomerID == c.CustomerID),
+                assertOrder: true,
+                elementAsserter: CollectionAsserter<Order>(o => o.OrderID),
+                entryCount: 30);
+        }
+
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override async Task Select_correlated_subquery_projection()
+        {
+            await AssertQuery<Customer, Order>(
+                (cs, os) =>
+                    from c in cs.Take(3)
+                    orderby c.CustomerID
+                    select os.Where(o => o.CustomerID == c.CustomerID),
+                assertOrder: true,
+                elementAsserter: CollectionAsserter<Order>(o => o.OrderID),
+                entryCount: 17);
+        }
+
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override async Task Select_subquery_recursive_trivial()
+        {
+            await AssertQuery<Employee>(
+                es =>
+                    from e1 in es
+                    select (from e2 in es
+                            select (from e3 in es
+                                    orderby e3.EmployeeID
+                                    select e3)),
+                e => ((IEnumerable<IEnumerable<Employee>>)e).Count(),
+                elementAsserter: (e, a) =>
+                {
+                    var expected = ((IEnumerable<IEnumerable<Employee>>)e).SelectMany(i => i).ToList();
+                    var actual = ((IEnumerable<IEnumerable<Employee>>)e).SelectMany(i => i).ToList();
+
+                    Assert.Equal(expected, actual);
+                },
+                entryCount: 9);
+        }
 
         [Fact]
         [Trait("Impatient", "Adjusted entry count")]

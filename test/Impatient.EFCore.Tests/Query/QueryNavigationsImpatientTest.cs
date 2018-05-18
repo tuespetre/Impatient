@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
+using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
@@ -11,39 +12,80 @@ namespace Impatient.EFCore.Tests.Query
         {
         }
 
-        #region skips
-
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
         public override void Navigation_projection_on_groupjoin_qsre()
         {
-            base.Navigation_projection_on_groupjoin_qsre();
+            //base.Navigation_projection_on_groupjoin_qsre();
+
+            AssertQuery<Customer, Order>(
+                (cs, os) => from c in cs
+                            join o in os on c.CustomerID equals o.CustomerID into grouping
+                            where c.CustomerID == "ALFKI"
+                            select new { c, G = grouping.Select(o => o.OrderDetails).ToList() },
+                elementSorter: e => e.c.CustomerID,
+                elementAsserter: (e, a) =>
+                {
+                    Assert.Equal(e.c.CustomerID, a.c.CustomerID);
+                    CollectionAsserter<OrderDetail>(
+                        ee => ee.OrderID + " " + ee.ProductID,
+                        (ee, aa) =>
+                        {
+                            Assert.Equal(ee.OrderID, aa.OrderID);
+                            Assert.Equal(ee.ProductID, aa.ProductID);
+                        });
+                },
+                entryCount: 13);
         }
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
         public override void Navigation_projection_on_groupjoin_qsre_no_outer_in_final_result()
         {
-            base.Navigation_projection_on_groupjoin_qsre_no_outer_in_final_result();
+            //base.Navigation_projection_on_groupjoin_qsre_no_outer_in_final_result();
+
+            AssertQuery<Customer, Order>(
+                (cs, os) => from c in cs
+                            join o in os on c.CustomerID equals o.CustomerID into grouping
+                            where c.CustomerID == "ALFKI"
+                            orderby c.CustomerID
+                            select grouping.Select(o => o.OrderDetails).ToList(),
+                assertOrder: true,
+                elementAsserter: (e, a) =>
+                {
+                    var expected = ((IEnumerable<IEnumerable<OrderDetail>>)e).SelectMany(i => i).ToList();
+                    var actual = ((IEnumerable<IEnumerable<OrderDetail>>)e).SelectMany(i => i).ToList();
+
+                    Assert.Equal(expected, actual);
+                },
+                entryCount: 12);
         }
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
         public override void Navigation_projection_on_groupjoin_qsre_with_empty_grouping()
         {
-            base.Navigation_projection_on_groupjoin_qsre_with_empty_grouping();
-        }
+            //base.Navigation_projection_on_groupjoin_qsre_with_empty_grouping();
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesIntermediateNavigationsAreTracked)]
-        public override void Select_collection_navigation_multi_part()
-        {
-            base.Select_collection_navigation_multi_part();
-        }
+            var anatrsOrders = new[] { 10308, 10625, 10759, 10926 };
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesIntermediateNavigationsAreTracked)]
-        public override void Select_collection_navigation_simple()
-        {
-            base.Select_collection_navigation_simple();
-        }
+            AssertQuery<Customer, Order>(
+                (cs, os) => from c in cs
+                            join o in os.Where(oo => !anatrsOrders.Contains(oo.OrderID)) on c.CustomerID equals o.CustomerID into grouping
+                            where c.CustomerID.StartsWith("A")
+                            select new { c, G = grouping.Select(o => o.OrderDetails).ToList() },
+                elementSorter: e => e.c.CustomerID,
+                elementAsserter: (e, a) =>
+                {
+                    Assert.Equal(e.c.CustomerID, a.c.CustomerID);
 
-        #endregion
+                    var expected = ((IEnumerable<IEnumerable<OrderDetail>>)e.G).SelectMany(i => i).ToList();
+                    var actual = ((IEnumerable<IEnumerable<OrderDetail>>)e.G).SelectMany(i => i).ToList();
+
+                    Assert.Equal(expected, actual);
+                },
+                entryCount: 63);
+        }
 
         [Fact]
         [Trait("Impatient", "Adjusted entry count")]

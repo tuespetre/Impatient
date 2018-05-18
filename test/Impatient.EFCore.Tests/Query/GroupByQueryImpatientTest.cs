@@ -3,67 +3,16 @@ using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using System;
 using System.Linq;
 using Xunit;
+using Xunit.Sdk;
 
 namespace Impatient.EFCore.Tests.Query
 {
-    public class GroupByImpatientQueryTest : GroupByQueryTestBase<NorthwindQueryImpatientFixture>
+    public class GroupByQueryImpatientTest : GroupByQueryTestBase<NorthwindQueryImpatientFixture>
     {
-        public GroupByImpatientQueryTest(NorthwindQueryImpatientFixture fixture) : base(fixture)
+        public GroupByQueryImpatientTest(NorthwindQueryImpatientFixture fixture) : base(fixture)
         {
-            Fixture.TestSqlLoggerFactory.Clear();
+            ClearLog();
         }
-
-        #region skips
-
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override void GroupBy_after_predicate_Constant_Select_Sum_Min_Key_Max_Avg()
-        {
-            base.GroupBy_after_predicate_Constant_Select_Sum_Min_Key_Max_Avg();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override void GroupBy_Constant_Select_Sum_Min_Key_Max_Avg()
-        {
-            base.GroupBy_Constant_Select_Sum_Min_Key_Max_Avg();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override void GroupBy_Constant_with_element_selector_Select_Sum_Min_Key_Max_Avg()
-        {
-            base.GroupBy_Constant_with_element_selector_Select_Sum_Min_Key_Max_Avg();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override void GroupBy_param_Select_Sum_Min_Key_Max_Avg()
-        {
-            base.GroupBy_param_Select_Sum_Min_Key_Max_Avg();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override void GroupBy_param_with_element_selector_Select_Sum_Min_Key_Max_Avg()
-        {
-            base.GroupBy_param_with_element_selector_Select_Sum_Min_Key_Max_Avg();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override void GroupBy_Shadow2()
-        {
-            base.GroupBy_Shadow2();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override void GroupBy_with_element_selector2()
-        {
-            base.GroupBy_with_element_selector2();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override void GroupBy_with_element_selector3()
-        {
-            base.GroupBy_with_element_selector3();
-        }
-
-        #endregion
 
         [Fact]
         public override void Anonymous_projection_Distinct_GroupBy_Aggregate()
@@ -109,6 +58,16 @@ FROM (
 GROUP BY [o].[CustomerID]
 ORDER BY [o].[CustomerID] ASC
 ");
+        }
+
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override void GroupBy_after_predicate_Constant_Select_Sum_Min_Key_Max_Avg()
+        {
+            var ex = Assert.Throws<EqualException>(() => base.GroupBy_after_predicate_Constant_Select_Sum_Min_Key_Max_Avg());
+
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("577", ex.Actual);
         }
 
         [Fact]
@@ -581,6 +540,26 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
         }
 
         [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override void GroupBy_Constant_Select_Sum_Min_Key_Max_Avg()
+        {
+            var ex = Assert.Throws<EqualException>(() => base.GroupBy_Constant_Select_Sum_Min_Key_Max_Avg());
+
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("830", ex.Actual);
+        }
+
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override void GroupBy_Constant_with_element_selector_Select_Sum_Min_Key_Max_Avg()
+        {
+            var ex = Assert.Throws<EqualException>(() => base.GroupBy_Constant_with_element_selector_Select_Sum_Min_Key_Max_Avg());
+
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("830", ex.Actual);
+        }
+
+        [Fact]
         public override void GroupBy_DateTimeOffset_Property()
         {
             base.GroupBy_DateTimeOffset_Property();
@@ -869,6 +848,26 @@ FROM [Orders] AS [o]
 GROUP BY [o].[CustomerID]
 ORDER BY [o].[CustomerID] ASC
 ");
+        }
+
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override void GroupBy_param_Select_Sum_Min_Key_Max_Avg()
+        {
+            var ex = Assert.Throws<EqualException>(() => base.GroupBy_Constant_with_element_selector_Select_Sum_Min_Key_Max_Avg());
+
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("830", ex.Actual);
+        }
+
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override void GroupBy_param_with_element_selector_Select_Sum_Min_Key_Max_Avg()
+        {
+            var ex = Assert.Throws<EqualException>(() => base.GroupBy_Constant_with_element_selector_Select_Sum_Min_Key_Max_Avg());
+
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("830", ex.Actual);
         }
 
         [Fact]
@@ -1311,6 +1310,16 @@ GROUP BY [e].[Title]
         }
 
         [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override void GroupBy_Shadow2()
+        {
+            var ex = Assert.Throws<EqualException>(() => base.GroupBy_Shadow2());
+
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("1", ex.Actual);
+        }
+
+        [Fact]
         public override void GroupBy_Shadow3()
         {
             base.GroupBy_Shadow3();
@@ -1441,6 +1450,26 @@ FROM [Orders] AS [g_0]
 GROUP BY [g_0].[CustomerID]
 ORDER BY [g_0].[CustomerID] ASC
 ");
+        }
+
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override void GroupBy_with_element_selector2()
+        {
+            var ex = Assert.Throws<EqualException>(() => base.GroupBy_with_element_selector2());
+
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("830", ex.Actual);
+        }
+
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override void GroupBy_with_element_selector3()
+        {
+            var ex = Assert.Throws<EqualException>(() => base.GroupBy_with_element_selector3());
+
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("9", ex.Actual);
         }
 
         [Fact]
@@ -2106,15 +2135,6 @@ INNER JOIN [Orders] AS [o] ON [g].[Key] = [o].[OrderID]
             base.Select_nested_collection_with_groupby();
 
             AssertSql(@"
-SELECT [c].[CustomerID] AS [CustomerID], [c].[Address] AS [Address], [c].[City] AS [City], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Country] AS [Country], [c].[Fax] AS [Fax], [c].[Phone] AS [Phone], [c].[PostalCode] AS [PostalCode], [c].[Region] AS [Region], (
-    SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
-    FROM [Orders] AS [o]
-    WHERE [c].[CustomerID] = [o].[CustomerID]
-    FOR JSON PATH
-) AS [Orders]
-FROM [Customers] AS [c]
-WHERE LEFT([c].[CustomerID], LEN(N'A')) = N'A'
-
 SELECT [c].[CustomerID] AS [$outer.CustomerID], [c].[Address] AS [$outer.Address], [c].[City] AS [$outer.City], [c].[CompanyName] AS [$outer.CompanyName], [c].[ContactName] AS [$outer.ContactName], [c].[ContactTitle] AS [$outer.ContactTitle], [c].[Country] AS [$outer.Country], [c].[Fax] AS [$outer.Fax], [c].[Phone] AS [$outer.Phone], [c].[PostalCode] AS [$outer.PostalCode], [c].[Region] AS [$outer.Region], (
     SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
     FROM [Orders] AS [o]
@@ -2175,6 +2195,8 @@ GROUP BY [set].[City]
         }
 
         #region utilities
+
+        protected override void ClearLog() => Fixture.TestSqlLoggerFactory.Clear();
 
         private void AssertSql(string sql)
         {

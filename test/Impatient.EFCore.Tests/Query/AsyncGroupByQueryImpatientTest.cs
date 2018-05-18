@@ -4,66 +4,95 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using Xunit;
+using Xunit.Sdk;
 
 namespace Impatient.EFCore.Tests.Query
 {
-    public class AsyncGroupByImpatientQueryTest : AsyncGroupByQueryTestBase<NorthwindQueryImpatientFixture>
+    public class AsyncGroupByQueryImpatientTest : AsyncGroupByQueryTestBase<NorthwindQueryImpatientFixture>
     {
-        public AsyncGroupByImpatientQueryTest(NorthwindQueryImpatientFixture fixture) : base(fixture)
+        public AsyncGroupByQueryImpatientTest(NorthwindQueryImpatientFixture fixture) : base(fixture)
         {
         }
-
-        #region skips
-
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override Task GroupBy_after_predicate_Constant_Select_Sum_Min_Key_Max_Avg()
+        
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override async Task GroupBy_after_predicate_Constant_Select_Sum_Min_Key_Max_Avg()
         {
-            return base.GroupBy_after_predicate_Constant_Select_Sum_Min_Key_Max_Avg();
+            var ex = await Assert.ThrowsAsync<EqualException>(() => base.GroupBy_after_predicate_Constant_Select_Sum_Min_Key_Max_Avg());
+
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("577", ex.Actual);
+        }
+        
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override async Task GroupBy_Constant_Select_Sum_Min_Key_Max_Avg()
+        {
+            var ex = await Assert.ThrowsAsync<EqualException>(() => base.GroupBy_Constant_Select_Sum_Min_Key_Max_Avg());
+
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("830", ex.Actual);
         }
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override Task GroupBy_Constant_Select_Sum_Min_Key_Max_Avg()
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override async Task GroupBy_Constant_with_element_selector_Select_Sum_Min_Key_Max_Avg()
         {
-            return base.GroupBy_Constant_Select_Sum_Min_Key_Max_Avg();
+            var ex = await Assert.ThrowsAsync<EqualException>(() => base.GroupBy_Constant_with_element_selector_Select_Sum_Min_Key_Max_Avg());
+
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("830", ex.Actual);
         }
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override Task GroupBy_Constant_with_element_selector_Select_Sum_Min_Key_Max_Avg()
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override async Task GroupBy_param_Select_Sum_Min_Key_Max_Avg()
         {
-            return base.GroupBy_Constant_with_element_selector_Select_Sum_Min_Key_Max_Avg();
+            var ex = await Assert.ThrowsAsync<EqualException>(() => base.GroupBy_param_Select_Sum_Min_Key_Max_Avg());
+
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("830", ex.Actual);
         }
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override Task GroupBy_param_Select_Sum_Min_Key_Max_Avg()
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override async Task GroupBy_param_with_element_selector_Select_Sum_Min_Key_Max_Avg()
         {
-            return base.GroupBy_param_Select_Sum_Min_Key_Max_Avg();
+            var ex = await Assert.ThrowsAsync<EqualException>(() => base.GroupBy_param_with_element_selector_Select_Sum_Min_Key_Max_Avg());
+
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("830", ex.Actual);
         }
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override Task GroupBy_param_with_element_selector_Select_Sum_Min_Key_Max_Avg()
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override async Task GroupBy_Shadow2()
         {
-            return base.GroupBy_param_with_element_selector_Select_Sum_Min_Key_Max_Avg();
+            var ex = await Assert.ThrowsAsync<EqualException>(() => base.GroupBy_Shadow2());
+
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("1", ex.Actual);
         }
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override Task GroupBy_Shadow2()
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override async Task GroupBy_with_element_selector2()
         {
-            return base.GroupBy_Shadow2();
+            var ex = await Assert.ThrowsAsync<EqualException>(() => base.GroupBy_with_element_selector2());
+
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("830", ex.Actual);
         }
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override Task GroupBy_with_element_selector2()
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override async Task GroupBy_with_element_selector3()
         {
-            return base.GroupBy_with_element_selector2();
-        }
+            var ex = await Assert.ThrowsAsync<EqualException>(() => base.GroupBy_with_element_selector3());
 
-        [Fact(Skip = EFCoreSkipReasons.TestAssumesNestedSubqueryResultsAreNotTracked)]
-        public override Task GroupBy_with_element_selector3()
-        {
-            return base.GroupBy_with_element_selector3();
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("9", ex.Actual);
         }
-
-        #endregion
 
         [Fact]
         [Trait("Impatient", "Skipped by EFCore")]
