@@ -27,6 +27,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 
             yield return new ShadowPropertyRewritingExpressionVisitor(currentDbContext.Context.Model);
 
+            yield return new DbFunctionRewritingExpressionVisitor(currentDbContext.Context.Model);
+
             foreach (var visitor in base.CreateExpressionVisitors(context))
             {
                 yield return visitor;

@@ -445,7 +445,7 @@ namespace Impatient.Extensions
 
                 case SqlExistsExpression _:
                 case SqlInExpression _:
-                // TODO: Include SqlLikeExpression
+                case SqlLikeExpression _:
                 {
                     return true;
                 }
@@ -481,9 +481,9 @@ namespace Impatient.Extensions
                     {
                         case ExpressionType.Not:
                         {
-                            // TODO: Include SqlLikeExpression
                             return unaryExpression.Operand is SqlInExpression
-                                || unaryExpression.Operand is SqlExistsExpression;
+                                || unaryExpression.Operand is SqlExistsExpression
+                                || unaryExpression.Operand is SqlLikeExpression;
                         }
 
                         default:
@@ -513,6 +513,7 @@ namespace Impatient.Extensions
             {
                 case SqlInExpression _:
                 case SqlExistsExpression _:
+                case SqlLikeExpression _:
                 {
                     return false;
                 }

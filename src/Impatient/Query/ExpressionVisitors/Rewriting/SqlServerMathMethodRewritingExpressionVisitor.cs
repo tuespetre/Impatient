@@ -1,5 +1,4 @@
 ﻿using Impatient.Query.Expressions;
-using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,27 +60,16 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
             typeof(Math).GetRuntimeMethod(nameof(Math.Round), new[] { typeof(double), typeof(int) })
         };
 
-        private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
-
-        public SqlServerMathMethodRewritingExpressionVisitor(
-            TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor)
-        {
-            this.translatabilityAnalyzingExpressionVisitor = translatabilityAnalyzingExpressionVisitor;
-        }
-
-        private bool IsTranslatable(Expression node) => translatabilityAnalyzingExpressionVisitor.Visit(node) is TranslatableExpression;
-
-
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
             var @object = Visit(node.Object);
             var arguments = Visit(node.Arguments);
 
-            if (generalMathMethods.TryGetValue(node.Method, out var sqlFunctionName) && arguments.All(IsTranslatable))
+            if (generalMathMethods.TryGetValue(node.Method, out var sqlFunctionName))
             {
                 return new SqlFunctionExpression(sqlFunctionName, node.Type, arguments.ToArray());
             }
-            else if (truncateMethods.Contains(node.Method) && arguments.All(IsTranslatable))
+            else if (truncateMethods.Contains(node.Method))
             {
                 var firstArgument = arguments[0];
 
@@ -95,7 +83,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     node.Type,
                     new[] { firstArgument, Expression.Constant(0), Expression.Constant(1) });
             }
-            else if (roundMethods.Contains(node.Method) && arguments.All(IsTranslatable))
+            else if (roundMethods.Contains(node.Method))
             {
                 var firstArgument = arguments[0];
 

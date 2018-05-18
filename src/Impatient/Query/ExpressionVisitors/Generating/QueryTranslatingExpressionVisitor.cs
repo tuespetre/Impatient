@@ -594,6 +594,11 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                     return VisitSqlInExpression(sqlInExpression);
                 }
 
+                case SqlLikeExpression sqlLikeExpression:
+                {
+                    return VisitSqlLikeExpression(sqlLikeExpression);
+                }
+
                 case SqlParameterExpression sqlParameterExpression:
                 {
                     return VisitSqlParameterExpression(sqlParameterExpression);
@@ -627,6 +632,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                     {
                         case SqlExistsExpression sqlExistsExpression:
                         case SqlInExpression sqlInExpression:
+                        case SqlLikeExpression sqlLikeExpression:
                         {
                             Builder.Append("NOT ");
 
@@ -1149,7 +1155,17 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
         protected virtual Expression VisitSqlFunctionExpression(SqlFunctionExpression sqlFunctionExpression)
         {
-            Builder.Append(sqlFunctionExpression.FunctionName);
+            if (!string.IsNullOrWhiteSpace(sqlFunctionExpression.SchemaName))
+            {
+                Builder.Append(FormatIdentifier(sqlFunctionExpression.SchemaName));
+                Builder.Append(".");
+                Builder.Append(FormatIdentifier(sqlFunctionExpression.FunctionName));
+            }
+            else
+            {
+                Builder.Append(sqlFunctionExpression.FunctionName);
+            }
+
             Builder.Append("(");
 
             if (sqlFunctionExpression.Arguments.Any())
@@ -1263,6 +1279,24 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             }
 
             return sqlInExpression;
+        }
+
+        protected virtual Expression VisitSqlLikeExpression(SqlLikeExpression sqlLikeExpression)
+        {
+            Visit(sqlLikeExpression.Target);
+
+            Builder.Append(" LIKE ");
+
+            Visit(sqlLikeExpression.Pattern);
+
+            if (sqlLikeExpression.Escape != null)
+            {
+                Builder.Append(" ESCAPE ");
+
+                Visit(sqlLikeExpression.Escape);
+            }
+
+            return sqlLikeExpression;
         }
 
         protected virtual Expression VisitSqlParameterExpression(SqlParameterExpression sqlParameterExpression)

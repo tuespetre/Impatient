@@ -33,33 +33,14 @@ namespace Impatient.Query.ExpressionVisitors.Composing
         }
 
         private IEnumerable<ExpressionVisitor> ServerPostExpansionVisitors
-        {
-            get
-            {
-                yield return parameterizingExpressionVisitor;
-
-                foreach (var rewritingVisitor in rewritingExpressionVisitors)
-                {
-                    yield return rewritingVisitor;
-
-                    // Ugh
-                    yield return parameterizingExpressionVisitor;
-                }
-
-                yield return new StaticMemberSqlParameterRewritingExpressionVisitor();
-
-                yield return this;
-            }
-        }
+            => rewritingExpressionVisitors.Concat(ClientPostExpansionVisitors);
 
         private IEnumerable<ExpressionVisitor> ClientPostExpansionVisitors
         {
             get
             {
                 yield return parameterizingExpressionVisitor;
-
                 yield return new StaticMemberSqlParameterRewritingExpressionVisitor();
-
                 yield return this;
             }
         }

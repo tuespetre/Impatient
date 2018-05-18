@@ -39,7 +39,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
                         if (node.Arguments.Count == 2)
                         {
-                            selector = node.Arguments[1].UnwrapLambda()?.ExpandParameters(selector);
+                            selector = node.Arguments[1].UnwrapLambda().ExpandParameters(selector);
                         }
 
                         if (!(translatabilityAnalyzingExpressionVisitor.Visit(selector) is TranslatableExpression))
@@ -70,7 +70,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
                         if (node.Arguments.Count == 2)
                         {
-                            var predicate = node.Arguments[1].UnwrapLambda()?.ExpandParameters(selector);
+                            var predicate = node.Arguments[1].UnwrapLambda().ExpandParameters(selector);
 
                             if (!(translatabilityAnalyzingExpressionVisitor.Visit(predicate) is TranslatableExpression))
                             {

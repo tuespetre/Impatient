@@ -16,7 +16,6 @@ using System.Threading.Tasks;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
-    // TODO: Make use of the execution strategy
     public partial class ImpatientQueryCompiler : IQueryCompiler
     {
         private readonly ICurrentDbContext currentDbContext;

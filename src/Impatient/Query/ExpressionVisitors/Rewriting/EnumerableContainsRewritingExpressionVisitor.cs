@@ -1,7 +1,5 @@
 ﻿using Impatient.Extensions;
 using Impatient.Query.Expressions;
-using Impatient.Query.ExpressionVisitors.Utility;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -15,16 +13,6 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
         private static readonly MethodInfo enumerableContainsMethodInfo
             = GetGenericMethodDefinition((IEnumerable<object> e) => e.Contains(null));
 
-        private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
-
-        public EnumerableContainsRewritingExpressionVisitor(
-            TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor)
-        {
-            this.translatabilityAnalyzingExpressionVisitor
-                = translatabilityAnalyzingExpressionVisitor
-                    ?? throw new ArgumentNullException(nameof(translatabilityAnalyzingExpressionVisitor));
-        }
-
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
             var @object = Visit(node.Object);
@@ -32,8 +20,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
             if (node.Method.IsGenericMethod
                 && node.Method.GetGenericMethodDefinition() == enumerableContainsMethodInfo
-                && arguments[0].Type.GetSequenceType().IsScalarType()
-                && translatabilityAnalyzingExpressionVisitor.Visit(arguments[1]) is TranslatableExpression)
+                && arguments[0].Type.GetSequenceType().IsScalarType())
             {
                 var canUseValues = false;
 

@@ -32,11 +32,11 @@ namespace Impatient.Query.Infrastructure
 
             yield return new DateTimeMemberRewritingExpressionVisitor();
 
-            yield return new StringMemberRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor);
+            yield return new StringMemberRewritingExpressionVisitor();
 
-            yield return new CollectionContainsRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor);
+            yield return new CollectionContainsRewritingExpressionVisitor();
 
-            yield return new EnumerableContainsRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor);
+            yield return new EnumerableContainsRewritingExpressionVisitor();
 
             yield return new EnumerableQueryEqualityRewritingExpressionVisitor();
 
@@ -46,7 +46,7 @@ namespace Impatient.Query.Infrastructure
 
             yield return new SqlServerCountRewritingExpressionVisitor();
 
-            yield return new SqlServerMathMethodRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor);
+            yield return new SqlServerMathMethodRewritingExpressionVisitor();
 
             yield return new SqlServerJsonMemberRewritingExpressionVisitor();
         }

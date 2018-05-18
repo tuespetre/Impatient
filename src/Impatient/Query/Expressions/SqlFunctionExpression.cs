@@ -10,16 +10,24 @@ namespace Impatient.Query.Expressions
     public class SqlFunctionExpression : SqlExpression
     {
         public SqlFunctionExpression(string functionName, Type type, params Expression[] arguments)
-            : this(functionName, type, (IEnumerable<Expression>)arguments)
+            : this(null, functionName, type, arguments)
         {
         }
 
         public SqlFunctionExpression(string functionName, Type type, IEnumerable<Expression> arguments)
+            : this(null, functionName, type, arguments)
         {
+        }
+
+        public SqlFunctionExpression(string schemaName, string functionName, Type type, IEnumerable<Expression> arguments)
+        {
+            SchemaName = schemaName;
             FunctionName = functionName ?? throw new ArgumentNullException(nameof(functionName));
             Arguments = new ReadOnlyCollection<Expression>(arguments?.ToArray() ?? throw new ArgumentNullException(nameof(arguments)));
             Type = type ?? throw new ArgumentNullException(nameof(type));
         }
+
+        public string SchemaName { get; }
 
         public string FunctionName { get; }
 
@@ -33,7 +41,7 @@ namespace Impatient.Query.Expressions
 
             if (!arguments.SequenceEqual(Arguments))
             {
-                return new SqlFunctionExpression(FunctionName, Type, arguments);
+                return new SqlFunctionExpression(SchemaName, FunctionName, Type, arguments);
             }
 
             return this;

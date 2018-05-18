@@ -191,24 +191,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
         protected override Expression VisitMember(MemberExpression node)
         {
-            var expression = node.Expression;
-
-            if (expression == null)
-            {
-                if (node.Member is FieldInfo field && (field.IsInitOnly || !field.IsLiteral))
-                {
-                    goto Finish;
-                }
-
-                if (node.Member is PropertyInfo)
-                {
-                    goto Finish;
-                }
-            }
-            else
-            {
-                expression = Visit(node.Expression);
-            }
+            var expression = Visit(node.Expression);
 
             if (!unevaluableMembers.Contains(node.Member)
                 && (expression == null || expression.NodeType == ExpressionType.Constant))
@@ -233,8 +216,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                     }
                 }
             }
-
-            Finish:
+            
             return node.Update(expression);
         }
 

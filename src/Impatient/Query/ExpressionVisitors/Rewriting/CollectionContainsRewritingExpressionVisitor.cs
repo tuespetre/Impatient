@@ -1,7 +1,5 @@
 ﻿using Impatient.Extensions;
 using Impatient.Query.Expressions;
-using Impatient.Query.ExpressionVisitors.Utility;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -11,16 +9,6 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 {
     public class CollectionContainsRewritingExpressionVisitor : ExpressionVisitor
     {
-        private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
-
-        public CollectionContainsRewritingExpressionVisitor(
-            TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor)
-        {
-            this.translatabilityAnalyzingExpressionVisitor
-                = translatabilityAnalyzingExpressionVisitor
-                    ?? throw new ArgumentNullException(nameof(translatabilityAnalyzingExpressionVisitor));
-        }
-
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
             var @object = Visit(node.Object);
@@ -30,9 +18,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
             var collectionType = method.DeclaringType.FindGenericType(typeof(ICollection<>));
 
-            if (collectionType != null
-                && @object.Type.GetSequenceType().IsScalarType()
-                && translatabilityAnalyzingExpressionVisitor.Visit(arguments[0]) is TranslatableExpression)
+            if (collectionType != null && @object.Type.GetSequenceType().IsScalarType())
             {
                 var canRewriteMethod = false;
 

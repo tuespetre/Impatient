@@ -65,6 +65,7 @@
 
   <ItemGroup>
     <QueryExpressions Include="**/*QueryExpression.cs; **/GroupByResultExpression.cs" Exclude="**/RelationalQueryExpression.cs" />
+    <SqlExpressions Remove="Query\Expressions\SqlLikeExpression.cs" />
     <Compile Update="@(QueryExpressions)">
       <DependentUpon>RelationalQueryExpression.cs</DependentUpon>
     </Compile>

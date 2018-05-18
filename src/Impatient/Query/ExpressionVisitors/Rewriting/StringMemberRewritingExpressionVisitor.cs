@@ -1,6 +1,5 @@
 ﻿using Impatient.Extensions;
 using Impatient.Query.Expressions;
-using Impatient.Query.ExpressionVisitors.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,23 +7,13 @@ using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Rewriting
 {
-    // TODO: Inner expressions/arguments HAVE to be checked for translatability first.
     public class StringMemberRewritingExpressionVisitor : ExpressionVisitor
-    {
-        private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
-
-        public StringMemberRewritingExpressionVisitor(TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor)
-        {
-            this.translatabilityAnalyzingExpressionVisitor = translatabilityAnalyzingExpressionVisitor;
-        }
-
-        private bool IsTranslatable(Expression node) => translatabilityAnalyzingExpressionVisitor.Visit(node) is TranslatableExpression;
-
+    {        
         protected override Expression VisitMember(MemberExpression node)
         {
             var expression = Visit(node.Expression);
 
-            if (IsTranslatable(expression) && node.Member.DeclaringType == typeof(string))
+            if (node.Member.DeclaringType == typeof(string))
             {
                 switch (node.Member.Name)
                 {
@@ -57,15 +46,11 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                         // TODO: Support other overloads of string.Concat
                         if (parameters.Select(p => p.ParameterType).All(t => t == typeof(string)))
                         {
-                            if (segments.All(IsTranslatable))
-                            {
                                 return new SqlConcatExpression(segments);
-                            }
                         }
                         else if (parameters[0].ParameterType == typeof(string[]))
                         {
-                            if (segments[0] is NewArrayExpression newArrayExpression
-                                && newArrayExpression.Expressions.All(IsTranslatable))
+                            if (segments[0] is NewArrayExpression newArrayExpression)
                             {
                                 return new SqlConcatExpression(newArrayExpression.Expressions);
                             }
@@ -75,7 +60,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     }
 
                     case nameof(string.Trim)
-                    when arguments.Count == 0 && IsTranslatable(@object):
+                    when arguments.Count == 0:
                     {
                         return new SqlFunctionExpression(
                             "LTRIM",
@@ -87,31 +72,28 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     }
 
                     case nameof(string.TrimStart)
-                    when ValidateTrimArguments(arguments) && IsTranslatable(@object):
+                    when ValidateTrimArguments(arguments):
                     {
                         return new SqlFunctionExpression("LTRIM", typeof(string), @object);
                     }
 
                     case nameof(string.TrimEnd)
-                    when ValidateTrimArguments(arguments) && IsTranslatable(@object):
+                    when ValidateTrimArguments(arguments):
                     {
                         return new SqlFunctionExpression("RTRIM", typeof(string), @object);
                     }
 
-                    case nameof(string.ToUpper)
-                    when IsTranslatable(@object):
+                    case nameof(string.ToUpper):
                     {
                         return new SqlFunctionExpression("UPPER", typeof(string), @object);
                     }
 
-                    case nameof(string.ToLower)
-                    when IsTranslatable(@object):
+                    case nameof(string.ToLower):
                     {
                         return new SqlFunctionExpression("LOWER", typeof(string), @object);
                     }
 
-                    case nameof(string.Substring)
-                    when IsTranslatable(@object) && arguments.All(IsTranslatable):
+                    case nameof(string.Substring):
                     {
                         var startIndex = GetStartIndex(arguments[0]);
 
@@ -122,14 +104,12 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                         return new SqlFunctionExpression("SUBSTRING", typeof(string), @object, startIndex, length);
                     }
 
-                    case nameof(string.Replace)
-                    when IsTranslatable(@object) && arguments.All(IsTranslatable):
+                    case nameof(string.Replace):
                     {
                         return new SqlFunctionExpression("REPLACE", typeof(string), @object, arguments[0], arguments[1]);
                     }
 
-                    case nameof(string.Contains)
-                    when IsTranslatable(@object) && arguments.All(IsTranslatable):
+                    case nameof(string.Contains):
                     {
                         Expression result
                             = Expression.GreaterThan(
@@ -140,7 +120,6 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                         {
                             if (constant.Value is null)
                             {
-                                //result = Expression.Constant(false);
                                 result
                                     = Expression.Equal(
                                         new SqlFragmentExpression("NULL", typeof(string)),
@@ -149,7 +128,6 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                             else if (constant.Value.Equals(string.Empty))
                             {
                                 result = Expression.Constant(true);
-                                //result = Expression.NotEqual(@object, Expression.Constant(null));
                             }
                         }
                         else
@@ -166,13 +144,29 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     }
 
                     case nameof(string.IndexOf)
-                    when arguments.Last().Type != typeof(StringComparison)
-                        && IsTranslatable(@object)
-                        && arguments.All(IsTranslatable):
+                    when arguments.Last().Type != typeof(StringComparison):
                     {
+                        var value = arguments[0];
+
+                        if (value is ConstantExpression constant)
+                        {
+                            switch (constant.Value)
+                            {
+                                case "":
+                                {
+                                    return Expression.Constant(0);
+                                }
+
+                                case null:
+                                {
+                                    return Expression.Constant(-1);
+                                }
+                            }
+                        }
+
                         var newArguments = new List<Expression>
                         {
-                            arguments[0],
+                            value,
                             @object,
                             GetStartIndex(arguments.ElementAtOrDefault(1))
                         };
@@ -188,9 +182,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     }
 
                     case nameof(string.StartsWith)
-                    when arguments.Count == 1
-                        && IsTranslatable(@object)
-                        && arguments.All(IsTranslatable):
+                    when arguments.Count == 1:
                     {
                         // TODO: consider LIKE for StartsWith instead
 
@@ -209,7 +201,6 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                         {
                             if (constant.Value is null)
                             {
-                                //result = Expression.Constant(false);
                                 result
                                     = Expression.Equal(
                                         new SqlFragmentExpression("NULL", typeof(string)),
@@ -218,7 +209,6 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                             else if (constant.Value.Equals(string.Empty))
                             {
                                 result = Expression.Constant(true);
-                                //result = Expression.NotEqual(@object, Expression.Constant(null));
                             }
                         }
                         else
@@ -235,9 +225,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     }
 
                     case nameof(string.EndsWith)
-                    when arguments.Count == 1
-                        && IsTranslatable(@object)
-                        && arguments.All(IsTranslatable):
+                    when arguments.Count == 1:
                     {
                         // Note: 
                         // Don't bother using LIKE, because patterns that contain wildcards
@@ -258,7 +246,6 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                         {
                             if (constant.Value is null)
                             {
-                                //result = Expression.Constant(false);
                                 result
                                     = Expression.Equal(
                                         new SqlFragmentExpression("NULL", typeof(string)),
@@ -267,7 +254,6 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                             else if (constant.Value.Equals(string.Empty))
                             {
                                 result = Expression.Constant(true);
-                                //result = Expression.NotEqual(@object, Expression.Constant(null));
                             }
                         }
                         else
@@ -283,8 +269,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                         return result;
                     }
 
-                    case nameof(string.IsNullOrEmpty)
-                    when arguments.All(IsTranslatable):
+                    case nameof(string.IsNullOrEmpty):
                     {
                         return Expression.OrElse(
                             Expression.Equal(
@@ -295,8 +280,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                                 Expression.Constant(0)));
                     }
 
-                    case nameof(string.IsNullOrWhiteSpace)
-                    when arguments.All(IsTranslatable):
+                    case nameof(string.IsNullOrWhiteSpace):
                     {
                         var argument = arguments[0];
 
@@ -316,8 +300,6 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                                 arguments[0],
                                 Expression.Constant(null, arguments[0].Type)),
                             Expression.Equal(
-                                // The superfluous convert currently guards against
-                                // unnecessary null checking.
                                 argument,
                                 Expression.Constant(string.Empty)));
                     }

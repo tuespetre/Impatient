@@ -104,7 +104,32 @@ namespace Impatient.Query.ExpressionVisitors.Utility
         {
             switch (node)
             {
-                case SqlExpression _:
+                case SqlConcatExpression sqlConcatExpression
+                when sqlConcatExpression.Segments.All(IsTranslatable):
+                {
+                    return new TranslatableExpression(node);
+                }
+
+                case SqlFunctionExpression sqlFunctionExpression
+                when sqlFunctionExpression.Arguments.All(IsTranslatable):
+                {
+                    return new TranslatableExpression(node);
+                }
+
+                case SqlInExpression sqlInExpression
+                when IsTranslatable(sqlInExpression.Value):
+                {
+                    return new TranslatableExpression(node);
+                }
+
+                case SqlConcatExpression _:
+                case SqlFunctionExpression _:
+                case SqlInExpression _:
+                {
+                    return node;
+                }
+
+                case SqlExpression sqlExpression:
                 {
                     return new TranslatableExpression(node);
                 }
