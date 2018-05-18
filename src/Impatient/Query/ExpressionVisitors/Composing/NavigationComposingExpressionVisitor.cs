@@ -62,7 +62,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 {
                     return base.VisitMethodCall(node);
                 }
-                
+
                 switch (node.Method.Name)
                 {
                     // Uncertain
@@ -257,10 +257,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 }
 
                 var source = Visit(node.Arguments[0]);
-                var selector = Visit(node.Arguments[1]).UnwrapLambda();
-                var parameter = selector.Parameters[0];
                 var context = default(NavigationExpansionContext);
-                var root = (source, selector);
 
                 if (source is NavigationExpansionContextExpression nece)
                 {
@@ -269,54 +266,41 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 }
                 else
                 {
+                    var parameter = node.Arguments[1].UnwrapLambda().Parameters[0];
+
                     context = new NavigationExpansionContext(parameter, navigationDescriptors);
                 }
 
-                var expansionResultData = new List<(MethodInfo method, LambdaExpression selector, ParameterExpression parameter)>();
+                stack.Insert(0, (node, Visit(node.Arguments[1])));
 
-                var expanded = false;
+                var consumed = false;
 
-                stack.Insert(0, (node, selector));
-
-                foreach (var call in stack)
+                for (var i = 0; i < stack.Count; i++)
                 {
-                    selector = call.selector.UnwrapLambda();
-                    parameter = selector.Parameters[0];
+                    var selector = stack[i].selector.UnwrapLambda();
+                    var parameter = selector.Parameters[0];
 
-                    if (context.ExpandIntermediateLambda(ref source, ref selector, ref parameter, out _))
-                    {
-                        expanded = true;
-
-                        for (var i = 0; i < expansionResultData.Count; i++)
-                        {
-                            var data = expansionResultData[i];
-
-                            var previousSelector = stack[i].selector.UnwrapLambda();
-                            var previousParameter = previousSelector.Parameters[0];
-
-                            context.ExpandIntermediateLambda(ref source, ref previousSelector, ref previousParameter, out _);
-
-                            expansionResultData[i] = (data.method, previousSelector, previousParameter);
-                        }
-                    }
-
-                    expansionResultData.Add((call.node.Method, selector, parameter));
+                    consumed |= context.ConsumeNavigations(ref source, selector, parameter);
                 }
 
-                if (expanded)
+                if (consumed || context.HasExpansions)
                 {
                     var result = source;
 
-                    for (var i = 0; i < expansionResultData.Count; i++)
+                    for (var i = 0; i < stack.Count; i++)
                     {
-                        var data = expansionResultData[i];
+                        var frame = stack[i];
+                        var selector = frame.selector.UnwrapLambda();
+                        var parameter = selector.Parameters[0];
 
-                        result 
+                        context.ApplyMappings(ref selector, ref parameter);
+
+                        result
                             = CreateCall(
-                                data.method.GetGenericMethodDefinition().MakeGenericMethod(
-                                    data.parameter.Type,
-                                    data.method.GetGenericArguments()[1]),
-                                new[] { result, data.selector });
+                                frame.node.Method.GetGenericMethodDefinition().MakeGenericMethod(
+                                    parameter.Type,
+                                    frame.node.Method.GetGenericArguments()[1]),
+                                new[] { result, selector });
                     }
 
                     return new NavigationExpansionContextExpression(
@@ -325,7 +309,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 }
                 else
                 {
-                    var result = node.Update(null, new[] { root.source, root.selector }.Concat(node.Arguments.Skip(2)));
+                    var result = source;
 
                     foreach (var call in stack)
                     {
@@ -333,7 +317,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     }
 
                     return result;
-                }              
+                }
             }
 
             private Expression HandleTerminalSelectorMethod(MethodCallExpression node)
@@ -353,8 +337,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     context = new NavigationExpansionContext(parameter, navigationDescriptors);
                 }
 
-                if (context.ExpandIntermediateLambda(ref source, ref selector, ref parameter, out _))
+                var consumed = context.ConsumeNavigations(ref source, selector, parameter);
+
+                if (consumed || context.HasExpansions)
                 {
+                    context.ApplyMappings(ref selector, ref parameter);
+
                     return CreateCall(
                         node.Method.GetGenericMethodDefinition().MakeGenericMethod(
                             node.Method.GetGenericArguments()
@@ -386,8 +374,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     context = new NavigationExpansionContext(parameter, navigationDescriptors);
                 }
 
-                if (context.ExpandIntermediateLambda(ref source, ref predicate, ref parameter, out _))
+                var consumed = context.ConsumeNavigations(ref source, predicate, parameter);
+
+                if (consumed || context.HasExpansions)
                 {
+                    context.ApplyMappings(ref predicate, ref parameter);
+
                     return CreateCall(
                         node.Method.GetGenericMethodDefinition().MakeGenericMethod(
                             parameter.Type),
@@ -416,8 +408,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     context = new NavigationExpansionContext(parameter, navigationDescriptors);
                 }
 
-                if (context.ExpandIntermediateLambda(ref source, ref predicate, ref parameter, out _))
+                var consumed = context.ConsumeNavigations(ref source, predicate, parameter);
+
+                if (consumed || context.HasExpansions)
                 {
+                    context.ApplyMappings(ref predicate, ref parameter);
+
                     var terminalSelectMethod = enumerableSelectMethodInfo;
                     var terminalWhereMethod = enumerableWhereMethodInfo;
                     var predicateArgument = (Expression)predicate;
@@ -470,8 +466,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     context = new NavigationExpansionContext(parameter, navigationDescriptors);
                 }
 
-                if (context.ExpandIntermediateLambda(ref source, ref predicate, ref parameter, out _))
+                var consumed = context.ConsumeNavigations(ref source, predicate, parameter);
+
+                if (consumed || context.HasExpansions)
                 {
+                    context.ApplyMappings(ref predicate, ref parameter);
+
                     var result
                         = CreateCall(
                             node.Method.GetGenericMethodDefinition().MakeGenericMethod(
@@ -505,12 +505,16 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     context = new NavigationExpansionContext(parameter, navigationDescriptors);
                 }
 
-                if (context.ExpandResultLambda(ref source, ref selector, ref parameter))
+                var consumed = context.ConsumeNavigations(ref source, selector, parameter);
+
+                if (consumed || context.HasExpansions)
                 {
+                    context = NavigationExpansionContext.Advance(context, ref selector, ref parameter);
+
                     var result
                         = CreateCall(
                             node.Method.GetGenericMethodDefinition().MakeGenericMethod(
-                                parameter.Type,
+                                source.Type.GetSequenceType(),
                                 selector.ReturnType),
                             new[] { source, selector });
 
@@ -553,8 +557,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     context = new NavigationExpansionContext(parameter, navigationDescriptors);
                 }
 
-                if (context.ExpandIntermediateLambda(ref source, ref selector, ref parameter, out _))
+                var consumed = context.ConsumeNavigations(ref source, selector, parameter);
+
+                if (consumed || context.HasExpansions)
                 {
+                    context.ApplyMappings(ref selector, ref parameter);
+
                     return CreateCall(
                         node.Method.GetGenericMethodDefinition().MakeGenericMethod(
                             parameter.Type,
@@ -587,38 +595,30 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     outerContext = new NavigationExpansionContext(sourceParameter, navigationDescriptors);
                 }
 
-                var terminate = true;
+                var consumed = false;
 
-                var processedCollection 
-                    = outerContext.ConsumeNavigations(ref source, collectionSelector, sourceParameter);
+                consumed |= outerContext.ConsumeNavigations(ref source, collectionSelector, sourceParameter);
+                consumed |= outerContext.ConsumeNavigations(ref source, resultSelector, resultOuterParameter);
 
-                var processedResultForSource 
-                    = outerContext.ConsumeNavigations(ref source, resultSelector, resultOuterParameter);
-
-                if (processedCollection || processedResultForSource || outerContext.HasExpansions)
+                if (consumed || outerContext.HasExpansions)
                 {
-                    outerContext.TransformLambda(ref collectionSelector, ref sourceParameter);
-                    outerContext.TransformLambda(ref resultSelector, ref resultOuterParameter);
-                    terminate = false;
+                    outerContext.ApplyMappings(ref collectionSelector, ref sourceParameter);
+                    consumed |= true;
                 }
 
                 var innerSource = collectionSelector.Body;
                 var innerContext = new NavigationExpansionContext(resultInnerParameter, navigationDescriptors);
 
-                var processedResultForCollection 
-                    = innerContext.ConsumeNavigations(ref innerSource, resultSelector, resultInnerParameter);
-
-                if (processedResultForCollection)
+                if (innerContext.ConsumeNavigations(ref innerSource, resultSelector, resultInnerParameter))
                 {
                     collectionSelector = Expression.Lambda(innerSource, sourceParameter);
-                    innerContext.TransformLambda(ref resultSelector, ref resultInnerParameter);
-                    terminate = false;
+                    consumed |= true;
                 }
 
-                if (!terminate)
+                if (consumed)
                 {
                     var resultContext
-                        = NavigationExpansionContext.Merge(
+                        = NavigationExpansionContext.Advance(
                             outerContext,
                             resultOuterParameter,
                             innerContext,
@@ -687,35 +687,17 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     context = new NavigationExpansionContext(keyParameter, navigationDescriptors);
                 }
 
-                bool foundKeyNavigations, foundElementNavigations, expandedAny = false;
+                var consumed = false;
 
-                var originalKeySelector = keySelector;
-                var originalKeyParameter = keyParameter;
-                var originalElementSelector = elementSelector;
-                var originalElementParameter = elementParameter;
+                consumed |= context.ConsumeNavigations(ref source, keySelector, keyParameter);
+                consumed |= context.ConsumeNavigations(ref source, elementSelector, elementParameter);
 
-                do
+                if (consumed || context.HasExpansions)
                 {
-                    keySelector = originalKeySelector;
-                    keyParameter = originalKeyParameter;
-                    elementSelector = originalElementSelector;
-                    elementParameter = originalElementParameter;
-
-                    expandedAny
-                        |= context.ExpandIntermediateLambda(
-                            ref source,
-                            ref keySelector,
-                            ref keyParameter,
-                            out foundKeyNavigations);
-
-                    expandedAny
-                        |= context.ExpandIntermediateLambda(
-                            ref source,
-                            ref elementSelector,
-                            ref elementParameter,
-                            out foundElementNavigations);
+                    context.ApplyMappings(ref keySelector, ref keyParameter);
+                    context.ApplyMappings(ref elementSelector, ref elementParameter);
+                    consumed = true; // Because of context.HasExpansions
                 }
-                while (foundKeyNavigations || foundElementNavigations);
 
                 var resultKeyParameter = resultSelector.Parameters[0];
                 var resultElementsParameter = resultSelector.Parameters[1];
@@ -769,8 +751,14 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                 Expression.MakeMemberAccess(newResultParameter, resultInnerField)),
                         newResultParameter);
 
-                if (newContext.ExpandResultLambda(ref newSource, ref newResultSelector, ref newResultParameter))
+                if (newContext.ConsumeNavigations(ref newSource, newResultSelector, newResultParameter))
                 {
+                    newContext
+                        = NavigationExpansionContext.Advance(
+                            newContext,
+                            ref newResultSelector,
+                            ref newResultParameter);
+
                     var terminalSelectMethod = enumerableSelectMethodInfo;
                     var terminalSelector = (Expression)newContext.OuterTerminalSelector;
 
@@ -798,7 +786,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                     return new NavigationExpansionContextExpression(terminator, newContext);
                 }
-                else if (expandedAny)
+                else if (consumed)
                 {
                     return CreateCall(
                         node.Method
@@ -849,38 +837,16 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     context = new NavigationExpansionContext(keyParameter, navigationDescriptors);
                 }
 
-                bool foundKeyNavigations, foundElementNavigations, expandedAny = false;
+                var consumed = false;
 
-                var originalKeySelector = keySelector;
-                var originalKeyParameter = keyParameter;
-                var originalElementSelector = elementSelector;
-                var originalElementParameter = elementParameter;
+                consumed |= context.ConsumeNavigations(ref source, keySelector, keyParameter);
+                consumed |= context.ConsumeNavigations(ref source, elementSelector, elementParameter);
 
-                do
+                if (consumed || context.HasExpansions)
                 {
-                    keySelector = originalKeySelector;
-                    keyParameter = originalKeyParameter;
-                    elementSelector = originalElementSelector;
-                    elementParameter = originalElementParameter;
+                    context.ApplyMappings(ref keySelector, ref keyParameter);
+                    context.ApplyMappings(ref elementSelector, ref elementParameter);
 
-                    expandedAny
-                        |= context.ExpandIntermediateLambda(
-                            ref source,
-                            ref keySelector,
-                            ref keyParameter,
-                            out foundKeyNavigations);
-
-                    expandedAny
-                        |= context.ExpandIntermediateLambda(
-                            ref source,
-                            ref elementSelector,
-                            ref elementParameter,
-                            out foundElementNavigations);
-                }
-                while (foundKeyNavigations || foundElementNavigations);
-
-                if (expandedAny)
-                {
                     return Expression.Call(
                         node.Method.GetGenericMethodDefinition().MakeGenericMethod(
                             source.Type.GetSequenceType(),
@@ -924,12 +890,15 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     context = new NavigationExpansionContext(keyParameter, navigationDescriptors);
                 }
 
-                var expandedKeySelector
-                    = context.ExpandIntermediateLambda(
-                        ref source,
-                        ref keySelector,
-                        ref keyParameter,
-                        out _);
+                var consumed = false;
+
+                consumed |= context.ConsumeNavigations(ref source, keySelector, keyParameter);
+
+                if (consumed || context.HasExpansions)
+                {
+                    context.ApplyMappings(ref keySelector, ref keyParameter);
+                    consumed = true; // Because of context.HasExpansions
+                }
 
                 var intermediateResultType
                     = typeof(NavigationTransparentIdentifier<,>).MakeGenericType(
@@ -947,33 +916,29 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                             new[] { resultOuterField, resultInnerField }),
                         new[] { resultKeyParameter, resultElementsParameter });
 
-                var newGenericMethodDefinition
-                    = node.Method.DeclaringType
-                        .GetTypeInfo()
-                        .GetDeclaredMethods("GroupBy")
-                        .Select(m => new { m, p = m.GetParameters() })
-                        .Where(x => x.p.Length == node.Arguments.Count + 1)
-                        .Where(x => x.p.Any(p => p.Name == "elementSelector"))
-                        .Where(x => x.p.Any(p => p.Name == "resultSelector"))
-                        .Select(x => x.m)
-                        .Single();
+                var groupByMethod
+                    = node.Method.HasComparerArgument()
+                        ? GetGenericMethodDefinition(
+                            (IQueryable<object> q) => q.GroupBy(x => x, x => x, (x, y) => x, default))
+                        : GetGenericMethodDefinition(
+                            (IQueryable<object> q) => q.GroupBy(x => x, x => x, (x, y) => x));
 
                 var newSource
                     = CreateCall(
-                        newGenericMethodDefinition
+                        groupByMethod
                             .MakeGenericMethod(new[]
                             {
-                                    source.Type.GetSequenceType(),
-                                    keySelector.ReturnType,
-                                    node.Method.GetGenericArguments()[0],
-                                    intermediateResultType,
+                                source.Type.GetSequenceType(),
+                                keySelector.ReturnType,
+                                node.Method.GetGenericArguments()[0],
+                                intermediateResultType,
                             }),
                         new[]
                         {
-                                source,
-                                keySelector,
-                                context.OuterTerminalSelector,
-                                intermediateResultSelector,
+                            source,
+                            keySelector,
+                            context.OuterTerminalSelector,
+                            intermediateResultSelector,
                         }.Concat(node.Arguments.Skip(4))) as Expression;
 
                 var newResultParameter = Expression.Parameter(intermediateResultType, "<>nav");
@@ -990,8 +955,14 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                 Expression.MakeMemberAccess(newResultParameter, resultInnerField)),
                         newResultParameter);
 
-                if (newContext.ExpandResultLambda(ref newSource, ref newResultSelector, ref newResultParameter))
+                if (newContext.ConsumeNavigations(ref newSource, newResultSelector, newResultParameter))
                 {
+                    newContext
+                        = NavigationExpansionContext.Advance(
+                            newContext,
+                            ref newResultSelector,
+                            ref newResultParameter);
+
                     var terminalSelectMethod = enumerableSelectMethodInfo;
                     var terminalSelector = (Expression)newContext.OuterTerminalSelector;
 
@@ -1019,10 +990,10 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                     return new NavigationExpansionContextExpression(terminator, newContext);
                 }
-                else if (expandedKeySelector)
+                else if (consumed)
                 {
                     return CreateCall(
-                        newGenericMethodDefinition
+                        groupByMethod
                             .MakeGenericMethod(new[]
                             {
                                 keyParameter.Type,
@@ -1066,16 +1037,21 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     context = new NavigationExpansionContext(keyParameter, navigationDescriptors);
                 }
 
-                if (context.ExpandIntermediateLambda(ref source, ref keySelector, ref keyParameter, out _))
+                var consumed = context.ConsumeNavigations(ref source, keySelector, keyParameter);
+
+                if (consumed || context.HasExpansions)
                 {
+                    context.ApplyMappings(ref keySelector, ref keyParameter);
+
+                    var groupByMethod
+                        = node.Method.HasComparerArgument()
+                            ? GetGenericMethodDefinition(
+                                (IQueryable<object> q) => q.GroupBy(x => x, x => x, default))
+                            : GetGenericMethodDefinition(
+                                (IQueryable<object> q) => q.GroupBy(x => x, x => x));
+
                     return CreateCall(
-                        node.Method.DeclaringType.GetTypeInfo()
-                            .GetDeclaredMethods("GroupBy")
-                            .Select(m => new { m, p = m.GetParameters() })
-                            .Where(x => x.p.Length == node.Arguments.Count + 1)
-                            .Where(x => x.p.Any(p => p.Name == "elementSelector"))
-                            .Select(x => x.m)
-                            .Single()
+                        groupByMethod
                             .MakeGenericMethod(new[]
                             {
                                 keyParameter.Type,
@@ -1108,6 +1084,8 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 var resultSelector = Visit(node.Arguments[4]).UnwrapLambda();
                 var outerKeyParameter = outerKeySelector.Parameters.Single();
                 var innerKeyParameter = innerKeySelector.Parameters.Single();
+                var outerResultParameter = resultSelector.Parameters[0];
+                var innerResultParameter = resultSelector.Parameters[1];
                 var outerContext = default(NavigationExpansionContext);
                 var innerContext = default(NavigationExpansionContext);
 
@@ -1131,25 +1109,37 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     innerContext = new NavigationExpansionContext(innerKeyParameter, navigationDescriptors);
                 }
 
-                var outerExpanded
-                    = outerContext.ExpandIntermediateLambda(
-                        ref outerSource,
-                        ref outerKeySelector,
-                        ref outerKeyParameter,
-                        out _);
+                var outerConsumed = false;
+                var innerConsumed = false;
 
-                var innerExpanded
-                    = innerContext.ExpandIntermediateLambda(
-                        ref innerSource,
-                        ref innerKeySelector,
-                        ref innerKeyParameter,
-                        out _);
+                outerConsumed |= outerContext.ConsumeNavigations(ref outerSource, outerKeySelector, outerKeyParameter);
+                outerConsumed |= outerContext.ConsumeNavigations(ref outerSource, resultSelector, outerResultParameter);
 
-                if (outerExpanded || innerExpanded)
+                if (outerConsumed || outerContext.HasExpansions)
                 {
-                    // TODO: GroupJoin: navigations inside result selector
+                    outerContext.ApplyMappings(ref outerKeySelector, ref outerKeyParameter);
 
-                    if (innerExpanded)
+                    outerContext
+                        = NavigationExpansionContext.Advance(
+                            outerContext,
+                            ref resultSelector,
+                            ref outerResultParameter);
+
+                    outerConsumed = true;
+                }
+
+                innerConsumed |= innerContext.ConsumeNavigations(ref innerSource, innerKeySelector, innerKeyParameter);
+
+                if (innerConsumed || innerContext.HasExpansions)
+                {
+                    innerContext.ApplyMappings(ref innerKeySelector, ref innerKeyParameter);
+
+                    innerConsumed = true;
+                }
+
+                if (outerConsumed || innerConsumed)
+                {
+                    if (innerConsumed)
                     {
                         var oldResultInnerParameter = resultSelector.Parameters[1];
 
@@ -1172,13 +1162,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                  newResultInnerParameter);
                     }
 
-                    outerKeyParameter = resultSelector.Parameters[0];
-
-                    outerContext.ExpandResultLambda(
-                        ref outerSource,
-                        ref resultSelector,
-                        ref outerKeyParameter);
-
                     var result
                         = CreateCall(
                             node.Method.GetGenericMethodDefinition().MakeGenericMethod(
@@ -1198,7 +1181,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     var newParameter = Expression.Parameter(resultSelector.ReturnType);
 
                     Expression outerTerminalSelector
-                        = outerExpanded
+                        = outerConsumed
                             ? outerContext.OuterTerminalSelector
                             : Expression.Lambda(
                                 body: newParameter,
@@ -1270,32 +1253,23 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     innerContext = new NavigationExpansionContext(innerKeyParameter, navigationDescriptors);
                 }
 
-                var processedKeySelectorForOuter
-                    = outerContext.ConsumeNavigations(ref outerSource, outerKeySelector, outerKeyParameter);
+                var consumed = false;
 
-                var processedKeySelectorForInner
-                    = innerContext.ConsumeNavigations(ref innerSource, innerKeySelector, innerKeyParameter);
+                consumed |= outerContext.ConsumeNavigations(ref outerSource, outerKeySelector, outerKeyParameter);
+                consumed |= outerContext.ConsumeNavigations(ref outerSource, resultSelector, outerResultParameter);
+                consumed |= outerContext.HasExpansions;
 
-                var processedResultSelectorForOuter
-                    = outerContext.ConsumeNavigations(ref outerSource, resultSelector, outerResultParameter);
+                consumed |= innerContext.ConsumeNavigations(ref innerSource, innerKeySelector, innerKeyParameter);
+                consumed |= innerContext.ConsumeNavigations(ref innerSource, resultSelector, innerResultParameter);
+                consumed |= innerContext.HasExpansions;
 
-                var processedResultSelectorForInner
-                    = innerContext.ConsumeNavigations(ref innerSource, resultSelector, innerResultParameter);
-
-                if (processedKeySelectorForOuter ||
-                    processedKeySelectorForInner ||
-                    processedResultSelectorForOuter ||
-                    processedResultSelectorForInner ||
-                    outerContext.HasExpansions ||
-                    innerContext.HasExpansions)
+                if (consumed)
                 {
-                    outerContext.TransformLambda(ref outerKeySelector, ref outerKeyParameter);
-                    innerContext.TransformLambda(ref innerKeySelector, ref innerKeyParameter);
-                    outerContext.TransformLambda(ref resultSelector, ref outerResultParameter);
-                    innerContext.TransformLambda(ref resultSelector, ref innerResultParameter);
+                    outerContext.ApplyMappings(ref outerKeySelector, ref outerKeyParameter);
+                    innerContext.ApplyMappings(ref innerKeySelector, ref innerKeyParameter);
 
                     var resultContext
-                        = NavigationExpansionContext.Merge(
+                        = NavigationExpansionContext.Advance(
                             outerContext,
                             outerResultParameter,
                             innerContext,
@@ -1365,26 +1339,18 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     innerContext = new NavigationExpansionContext(innerParameter, navigationDescriptors);
                 }
 
-                var outerExpanded
-                    = outerContext.ExpandIntermediateLambda(
-                        ref outerSource,
-                        ref resultSelector,
-                        ref outerParameter,
-                        out _);
+                var consumed = false;
 
-                var innerExpanded
-                    = innerContext.ExpandIntermediateLambda(
-                        ref innerSource,
-                        ref resultSelector,
-                        ref innerParameter,
-                        out _);
+                consumed |= outerContext.ConsumeNavigations(ref outerSource, resultSelector, outerParameter);
+                consumed |= outerContext.HasExpansions;
 
-                if (outerExpanded || innerExpanded)
+                consumed |= innerContext.ConsumeNavigations(ref innerSource, resultSelector, innerParameter);
+                consumed |= innerContext.HasExpansions;
+
+                if (consumed)
                 {
-                    // TODO: Zip: navigations inside result selector
-
                     var resultContext
-                        = NavigationExpansionContext.Merge(
+                        = NavigationExpansionContext.Advance(
                             outerContext,
                             outerParameter,
                             innerContext,
@@ -1499,11 +1465,71 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             public TInner Inner;
         }
 
-        private sealed class ExpansionMapping
+        private sealed class ExpansionMapping : IEquatable<ExpansionMapping>
         {
             public List<MemberInfo> OldPath;
             public List<MemberInfo> NewPath;
+            public ParameterExpression Parameter;
             public bool Nullable;
+
+            public ExpansionMapping()
+            {
+            }
+
+            public ExpansionMapping(
+                ParameterExpression parameter,
+                List<MemberInfo> oldPath,
+                List<MemberInfo> newPath,
+                bool nullable)
+            {
+                Parameter = parameter;
+                OldPath = oldPath;
+                NewPath = newPath;
+                Nullable = nullable;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is ExpansionMapping other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    var hash = Parameter.GetHashCode();
+
+                    for (var i = 0; i < OldPath.Count; i++)
+                    {
+                        hash = (hash * 16777619) ^ OldPath[i].GetHashCode();
+                    }
+
+                    for (var i = 0; i < NewPath.Count; i++)
+                    {
+                        hash = (hash * 16777619) ^ NewPath[i].GetHashCode();
+                    }
+
+                    hash = (hash * 16777619) ^ Nullable.GetHashCode();
+
+                    return hash;
+                }
+            }
+
+            public bool Equals(ExpansionMapping other)
+            {
+                return Equals(Parameter, other.Parameter)
+                    && Equals(Nullable, other.Nullable)
+                    && OldPath.SequenceEqual(other.OldPath)
+                    && NewPath.SequenceEqual(other.NewPath);
+            }
+
+            public override string ToString()
+            {
+                var target = string.Join(".", NewPath.Select(m => m.Name).Prepend("$R"));
+                var source = string.Join(".", OldPath.Select(m => m.Name).Prepend("$P"));
+
+                return $"{source.PadRight(50)} => {target.PadRight(50)}";
+            }
         }
 
         private struct FoundNavigation
@@ -1534,6 +1560,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 {
                     OldPath = new List<MemberInfo>(),
                     NewPath = new List<MemberInfo>(),
+                    Parameter = currentParameter,
                 });
             }
 
@@ -1551,7 +1578,9 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             /// </summary>
             /// <param name="lambda">The <see cref="LambdaExpression"/>.</param>
             /// <param name="parameter">The <see cref="ParameterExpression"/>.</param>
-            public void TransformLambda(ref LambdaExpression lambda, ref ParameterExpression parameter)
+            public void ApplyMappings(
+                ref LambdaExpression lambda,
+                ref ParameterExpression parameter)
             {
                 var visitor = new NavigationExpandingExpressionVisitor(parameter, currentParameter, mappings);
 
@@ -1589,7 +1618,10 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             ///     it could be either the 'outer'/'left' or 'inner'/'right' parameter.
             /// </param>
             /// <returns>Whether or not any navigations were found and consumed.</returns>
-            public bool ConsumeNavigations(ref Expression source, LambdaExpression lambda, ParameterExpression parameter)
+            public bool ConsumeNavigations(
+                ref Expression source,
+                LambdaExpression lambda,
+                ParameterExpression parameter)
             {
                 var findingVisitor = new NavigationFindingExpressionVisitor(parameter, descriptors, mappings);
 
@@ -1615,20 +1647,29 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                     var targetMapping = mappings.FirstOrDefault(m => m.OldPath.SequenceEqual(targetOldPath));
 
+                    var outerKeyPath = Enumerable.Empty<MemberInfo>();
+
                     if (targetMapping == null)
                     {
                         targetMapping = new ExpansionMapping
                         {
                             OldPath = targetOldPath.ToList(),
                             NewPath = terminalPath.Concat(targetOldPath).ToList(),
+                            Parameter = parameter,
                         };
 
                         mappings.Add(targetMapping);
-                    }
 
-                    var outerKeyPath
-                        = targetMapping.NewPath.Concat(
-                            navigation.Path.Except(targetMapping.OldPath).SkipLast(1));
+                        outerKeyPath =
+                            targetMapping.NewPath.Concat(
+                                navigation.Path
+                                .Skip(targetMapping.OldPath.Count)
+                                .SkipLast(1));
+                    }
+                    else
+                    {
+                        outerKeyPath = targetMapping.NewPath;
+                    }
 
                     var outerKeySelector
                         = Expression.Lambda(
@@ -1820,13 +1861,18 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                     currentParameter = Expression.Parameter(scopeType, "<>nav");
 
-                    mappings.ForEach(m => m.NewPath.Insert(0, outerField));
+                    mappings.ForEach(m =>
+                    {
+                        m.NewPath.Insert(0, outerField);
+                        m.Parameter = currentParameter;
+                    });
 
                     mappings.Add(new ExpansionMapping
                     {
                         OldPath = navigation.Path.ToList(),
                         NewPath = new List<MemberInfo> { innerField },
                         Nullable = navigation.Descriptor.IsNullable || navigation.Derived || targetMapping.Nullable,
+                        Parameter = currentParameter,
                     });
 
                     terminalPath.Push(outerField);
@@ -1835,16 +1881,81 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 return true;
             }
 
-            public static NavigationExpansionContext Merge(
+            public static NavigationExpansionContext Advance(
+                NavigationExpansionContext context,
+                ref LambdaExpression selector,
+                ref ParameterExpression parameter)
+            {
+                // Result scope
+
+                var resultScopeType
+                    = typeof(NavigationTransparentIdentifier<,>).MakeGenericType(
+                        context.currentParameter.Type,
+                        selector.ReturnType);
+
+                var resultOuterField = resultScopeType.GetRuntimeField("Outer");
+                var resultInnerField = resultScopeType.GetRuntimeField("Inner");
+
+                var resultMappings = GetResultMappings(context, selector, parameter);
+
+                foreach (var mapping in resultMappings)
+                {
+                    mapping.NewPath.Insert(0, resultOuterField);
+                    mapping.Parameter = context.currentParameter;
+                };
+
+                resultMappings.Insert(0, new ExpansionMapping
+                {
+                    OldPath = new List<MemberInfo> { },
+                    NewPath = new List<MemberInfo> { resultInnerField },
+                    Parameter = context.currentParameter,
+                });
+
+                var expander 
+                    = new NavigationExpandingExpressionVisitor(
+                        parameter, 
+                        context.currentParameter, 
+                        context.mappings);
+
+                var resultSelectorBody = expander.Visit(selector.Body);
+
+                if (resultInnerField.FieldType.IsCollectionType())
+                {
+                    resultSelectorBody = resultSelectorBody.AsCollectionType();
+                }
+
+                selector
+                    = Expression.Lambda(
+                        Expression.New(
+                            resultScopeType.GetTypeInfo().DeclaredConstructors.Single(),
+                            new[] { context.currentParameter, resultSelectorBody },
+                            new[] { resultOuterField, resultInnerField }),
+                        // Use SwapParameter because there may be an extra argument, like index for Select
+                        SwapParameter(selector.Parameters, parameter, context.currentParameter));
+
+                parameter = context.currentParameter;
+
+                // Result context
+
+                var resultContext
+                    = new NavigationExpansionContext(
+                        Expression.Parameter(resultScopeType, "<>nav"),
+                        context.descriptors);
+
+                resultContext.mappings.Clear();
+                resultContext.mappings.AddRange(resultMappings);
+                resultContext.terminalPath.Push(resultInnerField);
+
+                return resultContext;
+            }
+
+            public static NavigationExpansionContext Advance(
                 NavigationExpansionContext outerContext,
                 ParameterExpression outerParameter,
                 NavigationExpansionContext innerContext,
                 ParameterExpression innerParameter,
                 ref LambdaExpression resultSelector)
             {
-                var outerMappings = Remap(resultSelector, outerParameter, outerContext.mappings);
-                var innerMappings = Remap(resultSelector, innerParameter, innerContext.mappings);
-
                 // Merge scope
 
                 var mergeScopeType
@@ -1855,9 +1966,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 var mergeOuterField = mergeScopeType.GetRuntimeField("Outer");
                 var mergeInnerField = mergeScopeType.GetRuntimeField("Inner");
 
-                outerMappings.ForEach(m => m.NewPath.Insert(0, mergeOuterField));
-                innerMappings.ForEach(m => m.NewPath.Insert(0, mergeInnerField));
-
                 // Result scope
 
                 var resultScopeType
@@ -1865,41 +1973,82 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                         mergeScopeType,
                         resultSelector.ReturnType);
 
+                var resultParameter
+                    = Expression.Parameter(resultScopeType, "<>nav");
+
+                var outerMappings = GetResultMappings(outerContext, resultSelector, outerParameter);
+                var innerMappings = GetResultMappings(innerContext, resultSelector, innerParameter);
+
+                outerMappings.ForEach(m =>
+                {
+                    m.NewPath.Insert(0, mergeOuterField);
+                    m.Parameter = outerParameter;
+                });
+
+                innerMappings.ForEach(m =>
+                {
+                    m.NewPath.Insert(0, mergeInnerField);
+                    m.Parameter = innerParameter;
+                });
+
                 var resultOuterField = resultScopeType.GetRuntimeField("Outer");
                 var resultInnerField = resultScopeType.GetRuntimeField("Inner");
 
                 var resultMappings = outerMappings.Concat(innerMappings).ToList();
 
-                resultMappings.ForEach(m => m.NewPath.Insert(0, resultOuterField));
+                resultMappings.ForEach(m =>
+                {
+                    m.NewPath.Insert(0, resultOuterField);
+                    m.Parameter = resultParameter;
+                });
 
                 resultMappings.Insert(0, new ExpansionMapping
                 {
                     OldPath = new List<MemberInfo>(),
                     NewPath = new List<MemberInfo> { resultInnerField },
+                    Parameter = resultParameter,
                 });
 
-                // Result Selector
+                // Result selector
 
-                var resultSelectorOuterData
+                var resultSelectorBody = resultSelector.Body;
+
+                var outerExpander
+                    = new NavigationExpandingExpressionVisitor(
+                        outerParameter,
+                        outerContext.currentParameter,
+                        outerContext.mappings);
+
+                resultSelectorBody = outerExpander.Visit(resultSelectorBody);
+
+                var innerExpander
+                    = new NavigationExpandingExpressionVisitor(
+                        innerParameter,
+                        innerContext.currentParameter,
+                        innerContext.mappings);
+
+                resultSelectorBody = innerExpander.Visit(resultSelectorBody);
+
+                var resultSelectorOuterValue
                     = Expression.New(
                         mergeScopeType.GetTypeInfo().DeclaredConstructors.Single(),
-                        new[] { outerParameter, innerParameter },
+                        new[] { outerContext.currentParameter, innerContext.currentParameter },
                         new[] { mergeOuterField, mergeInnerField });
 
                 resultSelector
                     = Expression.Lambda(
                         Expression.New(
                             resultScopeType.GetTypeInfo().DeclaredConstructors.Single(),
-                            new[] { resultSelectorOuterData, resultSelector.Body },
+                            new[] { resultSelectorOuterValue, resultSelectorBody },
                             new[] { resultOuterField, resultInnerField }),
-                        outerParameter,
-                        innerParameter);
+                        outerContext.currentParameter,
+                        innerContext.currentParameter);
 
-                // Result Context
+                // Result context
 
                 var resultContext
                     = new NavigationExpansionContext(
-                        Expression.Parameter(resultScopeType, "<>nav"),
+                        resultParameter,
                         outerContext.descriptors.Union(innerContext.descriptors));
 
                 resultContext.mappings.Clear();
@@ -1909,95 +2058,59 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 return resultContext;
             }
 
-            [Obsolete]
-            public bool ExpandIntermediateLambda(
-                ref Expression source,
-                ref LambdaExpression lambda,
-                ref ParameterExpression parameter,
-                out bool foundNavigations)
+            private static List<ExpansionMapping> GetResultMappings(
+                NavigationExpansionContext context,
+                LambdaExpression selector,
+                ParameterExpression parameter)
             {
-                foundNavigations = ConsumeNavigations(ref source, lambda, parameter);
+                var gatherer = new SelectorGatheringExpressionVisitor(context.descriptors);
 
-                if (!foundNavigations && !HasExpansions)
+                gatherer.Visit(selector.Body);
+
+                var directMappings = gatherer.Mappings.ToList();
+
+                var indirectMappings = new List<ExpansionMapping>();
+
+                foreach (var directMapping in directMappings)
                 {
-                    return false;
+                    if (directMapping.Parameter != parameter)
+                    {
+                        continue;
+                    }
+
+                    var directMappingType
+                        = directMapping.TargetPath
+                            .Select(m => m.GetMemberType())
+                            .Prepend(directMapping.Parameter.Type)
+                            .Last();
+
+                    foreach (var contextMapping in context.mappings)
+                    {
+                        var contextMappingType
+                            = contextMapping.NewPath
+                                .Select(m => m.GetMemberType())
+                                .Prepend(contextMapping.Parameter.Type)
+                                .Last();
+
+                        //if (directMappingType.Equals(contextMappingType))
+                        {
+                            var head = contextMapping.OldPath.Take(directMapping.SourcePath.Count);
+                            var tail = contextMapping.OldPath.Skip(directMapping.SourcePath.Count);
+
+                            if (head.SequenceEqual(directMapping.SourcePath))
+                            {
+                                indirectMappings.Add(
+                                    new ExpansionMapping(
+                                        directMapping.Parameter,
+                                        directMapping.TargetPath.Concat(tail).ToList(),
+                                        contextMapping.NewPath.ToList(),
+                                        contextMapping.Nullable));
+                            }
+                        }
+                    }
                 }
 
-                TransformLambda(ref lambda, ref parameter);
-
-                return true;
-            }
-
-            [Obsolete]
-            public bool ExpandResultLambda(
-                ref Expression source,
-                ref LambdaExpression lambda,
-                ref ParameterExpression parameter)
-            {
-                if (!ConsumeNavigations(ref source, lambda, parameter) && !HasExpansions)
-                {
-                    return false;
-                }
-
-                var scopeType
-                    = typeof(NavigationTransparentIdentifier<,>).MakeGenericType(
-                        currentParameter.Type,
-                        lambda.ReturnType);
-
-                var outerField = scopeType.GetRuntimeField("Outer");
-                var innerField = scopeType.GetRuntimeField("Inner");
-
-                var newMappings = Remap(lambda, parameter, mappings);
-
-                newMappings.ForEach(m => m.NewPath.Insert(0, outerField));
-
-                if (lambda.Parameters.Count == 2)
-                {
-                    var innerParameterVisitor
-                        = new SelectorInnerParameterMappingExpressionVisitor(lambda.Parameters[1], mappings);
-
-                    innerParameterVisitor.Visit(lambda.Body);
-
-                    innerParameterVisitor.NewMappings.ForEach(m => m.NewPath.Insert(0, innerField));
-
-                    newMappings.AddRange(innerParameterVisitor.NewMappings);
-                }
-
-                var visitor = new NavigationExpandingExpressionVisitor(parameter, currentParameter, mappings);
-
-                var lambdaBody = visitor.Visit(lambda.Body);
-
-                if (innerField.FieldType.IsCollectionType())
-                {
-                    lambdaBody = lambdaBody.AsCollectionType();
-                }
-
-                lambda
-                    = Expression.Lambda(
-                        Expression.New(
-                            scopeType.GetTypeInfo().DeclaredConstructors.Single(),
-                            new[] { currentParameter, lambdaBody },
-                            new[] { outerField, innerField }),
-                        SwapParameter(lambda.Parameters, parameter, currentParameter));
-
-                parameter = currentParameter;
-
-                currentParameter = Expression.Parameter(scopeType, "<>nav");
-
-                terminalPath.Clear();
-                terminalPath.Push(innerField);
-
-                mappings.Clear();
-
-                mappings.Add(new ExpansionMapping
-                {
-                    OldPath = new List<MemberInfo>(),
-                    NewPath = new List<MemberInfo> { innerField },
-                });
-
-                mappings.AddRange(newMappings);
-
-                return true;
+                return indirectMappings.Distinct(EqualityComparer<ExpansionMapping>.Default).ToList();
             }
 
             private static IEnumerable<ParameterExpression> SwapParameter(
@@ -2018,18 +2131,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                 return newParameters;
             }
-
-            private static List<ExpansionMapping> Remap(
-                LambdaExpression lambda,
-                ParameterExpression parameter,
-                List<ExpansionMapping> mappings)
-            {
-                var mappingVisitor = new SelectorMappingExpressionVisitor(parameter, mappings);
-
-                mappingVisitor.Visit(lambda.Body);
-
-                return mappingVisitor.NewMappings;
-            }
         }
 
         private static void UnwindMemberExpression(
@@ -2044,10 +2145,29 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 path.Insert(0, memberExpression.Member);
 
                 innerExpression = memberExpression.Expression.UnwrapInnerExpression();
-                
+
                 memberExpression = innerExpression as MemberExpression;
             }
             while (memberExpression != null);
+        }
+
+        private static bool ContainsDerivedMembers(Expression expression, List<MemberInfo> path)
+        {
+            var currentType = expression.Type;
+
+            for (var i = 0; i < path.Count; i++)
+            {
+                var member = path[i];
+
+                if (!member.DeclaringType.IsAssignableFrom(currentType))
+                {
+                    return true;
+                }
+
+                currentType = member.GetMemberType();
+            }
+
+            return false;
         }
 
         private sealed class NavigationFindingExpressionVisitor : ExpressionVisitor
@@ -2081,38 +2201,24 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                 if (expression == targetParameter)
                 {
-                    if (mappings.Any(m => m.OldPath.SequenceEqual(path))
-                        || FoundNavigations.Any(f => f.Path.SequenceEqual(path)))
+                    if (mappings.Any(m => m.OldPath.SequenceEqual(path)))
                     {
                         return node;
                     }
-                    else
+
+                    if (FoundNavigations.Any(f => f.Path.SequenceEqual(path)))
                     {
-                        var derived = false;
-                        var currentType = expression.Type;
-
-                        for (var i = 0; i < path.Count; i++)
-                        {
-                            var member = path[i];
-
-                            if (!member.DeclaringType.IsAssignableFrom(currentType))
-                            {
-                                derived = true;
-                                break;
-                            }
-
-                            currentType = member.GetMemberType();
-                        }
-
-                        FoundNavigations.Add(new FoundNavigation
-                        {
-                            Descriptor = descriptor,
-                            Path = path,
-                            SourceType = node.Expression.Type,
-                            DestinationType = node.Type,
-                            Derived = derived,
-                        });
+                        return node;
                     }
+
+                    FoundNavigations.Add(new FoundNavigation
+                    {
+                        Descriptor = descriptor,
+                        Path = path,
+                        SourceType = node.Expression.Type,
+                        DestinationType = node.Type,
+                        Derived = ContainsDerivedMembers(expression, path),
+                    });
                 }
 
                 return base.VisitMember(node);
@@ -2159,23 +2265,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             protected override Expression VisitNew(NewExpression node)
             {
                 return node.Update(node.Arguments.Select(MaybeToList));
-            }
-
-            private Expression MaybeToList(Expression original)
-            {
-                if (original == null)
-                {
-                    return original;
-                }
-
-                var visited = Visit(original);
-
-                if (original.Type.IsCollectionType())
-                {
-                    visited = visited.AsCollectionType();
-                }
-
-                return visited;
             }
 
             protected override Expression VisitMethodCall(MethodCallExpression node)
@@ -2257,51 +2346,68 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     VisitAndConvert(node.NewExpression, nameof(VisitExtendedMemberInit)),
                     node.Arguments.Select(MaybeToList));
             }
-        }
 
-        private sealed class SelectorInnerParameterMappingExpressionVisitor : ProjectionExpressionVisitor
-        {
-            private readonly ParameterExpression innerParameter;
-            private readonly IEnumerable<ExpansionMapping> mappings;
-
-            public List<ExpansionMapping> NewMappings { get; } = new List<ExpansionMapping>();
-
-            public SelectorInnerParameterMappingExpressionVisitor(
-                ParameterExpression innerParameter,
-                IEnumerable<ExpansionMapping> mappings)
+            private Expression MaybeToList(Expression original)
             {
-                this.innerParameter = innerParameter;
-                this.mappings = mappings;
-            }
-
-            protected override Expression VisitLeaf(Expression node)
-            {
-                if (node == innerParameter)
+                if (original == null)
                 {
-                    NewMappings.Add(new ExpansionMapping
-                    {
-                        OldPath = CurrentPath.ToList(),
-                        NewPath = CurrentPath.ToList(),
-                    });
+                    return original;
                 }
 
-                return node;
+                var visited = Visit(original);
+
+                if (original.Type.IsCollectionType())
+                {
+                    visited = visited.AsCollectionType();
+                }
+
+                return visited;
             }
         }
 
-        private sealed class SelectorMappingExpressionVisitor : ProjectionExpressionVisitor
+        private class MemberPathMapping : IEquatable<MemberPathMapping>
         {
-            private readonly ParameterExpression oldParameter;
-            private readonly IEnumerable<ExpansionMapping> mappings;
+            public ParameterExpression Parameter { get; }
 
-            public List<ExpansionMapping> NewMappings = new List<ExpansionMapping>();
+            public List<MemberInfo> SourcePath { get; }
 
-            public SelectorMappingExpressionVisitor(
-                ParameterExpression oldParameter,
-                IEnumerable<ExpansionMapping> mappings)
+            public List<MemberInfo> TargetPath { get; }
+
+            public MemberPathMapping(
+                ParameterExpression parameter,
+                List<MemberInfo> sourcePath,
+                List<MemberInfo> targetPath)
             {
-                this.oldParameter = oldParameter;
-                this.mappings = mappings;
+                Parameter = parameter;
+                SourcePath = sourcePath;
+                TargetPath = targetPath;
+            }
+
+            public bool Equals(MemberPathMapping other)
+            {
+                return Parameter.Equals(other.Parameter)
+                    && SourcePath.SequenceEqual(other.SourcePath)
+                    && TargetPath.SequenceEqual(other.TargetPath);
+            }
+
+            public override string ToString()
+            {
+                var target = string.Join(".", TargetPath.Select(m => m.Name).Prepend("$R"));
+                var source = string.Join(".", SourcePath.Select(m => m.Name).Prepend("$P"));
+
+                return $"{target.PadRight(50)} => {source.PadRight(50)}";
+            }
+        }
+
+        private sealed class SelectorGatheringExpressionVisitor : ProjectionExpressionVisitor
+        {
+            private readonly IEnumerable<NavigationDescriptor> descriptors;
+
+            public HashSet<MemberPathMapping> Mappings { get; } = new HashSet<MemberPathMapping>();
+
+            public SelectorGatheringExpressionVisitor(IEnumerable<NavigationDescriptor> descriptors)
+            {
+                this.descriptors = descriptors;
             }
 
             protected override Expression VisitLeaf(Expression node)
@@ -2310,32 +2416,32 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 {
                     case MemberExpression memberExpression:
                     {
-                        UnwindMemberExpression(memberExpression, out var expression, out var inputPath);
+                        var descriptor = descriptors.SingleOrDefault(d => d.Member == memberExpression.Member);
 
-                        if (expression == oldParameter)
+                        if (descriptor != null)
                         {
-                            var outputPath = CurrentPath.ToList();
+                            UnwindMemberExpression(memberExpression, out var expression, out var path);
 
-                            foreach (var oldMapping in mappings)
+                            if (expression is ParameterExpression parameterExpression)
                             {
-                                if (oldMapping.OldPath.Take(inputPath.Count).SequenceEqual(inputPath))
-                                {
-                                    var oldPath = outputPath.Concat(oldMapping.OldPath.Skip(inputPath.Count)).ToList();
-
-                                    Debug.Assert(IsValidMemberPath(oldPath));
-
-                                    if (!NewMappings.Any(m => m.OldPath.SequenceEqual(oldPath)))
-                                    {
-                                        NewMappings.Add(new ExpansionMapping
-                                        {
-                                            OldPath = oldPath,
-                                            NewPath = oldMapping.NewPath.ToList(),
-                                            Nullable = oldMapping.Nullable,
-                                        });
-                                    }
-                                }
+                                Mappings.Add(
+                                    new MemberPathMapping(
+                                        parameterExpression,
+                                        path,
+                                        CurrentPath.ToList()));
                             }
                         }
+
+                        return node;
+                    }
+
+                    case ParameterExpression parameterExpression:
+                    {
+                        Mappings.Add(
+                            new MemberPathMapping(
+                                parameterExpression,
+                                new List<MemberInfo>(),
+                                CurrentPath.ToList()));
 
                         return node;
                     }
@@ -2346,27 +2452,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     }
                 }
             }
-        }
-
-        private static bool IsValidMemberPath(List<MemberInfo> members)
-        {
-            var type = members.ElementAtOrDefault(0)?.DeclaringType;
-
-            for (var i = 0; i < members.Count; i++)
-            {
-                var member = members[i];
-
-                if (member.DeclaringType.IsAssignableFrom(type) || type.IsAssignableFrom(member.DeclaringType))
-                {
-                    type = member.GetMemberType();
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
     }
 }

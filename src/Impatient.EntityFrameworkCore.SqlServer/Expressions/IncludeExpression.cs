@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
 {
@@ -58,6 +59,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
             }
 
             return this;
+        }
+
+        public override IEnumerable<MemberInfo> GetMemberPath(int index)
+        {
+            return Paths[index].Select(p => p.GetReadableMemberInfo());
         }
 
         public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)

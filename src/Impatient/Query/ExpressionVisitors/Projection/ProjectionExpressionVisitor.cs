@@ -203,11 +203,32 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
                     for (var i = 0; i < extraPropertiesExpression.Properties.Count; i++)
                     {
-                        nameStack.Push(extraPropertiesExpression.Names[i]);
+                        var path = extraPropertiesExpression.GetMemberPath(i).ToArray();
 
-                        properties[i] = Visit(extraPropertiesExpression.Properties[i]);
+                        if (path.Length == 0)
+                        {
+                            nameStack.Push(extraPropertiesExpression.Names[i]);
 
-                        nameStack.Pop();
+                            properties[i] = Visit(extraPropertiesExpression.Properties[i]);
+
+                            nameStack.Pop();
+                        }
+                        else
+                        {
+                            for (var j = 0; j < path.Length; j++)
+                            {
+                                memberStack.Push(path[j]);
+                                nameStack.Push(path[j].GetPathSegmentName());
+                            }
+
+                            properties[i] = Visit(extraPropertiesExpression.Properties[i]);
+
+                            for (var j = 0; j < path.Length; j++)
+                            {
+                                memberStack.Pop();
+                                nameStack.Pop();
+                            }
+                        }
                     }
 
                     var expression = Visit(extraPropertiesExpression.Expression);
