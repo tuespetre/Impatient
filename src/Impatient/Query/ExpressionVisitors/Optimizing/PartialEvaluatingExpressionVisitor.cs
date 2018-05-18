@@ -30,6 +30,18 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                 return TryEvaluateExpression(node.Update(visitedLeft, node.Conversion, visitedRight));
             }
 
+            if (visitedLeft.Type != visitedRight.Type)
+            {
+                if (visitedLeft.IsNullConstant())
+                {
+                    visitedLeft = Expression.Convert(visitedLeft, visitedRight.Type);
+                }
+                else if (visitedRight.IsNullConstant())
+                {
+                    visitedRight = Expression.Convert(visitedRight, visitedLeft.Type);
+                }
+            }
+
             return node.Update(visitedLeft, node.Conversion, visitedRight);
         }
 

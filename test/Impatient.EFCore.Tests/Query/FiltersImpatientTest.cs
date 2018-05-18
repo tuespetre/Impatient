@@ -9,12 +9,6 @@ namespace Impatient.EFCore.Tests.Query
         {
         }
 
-        [Fact(Skip = EFCoreSkipReasons.CompiledQueries)]
-        public override void Compiled_query()
-        {
-            base.Compiled_query();
-        }
-
         [Fact(Skip = EFCoreSkipReasons.Punt)]
         public override void Included_many_to_one_query()
         {

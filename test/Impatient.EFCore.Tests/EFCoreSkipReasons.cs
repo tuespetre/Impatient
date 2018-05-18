@@ -14,9 +14,6 @@
             "This test requires or demonstrates the concept of null navigation property " +
             "access protection during client evaluation. We may or may not want to support that.";
 
-        public const string CompiledQueries =
-            "Compiled queries are not yet supported.";
-
         public const string FromSql =
             "FromSql is not supported.";
     }

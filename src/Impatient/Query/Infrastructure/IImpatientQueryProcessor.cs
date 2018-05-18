@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 
 namespace Impatient.Query.Infrastructure
 {
-    public interface IImpatientQueryExecutor
+    public interface IImpatientQueryProcessor
     {
         object Execute(IQueryProvider provider, Expression expression);
     }

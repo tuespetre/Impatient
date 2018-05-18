@@ -1,5 +1,4 @@
 ﻿using Impatient.Metadata;
-using Impatient.Query;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,7 +38,7 @@ namespace Impatient.Tests.Utilities
 
             services.AddScoped<IDbCommandExecutorFactory>(provider => provider.GetRequiredService<TestDbCommandExecutorFactory>());
 
-            services.AddScoped<IImpatientQueryExecutor, DefaultImpatientQueryExecutor>();
+            services.AddScoped<IImpatientQueryProcessor, DefaultImpatientQueryProcessor>();
 
             #endregion
 

@@ -47,7 +47,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             services.AddScoped<IQueryProcessingContextFactory, EFCoreQueryProcessingContextFactory>();
 
-            services.AddScoped<IImpatientQueryExecutor, DefaultImpatientQueryExecutor>();
+            services.AddScoped<IImpatientQueryProcessor, DefaultImpatientQueryProcessor>();
 
             services.AddScoped<IQueryCompiler, ImpatientQueryCompiler>();
 
