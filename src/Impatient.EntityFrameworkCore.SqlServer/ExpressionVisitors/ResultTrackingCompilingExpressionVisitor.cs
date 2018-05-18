@@ -111,7 +111,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return node;
         }
 
-        private static Func<object, object> GenerateGetter(MaterializerPathInfo pathInfo)
+        private Func<object, object> GenerateGetter(MaterializerPathInfo pathInfo)
         {
             var blockVariables = new List<ParameterExpression>();
             var blockExpressions = new List<Expression>();
@@ -147,20 +147,20 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     }
                 }*/
 
+                if (!member.DeclaringType.IsAssignableFrom(currentExpression.Type))
+                {
+                    currentExpression = Expression.TypeAs(currentExpression, member.DeclaringType);
+                }
+
                 blockExpressions.Add(
                     Expression.IfThen(
                         Expression.Equal(nullConstantExpression, currentExpression),
                         Expression.Return(returnLabel, Expression.Default(memberType))));
 
-                if (!member.DeclaringType.IsAssignableFrom(currentExpression.Type))
-                {
-                    currentExpression = Expression.Convert(currentExpression, member.DeclaringType);
-                }
-
                 blockExpressions.Add(
                     Expression.Assign(
                         memberVariable,
-                        Expression.MakeMemberAccess(currentExpression, member)));
+                        Expression.MakeMemberAccess(currentExpression, GetMemberForRead(member))));
 
                 currentExpression = memberVariable;
             }
@@ -174,7 +174,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 .Compile();
         }
 
-        private static Action<object, object> GenerateSetter(MaterializerPathInfo pathInfo)
+        private Action<object, object> GenerateSetter(MaterializerPathInfo pathInfo)
         {
             var targetParameter = Expression.Parameter(typeof(object));
             var valueParameter = Expression.Parameter(typeof(object));
@@ -192,16 +192,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 if (i + 1 == pathInfo.Path.Length)
                 {
-                    if (member is PropertyInfo propertyInfo && !propertyInfo.CanWrite)
-                    {
-                        member
-                             = member.DeclaringType.GetField($"<{propertyInfo.Name}>k__BackingField", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                             ?? member.DeclaringType.GetField($"<{propertyInfo.Name}>i__Field", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                             ?? member;
-                    }
+                    currentExpression = Expression.MakeMemberAccess(currentExpression, member = GetMemberForWrite(member));
                 }
-
-                currentExpression = Expression.MakeMemberAccess(currentExpression, member);
+                else
+                {
+                    currentExpression = Expression.MakeMemberAccess(currentExpression, member = GetMemberForRead(member));
+                }
 
                 lastMember = member;
             }
@@ -232,6 +228,52 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 .Compile();
         }
 
+        private MemberInfo GetMemberForRead(MemberInfo memberInfo)
+        {
+            if (memberInfo.MemberType != MemberTypes.Property)
+            {
+                return memberInfo;
+            }
+
+            var propertyInfo = (PropertyInfo)memberInfo;
+
+            //if (!propertyInfo.CanRead)
+            {
+                var configuredField
+                    = model.GetEntityTypes()
+                        .Where(e => e.ClrType == propertyInfo.DeclaringType)
+                        .FirstOrDefault()
+                        ?.FindNavigation(propertyInfo).FieldInfo;
+
+                return configuredField ?? propertyInfo.FindBackingField() ?? memberInfo;
+            }
+
+            return memberInfo;
+        }
+
+        private MemberInfo GetMemberForWrite(MemberInfo memberInfo)
+        {
+            if (memberInfo.MemberType != MemberTypes.Property)
+            {
+                return memberInfo;
+            }
+
+            var propertyInfo = (PropertyInfo)memberInfo;
+
+            if (!propertyInfo.CanWrite)
+            {
+                var configuredField
+                    = model.GetEntityTypes()
+                        .Where(e => e.ClrType == propertyInfo.DeclaringType)
+                        .FirstOrDefault()
+                        ?.FindNavigation(propertyInfo).FieldInfo;
+
+                return configuredField ?? propertyInfo.FindBackingField() ?? memberInfo;
+            }
+
+            return memberInfo;
+        }
+
         private MaterializerAccessorInfo[] GenerateAccessors(MaterializerPathInfo[] pathInfos)
         {
             var accessorInfos = new List<MaterializerAccessorInfo>();
@@ -251,7 +293,35 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 var type = pathInfo.Type;
 
-                var entityType = model.GetEntityTypes().SingleOrDefault(t => t.ClrType == type);
+                var entityTypes = model.GetEntityTypes().Where(t => t.ClrType == type).ToArray();
+                var entityType = entityTypes.FirstOrDefault();
+
+                if (entityTypes.Length > 1)
+                {
+                    var targetMember = pathInfo.Path.Last();
+                    var resolvedEntityType = default(IEntityType);
+
+                    foreach (var candidateType in entityTypes)
+                    {
+                        foreach (var foreignKey in candidateType.GetForeignKeys())
+                        {
+                            if (foreignKey.IsOwnership 
+                                && foreignKey.PrincipalToDependent.GetReadableMemberInfo() == targetMember)
+                            {
+                                resolvedEntityType = candidateType;
+                                goto Resolved;
+                            }
+                        }
+                    }
+
+                    if (resolvedEntityType == null)
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    Resolved:
+                    entityType = resolvedEntityType;
+                }
 
                 accessorInfos.Add(new MaterializerAccessorInfo
                 {
@@ -316,7 +386,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 {
                     case EntityMaterializationExpression entityMaterializationExpression:
                     {
-                        if (!entityMaterializationExpression.EntityType.IsOwned())
+                        //if (!entityMaterializationExpression.EntityType.IsOwned())
                         {
                             AddPath(node.Type);
                         }
@@ -409,7 +479,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                 new MaterializerPathInfo
                                 {
                                     Type = include.Type,
-                                    Path = CurrentPath.Concat(path.Select(p => p.PropertyInfo)).ToArray()
+                                    Path = CurrentPath.Concat(path.Select(p => p.GetReadableMemberInfo())).ToArray()
                                 });
                         }
 

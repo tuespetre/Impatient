@@ -7,15 +7,18 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 {
     internal class EFCoreQueryableInliningExpressionVisitorFactory : IQueryableInliningExpressionVisitorFactory
     {
-        private readonly ICurrentDbContext currentDbContext;
+        private readonly ModelExpressionProvider modelExpressionProvider;
         private readonly ModelQueryExpressionCache modelQueryExpressionCache;
+        private readonly ICurrentDbContext currentDbContext;
 
         public EFCoreQueryableInliningExpressionVisitorFactory(
-            ICurrentDbContext currentDbContext,
-            ModelQueryExpressionCache modelQueryExpressionCache)
+            ModelExpressionProvider modelExpressionProvider,
+            ModelQueryExpressionCache modelQueryExpressionCache,
+            ICurrentDbContext currentDbContext)
         {
-            this.currentDbContext = currentDbContext;
-            this.modelQueryExpressionCache = modelQueryExpressionCache;
+            this.modelExpressionProvider = modelExpressionProvider ?? throw new System.ArgumentNullException(nameof(modelExpressionProvider));
+            this.modelQueryExpressionCache = modelQueryExpressionCache ?? throw new System.ArgumentNullException(nameof(modelQueryExpressionCache));
+            this.currentDbContext = currentDbContext ?? throw new System.ArgumentNullException(nameof(currentDbContext));
         }
 
         public QueryableInliningExpressionVisitor Create(QueryProcessingContext context)
@@ -23,8 +26,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return new EFCoreQueryableInliningExpressionVisitor(
                 context.QueryProvider,
                 context.ParameterMapping,
-                currentDbContext,
-                modelQueryExpressionCache);
+                modelExpressionProvider,
+                modelQueryExpressionCache,
+                currentDbContext);
         }
     }
 }

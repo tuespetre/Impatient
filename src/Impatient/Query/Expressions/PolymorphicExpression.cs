@@ -25,6 +25,10 @@ namespace Impatient.Query.Expressions
 
         public IEnumerable<PolymorphicTypeDescriptor> Descriptors { get; }
 
+        public override bool CanReduce => true;
+
+        public override Expression Reduce() => Row;
+
         public PolymorphicExpression Upcast(Type type)
         {
             return new PolymorphicExpression(type, Row, Descriptors);

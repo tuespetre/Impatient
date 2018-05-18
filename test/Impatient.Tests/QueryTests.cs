@@ -55,7 +55,7 @@ namespace Impatient.Tests
                                 (property.PropertyType.IsNullableType())
                                 || (!property.PropertyType.GetTypeInfo().IsValueType
                                     && property.GetCustomAttribute<RequiredAttribute>() == null)
-                            let column = new SqlColumnExpression(table, property.Name, property.PropertyType, nullable)
+                            let column = new SqlColumnExpression(table, property.Name, property.PropertyType, nullable, null)
                             select Expression.Bind(property, column))),
                     table));
         }
@@ -77,7 +77,7 @@ namespace Impatient.Tests
                                     typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop1)),
                                     typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop2))
                                 }
-                                let column = new SqlColumnExpression(myClass1Table, property.Name, property.PropertyType)
+                                let column = new SqlColumnExpression(myClass1Table, property.Name, property.PropertyType, false, null)
                                 select Expression.Bind(property, column))),
                         myClass1Table));
 
@@ -94,7 +94,7 @@ namespace Impatient.Tests
                                     typeof(MyClass2).GetRuntimeProperty(nameof(MyClass2.Prop1)),
                                     typeof(MyClass2).GetRuntimeProperty(nameof(MyClass2.Prop2))
                                 }
-                                let column = new SqlColumnExpression(myClass2Table, property.Name, property.PropertyType)
+                                let column = new SqlColumnExpression(myClass2Table, property.Name, property.PropertyType, false, null)
                                 select Expression.Bind(property, column))),
                         myClass2Table));
 
@@ -111,7 +111,7 @@ namespace Impatient.Tests
                                     typeof(MyClass1Json).GetRuntimeProperty(nameof(MyClass1Json.Prop1)),
                                     typeof(MyClass1Json).GetRuntimeProperty(nameof(MyClass1Json.Prop2))
                                 }
-                                let column = new SqlColumnExpression(myClass1JsonTable, property.Name, property.PropertyType)
+                                let column = new SqlColumnExpression(myClass1JsonTable, property.Name, property.PropertyType, false, null)
                                 select Expression.Bind(property, column))),
                         myClass1JsonTable));
         }
@@ -2906,7 +2906,7 @@ INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Key] = [m2].[Prop2]",
             var materializer
                 = Expression.New(
                     constructor: typeof(MyClass1).GetConstructor(new[] { typeof(string), typeof(int) }),
-                    arguments: from p in properties select new SqlColumnExpression(table, p.Name, p.PropertyType),
+                    arguments: from p in properties select new SqlColumnExpression(table, p.Name, p.PropertyType, false, null),
                     members: properties);
 
             var queryExpression
@@ -3185,7 +3185,7 @@ WHERE [a].[Prop1] IS NOT NULL",
                                     typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop1)),
                                     typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop2))
                                 }
-                                let column = new SqlColumnExpression(myClass1Table, property.Name, property.PropertyType, true)
+                                let column = new SqlColumnExpression(myClass1Table, property.Name, property.PropertyType, true, null)
                                 select Expression.Bind(property, column))),
                         myClass1Table));
 
@@ -3219,7 +3219,7 @@ WHERE ([a].[Prop1] IS NULL OR ([a].[Prop1] <> N'hello'))",
                                     typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop1)),
                                     typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop2))
                                 }
-                                let column = new SqlColumnExpression(myClass1Table, property.Name, property.PropertyType, true)
+                                let column = new SqlColumnExpression(myClass1Table, property.Name, property.PropertyType, true, null)
                                 select Expression.Bind(property, column))),
                         myClass1Table));
 
@@ -3253,7 +3253,7 @@ WHERE ([a].[Prop1] IS NULL OR (N'hello' <> [a].[Prop1]))",
                                     typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop1)),
                                     typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop2))
                                 }
-                                let column = new SqlColumnExpression(myClass1Table, property.Name, property.PropertyType, true)
+                                let column = new SqlColumnExpression(myClass1Table, property.Name, property.PropertyType, true, null)
                                 select Expression.Bind(property, column))),
                         myClass1Table));
 
@@ -3270,7 +3270,7 @@ WHERE ([a].[Prop1] IS NULL OR (N'hello' <> [a].[Prop1]))",
                                     typeof(MyClass2).GetRuntimeProperty(nameof(MyClass2.Prop1)),
                                     typeof(MyClass2).GetRuntimeProperty(nameof(MyClass2.Prop2))
                                 }
-                                let column = new SqlColumnExpression(myClass2Table, property.Name, property.PropertyType, true)
+                                let column = new SqlColumnExpression(myClass2Table, property.Name, property.PropertyType, true, null)
                                 select Expression.Bind(property, column))),
                         myClass2Table));
 
@@ -3306,7 +3306,7 @@ WHERE (([a].[Prop1] IS NULL AND [m].[Prop1] IS NOT NULL) OR ([a].[Prop1] IS NOT 
                                     typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop1)),
                                     typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Prop2))
                                 }
-                                let column = new SqlColumnExpression(myClass1Table, property.Name, property.PropertyType, true)
+                                let column = new SqlColumnExpression(myClass1Table, property.Name, property.PropertyType, true, null)
                                 select Expression.Bind(property, column))),
                         myClass1Table));
 
@@ -3323,7 +3323,7 @@ WHERE (([a].[Prop1] IS NULL AND [m].[Prop1] IS NOT NULL) OR ([a].[Prop1] IS NOT 
                                     typeof(MyClass2).GetRuntimeProperty(nameof(MyClass2.Prop1)),
                                     typeof(MyClass2).GetRuntimeProperty(nameof(MyClass2.Prop2))
                                 }
-                                let column = new SqlColumnExpression(myClass2Table, property.Name, property.PropertyType, true)
+                                let column = new SqlColumnExpression(myClass2Table, property.Name, property.PropertyType, true, null)
                                 select Expression.Bind(property, column))),
                         myClass2Table));
 

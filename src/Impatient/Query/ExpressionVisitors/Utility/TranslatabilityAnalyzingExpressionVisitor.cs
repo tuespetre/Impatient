@@ -29,6 +29,25 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                         return new TranslatableExpression(node);
                     }
 
+                    // Math
+                    case ExpressionType.Add:
+                    case ExpressionType.Subtract:
+                    case ExpressionType.Multiply:
+                    case ExpressionType.Divide:
+                    case ExpressionType.Modulo:
+                    case ExpressionType.Power:
+                    {
+                        if (t1.Type.IsScalarType() 
+                            && t2.Type.IsScalarType()
+                            && !t1.Type.IsTimeType()
+                            && !t2.Type.IsTimeType())
+                        {
+                            return new TranslatableExpression(node);
+                        }
+
+                        break;
+                    }
+
                     // Comparison
                     case ExpressionType.GreaterThan:
                     case ExpressionType.GreaterThanOrEqual:
@@ -37,12 +56,6 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                     // Logical
                     case ExpressionType.AndAlso:
                     case ExpressionType.OrElse:
-                    // Math
-                    case ExpressionType.Add:
-                    case ExpressionType.Subtract:
-                    case ExpressionType.Multiply:
-                    case ExpressionType.Divide:
-                    case ExpressionType.Modulo:
                     // Bitwise
                     case ExpressionType.And:
                     case ExpressionType.Or:
@@ -131,6 +144,13 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                 case ExtraPropertiesExpression extraPropertiesExpression:
                 {
                     return Visit(extraPropertiesExpression.Expression);
+                }
+
+                case ExtendedMemberInitExpression _:
+                case ExtendedNewExpression _:
+                case LateBoundProjectionLeafExpression _:
+                {
+                    return new TranslatableExpression(node);
                 }
 
                 case AnnotationExpression annotationExpression:

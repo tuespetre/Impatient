@@ -23,6 +23,6 @@ namespace Impatient.Tests.Utilities
 
         public IQueryable<OrderDetail> OrderDetails => impatient.CreateQuery<OrderDetail>(CreateQueryExpression<OrderDetail>());
 
-        public void ClearLog() => executor.Log.Clear();
+        public void ClearLog() => executor?.Log?.Clear();
     }
 }

@@ -1,95 +1,127 @@
 ﻿using Impatient.Extensions;
 using Impatient.Query.Expressions;
-using System;
-using System.Data.Common;
+using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Impatient.Query.Infrastructure
 {
-    public static class DefaultScalarValueReader
-    {
-        public static TValue ReadNonNullable<TValue>(DbDataReader reader, int index)
-        {
-            return reader.GetFieldValue<TValue>(index);
-        }
-
-        public static TValue ReadNullable<TValue>(DbDataReader reader, int index)
-        {
-            var value = reader.GetValue(index);
-
-            if (DBNull.Value.Equals(value))
-            {
-                return default;
-            }
-            else
-            {
-                return (TValue)value;
-            }
-        }
-
-        public static TValue ReadNonNullableEnum<TValue>(DbDataReader reader, int index)
-        {
-            return (TValue)Enum.ToObject(typeof(TValue), reader.GetValue(index));
-        }
-
-        public static TNullable ReadNullableEnum<TNullable, TValue>(DbDataReader reader, int index)
-        {
-            if (reader.IsDBNull(index))
-            {
-                return default;
-            }
-            else
-            {
-                return (TNullable)Enum.ToObject(typeof(TValue), reader.GetValue(index));
-            }
-        }
-    }
-
     public class DefaultScalarReadValueExpressionFactory : IReadValueExpressionFactory
     {
         private static readonly MethodInfo readNonNullableMethodInfo
-            = typeof(DefaultScalarValueReader).GetTypeInfo()
-                .GetDeclaredMethod(nameof(DefaultScalarValueReader.ReadNonNullable));
+            = typeof(MaterializationUtilities).GetTypeInfo()
+                .GetDeclaredMethod(nameof(MaterializationUtilities.ReadNonNullable));
 
         private static readonly MethodInfo readNullableMethodInfo
-            = typeof(DefaultScalarValueReader).GetTypeInfo()
-                .GetDeclaredMethod(nameof(DefaultScalarValueReader.ReadNullable));
+            = typeof(MaterializationUtilities).GetTypeInfo()
+                .GetDeclaredMethod(nameof(MaterializationUtilities.ReadNullable));
 
         private static readonly MethodInfo readNonNullableEnumMethodInfo
-            = typeof(DefaultScalarValueReader).GetTypeInfo()
-                .GetDeclaredMethod(nameof(DefaultScalarValueReader.ReadNonNullableEnum));
+            = typeof(MaterializationUtilities).GetTypeInfo()
+                .GetDeclaredMethod(nameof(MaterializationUtilities.ReadNonNullableEnum));
 
         private static readonly MethodInfo readNullableEnumMethodInfo
-            = typeof(DefaultScalarValueReader).GetTypeInfo()
-                .GetDeclaredMethod(nameof(DefaultScalarValueReader.ReadNullableEnum));
+            = typeof(MaterializationUtilities).GetTypeInfo()
+                .GetDeclaredMethod(nameof(MaterializationUtilities.ReadNullableEnum));
+
+        private static readonly MethodInfo readNonNullableConversionMethodInfo
+            = typeof(MaterializationUtilities).GetTypeInfo()
+                .GetDeclaredMethod(nameof(MaterializationUtilities.ReadNonNullableConversion));
+
+        private static readonly MethodInfo readNullableConversionMethodInfo
+            = typeof(MaterializationUtilities).GetTypeInfo()
+                .GetDeclaredMethod(nameof(MaterializationUtilities.ReadNullableConversion));
+
+        private readonly ITypeMappingProvider typeMappingProvider;
+
+        public DefaultScalarReadValueExpressionFactory(ITypeMappingProvider typeMappingProvider)
+        {
+            this.typeMappingProvider = typeMappingProvider;
+        }
 
         public bool CanReadExpression(Expression expression)
         {
-            return expression.Type.IsScalarType();
+            if (expression.Type.IsScalarType())
+            {
+                return true;
+            }
+
+            var mapping = FindTypeMapping(expression) ?? typeMappingProvider.FindMapping(expression.Type);
+
+            return mapping != null;
         }
 
         public Expression CreateExpression(Expression source, Expression reader, int index)
         {
+            var isNullable = (source as SqlColumnExpression)?.IsNullable ?? true;
+            var typeMapping = FindTypeMapping(source) ?? typeMappingProvider.FindMapping(source.Type);
             var unwrappedType = source.Type.UnwrapNullableType();
+            var arguments = new List<Expression> { reader, Expression.Constant(index) };
 
-            if (unwrappedType.IsEnum())
+            MethodInfo methodInfo;
+
+            if (typeMapping?.TargetConversion is LambdaExpression conversion)
             {
-                return Expression.Call(
-                    source is SqlColumnExpression column && !column.IsNullable
-                        ? readNonNullableEnumMethodInfo.MakeGenericMethod(unwrappedType)
-                        : readNullableEnumMethodInfo.MakeGenericMethod(source.Type, unwrappedType),
-                    reader,
-                    Expression.Constant(index));
+                methodInfo
+                    = isNullable
+                        ? readNullableConversionMethodInfo
+                        : readNonNullableConversionMethodInfo;
+
+                methodInfo
+                    = methodInfo.MakeGenericMethod(
+                        conversion.Parameters.Single().Type,
+                        source.Type);
+
+                arguments.Add(
+                    Expression.Lambda(
+                        Expression.Convert(conversion.Body, source.Type), 
+                        conversion.Parameters));
+            }
+            else if (unwrappedType.IsEnum())
+            {
+                methodInfo
+                    = isNullable
+                        ? readNullableEnumMethodInfo.MakeGenericMethod(source.Type, unwrappedType)
+                        : readNonNullableEnumMethodInfo.MakeGenericMethod(unwrappedType);
             }
             else
             {
-                return Expression.Call(
-                    source is SqlColumnExpression column && !column.IsNullable
-                        ? readNonNullableMethodInfo.MakeGenericMethod(source.Type)
-                        : readNullableMethodInfo.MakeGenericMethod(source.Type),
-                    reader,
-                    Expression.Constant(index));
+                methodInfo
+                    = isNullable
+                        ? readNullableMethodInfo.MakeGenericMethod(source.Type)
+                        : readNonNullableMethodInfo.MakeGenericMethod(source.Type);
+            }
+
+            Expression result = Expression.Call(methodInfo, arguments);
+
+            if (result.Type != source.Type)
+            {
+                result = Expression.Convert(result, source.Type);
+            }
+
+            return result;
+        }
+
+        private ITypeMapping FindTypeMapping(Expression node)
+        {
+            switch (node)
+            {
+                case SqlColumnExpression sqlColumnExpression
+                when sqlColumnExpression.TypeMapping != null:
+                {
+                    return sqlColumnExpression.TypeMapping;
+                }
+
+                case SqlAggregateExpression sqlAggregateExpression:
+                {
+                    return FindTypeMapping(sqlAggregateExpression.Expression);
+                }
+
+                default:
+                {
+                    return typeMappingProvider.FindMapping(node.Type);
+                }
             }
         }
     }

@@ -19,6 +19,8 @@ namespace Impatient.Tests.Utilities
 
             services.AddSingleton<TranslatabilityAnalyzingExpressionVisitor>();
 
+            services.AddSingleton<ITypeMappingProvider, DefaultTypeMappingProvider>();
+
             services.AddScoped<IReadValueExpressionFactoryProvider, DefaultReadValueExpressionFactoryProvider>();
 
             services.AddScoped<IRewritingExpressionVisitorProvider, DefaultRewritingExpressionVisitorProvider>();

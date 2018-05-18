@@ -25,7 +25,8 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                         sqlColumnExpression.Table,
                         sqlColumnExpression.ColumnName,
                         sqlColumnExpression.Type,
-                        isNullable: false);
+                        isNullable: false,
+                        typeMapping: sqlColumnExpression.TypeMapping);
                 }
 
                 case BinaryExpression binaryExpression

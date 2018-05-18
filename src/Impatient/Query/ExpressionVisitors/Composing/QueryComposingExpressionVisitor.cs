@@ -41,6 +41,9 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 foreach (var rewritingVisitor in rewritingExpressionVisitors)
                 {
                     yield return rewritingVisitor;
+
+                    // Ugh
+                    yield return parameterizingExpressionVisitor;
                 }
 
                 yield return new StaticMemberSqlParameterRewritingExpressionVisitor();
@@ -1272,7 +1275,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     new ServerProjectionExpression(
                         new DefaultIfEmptyExpression(
                             projectionBody,
-                            new SqlColumnExpression(innerSubquery, "$empty", typeof(int?), true))),
+                            new SqlColumnExpression(innerSubquery, "$empty", typeof(int?), true, null))),
                     joinExpression);
 
             return new EnumerableRelationalQueryExpression(selectExpression);
@@ -1431,7 +1434,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 outerSelectExpression = outerSelectExpression.AddToPredicate(predicateBody);
             }
 
-            if (outerSelectExpression.RequiresPushdownForLimit())
+            if (outerSelectExpression.RequiresPushdownForLimit() || outerSelectExpression.HasOffsetOrLimit)
             {
                 if (!IsTranslatable(outerProjection))
                 {
@@ -1501,7 +1504,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 outerSelectExpression = outerSelectExpression.AddToPredicate(predicateBody);
             }
 
-            if (outerSelectExpression.RequiresPushdownForLimit())
+            if (outerSelectExpression.RequiresPushdownForLimit() || outerSelectExpression.HasOffsetOrLimit)
             {
                 if (!IsTranslatable(outerProjection))
                 {
@@ -1760,7 +1763,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             var outerSelectExpression = outerQuery.SelectExpression;
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var selectorLambda = node.Arguments[1].UnwrapLambda();
-            
+
             if (outerSelectExpression.HasOffsetOrLimit || outerSelectExpression.IsDistinct)
             {
                 if (!IsTranslatable(outerProjection))
@@ -1831,8 +1834,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 while (currentNode is MethodCallExpression methodCall
                     && methodCall.Method.IsOrderingMethod())
                 {
-                    resultNode = methodCall.Update(null, methodCall.Arguments.Skip(1).Prepend(resultNode));
-
                     resultNode
                         = Expression.Call(
                             MatchQueryableMethod(methodCall.Method),
@@ -2244,7 +2245,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
         {
             var outerSelectExpression = outerQuery.SelectExpression;
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
-            
+
             if (outerSelectExpression.HasOffsetOrLimit || outerSelectExpression.IsDistinct)
             {
                 if (!IsTranslatable(outerProjection))
@@ -2292,9 +2293,37 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var innerProjection = innerSelectExpression.Projection.Flatten().Body;
 
-            // TODO: Check to make sure the projections have the same 'shape'
-
             if (!IsTranslatable(outerProjection) || !IsTranslatable(innerProjection))
+            {
+                return fallbackToEnumerable();
+            }
+
+            var outerGatherer = new ProjectionLeafGatheringExpressionVisitor();
+            var innerGatherer = new ProjectionLeafGatheringExpressionVisitor();
+            outerGatherer.Visit(outerProjection);
+            innerGatherer.Visit(innerProjection);
+
+            var shapesMatch = false;
+
+            if (outerGatherer.GatheredExpressions.Count == innerGatherer.GatheredExpressions.Count)
+            {
+                shapesMatch = true;
+
+                var zippedPairs
+                    = outerGatherer.GatheredExpressions
+                        .Zip(innerGatherer.GatheredExpressions, ValueTuple.Create);
+
+                foreach (var (pair1, pair2) in zippedPairs)
+                {
+                    if (pair1.Key != pair2.Key || pair1.Value.Type != pair2.Value.Type)
+                    {
+                        shapesMatch = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!shapesMatch)
             {
                 return fallbackToEnumerable();
             }
@@ -2797,7 +2826,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                 outerProjection))));
             }
 
-            var sqlFunctionExpression
+            Expression aggregateExpression
                 = node.Method.Name == nameof(Queryable.Average)
                     ? new SqlAggregateExpression(
                         "AVG",
@@ -2810,11 +2839,21 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                         outerProjection,
                         node.Method.ReturnType);
 
+            if (node.Method.Name == nameof(Queryable.Sum)
+                && node.Method.ReturnType.IsNullableType())
+            {
+                aggregateExpression
+                    = Expression.Coalesce(
+                        aggregateExpression,
+                        Expression.Constant(
+                            Activator.CreateInstance(node.Method.ReturnType.UnwrapNullableType())));
+            }
+
             return new SingleValueRelationalQueryExpression(
                 outerSelectExpression
                     .UpdateOrderBy(null)
                     .UpdateProjection(new ServerProjectionExpression(
-                        sqlFunctionExpression.VisitWith(ServerPostExpansionVisitors))));
+                        aggregateExpression.VisitWith(ServerPostExpansionVisitors))));
         }
 
         protected Expression HandleCount(
@@ -2916,6 +2955,11 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
         protected virtual Expression ProcessQuerySource(Expression node)
         {
+            if (node is null || !node.Type.IsSequenceType())
+            {
+                return node;
+            }
+
             switch (node)
             {
                 case GroupedRelationalQueryExpression query:
@@ -3016,10 +3060,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                 new SqlColumnExpression(
                                     openJsonTable,
                                     "value",
-                                    sqlFunctionExpression.Type.GetSequenceType())),
+                                    sqlFunctionExpression.Type.GetSequenceType(),
+                                    true,
+                                    null)),
                             openJsonTable));
                 }
-                
+
                 case SqlExpression sqlExpression:
                 {
                     var openJsonTable
@@ -3034,7 +3080,9 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                 new SqlColumnExpression(
                                     openJsonTable,
                                     "value",
-                                    sqlExpression.Type.GetSequenceType())),
+                                    sqlExpression.Type.GetSequenceType(),
+                                    true,
+                                    null)),
                             openJsonTable));
                 }
 
@@ -3060,8 +3108,8 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     var openJsonTable
                         = new TableValuedExpressionTableExpression(
                             new SqlFunctionExpression(
-                                "OPENJSON", 
-                                memberExpression.Type, 
+                                "OPENJSON",
+                                memberExpression.Type,
                                 sqlExpression,
                                 Expression.Constant($"$.{string.Join(".", path.GetPropertyNamesForJson())}")),
                             "j",
@@ -3073,7 +3121,9 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                 new SqlColumnExpression(
                                     openJsonTable,
                                     "value",
-                                    memberExpression.Type.GetSequenceType())),
+                                    memberExpression.Type.GetSequenceType(),
+                                    true,
+                                    null)),
                             openJsonTable));
                 }
 

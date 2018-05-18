@@ -30,7 +30,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
                     var type = node.Method.GetParameters()[0].ParameterType;
 
-                    if (left.Type != right.Type)
+                    if (left.Type != right.Type || left.Type == typeof(object))
                     {
                         var leftType = left.UnwrapInnerExpression().Type.UnwrapNullableType();
                         var rightType = right.UnwrapInnerExpression().Type.UnwrapNullableType();

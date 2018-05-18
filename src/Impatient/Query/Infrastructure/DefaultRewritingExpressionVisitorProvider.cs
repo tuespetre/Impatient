@@ -42,6 +42,8 @@ namespace Impatient.Query.Infrastructure
 
             // TODO: Consider pulling these from the Default provider.
 
+            yield return new StringToNumberAsciiRewritingExpressionVisitor();
+
             yield return new SqlServerCountRewritingExpressionVisitor();
 
             yield return new SqlServerMathMethodRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor);

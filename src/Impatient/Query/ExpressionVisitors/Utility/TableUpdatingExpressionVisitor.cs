@@ -46,7 +46,8 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                             newTables[index],
                             sqlColumnExpression.ColumnName,
                             sqlColumnExpression.Type,
-                            sqlColumnExpression.IsNullable);
+                            sqlColumnExpression.IsNullable,
+                            sqlColumnExpression.TypeMapping);
                     }
 
                     return sqlColumnExpression;

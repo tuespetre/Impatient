@@ -22,7 +22,8 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                         sqlColumnExpression.Table,
                         sqlColumnExpression.ColumnName,
                         sqlColumnExpression.Type,
-                        isNullable: nullable);
+                        isNullable: nullable,
+                        typeMapping: sqlColumnExpression.TypeMapping);
                 }
 
                 default:

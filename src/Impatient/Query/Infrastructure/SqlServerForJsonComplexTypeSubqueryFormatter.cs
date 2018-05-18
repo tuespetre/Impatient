@@ -1,5 +1,7 @@
 ﻿using Impatient.Extensions;
 using Impatient.Query.Expressions;
+using Impatient.Query.ExpressionVisitors.Utility;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Infrastructure
@@ -13,7 +15,13 @@ namespace Impatient.Query.Infrastructure
             builder.IncreaseIndent();
             builder.AppendLine();
 
-            if (subquery.Projection.Type.IsSequenceType())
+            var projection = subquery.Projection.Flatten().Body;
+            var leafGatherer = new ProjectionLeafGatheringExpressionVisitor();
+            leafGatherer.Visit(projection);
+
+            if (leafGatherer.GatheredExpressions.Count == 1 
+                && string.IsNullOrEmpty(leafGatherer.GatheredExpressions.Keys.Single())
+                && !(projection is SqlColumnExpression || projection is SqlAliasExpression))
             {
                 subquery
                     = subquery.UpdateProjection(

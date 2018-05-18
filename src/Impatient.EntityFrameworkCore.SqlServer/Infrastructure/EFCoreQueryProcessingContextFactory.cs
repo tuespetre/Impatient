@@ -2,7 +2,6 @@
 using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using System.Linq;
-using System.Linq.Expressions;
 
 namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 {
@@ -23,7 +22,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 
             processingContext.ParameterMapping.Add(
                 currentDbContext.Context,
-                Expression.Parameter(currentDbContext.Context.GetType(), "dbContext"));
+                DbContextParameter.GetInstance(currentDbContext.Context.GetType()));
 
             return processingContext;
         }

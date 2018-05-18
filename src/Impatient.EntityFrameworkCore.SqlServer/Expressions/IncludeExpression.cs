@@ -10,7 +10,7 @@ using System.Linq.Expressions;
 
 namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
 {
-    public class IncludeExpression : AnnotationExpression
+    public class IncludeExpression : ExtraPropertiesExpression
     {
         public IncludeExpression(
             Expression expression, 
@@ -36,11 +36,16 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
 
             Includes = includes;
             Paths = paths;
+            Names = new ReadOnlyCollection<string>(Enumerable.Range(0, paths.Length).Select(i => $"Include_{i}").ToArray());
         }
 
         public ReadOnlyCollection<Expression> Includes { get; }
 
         public ImmutableArray<ImmutableArray<INavigation>> Paths { get; }
+
+        public override ReadOnlyCollection<string> Names { get; }
+
+        public override ReadOnlyCollection<Expression> Properties => Includes;
 
         protected override Expression VisitChildren(ExpressionVisitor visitor)
         {
@@ -68,6 +73,16 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
 
                 return hash;
             }
+        }
+
+        public override ExtraPropertiesExpression Update(Expression expression, IEnumerable<Expression> properties)
+        {
+            if (expression != Expression || !properties.SequenceEqual(Properties))
+            {
+                return new IncludeExpression(expression, new ReadOnlyCollection<Expression>(properties.ToArray()), Paths);
+            }
+
+            return this;
         }
     }
 }

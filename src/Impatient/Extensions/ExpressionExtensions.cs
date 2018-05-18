@@ -13,6 +13,16 @@ namespace Impatient.Extensions
 {
     public static class ExpressionExtensions
     {
+        public static bool IsChecked(this Expression expression)
+        {
+            return expression.NodeType.ToString().EndsWith("Checked");
+        }
+
+        public static bool IsAssignment(this Expression expression)
+        {
+            return expression.NodeType.ToString().EndsWith("Assign");
+        }
+
         public static bool IsSemanticallyEqualTo(this Expression expression, Expression other)
         {
             return ExpressionEqualityComparer.Instance.GetHashCode(expression)
@@ -52,11 +62,27 @@ namespace Impatient.Extensions
 
             var sequenceType = expression.Type.GetSequenceType();
 
+            var enumerableQueryConstructor
+                = typeof(EnumerableQuery<>)
+                    .MakeGenericType(sequenceType)
+                    .GetConstructor(new[] { typeof(Expression) });
+
+            var expressionCallMethodInfo
+                = ReflectionExtensions.GetMethodInfo(() => Expression.Call(default, default(Expression)));
+
+            var asQueryableMethodInfo
+                = ReflectionExtensions.GetGenericMethodDefinition<IEnumerable<object>, object>(o => Queryable.AsQueryable(o));
+
+            // I never thought I would write a return statement this abstract.
+
             return Expression.New(
-                typeof(EnumerableQuery<>).MakeGenericType(sequenceType).GetConstructor(new[] { typeof(Expression) }),
+                enumerableQueryConstructor,
                 Expression.Call(
-                    typeof(Expression).GetRuntimeMethod(nameof(Expression.Constant), new[] { typeof(object) }),
-                    expression));
+                    expressionCallMethodInfo,
+                    Expression.Constant(asQueryableMethodInfo.MakeGenericMethod(sequenceType)),
+                    Expression.Call(
+                        typeof(Expression).GetRuntimeMethod(nameof(Expression.Constant), new[] { typeof(object) }),
+                        expression)));
         }
 
         private static Expression ResolveProperty(Expression expression, string segment)
@@ -94,6 +120,38 @@ namespace Impatient.Extensions
                     if (match != null)
                     {
                         return match;
+                    }
+
+                    return null;
+                }
+
+                case ExtendedNewExpression newExpression:
+                {
+                    var match = newExpression.ReadableMembers.FirstOrDefault(m => m.GetPathSegmentName() == segment);
+
+                    if (match != null)
+                    {
+                        return newExpression.Arguments[newExpression.ReadableMembers.IndexOf(match)];
+                    }
+
+                    return null;
+                }
+
+                case ExtendedMemberInitExpression memberInitExpression:
+                {
+                    var match = ResolveProperty(memberInitExpression.NewExpression, segment);
+
+                    if (match != null)
+                    {
+                        return match;
+                    }
+
+                    for (var i = 0; i < memberInitExpression.Arguments.Count; i++)
+                    {
+                        if (memberInitExpression.ReadableMembers[i].GetPathSegmentName() == segment)
+                        {
+                            return memberInitExpression.Arguments[i];
+                        }
                     }
 
                     return null;
@@ -201,16 +259,57 @@ namespace Impatient.Extensions
             }
         }
 
-        public static BinaryExpression Update(this BinaryExpression node, Expression left, Expression right)
+        public static BinaryExpression UpdateWithConversion(this BinaryExpression node, Expression left, Expression right)
         {
-            if (left.Type != node.Left.Type)
+            var isLogical
+                = node.NodeType == ExpressionType.Equal
+                || node.NodeType == ExpressionType.NotEqual
+                || node.NodeType == ExpressionType.GreaterThan
+                || node.NodeType == ExpressionType.GreaterThanOrEqual
+                || node.NodeType == ExpressionType.LessThan
+                || node.NodeType == ExpressionType.LessThanOrEqual
+                || node.NodeType == ExpressionType.AndAlso
+                || node.NodeType == ExpressionType.OrElse;
+            
+            if (isLogical)
             {
-                left = Expression.Convert(left, node.Left.Type);
-            }
+                if (left.Type != right.Type)
+                {
+                    if (left.Type == right.Type.UnwrapNullableType())
+                    {
+                        left = Expression.Convert(left, right.Type);
+                    }
+                    else if (right.Type == left.Type.UnwrapNullableType())
+                    {
+                        right = Expression.Convert(right, left.Type);
+                    }
+                    else
+                    {
+                        if (left.Type != node.Left.Type)
+                        {
+                            left = Expression.Convert(left, node.Left.Type);
+                        }
 
-            if (right.Type != node.Right.Type)
+                        if (right.Type != node.Right.Type)
+                        {
+                            right = Expression.Convert(right, node.Right.Type);
+                        }
+                    }
+                }
+
+                return Expression.MakeBinary(node.NodeType, left, right);
+            }
+            else
             {
-                right = Expression.Convert(right, node.Right.Type);
+                if (left.Type != node.Left.Type)
+                {
+                    left = Expression.Convert(left, node.Left.Type);
+                }
+
+                if (right.Type != node.Right.Type)
+                {
+                    right = Expression.Convert(right, node.Right.Type);
+                }
             }
 
             return node.Update(left, node.Conversion, right);
@@ -278,7 +377,7 @@ namespace Impatient.Extensions
                         flipped
                             ? Expression.Convert(
                                 Expression.Equal(
-                                    expression, 
+                                    expression,
                                     Expression.Constant(flag, typeof(bool?))),
                                 typeof(bool?))
                             : expression);
@@ -553,12 +652,16 @@ namespace Impatient.Extensions
 
         /// <summary>
         /// Removes any wrapping <see cref="AnnotationExpression"/>s, <see cref="ExtraPropertiesExpression"/>s,
-        /// and <see cref="UnaryExpression"/>s with type <see cref="ExpressionType.Convert"/> and returns the
-        /// inner expression.
+        /// and <see cref="UnaryExpression"/>s with type <see cref="ExpressionType.Convert"/> or
+        /// <see cref="ExpressionType.ConvertChecked"/> and returns the inner expression.
         /// </summary>
         public static Expression UnwrapInnerExpression(this Expression expression)
         {
-            if (expression is AnnotationExpression annotationExpression)
+            if (expression is null)
+            {
+                return expression;
+            }
+            else if (expression is AnnotationExpression annotationExpression)
             {
                 return annotationExpression.Expression.UnwrapInnerExpression();
             }
@@ -566,7 +669,7 @@ namespace Impatient.Extensions
             {
                 return extraPropertiesExpression.Expression.UnwrapInnerExpression();
             }
-            else if (expression.NodeType == ExpressionType.Convert)
+            else if (expression.NodeType == ExpressionType.Convert || expression.NodeType == ExpressionType.ConvertChecked)
             {
                 return ((UnaryExpression)expression).Operand.UnwrapInnerExpression();
             }

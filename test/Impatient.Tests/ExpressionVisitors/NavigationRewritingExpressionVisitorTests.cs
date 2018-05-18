@@ -228,6 +228,24 @@ FROM [dbo].[Customers] AS [c]",
                 context.SqlLog);
         }
 
+        /*
+            SelectMany notes:
+
+            - Three elements of expansion
+                A: Collection selector
+                B: Result selector via source
+                C: Result selector via collection
+
+            - Seven combinations
+                1: A
+                2: B
+                3: C
+                4: AB
+                5: BC
+                6: AC
+                7: ABC
+        */
+
         [TestMethod]
         public void SelectMany_cross_join_same_table_Where_same_navigation()
         {
@@ -275,6 +293,68 @@ INNER JOIN [dbo].[Orders] AS [o] ON [c].[CustomerID] = [o].[CustomerID]",
                 @"SELECT [o].[OrderID]
 FROM [dbo].[Customers] AS [c]
 INNER JOIN [dbo].[Orders] AS [o] ON [c].[CustomerID] = [o].[CustomerID]",
+                context.SqlLog);
+        }
+
+        [TestMethod]
+        public void SelectMany_navigation_12m_nav_in_result_from_source1()
+        {
+            var query = from o in context.Orders
+                        from d in o.OrderDetails
+                        select new { o.OrderID, d.ProductID, o.Customer.CompanyName };
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [o].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [c].[CompanyName] AS [CompanyName]
+FROM [dbo].[Orders] AS [o]
+INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
+INNER JOIN [dbo].[Order Details] AS [d] ON [o].[OrderID] = [d].[OrderID]",
+                context.SqlLog);
+        }
+
+        [TestMethod]
+        public void SelectMany_navigation_12m_nav_in_result_from_source2()
+        {
+            var query
+                = context.Orders
+                    .SelectMany(
+                        o => context.OrderDetails,
+                        (o, d) => new { id1 = o.OrderID, id2 = d.OrderID, o.Customer.CompanyName })
+                    .Where(o => o.id1 == o.id2);
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [o].[OrderID] AS [id1], [o_0].[OrderID] AS [id2], [c].[CompanyName] AS [CompanyName]
+FROM [dbo].[Orders] AS [o]
+INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
+CROSS JOIN [dbo].[Order Details] AS [o_0]
+WHERE [o].[OrderID] = [o_0].[OrderID]",
+                context.SqlLog);
+        }
+
+        [TestMethod]
+        public void SelectMany_navigation_12m_nav_in_result_from_collection()
+        {
+            var query = from c in context.Customers
+                        from o in c.Orders
+                        select new { c.CustomerID, count = o.OrderDetails.Count() };
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [c].[CustomerID] AS [CustomerID], (
+    SELECT COUNT(*)
+    FROM [dbo].[Order Details] AS [d]
+    WHERE [t].[$inner.Key] = [d].[OrderID]
+) AS [count]
+FROM [dbo].[Customers] AS [c]
+CROSS APPLY (
+    SELECT [o].[OrderID] AS [$outer.OrderID], [o].[CustomerID] AS [$outer.CustomerID], [o].[EmployeeID] AS [$outer.EmployeeID], [o].[OrderDate] AS [$outer.OrderDate], [o].[RequiredDate] AS [$outer.RequiredDate], [o].[ShippedDate] AS [$outer.ShippedDate], [o].[ShipVia] AS [$outer.ShipVia], [o].[Freight] AS [$outer.Freight], [o].[ShipName] AS [$outer.ShipName], [o].[ShipAddress] AS [$outer.ShipAddress], [o].[ShipCity] AS [$outer.ShipCity], [o].[ShipRegion] AS [$outer.ShipRegion], [o].[ShipPostalCode] AS [$outer.ShipPostalCode], [o].[ShipCountry] AS [$outer.ShipCountry], [o].[OrderID] AS [$inner.Key]
+    FROM [dbo].[Orders] AS [o]
+    WHERE [c].[CustomerID] = [o].[CustomerID]
+) AS [t]",
                 context.SqlLog);
         }
 
@@ -701,7 +781,7 @@ INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]",
             var result = context.OrderDetails.Sum(d => d.Order.Freight);
 
             Assert.AreEqual(
-                @"SELECT SUM([o].[Freight])
+                @"SELECT COALESCE(SUM([o].[Freight]), 0.0)
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]",
                 context.SqlLog);
@@ -780,8 +860,109 @@ INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]",
                 context.SqlLog);
         }
 
+        /*
+            Join:
+
+            - 4 points of expansion
+                A. outer key selector
+                B. inner key selector
+                C. result selector for outer
+                D. result selector for inner
+
+            - combinations
+                 1. A
+                 2. B
+                 3. C
+                 4. D
+                 5. AB
+                 6. AC
+                 7. AD
+                 8. BC
+                 9. BD
+                10. CD
+                11. ABC
+                12. ABD
+                13. ACD
+                14. BCD
+                15. ABCD
+        */
+
         [TestMethod]
-        public void Join_navigation()
+        public void Join_navigation_A()
+        {
+            var query = from o in context.Orders
+                        join c in context.Customers on o.Customer.City equals c.City
+                        select new { o, c };
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [o].[OrderID] AS [o.OrderID], [o].[CustomerID] AS [o.CustomerID], [o].[EmployeeID] AS [o.EmployeeID], [o].[OrderDate] AS [o.OrderDate], [o].[RequiredDate] AS [o.RequiredDate], [o].[ShippedDate] AS [o.ShippedDate], [o].[ShipVia] AS [o.ShipVia], [o].[Freight] AS [o.Freight], [o].[ShipName] AS [o.ShipName], [o].[ShipAddress] AS [o.ShipAddress], [o].[ShipCity] AS [o.ShipCity], [o].[ShipRegion] AS [o.ShipRegion], [o].[ShipPostalCode] AS [o.ShipPostalCode], [o].[ShipCountry] AS [o.ShipCountry], [c].[CustomerID] AS [c.CustomerID], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[Region] AS [c.Region], [c].[PostalCode] AS [c.PostalCode], [c].[Country] AS [c.Country], [c].[Phone] AS [c.Phone], [c].[Fax] AS [c.Fax]
+FROM [dbo].[Orders] AS [o]
+INNER JOIN [dbo].[Customers] AS [c_0] ON [o].[CustomerID] = [c_0].[CustomerID]
+INNER JOIN [dbo].[Customers] AS [c] ON [c_0].[City] = [c].[City]",
+                context.SqlLog);
+        }
+
+        [TestMethod]
+        public void Join_navigation_B()
+        {
+            var query = from c in context.Customers
+                        join o in context.Orders on c.City equals o.Customer.City
+                        select new { o, c };
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [t].[$outer.OrderID] AS [o.OrderID], [t].[$outer.CustomerID] AS [o.CustomerID], [t].[$outer.EmployeeID] AS [o.EmployeeID], [t].[$outer.OrderDate] AS [o.OrderDate], [t].[$outer.RequiredDate] AS [o.RequiredDate], [t].[$outer.ShippedDate] AS [o.ShippedDate], [t].[$outer.ShipVia] AS [o.ShipVia], [t].[$outer.Freight] AS [o.Freight], [t].[$outer.ShipName] AS [o.ShipName], [t].[$outer.ShipAddress] AS [o.ShipAddress], [t].[$outer.ShipCity] AS [o.ShipCity], [t].[$outer.ShipRegion] AS [o.ShipRegion], [t].[$outer.ShipPostalCode] AS [o.ShipPostalCode], [t].[$outer.ShipCountry] AS [o.ShipCountry], [c].[CustomerID] AS [c.CustomerID], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[Region] AS [c.Region], [c].[PostalCode] AS [c.PostalCode], [c].[Country] AS [c.Country], [c].[Phone] AS [c.Phone], [c].[Fax] AS [c.Fax]
+FROM [dbo].[Customers] AS [c]
+INNER JOIN (
+    SELECT [o].[OrderID] AS [$outer.OrderID], [o].[CustomerID] AS [$outer.CustomerID], [o].[EmployeeID] AS [$outer.EmployeeID], [o].[OrderDate] AS [$outer.OrderDate], [o].[RequiredDate] AS [$outer.RequiredDate], [o].[ShippedDate] AS [$outer.ShippedDate], [o].[ShipVia] AS [$outer.ShipVia], [o].[Freight] AS [$outer.Freight], [o].[ShipName] AS [$outer.ShipName], [o].[ShipAddress] AS [$outer.ShipAddress], [o].[ShipCity] AS [$outer.ShipCity], [o].[ShipRegion] AS [$outer.ShipRegion], [o].[ShipPostalCode] AS [$outer.ShipPostalCode], [o].[ShipCountry] AS [$outer.ShipCountry], [c_0].[CustomerID] AS [$inner.CustomerID], [c_0].[CompanyName] AS [$inner.CompanyName], [c_0].[ContactName] AS [$inner.ContactName], [c_0].[ContactTitle] AS [$inner.ContactTitle], [c_0].[Address] AS [$inner.Address], [c_0].[City] AS [$inner.City], [c_0].[Region] AS [$inner.Region], [c_0].[PostalCode] AS [$inner.PostalCode], [c_0].[Country] AS [$inner.Country], [c_0].[Phone] AS [$inner.Phone], [c_0].[Fax] AS [$inner.Fax]
+    FROM [dbo].[Orders] AS [o]
+    INNER JOIN [dbo].[Customers] AS [c_0] ON [o].[CustomerID] = [c_0].[CustomerID]
+) AS [t] ON [c].[City] = [t].[$inner.City]",
+                context.SqlLog);
+        }
+
+        [TestMethod]
+        public void Join_navigation_C()
+        {
+            var query = from o in context.Orders
+                        join c in context.Customers on o.CustomerID equals c.CustomerID
+                        select o.Customer;
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [c].[CustomerID] AS [CustomerID], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Address] AS [Address], [c].[City] AS [City], [c].[Region] AS [Region], [c].[PostalCode] AS [PostalCode], [c].[Country] AS [Country], [c].[Phone] AS [Phone], [c].[Fax] AS [Fax]
+FROM [dbo].[Orders] AS [o]
+INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
+INNER JOIN [dbo].[Customers] AS [c_0] ON [o].[CustomerID] = [c_0].[CustomerID]",
+                context.SqlLog);
+        }
+
+        [TestMethod]
+        public void Join_navigation_D()
+        {
+            var query = from c in context.Customers
+                        join o in context.Orders on c.CustomerID equals o.CustomerID
+                        select o.Customer;
+
+            query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT [t].[$inner.CustomerID] AS [CustomerID], [t].[$inner.CompanyName] AS [CompanyName], [t].[$inner.ContactName] AS [ContactName], [t].[$inner.ContactTitle] AS [ContactTitle], [t].[$inner.Address] AS [Address], [t].[$inner.City] AS [City], [t].[$inner.Region] AS [Region], [t].[$inner.PostalCode] AS [PostalCode], [t].[$inner.Country] AS [Country], [t].[$inner.Phone] AS [Phone], [t].[$inner.Fax] AS [Fax]
+FROM [dbo].[Customers] AS [c]
+INNER JOIN (
+    SELECT [o].[OrderID] AS [$outer.OrderID], [o].[CustomerID] AS [$outer.CustomerID], [o].[EmployeeID] AS [$outer.EmployeeID], [o].[OrderDate] AS [$outer.OrderDate], [o].[RequiredDate] AS [$outer.RequiredDate], [o].[ShippedDate] AS [$outer.ShippedDate], [o].[ShipVia] AS [$outer.ShipVia], [o].[Freight] AS [$outer.Freight], [o].[ShipName] AS [$outer.ShipName], [o].[ShipAddress] AS [$outer.ShipAddress], [o].[ShipCity] AS [$outer.ShipCity], [o].[ShipRegion] AS [$outer.ShipRegion], [o].[ShipPostalCode] AS [$outer.ShipPostalCode], [o].[ShipCountry] AS [$outer.ShipCountry], [c_0].[CustomerID] AS [$inner.CustomerID], [c_0].[CompanyName] AS [$inner.CompanyName], [c_0].[ContactName] AS [$inner.ContactName], [c_0].[ContactTitle] AS [$inner.ContactTitle], [c_0].[Address] AS [$inner.Address], [c_0].[City] AS [$inner.City], [c_0].[Region] AS [$inner.Region], [c_0].[PostalCode] AS [$inner.PostalCode], [c_0].[Country] AS [$inner.Country], [c_0].[Phone] AS [$inner.Phone], [c_0].[Fax] AS [$inner.Fax]
+    FROM [dbo].[Orders] AS [o]
+    INNER JOIN [dbo].[Customers] AS [c_0] ON [o].[CustomerID] = [c_0].[CustomerID]
+) AS [t] ON [c].[CustomerID] = [t].[$outer.CustomerID]",
+                context.SqlLog);
+        }
+
+        [TestMethod]
+        public void Join_navigation_AB()
         {
             var query = from o1 in context.Orders
                         join o2 in context.Orders on o1.Customer.City equals o2.Customer.City

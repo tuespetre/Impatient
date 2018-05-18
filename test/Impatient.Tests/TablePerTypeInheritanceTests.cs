@@ -222,7 +222,8 @@ namespace Impatient.Tests
                                  table,
                                  cd.ColumnName,
                                  cd.Type.MakeNullableType(),
-                                 nullable || cd.IsNullable);
+                                 nullable || cd.IsNullable,
+                                 null);
 
                        return new TablePerTypeInfo
                        {
@@ -297,8 +298,8 @@ namespace Impatient.Tests
                                   join r in child.TableDescriptor.ColumnDescriptors
                                   on k.MetadataToken equals r.SourceMember.MetadataToken
                                   select Expression.Equal(
-                                      new SqlColumnExpression(parent.Table, l.ColumnName, l.Type, l.IsNullable),
-                                      new SqlColumnExpression(child.Table, r.ColumnName, r.Type, r.IsNullable));
+                                      new SqlColumnExpression(parent.Table, l.ColumnName, l.Type, l.IsNullable, null),
+                                      new SqlColumnExpression(child.Table, r.ColumnName, r.Type, r.IsNullable, null));
 
                             return new LeftJoinExpression(
                                 accumulate,

@@ -84,7 +84,7 @@ namespace Impatient.Tests.ExpressionVisitors.Rewriting
                 output: x => from x1 in x
                              from x2 in x
                              let y = new { x1, x2 }
-                             where y.x1.Nav1Id == y.x2.Nav1Id
+                             where y.x1.Nav1.Id == y.x2.Nav1.Id
                              select true);
         }
 
@@ -124,7 +124,7 @@ namespace Impatient.Tests.ExpressionVisitors.Rewriting
                             select true,
                 output: x => from x1 in x
                              let y1 = x1
-                             join x2 in x on y1.Nav1Id equals x2.Nav1Id
+                             join x2 in x on y1.Nav1.Id equals x2.Nav1.Id
                              select true);
         }
 
@@ -164,7 +164,7 @@ namespace Impatient.Tests.ExpressionVisitors.Rewriting
                             select true,
                 output: x => from x1 in x
                              let y1 = x1
-                             join x2 in x on y1.Nav1Id equals x2.Nav1Id into x2s
+                             join x2 in x on y1.Nav1.Id equals x2.Nav1.Id into x2s
                              select true);
         }
 

@@ -1,4 +1,5 @@
 ﻿using Impatient.Extensions;
+using Impatient.Query.Infrastructure;
 using System;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -19,10 +20,45 @@ namespace Impatient.Query.Expressions
             IsNullable = isNullable;
         }
 
+        public SqlParameterExpression(Expression expression, bool isNullable, ITypeMapping typeMapping)
+            : this(expression, isNullable)
+        {
+            TypeMapping = typeMapping;
+        }
+
         public override Type Type => Expression.Type;
 
         public override bool IsNullable { get; }
 
         public Expression Expression { get; }
+
+        public ITypeMapping TypeMapping { get; }
+
+        public override bool CanReduce => true;
+
+        public override Expression Reduce() => Expression;
+
+        public SqlParameterExpression WithMapping(ITypeMapping mapping)
+        {
+            if (mapping is null)
+            {
+                throw new ArgumentNullException(nameof(mapping));
+            }
+
+            return new SqlParameterExpression(Expression, IsNullable, mapping);
+        }
+
+        public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+        {
+            unchecked
+            {
+                var hash = IsNullable.GetHashCode();
+
+                hash = (hash * 16777619) ^ comparer.GetHashCode(Expression);
+                hash = (hash * 16777619) ^ (TypeMapping?.GetHashCode() ?? 0);
+
+                return hash;
+            }
+        }
     }
 }

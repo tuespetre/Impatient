@@ -1,9 +1,12 @@
 ﻿using Impatient.Extensions;
-using Impatient.Query.ExpressionVisitors.Utility;
+using Impatient.Query.Expressions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
@@ -21,7 +24,6 @@ namespace Impatient.Query.Infrastructure
 
         private readonly ParameterExpression dbCommandVariable = Expression.Parameter(typeof(DbCommand), "command");
         private readonly ParameterExpression stringBuilderVariable = Expression.Parameter(typeof(StringBuilder), "builder");
-        private readonly ParameterExpression dbParameterVariable = Expression.Parameter(typeof(DbParameter), "parameter");
         private readonly List<Expression> blockExpressions = new List<Expression>();
         private readonly List<Expression> dbParameterExpressions = new List<Expression>();
         private readonly Dictionary<int, int> parameterCache = new Dictionary<int, int>();
@@ -32,38 +34,15 @@ namespace Impatient.Query.Infrastructure
         private static readonly MethodInfo stringBuilderToStringMethodInfo
             = typeof(StringBuilder).GetRuntimeMethod(nameof(StringBuilder.ToString), new Type[0]);
 
-        private static readonly MethodInfo stringConcatObjectMethodInfo
-            = typeof(string).GetRuntimeMethod(nameof(string.Concat), new[] { typeof(object), typeof(object) });
-
         private static readonly PropertyInfo dbCommandCommandTextPropertyInfo
             = typeof(DbCommand).GetTypeInfo().GetDeclaredProperty(nameof(DbCommand.CommandText));
 
-        private static readonly PropertyInfo dbCommandParametersPropertyInfo
-            = typeof(DbCommand).GetTypeInfo().GetDeclaredProperty(nameof(DbCommand.Parameters));
+        private readonly ITypeMappingProvider typeMappingProvider;
 
-        private static readonly MethodInfo dbCommandCreateParameterMethodInfo
-            = typeof(DbCommand).GetTypeInfo().GetDeclaredMethod(nameof(DbCommand.CreateParameter));
-
-        private static readonly PropertyInfo dbParameterParameterNamePropertyInfo
-            = typeof(DbParameter).GetTypeInfo().GetDeclaredProperty(nameof(DbParameter.ParameterName));
-
-        private static readonly PropertyInfo dbParameterValuePropertyInfo
-            = typeof(DbParameter).GetTypeInfo().GetDeclaredProperty(nameof(DbParameter.Value));
-
-        private static readonly MethodInfo dbParameterCollectionAddMethodInfo
-            = typeof(DbParameterCollection).GetTypeInfo().GetDeclaredMethod(nameof(DbParameterCollection.Add));
-
-        private static readonly MethodInfo enumerableGetEnumeratorMethodInfo
-            = typeof(IEnumerable).GetTypeInfo().GetDeclaredMethod(nameof(IEnumerable.GetEnumerator));
-
-        private static readonly MethodInfo enumeratorMoveNextMethodInfo
-            = typeof(IEnumerator).GetTypeInfo().GetDeclaredMethod(nameof(IEnumerator.MoveNext));
-
-        private static readonly PropertyInfo enumeratorCurrentPropertyInfo
-            = typeof(IEnumerator).GetTypeInfo().GetDeclaredProperty(nameof(IEnumerator.Current));
-
-        private static readonly MethodInfo disposableDisposeMethodInfo
-            = typeof(IDisposable).GetTypeInfo().GetDeclaredMethod(nameof(IDisposable.Dispose));
+        public DefaultDbCommandExpressionBuilder(ITypeMappingProvider typeMappingProvider)
+        {
+            this.typeMappingProvider = typeMappingProvider ?? throw new ArgumentNullException(nameof(typeMappingProvider));
+        }
 
         public void Append(string sql)
         {
@@ -120,14 +99,10 @@ namespace Impatient.Query.Infrastructure
                             typeof(object)));
             }
 
-            return Expression.Assign(
-                Expression.MakeMemberAccess(
-                    parameter,
-                    dbParameterValuePropertyInfo),
-                valueToSet);
+            return valueToSet;
         }
 
-        public void AddParameter(Expression node, Func<string, string> formatter)
+        public void AddParameter(SqlParameterExpression node, Func<string, string> formatter)
         {
             var hash = ExpressionEqualityComparer.Instance.GetHashCode(node);
 
@@ -147,45 +122,97 @@ namespace Impatient.Query.Infrastructure
 
             EmitSql();
 
-            var expressions = new Expression[]
-            {
-                Expression.Assign(
-                    dbParameterVariable,
-                    Expression.Call(
-                        dbCommandVariable,
-                        dbCommandCreateParameterMethodInfo)),
-                Expression.Assign(
-                    Expression.MakeMemberAccess(
-                        dbParameterVariable,
-                        dbParameterParameterNamePropertyInfo),
-                    Expression.Constant(parameterName)),
-                SetParameterValue(
-                    dbParameterVariable,
-                    node),
-                Expression.Call(
-                    Expression.MakeMemberAccess(
-                        dbCommandVariable,
-                        dbCommandParametersPropertyInfo),
-                    dbParameterCollectionAddMethodInfo,
-                    dbParameterVariable)
-            };
+            var typeMapping = node.TypeMapping ?? typeMappingProvider.FindMapping(node.Type);
 
-            blockExpressions.AddRange(expressions);
-            dbParameterExpressions.AddRange(expressions);
+            if (typeMapping is null)
+            {
+                throw new InvalidOperationException($"Could not find a type mapping for a parameter value: {node}");
+            }
+
+            Expression value = node;
+
+            if (typeMapping.SourceConversion is LambdaExpression conversion)
+            {
+                var expansion = value;
+
+                var inputType = conversion.Parameters.Single().Type;
+
+                if (expansion.Type != inputType)
+                {
+                    if (expansion.Type == typeMapping.TargetConversion.Parameters.Single().Type)
+                    {
+                        expansion = typeMapping.TargetConversion.ExpandParameters(expansion);
+                    }
+                    else
+                    {
+                        expansion = Expression.Convert(expansion, inputType);
+                    }
+                }
+
+                value = conversion.ExpandParameters(expansion);
+            }
+
+            if (node.Type.IsNullableType() || !node.Type.GetTypeInfo().IsValueType)
+            {
+                value
+                    = Expression.Condition(
+                        Expression.Equal(node, Expression.Constant(null)),
+                        Expression.Constant(null),
+                        Expression.Convert(value, typeof(object)));
+            }
+
+            var expression
+                = Expression.Call(
+                    GetType().GetMethod(nameof(RuntimeAddParameter), BindingFlags.NonPublic | BindingFlags.Static),
+                    dbCommandVariable,
+                    Expression.Constant(parameterName),
+                    Expression.Constant(typeMapping.DbType, typeof(DbType?)),
+                    Expression.Lambda(typeof(Func<object>), Expression.Convert(value, typeof(object))));
+
+            blockExpressions.Add(expression);
+            dbParameterExpressions.Add(expression);
         }
 
         public void AddDynamicParameters(string fragment, Expression expression, Func<string, string> formatter)
         {
+            Debug.Assert(expression != null && typeof(IEnumerable).IsAssignableFrom(expression.Type));
+
             EmitSql();
+
+            var sequenceType = expression.Type.GetSequenceType();
+
+            var typeMapping = typeMappingProvider.FindMapping(sequenceType);
+
+            if (typeMapping is null)
+            {
+                throw new InvalidOperationException($"Could not find a type mapping for a parameter value: {expression}");
+            }
+
+            Expression conversion = Expression.Default(typeof(Func<object, object>));
+
+            if (typeMapping.SourceConversion is LambdaExpression lambdaConversion)
+            {
+                var oldParameter = lambdaConversion.Parameters.Single();
+                var newParameter = Expression.Parameter(typeof(object), oldParameter.Name);
+
+                conversion
+                    = Expression.Lambda(
+                        Expression.Convert(
+                            lambdaConversion.Body.Replace(oldParameter, Expression.Convert(newParameter, oldParameter.Type)),
+                            typeof(object)),
+                        newParameter);
+            };
 
             blockExpressions.Add(Expression.Call(
                 GetType().GetMethod(nameof(RuntimeAddDynamicParameters), BindingFlags.NonPublic | BindingFlags.Static),
                 dbCommandVariable,
                 stringBuilderVariable,
                 Expression.Constant(fragment),
-                expression,
+                Expression.Lambda(typeof(Func<IEnumerable>), expression),
                 Expression.Constant($"p{parameterIndex}"),
-                Expression.Constant(formatter)));
+                Expression.Constant(formatter),
+                Expression.Constant(typeMapping.DbType, typeof(DbType?)),
+                conversion));
 
             parameterIndex++;
             containsParameterList = true;
@@ -195,7 +222,7 @@ namespace Impatient.Query.Infrastructure
         {
             EmitSql();
 
-            var blockVariables = new List<ParameterExpression> { stringBuilderVariable, dbParameterVariable };
+            var blockVariables = new List<ParameterExpression> { stringBuilderVariable };
             var blockExpressions = this.blockExpressions;
 
             if (containsParameterList)
@@ -228,11 +255,6 @@ namespace Impatient.Query.Infrastructure
                         Expression.Constant(archiveStringBuilder.ToString())));
 
                 blockExpressions.AddRange(dbParameterExpressions);
-
-                if (dbParameterExpressions.Count == 0)
-                {
-                    blockVariables.Remove(dbParameterVariable);
-                }
             }
 
             return Expression.Lambda(
@@ -263,13 +285,41 @@ namespace Impatient.Query.Infrastructure
             }
         }
 
+        private static void RuntimeAddParameter(
+            DbCommand dbCommand,
+            string name,
+            DbType? dbType,
+            Func<object> value)
+        {
+            try
+            {
+                var parameter = dbCommand.CreateParameter();
+
+                parameter.ParameterName = name;
+                parameter.Value = value() ?? DBNull.Value;
+
+                if (dbType.HasValue)
+                {
+                    parameter.DbType = dbType.Value;
+                }
+
+                dbCommand.Parameters.Add(parameter);
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException("Error while applying parameters to the query", exception);
+            }
+        }
+
         private static void RuntimeAddDynamicParameters(
             DbCommand dbCommand,
             StringBuilder stringBuilder,
             string fragment,
-            IEnumerable values,
+            Func<IEnumerable> values,
             string name,
-            Func<string, string> formatter)
+            Func<string, string> formatter,
+            DbType? dbType,
+            Func<object, object> conversion)
         {
             DbParameter parameter;
             string formattedName;
@@ -280,7 +330,7 @@ namespace Impatient.Query.Infrastructure
 
             try
             {
-                enumerator = values.GetEnumerator();
+                enumerator = values().GetEnumerator();
 
                 var insertPoint = stringBuilder.Length;
 
@@ -304,7 +354,21 @@ namespace Impatient.Query.Infrastructure
                         stringBuilder.Append(formattedName);
                         parameter = dbCommand.CreateParameter();
                         parameter.ParameterName = formattedName;
-                        parameter.Value = enumerator.Current;
+
+                        if (conversion != null)
+                        {
+                            parameter.Value = conversion(enumerator.Current);
+                        }
+                        else
+                        {
+                            parameter.Value = enumerator.Current;
+                        }
+
+                        if (dbType.HasValue)
+                        {
+                            parameter.DbType = dbType.Value;
+                        }
+
                         dbCommand.Parameters.Add(parameter);
                     }
 
@@ -330,7 +394,21 @@ namespace Impatient.Query.Infrastructure
                             addedParameter = true;
                             parameter = dbCommand.CreateParameter();
                             parameter.ParameterName = formattedName;
-                            parameter.Value = enumerator.Current;
+
+                            if (conversion != null)
+                            {
+                                parameter.Value = conversion(enumerator.Current);
+                            }
+                            else
+                            {
+                                parameter.Value = enumerator.Current;
+                            }
+
+                            if (dbType.HasValue)
+                            {
+                                parameter.DbType = dbType.Value;
+                            }
+
                             dbCommand.Parameters.Add(parameter);
                         }
                     }
@@ -360,6 +438,10 @@ namespace Impatient.Query.Infrastructure
                         stringBuilder.Append(")");
                     }
                 }
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException("Error while applying parameters to the query", exception);
             }
             finally
             {

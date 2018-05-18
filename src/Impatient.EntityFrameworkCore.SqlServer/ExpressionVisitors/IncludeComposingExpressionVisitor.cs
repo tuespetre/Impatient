@@ -13,6 +13,8 @@ using System.Reflection;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
+    using System.Linq;
+
     public class IncludeComposingExpressionVisitor : ExpressionVisitor
     {
         private static readonly MethodInfo queryableSelectMethodInfo
@@ -45,8 +47,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 case MethodCallExpression call
                 when IsIncludeOrThenIncludeMethod(call.Method):
                 {
-                    var path = new List<PropertyInfo>();
-                    var paths = new List<IList<PropertyInfo>> { path };
+                    var currentSet = new List<List<MemberInfo>> { new List<MemberInfo>() };
+                    var paths = new List<List<MemberInfo>>();
                     var inner = call.Arguments[0];
                     var type = inner.Type.GetSequenceType();
 
@@ -56,7 +58,10 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         {
                             case LambdaExpression lambdaExpression:
                             {
-                                path.InsertRange(0, ProcessIncludeLambda(lambdaExpression));
+                                foreach (var path in currentSet)
+                                {
+                                    path.InsertRange(0, ProcessIncludeLambda(lambdaExpression));
+                                }
 
                                 break;
                             }
@@ -64,10 +69,19 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                             case ConstantExpression constantExpression:
                             {
                                 var argument = (string)((ConstantExpression)call.Arguments[1]).Value;
-
                                 var names = argument.Split('.').Select(p => p.Trim()).ToArray();
+                                var startCount = currentSet.Count;
+                                var resolvedPaths = ResolveIncludePaths(type, names);
 
-                                path.InsertRange(0, ProcessIncludeString(type, names));
+                                for (var i = 0; i < startCount; i++)
+                                {
+                                    foreach (var resolvedPath in resolvedPaths)
+                                    {
+                                        currentSet.Add(resolvedPath.Concat(currentSet[i]).ToList());
+                                    }
+                                }
+
+                                currentSet.RemoveRange(0, startCount);
 
                                 break;
                             }
@@ -82,8 +96,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         {
                             // Paths are inserted at the beginning to preserve the 
                             // semantic order of includes defined by the query.
-                            path = new List<PropertyInfo>();
-                            paths.Insert(0, path);
+                            paths.InsertRange(0, currentSet);
+                            currentSet = new List<List<MemberInfo>> { new List<MemberInfo>() };
                         }
 
                         inner = call.Arguments[0];
@@ -92,14 +106,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     }
                     while (IsIncludeOrThenIncludeMethod(call?.Method));
 
-                    if (path.Count == 0)
+                    if (currentSet.Any(p => p.Any()))
                     {
-                        paths.Remove(path);
+                        paths.InsertRange(0, currentSet);
                     }
 
                     var innerSequenceType = inner.Type.GetSequenceType();
 
-                    var entityType 
+                    var entityType
                         = model.GetEntityTypes()
                             .Where(t => !t.IsOwned())
                             .FirstOrDefault(t => t.ClrType == innerSequenceType);
@@ -112,9 +126,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                 paths.First().First().Name));
                     }
 
-                    var parameter 
+                    var parameter
                         = Expression.Parameter(
-                            innerSequenceType, 
+                            innerSequenceType,
                             entityType.Relational().TableName.Substring(0, 1).ToLower());
 
                     var includeAccessors
@@ -143,43 +157,98 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
         }
 
-        private IEnumerable<PropertyInfo> ProcessIncludeString(Type type, IList<string> names)
+        private List<List<MemberInfo>> ResolveIncludePaths(Type type, string[] names)
         {
-            var properties = new List<PropertyInfo>(names.Count);
+            var entityType
+                = model.GetEntityTypes()
+                    .SingleOrDefault(t => !t.IsOwned() && t.ClrType == type);
 
-            foreach (var name in names)
+            if (entityType == null)
             {
-                var member = (from d in descriptorSet.NavigationDescriptors
-                              where d.Member.Name == name
-                              where d.Member.DeclaringType.IsAssignableFrom(type)
-                              select d.Member).FirstOrDefault();
+                throw new NotSupportedException(
+                    CoreStrings.IncludeNotSpecifiedDirectlyOnEntityType(
+                        $"Include(\"{string.Join('.', names)}\")",
+                        names[0]));
+            }
 
-                if (member == null)
+            int depth = 0;
+
+            var paths = ResolveIncludePaths(names, ref depth, ref entityType).Select(p => p.ToList()).ToList();
+
+            if (!paths.Any(p => p.Count() == names.Length))
+            {
+                throw new InvalidOperationException(
+                    CoreStrings.IncludeBadNavigation(names[depth], entityType.DisplayName()));
+            }
+
+            return paths;
+        }
+
+        private List<List<MemberInfo>> ResolveIncludePaths(string[] names, ref int depth, ref IEntityType entityType)
+        {
+            var navigations = entityType.FindDerivedNavigations(names[depth]);
+
+            if (entityType.FindNavigation(names[depth]) is INavigation nonderived)
+            {
+                navigations = navigations.Prepend(nonderived);
+            }
+
+            var result = new List<List<MemberInfo>>();
+
+            if (!navigations.Any())
+            {
+                return result;
+            }
+
+            navigations = navigations.Distinct();
+
+            depth++;
+
+            if (depth == names.Length)
+            {
+                depth--;
+
+                result.AddRange(navigations.Select(n => new List<MemberInfo> { n.GetReadableMemberInfo() }));
+
+                return result;
+            }
+
+            foreach (var navigation in navigations)
+            {
+                var subtype = navigation.GetTargetType();
+                var success = false;
+                var resolvedSubpaths = ResolveIncludePaths(names, ref depth, ref subtype);
+
+                foreach (var subpath in resolvedSubpaths)
                 {
-                    throw new InvalidOperationException(
-                        CoreStrings.IncludeNotSpecifiedDirectlyOnEntityType(
-                            $"Include(\"{string.Join('.', names)}\")",
-                            name));
+                    success |= (subpath.Count != 0);
+
+                    subpath.Insert(0, navigation.GetReadableMemberInfo());
+
+                    result.Add(subpath);
                 }
 
-                properties.Add((PropertyInfo)member);
-
-                type = member.GetMemberType();
-
-                if (type.IsSequenceType())
+                if (!success)
                 {
-                    type = type.GetSequenceType();
+                    entityType = subtype;
+                }
+
+                if (resolvedSubpaths.Count == 0)
+                {
+                    result.Add(new List<MemberInfo> { navigation.GetReadableMemberInfo() });
                 }
             }
 
-            return properties;
+            return result;
         }
 
-        private IEnumerable<PropertyInfo> ProcessIncludeLambda(LambdaExpression lambdaExpression)
+        private IEnumerable<MemberInfo> ProcessIncludeLambda(LambdaExpression lambdaExpression)
         {
-            var properties = lambdaExpression.GetComplexPropertyAccess();
+            var properties
+                = lambdaExpression
+                    .GetComplexPropertyAccess(nameof(EntityFrameworkQueryableExtensions.Include));
 
-            var entityType 
+            var entityType
                 = model.GetEntityTypes()
                     .SingleOrDefault(t => !t.IsOwned() && t.ClrType == lambdaExpression.Parameters[0].Type);
 
@@ -191,9 +260,17 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         properties.First().Name));
             }
 
-            foreach (var property in lambdaExpression.GetComplexPropertyAccess())
+            foreach (var property in properties)
             {
                 var navigation = entityType.FindNavigation(property);
+
+                if (navigation == null)
+                {
+                    navigation
+                        = entityType
+                            .FindDerivedNavigations(property.Name)
+                            .SingleOrDefault(n => n.GetReadableMemberInfo() == property);
+                }
 
                 if (navigation == null)
                 {
@@ -210,22 +287,39 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         private IEnumerable<(Expression expression, IList<INavigation> path)> BuildIncludeAccessors(
             IEntityType entityType,
             Expression baseExpression,
-            IEnumerable<IEnumerable<PropertyInfo>> paths,
+            IEnumerable<IEnumerable<MemberInfo>> paths,
             IList<INavigation> previousPath)
-        {            
+        {
             foreach (var pathset in paths.Where(p => p.Any()).GroupBy(p => p.First(), p => p.Skip(1)))
             {
-                var includedProperty = pathset.Key;
+                var includedMember = pathset.Key;
 
-                var navigation = entityType.FindNavigation(includedProperty);
+                var navigation = entityType.GetNavigations().FirstOrDefault(n => n.GetReadableMemberInfo().Equals(includedMember));
 
                 if (navigation == null)
                 {
                     // The navigation may be null in some inheritance scenarios.
-                    continue;
+
+                    navigation = (from t in entityType.GetDerivedTypes()
+                                  from n in t.GetNavigations()
+                                  where n.GetReadableMemberInfo().Equals(includedMember)
+                                  select n).FirstOrDefault();
+
+                    if (navigation == null)
+                    {
+                        // TODO: maybe throw?
+                        continue;
+                    }
                 }
 
-                var includedExpression = Expression.MakeMemberAccess(baseExpression, includedProperty) as Expression;
+                var currentBaseExpression = baseExpression;
+
+                if (includedMember.DeclaringType.IsSubclassOf(currentBaseExpression.Type))
+                {
+                    currentBaseExpression = Expression.Convert(currentBaseExpression, includedMember.DeclaringType);
+                }
+
+                var includedExpression = Expression.MakeMemberAccess(currentBaseExpression, includedMember) as Expression;
 
                 var currentPath = previousPath.ToList();
 
@@ -233,9 +327,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 if (pathset.Any(p => p.Any()))
                 {
-                    if (includedProperty.GetMemberType().IsSequenceType())
+                    if (includedMember.GetMemberType().IsSequenceType())
                     {
-                        var sequenceType = includedProperty.GetMemberType().GetSequenceType();
+                        var sequenceType = includedMember.GetMemberType().GetSequenceType();
                         var innerParameter = Expression.Parameter(sequenceType);
 
                         var innerIncludes
@@ -256,15 +350,20 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                 enumerableSelectMethodInfo.MakeGenericMethod(sequenceType, sequenceType),
                                 includedExpression,
                                 Expression.Lambda(includeExpression, innerParameter));
-                        
+
+                        if (includedMember.GetMemberType().IsCollectionType())
+                        {
+                            sequenceExpression = sequenceExpression.AsCollectionType();
+                        }
+
                         yield return (sequenceExpression, currentPath);
                     }
                     else
                     {
-                        var innerIncludes 
+                        var innerIncludes
                             = BuildIncludeAccessors(
-                                navigation.GetTargetType(), 
-                                includedExpression, 
+                                navigation.GetTargetType(),
+                                includedExpression,
                                 pathset,
                                 currentPath);
 

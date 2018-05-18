@@ -21,6 +21,8 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                 case null:
                 case NewExpression _:
                 case MemberInitExpression _:
+                case ExtendedNewExpression _:
+                case ExtendedMemberInitExpression _:
                 case PolymorphicExpression _:
                 case SqlColumnExpression _:
                 case SqlAliasExpression _:
