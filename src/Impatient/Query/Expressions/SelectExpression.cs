@@ -68,6 +68,22 @@ namespace Impatient.Query.Expressions
 
         public bool IsWindowed { get; }
 
+        #region properties for convenience of condition checking
+
+        public bool HasPredicate => Predicate != null;
+
+        public bool HasOffset => Offset != null;
+
+        public bool HasLimit => Limit != null;
+
+        public bool HasOffsetOrLimit => HasOffset || HasLimit;
+
+        public bool HasGrouping => Grouping != null;
+
+        public bool HasOrdering => OrderBy != null;
+
+        #endregion
+
         #region Expression overrides
 
         public override Type Type => Projection.Type;
@@ -114,45 +130,40 @@ namespace Impatient.Query.Expressions
         }
 
         #endregion
+
         public bool RequiresPushdownForLeftSideOfJoin()
         {
-            return Offset != null
-                || Limit != null
-                || IsDistinct
-                || Grouping != null
-                || IsWindowed;
+            return HasOffsetOrLimit || HasGrouping || IsDistinct || IsWindowed;
         }
 
         public bool RequiresPushdownForRightSideOfJoin()
         {
-            return RequiresPushdownForLeftSideOfJoin()
-                || !(Table is AliasedTableExpression)
-                || Predicate != null
-                || OrderBy != null;
+            return RequiresPushdownForLeftSideOfJoin() || !(Table is AliasedTableExpression) || HasPredicate || HasOrdering;
         }
 
         public bool RequiresPushdownForPredicate()
         {
-            return IsWindowed
-                || IsDistinct
-                || Limit != null
-                || Offset != null
-                || Grouping != null;
+            return HasOffsetOrLimit || HasGrouping || IsDistinct || IsWindowed;
         }
 
         public bool RequiresPushdownForLimit()
         {
-            return IsWindowed
-                || IsDistinct
-                || Limit != null;
+            return HasLimit || IsWindowed || IsDistinct;
         }
 
         public bool RequiresPushdownForOffset()
         {
-            return IsWindowed
-                || IsDistinct
-                || Limit != null
-                || Offset != null;
+            return HasOffsetOrLimit || IsDistinct || IsWindowed;
+        }
+
+        public bool RequiresPushdownForGrouping()
+        {
+            return HasOffsetOrLimit || HasGrouping || IsDistinct || IsWindowed;
+        }
+
+        public bool RequiresPushdownForAggregate()
+        {
+            return HasOffsetOrLimit || HasGrouping || IsDistinct || IsWindowed;
         }
 
         public SelectExpression UpdateProjection(ProjectionExpression projection)

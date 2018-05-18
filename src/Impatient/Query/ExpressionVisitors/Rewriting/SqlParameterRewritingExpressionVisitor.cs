@@ -1,11 +1,22 @@
 ﻿using Impatient.Extensions;
 using Impatient.Query.Expressions;
+using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Rewriting
 {
-    public class SqlParameterRewritingExpressionVisitor2 : ExpressionVisitor
+    public class SqlParameterRewritingExpressionVisitor : ExpressionVisitor
     {
+        private readonly ParameterAndExtensionCountingExpressionVisitor countingVisitor;
+        private readonly List<ParameterExpression> targetParameters;
+
+        public SqlParameterRewritingExpressionVisitor(IEnumerable<ParameterExpression> targetParameters)
+        {
+            this.targetParameters = targetParameters.ToList();
+            countingVisitor = new ParameterAndExtensionCountingExpressionVisitor(targetParameters);
+        }
+
         public override Expression Visit(Expression node)
         {
             switch (node)
@@ -16,15 +27,37 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     return node;
                 }
 
+                case ClientProjectionExpression clientProjectionExpression:
+                {
+                    var parameters = clientProjectionExpression.ResultLambda.Parameters;
+
+                    var index = targetParameters.Count;
+
+                    targetParameters.AddRange(parameters);
+
+                    var surrogate = new RelationalQueryExpressionVisitor(this);
+
+                    var result 
+                        = new ClientProjectionExpression(
+                            clientProjectionExpression.ServerProjection,
+                            Expression.Lambda(
+                                surrogate.Visit(clientProjectionExpression.ResultLambda.Body), 
+                                parameters));
+
+                    targetParameters.RemoveRange(index, parameters.Count);
+
+                    return result;
+                }
+
                 default:
                 {
                     if (node.Type.IsScalarType())
                     {
-                        var verifyingVisitor = new ConstraintVerifyingExpressionVisitor();
+                        var countingVisitor = new ParameterAndExtensionCountingExpressionVisitor(targetParameters);
 
-                        verifyingVisitor.Visit(node);
+                        countingVisitor.Visit(node);
 
-                        if (verifyingVisitor.Verified)
+                        if (countingVisitor.ParameterCount > 0 && countingVisitor.ExtensionCount == 0)
                         {
                             return new SqlParameterExpression(node);
                         }
@@ -35,29 +68,69 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
             }
         }
 
-        private class ConstraintVerifyingExpressionVisitor : ExpressionVisitor
+        private class ParameterAndExtensionCountingExpressionVisitor : ExpressionVisitor
         {
-            private bool foundStaticReference;
+            private readonly IEnumerable<ParameterExpression> targetParameters;
 
-            private bool foundExtension;
+            public int ParameterCount { get; private set; }
 
-            public bool Verified => foundStaticReference && !foundExtension;
+            public int ExtensionCount { get; private set; }
 
-            protected override Expression VisitMember(MemberExpression node)
+            public ParameterAndExtensionCountingExpressionVisitor(IEnumerable<ParameterExpression> targetParameters)
             {
-                if (node.Expression == null)
-                {
-                    foundStaticReference = true;
-                }
-
-                return base.VisitMember(node);
+                this.targetParameters = targetParameters;
             }
 
-            protected override Expression VisitExtension(Expression node)
+            public override Expression Visit(Expression node)
             {
-                foundExtension = true;
+                if (node == null)
+                {
+                    return node;
+                }
 
-                return base.VisitExtension(node);
+                switch (node.NodeType)
+                {
+                    case ExpressionType.Parameter
+                    when targetParameters.Contains(node):
+                    {
+                        ParameterCount++;
+                        break;
+                    }
+
+                    case ExpressionType.Extension:
+                    {
+                        ExtensionCount++;
+                        break;
+                    }
+                }
+
+                return base.Visit(node);
+            }
+        }
+
+        private class RelationalQueryExpressionVisitor : ExpressionVisitor
+        {
+            private readonly ExpressionVisitor visitor;
+
+            public RelationalQueryExpressionVisitor(ExpressionVisitor visitor)
+            {
+                this.visitor = visitor;
+            }
+
+            public override Expression Visit(Expression node)
+            {
+                switch (node)
+                {
+                    case RelationalQueryExpression _:
+                    {
+                        return visitor.Visit(node);
+                    }
+
+                    default:
+                    {
+                        return base.Visit(node);
+                    }
+                }
             }
         }
     }

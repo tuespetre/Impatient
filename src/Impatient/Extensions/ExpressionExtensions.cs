@@ -601,5 +601,37 @@ namespace Impatient.Extensions
 
             return referenceCountingVisitor.ReferenceCount > 0;
         }
+
+        public static bool ContainsAggregateOrSubquery(this Expression expression)
+        {
+            var visitor = new AggregateOrSubqueryFindingExpressionVisitor();
+
+            visitor.Visit(expression);
+
+            return visitor.FoundAggregateOrSubquery;
+        }
+
+        private class AggregateOrSubqueryFindingExpressionVisitor : ExpressionVisitor
+        {
+            public bool FoundAggregateOrSubquery { get; private set; }
+
+            public override Expression Visit(Expression node)
+            {
+                if (FoundAggregateOrSubquery || node is SqlColumnExpression)
+                {
+                    return node;
+                }
+                else if (node is SqlAggregateExpression || node is SelectExpression)
+                {
+                    FoundAggregateOrSubquery = true;
+
+                    return node;
+                }
+                else
+                {
+                    return base.Visit(node);
+                }
+            }
+        }
     }
 }
