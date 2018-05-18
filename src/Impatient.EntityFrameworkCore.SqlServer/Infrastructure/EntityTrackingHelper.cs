@@ -287,6 +287,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
                 {
                     entry.SetIsLoaded(include, true);
 
+                    // Test that demonstrates the necessity of fixup:
+                    // Include_collection_principal_already_tracked
                     FixupNavigation(include, entity, cached);
                 }
             }
