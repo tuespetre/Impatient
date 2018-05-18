@@ -6,11 +6,11 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionPrefix>0.2.0</VersionPrefix>
     <Authors>tuespetre</Authors>
     <PackageProjectUrl>https://github.com/tuespetre/Impatient</PackageProjectUrl>
     <RepositoryUrl>https://github.com/tuespetre/Impatient</RepositoryUrl>
-    <Description>A library that provides the infrastructure needed to create powerful LINQ query providers that map to SQL.</Description>
+    <Description>A library that provides the infrastructure needed to build powerful LINQ query providers for SQL databases.</Description>
     <PackageTags>LINQ;ORM;SQL</PackageTags>
   </PropertyGroup>
 

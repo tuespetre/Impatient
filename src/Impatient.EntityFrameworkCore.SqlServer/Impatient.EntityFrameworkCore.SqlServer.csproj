@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
@@ -6,11 +6,12 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <VersionPrefix>2.0.0</VersionPrefix>
+    <VersionPrefix>2.1.0</VersionPrefix>
+    <VersionSuffix>rc1-final</VersionSuffix>
     <Authors>tuespetre</Authors>
     <PackageProjectUrl>https://github.com/tuespetre/Impatient</PackageProjectUrl>
     <RepositoryUrl>https://github.com/tuespetre/Impatient</RepositoryUrl>
-    <Description>A plugin for Microsoft.EntityFrameworkCore.SqlServer to use Impatient for its query compiler.</Description>
+    <Description>An alternative query compiler for Microsoft.EntityFrameworkCore.SqlServer that supports complex queries and operators and FOR JSON.</Description>
     <PackageTags>EF;EF Core;EFCore;Entity Framework Core;LINQ;ORM;SQL</PackageTags>
   </PropertyGroup>
 
