@@ -944,7 +944,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                        let lambda = Expression.Lambda(unresolved, predicateLambda.Parameters)
                        let resolved = lambda.ExpandParameters(expansionParameters).VisitWith(ServerPostExpansionVisitors)
                        let translatable = IsTranslatable(resolved)
-                       let expression = translatable ? resolved : unresolved
+                       let expression = translatable ? resolved : unresolved.VisitWith(ClientPostExpansionVisitors)
                        select new { expression, translatable }).ToArray();
 
                 if (parts.Any(p => p.translatable))
@@ -1048,12 +1048,18 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var keySelectorLambda = node.Arguments[1].UnwrapLambda();
 
-            if (!keySelectorLambda.Body.References(keySelectorLambda.Parameters[0]))
+            var leafGatherer = new ProjectionLeafGatheringExpressionVisitor();
+
+            leafGatherer.Visit(keySelectorLambda.Body);
+
+            if (!leafGatherer.GatheredExpressions.Values.All(e => e.References(keySelectorLambda.Parameters[0])))
             {
                 // SQL Server Says:
                 // Msg 164, Level 15, State 1, Line 3
                 // Each GROUP BY expression must contain at least one column that is not an outer reference.
                 return fallbackToEnumerable();
+
+                // TODO: Push down into a subquery instead of falling back to enumerable.
             }
 
             if (outerSelectExpression.RequiresPushdownForGrouping())
@@ -1763,6 +1769,15 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             var outerSelectExpression = outerQuery.SelectExpression;
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var selectorLambda = node.Arguments[1].UnwrapLambda();
+            
+            if (!selectorLambda.Body.References(selectorLambda.Parameters[0]))
+            {
+                // SQL Server Says:
+                // The ORDER BY position number 42 is out of range of the number of items in the select list.
+                return fallbackToEnumerable();
+
+                // TODO: Push down into a subquery instead of falling back to enumerable.
+            }
 
             if (outerSelectExpression.HasOffsetOrLimit || outerSelectExpression.IsDistinct)
             {

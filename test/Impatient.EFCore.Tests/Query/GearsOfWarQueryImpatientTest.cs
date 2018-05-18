@@ -95,6 +95,18 @@ namespace Impatient.EFCore.Tests.Query
             base.Correlated_collections_on_left_join_with_predicate();
         }
 
+        [Fact(Skip = EFCoreSkipReasons.Punt)]
+        public override void Select_subquery_boolean_empty_with_pushdown()
+        {
+            base.Select_subquery_boolean_empty_with_pushdown();
+        }
+
+        [Fact(Skip = EFCoreSkipReasons.Punt)]
+        public override void Select_subquery_distinct_singleordefault_boolean_empty_with_pushdown()
+        {
+            base.Select_subquery_distinct_singleordefault_boolean_empty_with_pushdown();
+        }
+
         #endregion
 
         [Fact]

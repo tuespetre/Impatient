@@ -7,9 +7,9 @@ using Xunit;
 
 namespace Impatient.EFCore.Tests.Query
 {
-    public class ComplexNavigationsOwnedQueryImpatientTest : ComplexNavigationsOwnedQueryTestBase<ComplexNavigationsOwnedQueryImpatientFixture>
+    public class ComplexNavigationsWeakQueryImpatientTest : ComplexNavigationsWeakQueryTestBase<ComplexNavigationsWeakQueryImpatientFixture>
     {
-        public ComplexNavigationsOwnedQueryImpatientTest(ComplexNavigationsOwnedQueryImpatientFixture fixture) : base(fixture)
+        public ComplexNavigationsWeakQueryImpatientTest(ComplexNavigationsWeakQueryImpatientFixture fixture) : base(fixture)
         {
         }
 
@@ -73,7 +73,7 @@ namespace Impatient.EFCore.Tests.Query
         }
     }
 
-    public class ComplexNavigationsOwnedQueryImpatientFixture : ComplexNavigationsOwnedQueryRelationalFixtureBase
+    public class ComplexNavigationsWeakQueryImpatientFixture : ComplexNavigationsWeakQueryRelationalFixtureBase
     {
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }

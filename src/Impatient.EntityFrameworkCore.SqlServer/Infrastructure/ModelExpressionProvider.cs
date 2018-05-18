@@ -83,7 +83,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         public IEnumerable<PrimaryKeyDescriptor> CreatePrimaryKeyDescriptors(DbContext context)
         {
             return from t in context.Model.GetEntityTypes()
-                   where !t.IsOwned()
+                   //where !t.IsOwned()
                    let k = t.FindPrimaryKey()
                    where k != null
                    select new PrimaryKeyDescriptor(

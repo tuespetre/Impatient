@@ -1033,13 +1033,16 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
         protected virtual Expression VisitSqlAggregateExpression(SqlAggregateExpression sqlAggregateExpression)
         {
-            /*var mapping = FindTypeMapping(sqlAggregateExpression.Expression);
-            var useExplicitCast = mapping != null && mapping.SourceType != sqlAggregateExpression.Type.UnwrapNullableType();
+            var aggregatedExpression = sqlAggregateExpression.Expression;
 
-            if (useExplicitCast)
+            switch (aggregatedExpression)
             {
-                Builder.Append("CAST(");
-            }*/
+                case ConstantExpression constantExpression:
+                {
+                    aggregatedExpression = new SqlCastExpression(constantExpression, constantExpression.Type);
+                    break;
+                }
+            }
 
             Builder.Append(sqlAggregateExpression.FunctionName);
             Builder.Append("(");
@@ -1049,14 +1052,9 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 Builder.Append("DISTINCT ");
             }
 
-            Visit(sqlAggregateExpression.Expression);
+            Visit(aggregatedExpression);
 
             Builder.Append(")");
-
-            /*if (useExplicitCast)
-            {
-                Builder.Append($" AS {mapping.DbTypeName})");
-            }*/
 
             return sqlAggregateExpression;
         }

@@ -110,5 +110,38 @@ namespace Impatient.EFCore.Tests.Query
                         }),
                 entryCount: 0);
         }
+
+        [Fact]
+        [Trait("Impatient", "EFCore missing entries")]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override Task Join_GroupBy_Aggregate_in_subquery()
+        {
+            return AssertQuery<Order, Customer>(
+                (os, cs) =>
+                    from o in os.Where(o => o.OrderID < 10400)
+                    join i in (from c in cs
+                               join a in os.GroupBy(o => o.CustomerID)
+                                           .Where(g => g.Count() > 5)
+                                           .Select(g => new { CustomerID = g.Key, LastOrderID = g.Max(o => o.OrderID) })
+                                   on c.CustomerID equals a.CustomerID
+                               select new { c, a.LastOrderID })
+                        on o.CustomerID equals i.c.CustomerID
+                    select new { o, i.c, i.c.CustomerID },
+                entryCount: 187);
+        }
+
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override Task GroupBy_Select_First_GroupBy()
+        {
+            return AssertQuery<Customer>(
+                cs =>
+                    cs.GroupBy(c => c.City)
+                      .Select(g => g.OrderBy(c => c.CustomerID).First())
+                      .GroupBy(c => c.ContactName),
+                elementSorter: GroupingSorter<string, object>(),
+                elementAsserter: GroupingAsserter<string, dynamic>(d => d.CustomerID),
+                entryCount: 91);
+        }
     }
 }

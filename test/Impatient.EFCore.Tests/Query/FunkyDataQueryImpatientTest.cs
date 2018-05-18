@@ -85,7 +85,7 @@ namespace Impatient.EFCore.Tests.Query
         }
     }
 
-    public class FunkyDataQueryImpatientFixture : FunkyDataQueryFixtureBase
+    public class FunkyDataQueryImpatientFixture : FunkyDataQueryTestBase<FunkyDataQueryImpatientFixture>.FunkyDataQueryFixtureBase
     {
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 

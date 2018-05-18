@@ -4,6 +4,7 @@ using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Optimizing;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Query.Internal;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -75,6 +76,21 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
 
             return base.InlineQueryable(queryable);
+        }
+
+        protected override Expression VisitConstant(ConstantExpression node)
+        {
+            if (node.Value is IQueryable queryable && queryable.Provider is IAsyncQueryProvider)
+            {
+                if (ReferenceEquals(queryable.Provider, queryProvider))
+                {
+                    return InlineQueryable(queryable);
+                }
+
+                throw new InvalidOperationException(CoreStrings.ErrorInvalidQueryable);
+            }
+
+            return node;
         }
     }
 }

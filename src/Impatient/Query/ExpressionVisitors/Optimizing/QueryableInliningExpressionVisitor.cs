@@ -11,7 +11,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 {
     public class QueryableInliningExpressionVisitor : PartialEvaluatingExpressionVisitor
     {
-        private readonly IQueryProvider queryProvider;
+        protected readonly IQueryProvider queryProvider;
         private readonly IDictionary<object, ParameterExpression> parameterMapping;
         private readonly ExpressionVisitor replacingVisitor;
 

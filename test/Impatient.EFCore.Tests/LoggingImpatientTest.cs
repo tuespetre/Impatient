@@ -6,7 +6,7 @@ using System;
 namespace Impatient.EFCore.Tests
 {
     // *shrug*
-    public class LoggingImpatientTest : LoggingRelationalTest<SqlServerDbContextOptionsBuilder, SqlServerOptionsExtension>
+    public class LoggingImpatientTest : LoggingRelationalTestBase<SqlServerDbContextOptionsBuilder, SqlServerOptionsExtension>
     {
         protected override string ProviderName => "Microsoft.EntityFrameworkCore.SqlServer";
 
