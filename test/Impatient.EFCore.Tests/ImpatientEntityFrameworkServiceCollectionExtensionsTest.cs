@@ -5,7 +5,7 @@ using System.Data.SqlClient;
 
 namespace Impatient.EFCore.Tests
 {
-    public class ImpatientEntityFrameworkServiceCollectionExtensionsTest : EntityFrameworkServiceCollectionExtensionsTestBase
+    public class ImpatientEntityFrameworkServiceCollectionExtensionsTest : RelationalServiceCollectionExtensionsTestBase
     {
         public ImpatientEntityFrameworkServiceCollectionExtensionsTest() 
             : base(ImpatientTestHelpers.Instance)
