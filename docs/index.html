@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html class="home">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <link href="https://fonts.googleapis.com/css?family=Enriqueta:400,700|Nunito:400,700" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+    <header class="snark">
+        <div class="spanx">
+            <h1>Impatient</h1>
+            <p id="tagline">
+                Seriously powerful LINQ query translation. Now.
+            </p>
+            <p id="license">
+                Forever free &amp; open source. Licensed under MIT.
+            </p>
+            <hr>
+            <nav>
+                <a href="docs#get-started">Get Started</a>
+                <span role="separator">&#x25FC;</span>
+                <a href="docs">Documentation</a>
+                <span role="separator">&#x25FC;</span>
+                <a href="https://github.com/tuespetre/Impatient">Source Code</a>
+            </nav>
+        </div>
+    </header>
+    <main>
+        <div class="intrigue">
+            <div class="spanx">
+                <h1 class="loudnoises">
+                    Use Impatient with EF Core for SQL Server to <em>get the most</em> out of LINQ queries.
+                </h1>
+                <div class="samplez">
+                    <div class="csharp">
+                        <h1 class="snark">C#</h1>
+                        <pre>from o in os.Where(o =&gt; o.OrderID &lt; 10400)
+join i in (from c in cs
+            join a in os.GroupBy(o =&gt; o.CustomerID)
+                        .Where(g =&gt; g.Count() &amp;gt; 5)
+                        .Select(g =&gt; new { CustomerID = g.Key, LastOrderID = g.Max(o =&gt; o.OrderID) })
+                on c.CustomerID equals a.CustomerID
+            select new { c, a.LastOrderID })
+    on o.CustomerID equals i.c.CustomerID
+select new { o, i.c, i.c.CustomerID }</pre>
+                    </div>
+                    <div class="efcore-sql">
+                        <h1 class="snark">EF Core</h1>
+                        <pre>SELECT [c0].[CustomerID], [c0].[Address], [c0].[City], [c0].[CompanyName], [c0].[ContactName], [c0].[ContactTitle], [c0].[Country], [c0].[Fax], [c0].[Phone], [c0].[PostalCode], [c0].[Region], [t0].[CustomerID], [t0].[LastOrderID]
+FROM [Customers] AS [c0]
+INNER JOIN (
+    SELECT [o1].[CustomerID], MAX([o1].[OrderID]) AS [LastOrderID]
+    FROM [Orders] AS [o1]
+    GROUP BY [o1].[CustomerID]
+    HAVING COUNT(*) &gt; 5
+) AS [t0] ON [c0].[CustomerID] = [t0].[CustomerID]
+
+-- MULTIPLE QUERIES, HUGE MANATEES
+
+SELECT [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate]
+FROM [Orders] AS [o]
+WHERE [o].[OrderID] &lt; 10400</pre>
+                    </div>
+                    <div class="impatient-sql">
+                        <h1 class="snark">Impatient</h1>
+                        <pre>SELECT [o].[OrderID] AS [o.OrderID], [o].[CustomerID] AS [o.CustomerID], [o].[EmployeeID] AS [o.EmployeeID], [o].[OrderDate] AS [o.OrderDate], [i].[c.CustomerID] AS [c.CustomerID], [i].[c.Address] AS [c.Address], [i].[c.City] AS [c.City], [i].[c.CompanyName] AS [c.CompanyName], [i].[c.ContactName] AS [c.ContactName], [i].[c.ContactTitle] AS [c.ContactTitle], [i].[c.Country] AS [c.Country], [i].[c.Fax] AS [c.Fax], [i].[c.Phone] AS [c.Phone], [i].[c.PostalCode] AS [c.PostalCode], [i].[c.Region] AS [c.Region], [i].[c.CustomerID] AS [CustomerID]
+FROM [Orders] AS [o]
+INNER JOIN (
+    SELECT [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Country] AS [c.Country], [c].[Fax] AS [c.Fax], [c].[Phone] AS [c.Phone], [c].[PostalCode] AS [c.PostalCode], [c].[Region] AS [c.Region], [a].[LastOrderID] AS [LastOrderID]
+    FROM [Customers] AS [c]
+    INNER JOIN (
+        SELECT [g].[Key] AS [CustomerID], (
+            SELECT MAX([g_0].[OrderID])
+            FROM [Orders] AS [g_0]
+            WHERE (([g].[Key] IS NULL AND [g_0].[CustomerID] IS NULL) OR ([g].[Key] = [g_0].[CustomerID]))
+        ) AS [LastOrderID]
+        FROM (
+            SELECT [g_1].[CustomerID] AS [Key]
+            FROM [Orders] AS [g_1]
+            GROUP BY [g_1].[CustomerID]
+        ) AS [g]
+        WHERE (
+            SELECT COUNT(*)
+            FROM [Orders] AS [g_0]
+            WHERE (([g].[Key] IS NULL AND [g_0].[CustomerID] IS NULL) OR ([g].[Key] = [g_0].[CustomerID]))
+        ) &gt; 5
+    ) AS [a] ON [c].[CustomerID] = [a].[CustomerID]
+) AS [i] ON [o].[CustomerID] = [i].[c.CustomerID]
+WHERE [o].[OrderID] &lt; 10400</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="luscious">
+            <div class="spanx">
+                <h1 class="loudnoises">
+                    Impatient speaks <code>JSON</code>, so you can fetch dense result sets <em>in one trip.</em>
+                </h1>
+                <div class="samplez">
+                    <div class="csharp">
+                        <h1 class="intrigue">C#</h1>
+                        <pre>from e in employees
+select new
+{
+    e.FirstName,
+    e.LastName,
+    RecentOrders = 
+        (from o in e.Orders
+         orderby o.OrderDate descending
+         select o).Take(5).ToList(),
+    TopCustomers = 
+        (from o in e.Orders
+         from d in o.OrderDetails
+         group d by o.Customer into g
+         let total = g.Sum(d =&gt; d.UnitPrice * d.Quantity * (decimal)(1 - d.Discount))
+         orderby total descending
+         select new
+         {
+             g.Key.ContactName,
+             g.Key.CompanyName,
+             total
+         }).Take(5).ToList()
+}</pre>
+                    </div>
+                    <div class="efcore-sql">
+                        <h1>EF Core</h1>
+                        <pre>SELECT [e].[FirstName], [e].[LastName], [e].[EmployeeID]
+FROM [Employees] AS [e]
+
+@_outer_EmployeeID=&apos;1&apos;
+
+SELECT TOP(5) [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate]
+FROM [Orders] AS [o]
+WHERE [o].[EmployeeID] = @_outer_EmployeeID
+ORDER BY [o].[OrderDate] DESC
+
+@_outer_EmployeeID2=&apos;1&apos;
+
+SELECT [o.Customer0].[CustomerID], [o.Customer0].[Address], [o.Customer0].[City], [o.Customer0].[CompanyName], [o.Customer0].[ContactName], [o.Customer0].[ContactTitle], [o.Customer0].[Country], [o.Customer0].[Fax], [o.Customer0].[Phone], [o.Customer0].[PostalCode], [o.Customer0].[Region], [o.OrderDetails0].[OrderID], [o.OrderDetails0].[ProductID], [o.OrderDetails0].[Discount], [o.OrderDetails0].[Quantity], [o.OrderDetails0].[UnitPrice]
+FROM [Orders] AS [o1]
+LEFT JOIN [Customers] AS [o.Customer0] ON [o1].[CustomerID] = [o.Customer0].[CustomerID]
+INNER JOIN [Order Details] AS [o.OrderDetails0] ON [o1].[OrderID] = [o.OrderDetails0].[OrderID]
+WHERE [o1].[EmployeeID] = @_outer_EmployeeID2
+
+@_outer_EmployeeID=&apos;2&apos;
+
+SELECT TOP(5) [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate]
+FROM [Orders] AS [o]
+WHERE [o].[EmployeeID] = @_outer_EmployeeID
+ORDER BY [o].[OrderDate] DESC
+
+@_outer_EmployeeID2=&apos;2&apos;
+
+SELECT [o.Customer0].[CustomerID], [o.Customer0].[Address], [o.Customer0].[City], [o.Customer0].[CompanyName], [o.Customer0].[ContactName], [o.Customer0].[ContactTitle], [o.Customer0].[Country], [o.Customer0].[Fax], [o.Customer0].[Phone], [o.Customer0].[PostalCode], [o.Customer0].[Region], [o.OrderDetails0].[OrderID], [o.OrderDetails0].[ProductID], [o.OrderDetails0].[Discount], [o.OrderDetails0].[Quantity], [o.OrderDetails0].[UnitPrice]
+FROM [Orders] AS [o1]
+LEFT JOIN [Customers] AS [o.Customer0] ON [o1].[CustomerID] = [o.Customer0].[CustomerID]
+INNER JOIN [Order Details] AS [o.OrderDetails0] ON [o1].[OrderID] = [o.OrderDetails0].[OrderID]
+WHERE [o1].[EmployeeID] = @_outer_EmployeeID2
+
+@_outer_EmployeeID=&apos;3&apos;
+
+SELECT TOP(5) [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate]
+FROM [Orders] AS [o]
+WHERE [o].[EmployeeID] = @_outer_EmployeeID
+ORDER BY [o].[OrderDate] DESC
+
+@_outer_EmployeeID2=&apos;3&apos;
+
+SELECT [o.Customer0].[CustomerID], [o.Customer0].[Address], [o.Customer0].[City], [o.Customer0].[CompanyName], [o.Customer0].[ContactName], [o.Customer0].[ContactTitle], [o.Customer0].[Country], [o.Customer0].[Fax], [o.Customer0].[Phone], [o.Customer0].[PostalCode], [o.Customer0].[Region], [o.OrderDetails0].[OrderID], [o.OrderDetails0].[ProductID], [o.OrderDetails0].[Discount], [o.OrderDetails0].[Quantity], [o.OrderDetails0].[UnitPrice]
+FROM [Orders] AS [o1]
+LEFT JOIN [Customers] AS [o.Customer0] ON [o1].[CustomerID] = [o.Customer0].[CustomerID]
+INNER JOIN [Order Details] AS [o.OrderDetails0] ON [o1].[OrderID] = [o.OrderDetails0].[OrderID]
+WHERE [o1].[EmployeeID] = @_outer_EmployeeID2
+
+@_outer_EmployeeID=&apos;4&apos;
+
+SELECT TOP(5) [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate]
+FROM [Orders] AS [o]
+WHERE [o].[EmployeeID] = @_outer_EmployeeID
+ORDER BY [o].[OrderDate] DESC
+
+@_outer_EmployeeID2=&apos;4&apos;
+
+SELECT [o.Customer0].[CustomerID], [o.Customer0].[Address], [o.Customer0].[City], [o.Customer0].[CompanyName], [o.Customer0].[ContactName], [o.Customer0].[ContactTitle], [o.Customer0].[Country], [o.Customer0].[Fax], [o.Customer0].[Phone], [o.Customer0].[PostalCode], [o.Customer0].[Region], [o.OrderDetails0].[OrderID], [o.OrderDetails0].[ProductID], [o.OrderDetails0].[Discount], [o.OrderDetails0].[Quantity], [o.OrderDetails0].[UnitPrice]
+FROM [Orders] AS [o1]
+LEFT JOIN [Customers] AS [o.Customer0] ON [o1].[CustomerID] = [o.Customer0].[CustomerID]
+INNER JOIN [Order Details] AS [o.OrderDetails0] ON [o1].[OrderID] = [o.OrderDetails0].[OrderID]
+WHERE [o1].[EmployeeID] = @_outer_EmployeeID2
+
+@_outer_EmployeeID=&apos;5&apos;
+
+SELECT TOP(5) [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate]
+FROM [Orders] AS [o]
+WHERE [o].[EmployeeID] = @_outer_EmployeeID
+ORDER BY [o].[OrderDate] DESC
+
+@_outer_EmployeeID2=&apos;5&apos;
+
+SELECT [o.Customer0].[CustomerID], [o.Customer0].[Address], [o.Customer0].[City], [o.Customer0].[CompanyName], [o.Customer0].[ContactName], [o.Customer0].[ContactTitle], [o.Customer0].[Country], [o.Customer0].[Fax], [o.Customer0].[Phone], [o.Customer0].[PostalCode], [o.Customer0].[Region], [o.OrderDetails0].[OrderID], [o.OrderDetails0].[ProductID], [o.OrderDetails0].[Discount], [o.OrderDetails0].[Quantity], [o.OrderDetails0].[UnitPrice]
+FROM [Orders] AS [o1]
+LEFT JOIN [Customers] AS [o.Customer0] ON [o1].[CustomerID] = [o.Customer0].[CustomerID]
+INNER JOIN [Order Details] AS [o.OrderDetails0] ON [o1].[OrderID] = [o.OrderDetails0].[OrderID]
+WHERE [o1].[EmployeeID] = @_outer_EmployeeID2
+
+@_outer_EmployeeID=&apos;6&apos;
+
+SELECT TOP(5) [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate]
+FROM [Orders] AS [o]
+WHERE [o].[EmployeeID] = @_outer_EmployeeID
+ORDER BY [o].[OrderDate] DESC
+
+@_outer_EmployeeID2=&apos;6&apos;
+
+SELECT [o.Customer0].[CustomerID], [o.Customer0].[Address], [o.Customer0].[City], [o.Customer0].[CompanyName], [o.Customer0].[ContactName], [o.Customer0].[ContactTitle], [o.Customer0].[Country], [o.Customer0].[Fax], [o.Customer0].[Phone], [o.Customer0].[PostalCode], [o.Customer0].[Region], [o.OrderDetails0].[OrderID], [o.OrderDetails0].[ProductID], [o.OrderDetails0].[Discount], [o.OrderDetails0].[Quantity], [o.OrderDetails0].[UnitPrice]
+FROM [Orders] AS [o1]
+LEFT JOIN [Customers] AS [o.Customer0] ON [o1].[CustomerID] = [o.Customer0].[CustomerID]
+INNER JOIN [Order Details] AS [o.OrderDetails0] ON [o1].[OrderID] = [o.OrderDetails0].[OrderID]
+WHERE [o1].[EmployeeID] = @_outer_EmployeeID2
+
+@_outer_EmployeeID=&apos;7&apos;
+
+SELECT TOP(5) [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate]
+FROM [Orders] AS [o]
+WHERE [o].[EmployeeID] = @_outer_EmployeeID
+ORDER BY [o].[OrderDate] DESC
+
+@_outer_EmployeeID2=&apos;7&apos;
+
+SELECT [o.Customer0].[CustomerID], [o.Customer0].[Address], [o.Customer0].[City], [o.Customer0].[CompanyName], [o.Customer0].[ContactName], [o.Customer0].[ContactTitle], [o.Customer0].[Country], [o.Customer0].[Fax], [o.Customer0].[Phone], [o.Customer0].[PostalCode], [o.Customer0].[Region], [o.OrderDetails0].[OrderID], [o.OrderDetails0].[ProductID], [o.OrderDetails0].[Discount], [o.OrderDetails0].[Quantity], [o.OrderDetails0].[UnitPrice]
+FROM [Orders] AS [o1]
+LEFT JOIN [Customers] AS [o.Customer0] ON [o1].[CustomerID] = [o.Customer0].[CustomerID]
+INNER JOIN [Order Details] AS [o.OrderDetails0] ON [o1].[OrderID] = [o.OrderDetails0].[OrderID]
+WHERE [o1].[EmployeeID] = @_outer_EmployeeID2
+
+@_outer_EmployeeID=&apos;8&apos;
+
+SELECT TOP(5) [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate]
+FROM [Orders] AS [o]
+WHERE [o].[EmployeeID] = @_outer_EmployeeID
+ORDER BY [o].[OrderDate] DESC
+
+@_outer_EmployeeID2=&apos;8&apos;
+
+SELECT [o.Customer0].[CustomerID], [o.Customer0].[Address], [o.Customer0].[City], [o.Customer0].[CompanyName], [o.Customer0].[ContactName], [o.Customer0].[ContactTitle], [o.Customer0].[Country], [o.Customer0].[Fax], [o.Customer0].[Phone], [o.Customer0].[PostalCode], [o.Customer0].[Region], [o.OrderDetails0].[OrderID], [o.OrderDetails0].[ProductID], [o.OrderDetails0].[Discount], [o.OrderDetails0].[Quantity], [o.OrderDetails0].[UnitPrice]
+FROM [Orders] AS [o1]
+LEFT JOIN [Customers] AS [o.Customer0] ON [o1].[CustomerID] = [o.Customer0].[CustomerID]
+INNER JOIN [Order Details] AS [o.OrderDetails0] ON [o1].[OrderID] = [o.OrderDetails0].[OrderID]
+WHERE [o1].[EmployeeID] = @_outer_EmployeeID2
+
+@_outer_EmployeeID=&apos;9&apos;
+
+SELECT TOP(5) [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate]
+FROM [Orders] AS [o]
+WHERE [o].[EmployeeID] = @_outer_EmployeeID
+ORDER BY [o].[OrderDate] DESC
+
+@_outer_EmployeeID2=&apos;9&apos;
+
+SELECT [o.Customer0].[CustomerID], [o.Customer0].[Address], [o.Customer0].[City], [o.Customer0].[CompanyName], [o.Customer0].[ContactName], [o.Customer0].[ContactTitle], [o.Customer0].[Country], [o.Customer0].[Fax], [o.Customer0].[Phone], [o.Customer0].[PostalCode], [o.Customer0].[Region], [o.OrderDetails0].[OrderID], [o.OrderDetails0].[ProductID], [o.OrderDetails0].[Discount], [o.OrderDetails0].[Quantity], [o.OrderDetails0].[UnitPrice]
+FROM [Orders] AS [o1]
+LEFT JOIN [Customers] AS [o.Customer0] ON [o1].[CustomerID] = [o.Customer0].[CustomerID]
+INNER JOIN [Order Details] AS [o.OrderDetails0] ON [o1].[OrderID] = [o.OrderDetails0].[OrderID]
+WHERE [o1].[EmployeeID] = @_outer_EmployeeID2</pre>
+                    </div>
+                    <div class="impatient-sql">
+                        <h1 class="intrigue">Impatient</h1>
+                        <pre>SELECT [e].[FirstName] AS [FirstName], [e].[LastName] AS [LastName], (
+    SELECT TOP (5) [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
+    FROM [Orders] AS [o]
+    WHERE [o].[EmployeeID] = [e].[EmployeeID]
+    ORDER BY [o].[OrderDate] DESC
+    FOR JSON PATH
+) AS [RecentOrders], (
+    SELECT TOP (5) [c].[ContactName] AS [ContactName], [c].[CompanyName] AS [CompanyName], SUM(([o_0].[UnitPrice] * CAST([o_0].[Quantity] AS decimal(18, 2))) * CAST(1 - [o_0].[Discount] AS decimal(18, 2))) AS [total]
+    FROM [Orders] AS [o_1]
+    INNER JOIN [Order Details] AS [o_0] ON [o_1].[OrderID] = [o_0].[OrderID]
+    LEFT JOIN (
+        SELECT [c_0].[CustomerID] AS [CustomerID], [c_0].[Address] AS [Address], [c_0].[City] AS [City], [c_0].[CompanyName] AS [CompanyName], [c_0].[ContactName] AS [ContactName], [c_0].[ContactTitle] AS [ContactTitle], [c_0].[Country] AS [Country], [c_0].[Fax] AS [Fax], [c_0].[Phone] AS [Phone], [c_0].[PostalCode] AS [PostalCode], [c_0].[Region] AS [Region]
+        FROM [Customers] AS [c_0]
+    ) AS [c] ON [o_1].[CustomerID] = [c].[CustomerID]
+    WHERE [o_1].[EmployeeID] = [e].[EmployeeID]
+    GROUP BY [c].[CustomerID], [c].[Address], [c].[City], [c].[CompanyName], [c].[ContactName], [c].[ContactTitle], [c].[Country], [c].[Fax], [c].[Phone], [c].[PostalCode], [c].[Region]
+    ORDER BY SUM(([o_0].[UnitPrice] * CAST([o_0].[Quantity] AS decimal(18, 2))) * CAST(1 - [o_0].[Discount] AS decimal(18, 2))) DESC
+    FOR JSON PATH
+) AS [TopCustomers]
+FROM [Employees] AS [e]</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="snark">
+            <div class="spanx">
+                <h1 class="loudnoises">
+                    Impatient's got you covered, <em>from <code>All</code> to <code>Zip</code>.</em>
+                </h1>
+                <div class="featurez">
+                    <div>
+                        <h1>Translations for most operators</h1>
+                        <ul>
+                            <li>All of the query operators you would expect, as well as...
+                            <li><code>Select</code>, <code>SelectMany</code>, and <code>Where</code> with index arguments
+                            <li><code>Concat</code>, <code>Except</code>, <code>Intersect</code>, and <code>Union</code>
+                            <li><code>SkipWhile</code> and <code>TakeWhile</code>, with or without index arguments
+                            <li><code>SequenceEqual</code> and <code>Zip</code>
+                            <li>Even more, with fallback to client evaluation when translation is not possible
+                        </ul>
+                    </div>
+                    <div>
+                        <h1>Support for database-native JSON</h1>
+                        <ul>
+                            <li>Materialize nested collections and complex-type columns within results instead of issuing n+1 queries
+                            <li>Filter on properties of JSON objects
+                            <li>Query against JSON arrays, treating them as if they were any other queryable sequence
+                        </ul>
+                    </div>
+                    <div>
+                        <h1>Support for most EF Core 2.1 features</h1>
+                        <ul>
+                            <li><code>_____Async</code> methods
+                            <li>Owned types
+                            <li>Table splitting
+                            <li><code>Include</code> and <code>ThenInclude</code>
+                            <li>Query filters and <code>IgnoreQueryFilters</code>
+                            <li>Change tracking and <code>AsTracking</code>/<code>AsNoTracking</code>
+                            <li><code>DbFunction</code>
+                            <li>Entity constructors with parameters
+                            <li>Lazy loading
+                            <li>Value conversions
+                            <li>Compiled queries
+                            <li>Query types
+                            <li>Defining queries
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2018 Derek Gray
+    </footer>
+</body>
+</html>

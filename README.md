@@ -55,12 +55,12 @@ LINQ queries that other query providers and ORMs cannot.
 2. Add `UseImpatientQueryCompiler()` to your `DbContextOptions`:
 
 	```diff
-	 services.AddDbContext<NorthwindDbContext>(options =>
-	 {
-		 options
-			 .UseSqlServer(connectionString)
-	+        .UseImpatientQueryCompiler();
-	 });
+ services.AddDbContext<NorthwindDbContext>(options =>
+ {
+     options
+         .UseSqlServer(connectionString)
++        .UseImpatientQueryCompiler();
+ });
 	```
 
 3. Cross arms, tap foot, run queries

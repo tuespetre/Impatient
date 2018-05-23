@@ -1,0 +1,386 @@
+* {
+    box-sizing: border-box;
+}
+
+html {
+    height: 100%;
+}
+
+body {
+    height: 100%;
+    margin: 0;
+    font-family: 'Nunito', sans-serif;
+    background: #222;
+    display: flex;
+    flex-flow: column nowrap;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+.home body {
+    background: #222;
+}
+
+.docs body {
+    background: whitesmoke;
+}
+
+h1 {
+    font-family: 'Enriqueta', serif;
+}
+
+header {
+    text-align: center;
+    text-transform: uppercase;
+    padding: 40px 0;
+    border-top: 30px solid #222;
+    text-shadow: 1px 1px 2px black;
+    font-weight: 700;
+    background: teal;
+    color: white;
+    flex: 0 0 auto;
+}
+
+.docs header {
+    text-align: left;
+    padding: 0;
+}
+
+header h1 {
+    font-size: 48px;
+    margin: 0;
+}
+
+.docs header h1 {
+    font-size: 48px;
+}
+
+header p {
+    font-size: 14px;
+}
+
+header h1 a {
+    color: white;
+    text-decoration: none;
+}
+
+header nav a {
+    color: white;
+    font-size: 14px;
+    display: block;
+    margin-bottom: 5px;
+}
+
+header nav a:hover, header nav a:active {
+    color: gainsboro;
+}
+
+header hr {
+    border: 3px dotted #222;
+    border-width: 0 0 3px 0;
+    margin: 0 auto 15px;
+    max-width: 500px;
+}
+
+#tagline {
+    margin: 10px 0;
+    font-size: 16px;
+}
+
+nav span[role=separator] {
+    display: none;
+}
+
+footer {
+    background: #222;
+    height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: gray;
+    flex: 0 0 auto;
+}
+
+.spanx {
+    box-sizing: content-box;
+    padding: 20px;
+    width: auto;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.home .spanx {
+    padding: 0 20px;
+    overflow: auto;
+}
+
+.loudnoises {
+    text-shadow: 1px 1px 2px black;
+    text-transform: uppercase;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 0;
+    line-height: 32px;
+    margin: 20px 0;
+}
+
+.snark {
+    background: linear-gradient(120deg, darkseagreen 0%, teal 20%, darkseagreen 100%);
+    color: white;
+    box-shadow: 0 0 2px 2px black;
+}
+
+.intrigue {
+    background: linear-gradient(165deg, coral 0%, deeppink 25%, coral 100%);
+    color: white;
+    box-shadow: 0 0 2px 0px black;
+}
+
+.luscious {
+    background: linear-gradient(75deg, indigo 0%, steelblue 20%, indigo 100%);
+    color: white;
+    box-shadow: 0 0 2px 2px black;
+}
+
+pre {
+    background: whitesmoke;
+    color: black;
+    padding: 10px;
+    margin: 0;
+    overflow: hidden;
+    max-height: 380px;
+    text-shadow: none;
+}
+
+code {
+    text-transform: none;
+    background: #222;
+    color: yellow;
+    display: inline-block;
+    padding: 0 5px;
+}
+
+.home em {
+    background: #222;
+    color: white;
+    display: inline-block;
+    padding: 0 5px;
+    font-style: normal;
+}
+
+.home ul {
+    padding-left: 20px;
+    margin: 0;
+    list-style: none;
+}
+
+.home ul li {
+    position: relative;
+    margin-bottom: 5px;
+}
+
+.home ul li::before {
+    content: '\25FC';
+    position: absolute;
+    left: -20px;
+    top: -1px;
+}
+
+.samplez, .featurez {
+    display: grid;
+    grid-template-columns: auto;
+    grid-template-rows: auto;
+    grid-gap: 20px;
+    padding-bottom: 20px;
+}
+
+.featurez {
+    text-shadow: 1px 1px 2px black;
+}
+        
+.samplez h1, .featurez h1 {
+    margin: 0;
+    display: inline-block;
+    text-transform: uppercase;
+    color: white;
+}
+
+.samplez h1 {
+    font-size: 14px;
+    padding: 5px;
+    background: #222;
+}
+
+.featurez h1 {
+    font-size: 16px;
+    padding-bottom: 5px;
+    border-bottom: 3px dotted #222;
+    margin-bottom: 10px;
+}
+
+.samplez > div, .featurez > div {
+    overflow: hidden;
+    display: flex;
+    flex-flow: column nowrap;
+    transition: all 0.25s linear;
+}
+
+.samplez pre {
+    flex-grow: 1;
+    overflow-x: scroll;
+    overflow-y: scroll;
+    font-size: 12px;
+    padding: 5px;
+}
+
+.docs main nav ~ * {
+    flex: 1 1 auto;
+}
+
+.docs main nav {
+    color: white;
+    margin-bottom: 30px;
+}
+
+.docs main nav a {
+    color: white;
+    font-family: 'Enriqueta', serif;
+    text-decoration: none;
+    display: block;
+    background: dimgray;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-right: 5px solid dimgray;
+}
+
+.docs main nav a:nth-child(4n+1) {
+    border-color: red;
+}
+
+.docs main nav a:nth-child(4n+2) {
+    border-color: orange;
+}
+
+.docs main nav a:nth-child(4n+3) {
+    border-color: yellow;
+}
+
+.docs main nav a:nth-child(4n+4) {
+    border-color: green;
+}
+
+.docs main nav a.active {
+    background: darkslategray;
+}
+
+.docs main nav a:hover {
+    background: gray;
+}
+
+.docs main section h1 {
+    text-transform: uppercase;
+    font-size: 36px;
+    margin: 0 0 20px;
+}
+
+.docs main section {
+    font-size: 18px;
+    margin-bottom: 3em;
+}
+
+.docs li {
+    margin-bottom: 0.75em;
+}
+
+.docs pre {
+    background: #222;
+    color: whitesmoke;
+    height: auto;
+}
+
+.docs code {
+    color: whitesmoke;
+    word-break: break-word;
+}
+
+@media (min-width: 500px) {
+    
+    header h1 {
+        font-size: 60px;
+    }
+    
+    header p, header nav a {
+        font-size: 16px;
+    }
+    
+    header nav a {
+        display: inline;
+    }
+
+    nav span[role=separator] {
+        margin: 0 5px;
+        display: inline;
+    }
+    
+    .loudnoises {
+        font-size: 24px;
+        margin: 30px 0;
+    }
+    
+    .snark {
+        background: radial-gradient(darkseagreen, teal);
+    }
+    
+    .samplez {
+        padding-bottom: 30px;
+    }
+    
+    .samplez h1, .samplez pre {
+        padding: 10px;
+    }
+    
+    #tagline {
+        font-size: 20px;
+    }
+    
+}
+
+@media (min-width: 750px) {   
+         
+    .samplez, .featurez {
+        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-rows: auto;
+    }
+    
+    .featurez h1 {
+        font-size: 18px;
+    }
+    
+    pre {
+        height: 380px;
+    }
+    
+}
+
+@media (min-width: 1000px) {   
+
+    .docs main .spanx {
+        display: flex;
+        flex-flow: row nowrap;
+        align-items: flex-start;
+    }
+
+    .docs main nav {
+        position: -webkit-sticky;
+        position: sticky;
+        top: 30px;
+        flex: 0 0 auto;
+        width: 320px;
+        margin-right: 20px;
+    }
+    
+}

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html class="docs">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <link href="https://fonts.googleapis.com/css?family=Enriqueta:400,700|Nunito:400,700" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="spanx">
+            <h1><a href="./">Impatient</a></h1>
+            <p id="tagline">
+                Seriously powerful LINQ query translation. Now.
+            </p>
+        </div>
+    </header>
+    <main>
+        <div class="spanx">
+            <nav>
+                <a href="#get-started">Get Started</a>
+                <a href="#supported-query-operators">Supported Query Operators</a>
+                <a href="#supported-bcl-translations">Supported BCL Translations</a>
+                <a href="#supported-efcore-features">Supported EF Core Features</a>
+            </nav>
+            <div>
+                <section>
+                    <a name="get-started"></a>
+                    <h1>Get Started</h1>
+                    <p>Getting started with Impatient for EF Core with SQL Server is easy. Too easy.</p>
+                    <ol>
+                        <li><p>Install the <code>Impatient.EntityFrameworkCore.SqlServer</code> NuGet package.</p>
+                        <li><p>Configure your <code>DbContext</code> to use Impatient:</p>
+                            <pre>services.AddDbContext&lt;NorthwindDbContext&gt;(options =&gt;
+{
+    options
+        .UseSqlServer(connectionString)
+        .UseImpatientQueryCompiler();
+});</pre>
+                        <li><p>Cross arms, tap feet, run queries.</p>
+                    </ol>
+                </section>
+                <section>
+                    <a name="supported-query-operators"></a>
+                    <h1>Supported Query Operators</h1>
+                    <p>
+                        Impatient supports just about every standard query operator provided by the .NET Framework. In fact,
+                        it may be easier to enumerate which operators are <em>not</em> supported:
+                    </p>
+                    <ul>
+                        <li><code>Aggregate</code>, because databases aren't cool enough for this yet
+                        <li>The newer <code>Append</code>, <code>Prepend</code>, <code>SkipLast</code>, and <code>TakeLast</code> operators
+                        <li>Some materialization operators: <code>ToDictionary</code>, <code>ToHashSet</code>, and <code>ToLookup</code>
+                        <li><code>Enumerable</code>-only operators like <code>Empty</code>, <code>Range</code>, or <code>Repeat</code>
+                        <li>Any overload of an operator that accepts <code>IEqualityComparer&lt;T&gt;</code> or <code>IComparer&lt;T&gt;</code>
+                    </ul>
+                    <p>
+                        Unless the operator in question is in the above list, or is newer than <code>Append</code>, Impatient can translate it.
+                    </p>
+                </section>
+                <section>
+                    <a name="supported-bcl-translations"></a>
+                    <h1>Supported BCL Translations</h1>
+                    <p>
+                        Impatient supports translating a healthy assortment of BCL APIs into SQL, with more still in the works.
+                    </p>
+                    <ul>
+                        <li><p><code>System.Nullable&lt;T&gt;</code>
+                            <ul>
+                                <li><code>HasValue</code>
+                                <li><code>Value</code>
+                                <li><code>GetValueOrDefault()</code>
+                                <li><code>GetValueOrDefault(T)</code>
+                            </ul>
+                        <li><p><code>System.String</code>
+                            <ul>
+                                <li><code>Length</code>
+                                <li><code>Concat(params string[])</code>
+                                <li><code>Concat(string, string)</code>
+                                <li><code>Concat(string, string, string)</code>
+                                <li><code>Concat(string, string, string, string)</code>
+                                <li><code>Contains(string)</code>
+                                <li><code>EndsWith(string)</code>
+                                <li><code>IndexOf(char)</code>
+                                <li><code>IndexOf(string)</code>
+                                <li><code>IndexOf(char, int)</code>
+                                <li><code>IndexOf(string, int)</code>
+                                <li><code>IndexOf(char, int, int)</code>
+                                <li><code>IndexOf(string, int, int)</code>
+                                <li><code>IsNullOrEmpty(string)</code>
+                                <li><code>IsNullOrWhiteSpace(string)</code>
+                                <li><code>Replace(char, char)</code>
+                                <li><code>Replace(string, string)</code>
+                                <li><code>StartsWith(string)</code>
+                                <li><code>Substring(int)</code>
+                                <li><code>Substring(int, int)</code>
+                                <li><code>Trim()</code>
+                                <li><code>TrimEnd(params char[])</code> with empty arguments
+                                <li><code>TrimStart(params char[])</code> with empty arguments
+                                <li><code>ToUpper()</code>
+                                <li><code>ToLower()</code>
+                            </ul>
+                        <li><p><code>System.DateTime</code>
+                            <ul>
+                                <li><code>Date</code>
+                                <li><code>Day</code>
+                                <li><code>DayOfYear</code>
+                                <li><code>Hour</code>
+                                <li><code>Millisecond</code>
+                                <li><code>Minute</code>
+                                <li><code>Month</code>
+                                <li><code>Now</code>
+                                <li><code>Second</code>
+                                <li><code>UtcNow</code>
+                                <li><code>Year</code>
+                                <li><code>AddDays(double)</code>
+                                <li><code>AddHours(double)</code>
+                                <li><code>AddMilliseconds(double)</code>
+                                <li><code>AddMinutes(double)</code>
+                                <li><code>AddMonths(int)</code>
+                                <li><code>AddSeconds(double)</code>
+                                <li><code>AddYears(int)</code>
+                            </ul>
+                        <li><p><code>System.Math</code>
+                            <ul>
+                                <li><code>Abs(decimal)</code>
+                                <li><code>Abs(double)</code>
+                                <li><code>Abs(float)</code>
+                                <li><code>Abs(int)</code>
+                                <li><code>Abs(long)</code>
+                                <li><code>Abs(sbyte)</code>
+                                <li><code>Abs(short)</code>
+                                <li><code>Acos(double)</code>
+                                <li><code>Asin(double)</code>
+                                <li><code>Atan(double)</code>
+                                <li><code>Atan2(double, double)</code>
+                                <li><code>Ceiling(decimal)</code>
+                                <li><code>Ceiling(double)</code>
+                                <li><code>Exp(double)</code>
+                                <li><code>Floor(decimal)</code>
+                                <li><code>Floor(double)</code>
+                                <li><code>Log(double)</code>
+                                <li><code>Log(double, double)</code>
+                                <li><code>Log10(double)</code>
+                                <li><code>Cos(double)</code>
+                                <li><code>Pow(double, double)</code>
+                                <li><code>Sqrt(double)</code>
+                                <li><code>Sign(decimal)</code>
+                                <li><code>Sign(double)</code>
+                                <li><code>Sign(float)</code>
+                                <li><code>Sign(int)</code>
+                                <li><code>Sign(long)</code>
+                                <li><code>Sign(sbyte)</code>
+                                <li><code>Sign(short)</code>
+                                <li><code>Sin(double)</code>
+                                <li><code>Tan(double)</code>
+                                <li><code>Truncate(decimal)</code>
+                            </ul>
+                    </ul>
+                </section>
+                <section>
+                    <a name="supported-efcore-features"></a>
+                    <h1>Supported EF Core Features</h1>
+                    <p>
+                        Almost all of the querying features of EF Core are supported; however,
+                        there are some that are not, and there are also some behavioral discrepancies
+                        to be aware of.
+                    </p>
+                    <p>
+                        Here is the list of supported features:
+                    </p>
+                    <ul>
+                        <li>Async methods
+                        <li>Owned types
+                        <li>Table splitting
+                        <li>Shared tables
+                        <li><code>Include</code>, <code>ThenInclude</code>, and includes for derived types
+                        <li>Query filters, along with the <code>IgnoreQueryFilters</code> operator
+                        <li>Change tracking, along with the <code>AsTracking</code> and <code>AsNoTracking</code> operators
+                        <li>Entity constructors with parameters
+                        <li>Lazy loading
+                        <li>Service properties
+                        <li>Value conversions, with the caveat that any <code>Translator</code> expressions have to be compatible with Impatient
+                        <li>Compiled queries
+                        <li>Query Types
+                        <li>Defining Queries
+                        <li>Relational null semantics
+                        <li><code>DbFunctionAttribute</code> and <code>DbFunction</code> in general
+                        <li><code>EF.Functions.Like</code>
+                        <li>Connection open/close logging
+                        <li><code>DbCommand</code> <code>CommandText</code> and <code>Parameters</code> logging
+                    </ul>
+                    <p>
+                        Likewise, here is the list of unsupported features:
+                    </p>
+                    <ul>
+                        <li><code>FromSql</code>
+                        <li>'Null navigation protection' during client evaluation of lambda expressions
+                        <li>Propagation of navigation nullability after a 'manual left join'
+                        <li>Paging with <code>ROW_NUMBER</code>
+                        <li>An assortment of <code>EF.Functions</code> extensions that are not yet implemented
+                    </ul>
+                </section>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2018 Derek Gray
+    </footer>
+</body>
