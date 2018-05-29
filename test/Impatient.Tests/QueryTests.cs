@@ -2074,6 +2074,24 @@ FROM [dbo].[MyClass1] AS [m]",
         }
 
         [TestMethod]
+        public void Cast_nullable_type()
+        {
+            var query = from int? p in from m in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression) select m.Prop2
+                        select p;
+
+            var results = query.ToList();
+
+            Assert.AreEqual(2, results.Count);
+            Assert.AreEqual(9, results[0]);
+            Assert.AreEqual(77, results[1]);
+
+            Assert.AreEqual(
+                @"SELECT [m].[Prop2]
+FROM [dbo].[MyClass1] AS [m]",
+                SqlLog);
+        }
+
+        [TestMethod]
         public void Concat_simple()
         {
             var set1 = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => new { m.Prop1, m.Prop2 });
@@ -2216,11 +2234,54 @@ LEFT JOIN (
         }
 
         [TestMethod]
+        public void DefaultIfEmpty_simple_when_some_with_default_value()
+        {
+            var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => m.Prop2).DefaultIfEmpty(99);
+
+            var result = query.ToList();
+
+            Assert.AreEqual(2, result.Count);
+
+            Assert.AreEqual(
+                @"SELECT [set].[Prop2]
+FROM (
+    SELECT [m].[Prop2]
+    FROM [dbo].[MyClass1] AS [m]
+    UNION ALL
+    SELECT 99
+    WHERE NOT EXISTS (
+        SELECT [m_0].[Prop2]
+        FROM [dbo].[MyClass1] AS [m_0]
+    )
+) AS [set]",
+                SqlLog);
+        }
+
+        [TestMethod]
         public void DefaultIfEmpty_simple_when_none_with_default_value()
         {
-            var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Where(m => m.Prop2 > 77).DefaultIfEmpty(new MyClass1());
+            var query = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Where(m => m.Prop2 > 77).Select(m => m.Prop2).DefaultIfEmpty(99);
 
-            Assert.IsInstanceOfType(query.Expression, typeof(MethodCallExpression));
+            var result = query.ToList();
+
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual(99, result[0]);
+
+            Assert.AreEqual(
+                @"SELECT [set].[Prop2]
+FROM (
+    SELECT [m].[Prop2]
+    FROM [dbo].[MyClass1] AS [m]
+    WHERE [m].[Prop2] > 77
+    UNION ALL
+    SELECT 99
+    WHERE NOT EXISTS (
+        SELECT [m_0].[Prop2]
+        FROM [dbo].[MyClass1] AS [m_0]
+        WHERE [m_0].[Prop2] > 77
+    )
+) AS [set]",
+                SqlLog);
         }
 
         [TestMethod]
@@ -4638,6 +4699,20 @@ CROSS APPLY (
     FROM OPENJSON([y].[x.Prop1], N'$.Test') AS [j_0]
 ) AS [z]
 WHERE JSON_VALUE([z].[value], N'$.Prop') = JSON_VALUE([y].[t], N'$.Prop')",
+                SqlLog);
+        }
+
+        [TestMethod] 
+        public void ToString_integer()
+        {
+            var query = from m in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Cast<MyClass1>()
+                        select m.Prop2.ToString();
+
+            var results = query.ToList();
+
+            Assert.AreEqual(
+                @"SELECT CONVERT(VARCHAR(100), [m].[Prop2])
+FROM [dbo].[MyClass1] AS [m]",
                 SqlLog);
         }
 

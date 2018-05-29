@@ -1221,24 +1221,42 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             Expression[] visitedArguments,
             Func<Expression> fallbackToEnumerable)
         {
-            if (node.Arguments.Count > 1)
-            {
-                // TODO: Investigate default value argument support
-                // - Scalar type should be simple enough
-                // - Complex type would need some extra checks
-                //   - The shape of the expression would have to match:
-                //     - NewExpression, same ctors
-                //     - MemberInitExpression, same bindings (unordered)
-                //   - 'Zip' the NewExpression/MemberInitExpressions together
-                //     - At each leaf node, coalesce from the original to the default
-                return fallbackToEnumerable();
-            }
-
             var outerProjection = outerQuery.SelectExpression.Projection.Flatten().Body;
 
             if (!IsTranslatable(outerProjection))
             {
                 return fallbackToEnumerable();
+            }
+
+            if (node.Arguments.Count > 1)
+            {
+                if (!node.Arguments[1].Type.IsScalarType())
+                {
+                    return fallbackToEnumerable();
+                }
+
+                var defaultValue = visitedArguments[1] = Visit(node.Arguments[1]);
+
+                if (!IsTranslatable(defaultValue))
+                {
+                    return fallbackToEnumerable();
+                }
+
+                var unionAllTableExpression
+                    = new UnionAllTableExpression(
+                        outerQuery.SelectExpression,
+                        new SelectExpression(new ServerProjectionExpression(defaultValue))
+                            .AddToPredicate(Expression.Not(new SqlExistsExpression(
+                                new TableUniquifyingExpressionVisitor().VisitAndConvert(
+                                    outerQuery.SelectExpression,
+                                    nameof(HandleDefaultIfEmpty))))));
+
+                var newProjection
+                    = new ProjectionReferenceRewritingExpressionVisitor(unionAllTableExpression)
+                        .Visit(outerProjection);
+
+                return new EnumerableRelationalQueryExpression(
+                    new SelectExpression(new ServerProjectionExpression(newProjection), unionAllTableExpression));
             }
 
             var emptySubquery
@@ -2229,6 +2247,14 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             if (inType == outType)
             {
                 return outerQuery;
+            }
+
+            if (inType == outType.UnwrapNullableType())
+            {
+                return outerQuery
+                    .UpdateSelectExpression(outerSelectExpression
+                        .UpdateProjection(new ServerProjectionExpression(
+                            Expression.Convert(outerProjection, outType))));
             }
 
             if (outType.IsAssignableFrom(inType)

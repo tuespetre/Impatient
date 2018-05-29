@@ -48,6 +48,8 @@ namespace Impatient.Query.Infrastructure
 
             // SQL Server specific rewriters (should be pulled from the default provider at some point)
 
+            yield return new ObjectToStringRewritingExpressionVisitor();
+
             yield return new StringToNumberAsciiRewritingExpressionVisitor();
 
             yield return new SqlServerCountRewritingExpressionVisitor();
