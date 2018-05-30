@@ -5,16 +5,15 @@ using Impatient.Query.ExpressionVisitors.Utility;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Collections.Generic;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
     using Impatient.Extensions;
-    using Impatient.Query.Infrastructure;
 
     public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
     {
@@ -248,7 +247,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 return configuredField ?? propertyInfo.FindBackingField() ?? memberInfo;
             }
 
-            return memberInfo;
+            //return memberInfo;
         }
 
         private MemberInfo GetMemberForWrite(MemberInfo memberInfo)
