@@ -435,7 +435,7 @@ WHERE [c].[Id] = @p2");
                 Assert.Single(cust);
 
                 AssertSql(
-                    @"SELECT [c].[Id] AS [Id], [c].[FirstName] AS [FirstName], [c].[LastName] AS [LastName]
+                    @"SELECT LOWER(CONVERT(VARCHAR(100), [c].[Id]))
 FROM [Customers] AS [c]
 WHERE [dbo].[IsTopCustomer]([c].[Id]) = 1");
             }
@@ -1097,7 +1097,7 @@ WHERE [c].[Id] = @p2");
                 Assert.Single(cust);
 
                 AssertSql(
-                    @"SELECT [c].[Id] AS [Id], [c].[FirstName] AS [FirstName], [c].[LastName] AS [LastName]
+                    @"SELECT LOWER(CONVERT(VARCHAR(100), [c].[Id]))
 FROM [Customers] AS [c]
 WHERE [dbo].[IsTopCustomer]([c].[Id]) = 1");
             }
