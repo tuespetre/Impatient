@@ -1,4 +1,5 @@
-﻿using Impatient.Query.Expressions;
+﻿using Impatient.Extensions;
+using Impatient.Query.Expressions;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Rewriting
@@ -7,7 +8,11 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
     {        
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            if (node.Method.Name == nameof(ToString) && node.Arguments.Count == 0 && node.Object != null)
+            if (node.Method.Name == nameof(ToString) 
+                && node.Arguments.Count == 0 
+                && node.Object != null
+                && node.Object.Type.IsScalarType()
+                && !node.Object.Type.IsEnum())
             {
                 return new SqlFunctionExpression(
                     "CONVERT", 

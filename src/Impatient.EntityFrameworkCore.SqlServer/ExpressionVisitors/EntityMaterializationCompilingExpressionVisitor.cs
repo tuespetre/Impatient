@@ -42,8 +42,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                     switch (entityMaterializationExpression.IdentityMapMode)
                     {
-                        case IdentityMapMode.StateManager
-                        when !entityType.HasDefiningNavigation():
+                        case IdentityMapMode.StateManager:
                         {
                             getEntityMethodInfo = EntityTrackingHelper.GetEntityUsingStateManagerMethodInfo;
                             break;

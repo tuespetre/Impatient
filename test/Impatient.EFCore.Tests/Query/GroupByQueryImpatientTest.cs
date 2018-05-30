@@ -61,6 +61,34 @@ ORDER BY [o].[CustomerID] ASC
         }
 
         [Fact]
+        public override void Double_GroupBy_with_aggregate()
+        {
+            base.Double_GroupBy_with_aggregate();
+
+            Fixture.AssertSql(@"SELECT [g].[Key.OrderDate] AS [Key], (
+    SELECT [g_0].[Key.OrderID] AS [Key.OrderID], [g_0].[Key.OrderDate] AS [Key.OrderDate], (
+        SELECT [g_1].[OrderID] AS [OrderID], [g_1].[CustomerID] AS [CustomerID], [g_1].[EmployeeID] AS [EmployeeID], [g_1].[OrderDate] AS [OrderDate]
+        FROM [Orders] AS [g_1]
+        WHERE ([g_0].[Key.OrderID] = [g_1].[OrderID]) AND ((([g_0].[Key.OrderDate] IS NULL AND [g_1].[OrderDate] IS NULL) OR ([g_0].[Key.OrderDate] = [g_1].[OrderDate])))
+        FOR JSON PATH
+    ) AS [Elements]
+    FROM (
+        SELECT [g_2].[OrderID] AS [Key.OrderID], [g_2].[OrderDate] AS [Key.OrderDate]
+        FROM [Orders] AS [g_2]
+        GROUP BY [g_2].[OrderID], [g_2].[OrderDate]
+    ) AS [g_0]
+    WHERE (([g].[Key.OrderDate] IS NULL AND [g_0].[Key.OrderDate] IS NULL) OR ([g].[Key.OrderDate] = [g_0].[Key.OrderDate]))
+    FOR JSON PATH
+) AS [Elements]
+FROM (
+    SELECT [g_3].[OrderID] AS [Key.OrderID], [g_3].[OrderDate] AS [Key.OrderDate]
+    FROM [Orders] AS [g_3]
+    GROUP BY [g_3].[OrderID], [g_3].[OrderDate]
+) AS [g]
+GROUP BY [g].[Key.OrderDate]");
+        }
+
+        [Fact]
         [Trait("Impatient", "Adjusted entry count")]
         public override void GroupBy_after_predicate_Constant_Select_Sum_Min_Key_Max_Avg()
         {
@@ -160,6 +188,21 @@ SELECT [c].[City] AS [Key], (
 FROM [Customers] AS [c]
 GROUP BY [c].[City]
 ");
+        }
+
+        [Fact]
+        public override void GroupBy_anonymous_key_without_aggregate()
+        {
+            base.GroupBy_anonymous_key_without_aggregate();
+
+            Fixture.AssertSql(@"SELECT [g].[CustomerID] AS [Key.CustomerID], [g].[OrderDate] AS [Key.OrderDate], [g].[CustomerID] AS [g.Key.CustomerID], [g].[OrderDate] AS [g.Key.OrderDate], (
+    SELECT [g_0].[OrderID] AS [OrderID], [g_0].[CustomerID] AS [CustomerID], [g_0].[EmployeeID] AS [EmployeeID], [g_0].[OrderDate] AS [OrderDate]
+    FROM [Orders] AS [g_0]
+    WHERE ((([g].[CustomerID] IS NULL AND [g_0].[CustomerID] IS NULL) OR ([g].[CustomerID] = [g_0].[CustomerID]))) AND ((([g].[OrderDate] IS NULL AND [g_0].[OrderDate] IS NULL) OR ([g].[OrderDate] = [g_0].[OrderDate])))
+    FOR JSON PATH
+) AS [g.Elements]
+FROM [Orders] AS [g]
+GROUP BY [g].[CustomerID], [g].[OrderDate]");
         }
 
         [Fact]
@@ -614,6 +657,25 @@ SELECT SUM([g].[OrderID]) AS [Sum], [g].[CustomerID] AS [Key.CustomerID], [g].[E
 FROM [Orders] AS [g]
 GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
+        }
+
+        [Fact]
+        public override void GroupBy_empty_key_Aggregate()
+        {
+            base.GroupBy_empty_key_Aggregate();
+
+            Fixture.AssertSql(@"SELECT [g].[OrderID] AS [OrderID], [g].[CustomerID] AS [CustomerID], [g].[EmployeeID] AS [EmployeeID], [g].[OrderDate] AS [OrderDate]
+FROM [Orders] AS [g]");
+        }
+
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override void GroupBy_empty_key_Aggregate_Key()
+        {
+            var ex = Assert.Throws<EqualException>(() => base.GroupBy_empty_key_Aggregate_Key());
+
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("830", ex.Actual);
         }
 
         [Fact]
@@ -1762,6 +1824,32 @@ INNER JOIN (
 ) AS [a] ON [c].[CustomerID] = [a].[CustomerID]
 INNER JOIN [Orders] AS [o] ON [a].[LastOrderID] = [o].[OrderID]
 ");
+        }
+
+        [Fact]
+        public override void Join_GroupBy_Aggregate_on_key()
+        {
+            base.Join_GroupBy_Aggregate_on_key();
+
+            Fixture.AssertSql(@"SELECT [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Country] AS [c.Country], [c].[Fax] AS [c.Fax], [c].[Phone] AS [c.Phone], [c].[PostalCode] AS [c.PostalCode], [c].[Region] AS [c.Region], [a].[LastOrderID] AS [LastOrderID]
+FROM [Customers] AS [c]
+INNER JOIN (
+    SELECT [g].[Key] AS [Key], (
+        SELECT MAX([g_0].[OrderID])
+        FROM [Orders] AS [g_0]
+        WHERE (([g].[Key] IS NULL AND [g_0].[CustomerID] IS NULL) OR ([g].[Key] = [g_0].[CustomerID]))
+    ) AS [LastOrderID]
+    FROM (
+        SELECT [g_1].[CustomerID] AS [Key]
+        FROM [Orders] AS [g_1]
+        GROUP BY [g_1].[CustomerID]
+    ) AS [g]
+    WHERE (
+        SELECT COUNT(*)
+        FROM [Orders] AS [g_0]
+        WHERE (([g].[Key] IS NULL AND [g_0].[CustomerID] IS NULL) OR ([g].[Key] = [g_0].[CustomerID]))
+    ) > 5
+) AS [a] ON [c].[CustomerID] = [a].[Key]");
         }
 
         [Fact]

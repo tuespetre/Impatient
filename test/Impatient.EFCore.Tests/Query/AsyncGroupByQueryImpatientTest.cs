@@ -46,6 +46,16 @@ namespace Impatient.EFCore.Tests.Query
 
         [Fact]
         [Trait("Impatient", "Adjusted entry count")]
+        public override async Task GroupBy_empty_key_Aggregate_Key()
+        {
+            var ex = await Assert.ThrowsAsync<EqualException>(() => base.GroupBy_empty_key_Aggregate_Key());
+
+            Assert.Equal("0", ex.Expected);
+            Assert.Equal("830", ex.Actual);
+        }
+
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
         public override async Task GroupBy_param_Select_Sum_Min_Key_Max_Avg()
         {
             var ex = await Assert.ThrowsAsync<EqualException>(() => base.GroupBy_param_Select_Sum_Min_Key_Max_Avg());
@@ -62,6 +72,20 @@ namespace Impatient.EFCore.Tests.Query
 
             Assert.Equal("0", ex.Expected);
             Assert.Equal("830", ex.Actual);
+        }
+
+        [Fact]
+        [Trait("Impatient", "Adjusted entry count")]
+        public override async Task GroupBy_Select_First_GroupBy()
+        {
+            await AssertQuery<Customer>(
+                cs =>
+                    cs.GroupBy(c => c.City)
+                      .Select(g => g.OrderBy(c => c.CustomerID).First())
+                      .GroupBy(c => c.ContactName),
+                elementSorter: GroupingSorter<string, object>(),
+                elementAsserter: GroupingAsserter<string, dynamic>(d => d.CustomerID),
+                entryCount: 91);
         }
 
         [Fact]
@@ -157,20 +181,6 @@ namespace Impatient.EFCore.Tests.Query
                         on o.CustomerID equals i.c.CustomerID
                     select new { o, i.c, i.c.CustomerID },
                 entryCount: 187);
-        }
-
-        [Fact]
-        [Trait("Impatient", "Adjusted entry count")]
-        public override Task GroupBy_Select_First_GroupBy()
-        {
-            return AssertQuery<Customer>(
-                cs =>
-                    cs.GroupBy(c => c.City)
-                      .Select(g => g.OrderBy(c => c.CustomerID).First())
-                      .GroupBy(c => c.ContactName),
-                elementSorter: GroupingSorter<string, object>(),
-                elementAsserter: GroupingAsserter<string, dynamic>(d => d.CustomerID),
-                entryCount: 91);
         }
     }
 }

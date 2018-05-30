@@ -7,7 +7,7 @@
   
   <PropertyGroup>
     <VersionPrefix>2.1.0</VersionPrefix>
-    <VersionSuffix>rc1-final</VersionSuffix>
+    <VersionSuffix></VersionSuffix>
     <Authors>tuespetre</Authors>
     <PackageProjectUrl>https://tuespetre.github.io/Impatient</PackageProjectUrl>
     <RepositoryUrl>https://github.com/tuespetre/Impatient</RepositoryUrl>
@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.1.0-rc1-final" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.1.0" />
   </ItemGroup>
 
 </Project>
