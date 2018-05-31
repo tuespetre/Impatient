@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -114,6 +115,99 @@ namespace Impatient.Tests
                                 let column = new SqlColumnExpression(myClass1JsonTable, property.Name, property.PropertyType, false, null)
                                 select Expression.Bind(property, column))),
                         myClass1JsonTable));
+        }
+
+        [ClassInitialize]
+        public static void CreateDatabase(TestContext testContext)
+        {
+            var sql = @"
+IF EXISTS (SELECT 1 FROM sys.databases WHERE name = 'Impatient')
+BEGIN
+    ALTER DATABASE [Impatient] SET SINGLE_USER WITH ROLLBACK IMMEDIATE
+    DROP DATABASE [Impatient]
+END
+GO
+CREATE DATABASE [Impatient]
+GO
+USE [Impatient]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[MyClass1](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[Prop1] [nvarchar](max) NULL,
+	[Prop2] [int] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[MyClass1Json](
+	[Prop1] [nvarchar](max) NOT NULL,
+	[Prop2] [int] NOT NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[MyClass2](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[Prop1] [nvarchar](max) NULL,
+	[Prop2] [int] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+SET IDENTITY_INSERT [dbo].[MyClass1] ON 
+GO
+INSERT [dbo].[MyClass1] ([Id], [Prop1], [Prop2]) VALUES (1, N'What the', 9)
+GO
+INSERT [dbo].[MyClass1] ([Id], [Prop1], [Prop2]) VALUES (2, N'bleep', 77)
+GO
+SET IDENTITY_INSERT [dbo].[MyClass1] OFF
+GO
+INSERT [dbo].[MyClass1Json] ([Prop1], [Prop2]) VALUES (N'{""Test"":[{""Prop"":""Value""}]}', 5)
+GO
+INSERT [dbo].[MyClass1Json] ([Prop1], [Prop2]) VALUES (N'{""Test"":[{""Prop"":""Value2""},{""Prop"":""Value3""}]}', 6)
+GO
+SET IDENTITY_INSERT [dbo].[MyClass2] ON 
+GO
+INSERT [dbo].[MyClass2] ([Id], [Prop1], [Prop2]) VALUES (1, N'What the', 9)
+GO
+INSERT [dbo].[MyClass2] ([Id], [Prop1], [Prop2]) VALUES (2, N'bleep', 77)
+GO
+SET IDENTITY_INSERT [dbo].[MyClass2] OFF
+GO
+ALTER TABLE [dbo].[MyClass1] ADD  DEFAULT ((0)) FOR [Prop2]
+GO
+ALTER TABLE [dbo].[MyClass2] ADD  DEFAULT ((0)) FOR [Prop2]
+GO
+";
+
+            using (var connection = new SqlConnection(@"Server=.\sqlexpress; Trusted_Connection=True"))
+            {
+                connection.Open();
+
+                foreach (var text in sql.Split("\r\nGO\r\n").Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)))
+                {
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = text;
+
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
         }
 
         [TestCleanup]
