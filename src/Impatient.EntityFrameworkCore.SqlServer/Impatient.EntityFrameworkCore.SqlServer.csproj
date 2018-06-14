@@ -6,8 +6,7 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <VersionPrefix>2.1.0</VersionPrefix>
-    <VersionSuffix></VersionSuffix>
+    <VersionPrefix>2.1.1</VersionPrefix>
     <Authors>tuespetre</Authors>
     <PackageProjectUrl>https://tuespetre.github.io/Impatient</PackageProjectUrl>
     <RepositoryUrl>https://github.com/tuespetre/Impatient</RepositoryUrl>
