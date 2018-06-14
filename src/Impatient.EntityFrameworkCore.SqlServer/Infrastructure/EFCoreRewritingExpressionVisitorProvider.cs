@@ -13,10 +13,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 
         public EFCoreRewritingExpressionVisitorProvider(
             ICurrentDbContext currentDbContext,
-            TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor)
-            : base(translatabilityAnalyzingExpressionVisitor)
+            TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor,
+            ITypeMappingProvider typeMappingProvider)
+            : base(translatabilityAnalyzingExpressionVisitor, typeMappingProvider)
         {
-            this.currentDbContext = currentDbContext;
+            this.currentDbContext = currentDbContext ?? throw new System.ArgumentNullException(nameof(currentDbContext));
         }
 
         public override IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Impatient.EFCore.Tests.Utilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.GearsOfWarModel;
 using System.Collections.Generic;
@@ -11,6 +12,7 @@ namespace Impatient.EFCore.Tests.Query
     {
         public GearsOfWarQueryImpatientTest(GearsOfWarQueryImpatientFixture fixture) : base(fixture)
         {
+            fixture.TestSqlLoggerFactory.Clear();
         }
 
         #region skips
@@ -232,6 +234,191 @@ namespace Impatient.EFCore.Tests.Query
                     Assert.Equal(expected[i].Count(), actual[i].Count());
                 }
             }
+        }
+
+        [Fact]
+        [Trait("Impatient", "Overridden for translation coverage")]
+        public override void Select_enum_has_flag()
+        {
+            base.Select_enum_has_flag();
+
+            Fixture.AssertSql(@"@p0='1'
+@p1='2'
+
+SELECT TOP (1) CAST((CASE WHEN (CAST([g].[Rank] AS int) & CAST(@p0 AS int)) = CAST(1 AS int) THEN 1 ELSE 0 END) AS bit) AS [hasFlagTrue], CAST((CASE WHEN (CAST([g].[Rank] AS int) & CAST(@p1 AS int)) = CAST(2 AS int) THEN 1 ELSE 0 END) AS bit) AS [hasFlagFalse]
+FROM [Gears] AS [g]
+WHERE [g].[Discriminator] IN (N'Gear', N'Officer') AND ((CAST([g].[Rank] AS int) & CAST(@p0 AS int)) = CAST(1 AS int))");
+        }
+
+        [Fact]
+        [Trait("Impatient", "Overridden for translation coverage")]
+        public override void Where_enum_has_flag()
+        {
+            base.Where_enum_has_flag();
+
+            Fixture.AssertSql(@"@p0='1'
+
+SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOrBirthName] AS [Item4], [g].[Discriminator] AS [Item5], [g].[FullName] AS [Item6], [g].[HasSoulPatch] AS [Item7], [g].[LeaderNickname] AS [Rest.Item1], [g].[LeaderSquadId] AS [Rest.Item2], [g].[Rank] AS [Rest.Item3]
+FROM [Gears] AS [g]
+WHERE [g].[Discriminator] IN (N'Gear', N'Officer') AND ((CAST([g].[Rank] AS int) & CAST(@p0 AS int)) = CAST(1 AS int))
+
+@p0='5'
+
+SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOrBirthName] AS [Item4], [g].[Discriminator] AS [Item5], [g].[FullName] AS [Item6], [g].[HasSoulPatch] AS [Item7], [g].[LeaderNickname] AS [Rest.Item1], [g].[LeaderSquadId] AS [Rest.Item2], [g].[Rank] AS [Rest.Item3]
+FROM [Gears] AS [g]
+WHERE [g].[Discriminator] IN (N'Gear', N'Officer') AND ((CAST([g].[Rank] AS int) & CAST(@p0 AS int)) = CAST(5 AS int))
+
+@p0='1'
+
+SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOrBirthName] AS [Item4], [g].[Discriminator] AS [Item5], [g].[FullName] AS [Item6], [g].[HasSoulPatch] AS [Item7], [g].[LeaderNickname] AS [Rest.Item1], [g].[LeaderSquadId] AS [Rest.Item2], [g].[Rank] AS [Rest.Item3]
+FROM [Gears] AS [g]
+WHERE [g].[Discriminator] IN (N'Gear', N'Officer') AND ((CAST([g].[Rank] AS int) & CAST(@p0 AS int)) = CAST(1 AS int))
+
+@p0='1'
+
+SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOrBirthName] AS [Item4], [g].[Discriminator] AS [Item5], [g].[FullName] AS [Item6], [g].[HasSoulPatch] AS [Item7], [g].[LeaderNickname] AS [Rest.Item1], [g].[LeaderSquadId] AS [Rest.Item2], [g].[Rank] AS [Rest.Item3]
+FROM [Gears] AS [g]
+WHERE [g].[Discriminator] IN (N'Gear', N'Officer') AND ((CAST([g].[Rank] AS int) & CAST(@p0 AS int)) = CAST(1 AS int))
+
+@p0='1'
+
+SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOrBirthName] AS [Item4], [g].[Discriminator] AS [Item5], [g].[FullName] AS [Item6], [g].[HasSoulPatch] AS [Item7], [g].[LeaderNickname] AS [Rest.Item1], [g].[LeaderSquadId] AS [Rest.Item2], [g].[Rank] AS [Rest.Item3]
+FROM [Gears] AS [g]
+WHERE [g].[Discriminator] IN (N'Gear', N'Officer') AND ((CAST(@p0 AS int) & CAST([g].[Rank] AS int)) = CAST([g].[Rank] AS int))");
+        }
+
+        [Fact]
+        [Trait("Impatient", "Overridden for translation coverage")]
+        public override void Where_enum_has_flag_subquery()
+        {
+            base.Where_enum_has_flag_subquery();
+
+            Fixture.AssertSql(@"SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOrBirthName] AS [Item4], [g].[Discriminator] AS [Item5], [g].[FullName] AS [Item6], [g].[HasSoulPatch] AS [Item7], [g].[LeaderNickname] AS [Rest.Item1], [g].[LeaderSquadId] AS [Rest.Item2], [g].[Rank] AS [Rest.Item3]
+FROM [Gears] AS [g]
+WHERE [g].[Discriminator] IN (N'Gear', N'Officer') AND ((CAST([g].[Rank] AS int) & CAST((
+    SELECT TOP (1) [x].[Rank]
+    FROM [Gears] AS [x]
+    WHERE [x].[Discriminator] IN (N'Gear', N'Officer')
+    ORDER BY [x].[Nickname] ASC, [x].[SquadId] ASC
+) AS int)) = CAST((
+    SELECT TOP (1) [x].[Rank]
+    FROM [Gears] AS [x]
+    WHERE [x].[Discriminator] IN (N'Gear', N'Officer')
+    ORDER BY [x].[Nickname] ASC, [x].[SquadId] ASC
+) AS int))
+
+SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOrBirthName] AS [Item4], [g].[Discriminator] AS [Item5], [g].[FullName] AS [Item6], [g].[HasSoulPatch] AS [Item7], [g].[LeaderNickname] AS [Rest.Item1], [g].[LeaderSquadId] AS [Rest.Item2], [g].[Rank] AS [Rest.Item3]
+FROM [Gears] AS [g]
+WHERE [g].[Discriminator] IN (N'Gear', N'Officer') AND ((CAST(1 AS int) & CAST((
+    SELECT TOP (1) [x].[Rank]
+    FROM [Gears] AS [x]
+    WHERE [x].[Discriminator] IN (N'Gear', N'Officer')
+    ORDER BY [x].[Nickname] ASC, [x].[SquadId] ASC
+) AS int)) = CAST((
+    SELECT TOP (1) [x].[Rank]
+    FROM [Gears] AS [x]
+    WHERE [x].[Discriminator] IN (N'Gear', N'Officer')
+    ORDER BY [x].[Nickname] ASC, [x].[SquadId] ASC
+) AS int))");
+        }
+
+        [Fact]
+        [Trait("Impatient", "Overridden for translation coverage")]
+        public override void Where_enum_has_flag_subquery_client_eval()
+        {
+            base.Where_enum_has_flag_subquery_client_eval();
+
+            Fixture.AssertSql(@"SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOrBirthName] AS [Item4], [g].[Discriminator] AS [Item5], [g].[FullName] AS [Item6], [g].[HasSoulPatch] AS [Item7], [g].[LeaderNickname] AS [Rest.Item1], [g].[LeaderSquadId] AS [Rest.Item2], [g].[Rank] AS [Rest.Item3]
+FROM [Gears] AS [g]
+WHERE [g].[Discriminator] IN (N'Gear', N'Officer')
+
+SELECT TOP (1) [x].[Rank]
+FROM [Gears] AS [x]
+WHERE [x].[Discriminator] IN (N'Gear', N'Officer')
+ORDER BY [x].[Nickname] ASC, [x].[SquadId] ASC
+
+SELECT TOP (1) [x].[Rank]
+FROM [Gears] AS [x]
+WHERE [x].[Discriminator] IN (N'Gear', N'Officer')
+ORDER BY [x].[Nickname] ASC, [x].[SquadId] ASC
+
+SELECT TOP (1) [x].[Rank]
+FROM [Gears] AS [x]
+WHERE [x].[Discriminator] IN (N'Gear', N'Officer')
+ORDER BY [x].[Nickname] ASC, [x].[SquadId] ASC
+
+SELECT TOP (1) [x].[Rank]
+FROM [Gears] AS [x]
+WHERE [x].[Discriminator] IN (N'Gear', N'Officer')
+ORDER BY [x].[Nickname] ASC, [x].[SquadId] ASC
+
+SELECT TOP (1) [x].[Rank]
+FROM [Gears] AS [x]
+WHERE [x].[Discriminator] IN (N'Gear', N'Officer')
+ORDER BY [x].[Nickname] ASC, [x].[SquadId] ASC");
+        }
+
+        [Fact]
+        [Trait("Impatient", "Overridden for translation coverage")]
+        public override void Where_enum_has_flag_subquery_with_pushdown()
+        {
+            base.Where_enum_has_flag_subquery_with_pushdown();
+
+            Fixture.AssertSql(@"SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOrBirthName] AS [Item4], [g].[Discriminator] AS [Item5], [g].[FullName] AS [Item6], [g].[HasSoulPatch] AS [Item7], [g].[LeaderNickname] AS [Rest.Item1], [g].[LeaderSquadId] AS [Rest.Item2], [g].[Rank] AS [Rest.Item3]
+FROM [Gears] AS [g]
+WHERE [g].[Discriminator] IN (N'Gear', N'Officer') AND ((CAST([g].[Rank] AS int) & CAST((
+    SELECT TOP (1) [x].[Rank]
+    FROM [Gears] AS [x]
+    WHERE [x].[Discriminator] IN (N'Gear', N'Officer')
+    ORDER BY [x].[Nickname] ASC, [x].[SquadId] ASC
+) AS int)) = CAST((
+    SELECT TOP (1) [x].[Rank]
+    FROM [Gears] AS [x]
+    WHERE [x].[Discriminator] IN (N'Gear', N'Officer')
+    ORDER BY [x].[Nickname] ASC, [x].[SquadId] ASC
+) AS int))
+
+SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOrBirthName] AS [Item4], [g].[Discriminator] AS [Item5], [g].[FullName] AS [Item6], [g].[HasSoulPatch] AS [Item7], [g].[LeaderNickname] AS [Rest.Item1], [g].[LeaderSquadId] AS [Rest.Item2], [g].[Rank] AS [Rest.Item3]
+FROM [Gears] AS [g]
+WHERE [g].[Discriminator] IN (N'Gear', N'Officer') AND ((CAST(1 AS int) & CAST((
+    SELECT TOP (1) [x].[Rank]
+    FROM [Gears] AS [x]
+    WHERE [x].[Discriminator] IN (N'Gear', N'Officer')
+    ORDER BY [x].[Nickname] ASC, [x].[SquadId] ASC
+) AS int)) = CAST((
+    SELECT TOP (1) [x].[Rank]
+    FROM [Gears] AS [x]
+    WHERE [x].[Discriminator] IN (N'Gear', N'Officer')
+    ORDER BY [x].[Nickname] ASC, [x].[SquadId] ASC
+) AS int))");
+        }
+
+        [Fact]
+        [Trait("Impatient", "Overridden for translation coverage")]
+        public override void Where_enum_has_flag_with_non_nullable_parameter()
+        {
+            base.Where_enum_has_flag_with_non_nullable_parameter();
+
+            Fixture.AssertSql(@"@p0='1'
+@p1='1'
+
+SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOrBirthName] AS [Item4], [g].[Discriminator] AS [Item5], [g].[FullName] AS [Item6], [g].[HasSoulPatch] AS [Item7], [g].[LeaderNickname] AS [Rest.Item1], [g].[LeaderSquadId] AS [Rest.Item2], [g].[Rank] AS [Rest.Item3]
+FROM [Gears] AS [g]
+WHERE [g].[Discriminator] IN (N'Gear', N'Officer') AND ((CAST([g].[Rank] AS int) & CAST(@p0 AS int)) = @p1)");
+        }
+
+        [Fact]
+        [Trait("Impatient", "Overridden for translation coverage")]
+        public override void Where_has_flag_with_nullable_parameter()
+        {
+            base.Where_has_flag_with_nullable_parameter();
+
+            Fixture.AssertSql(@"@p0='1'
+@p1='1'
+
+SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOrBirthName] AS [Item4], [g].[Discriminator] AS [Item5], [g].[FullName] AS [Item6], [g].[HasSoulPatch] AS [Item7], [g].[LeaderNickname] AS [Rest.Item1], [g].[LeaderSquadId] AS [Rest.Item2], [g].[Rank] AS [Rest.Item3]
+FROM [Gears] AS [g]
+WHERE [g].[Discriminator] IN (N'Gear', N'Officer') AND ((CAST([g].[Rank] AS int) & CAST(@p0 AS int)) = @p1)");
         }
     }
 }

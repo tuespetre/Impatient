@@ -9,13 +9,19 @@ namespace Impatient.Query.Infrastructure
     public class DefaultRewritingExpressionVisitorProvider : IRewritingExpressionVisitorProvider
     {
         private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
+        private readonly ITypeMappingProvider typeMappingProvider;
 
         public DefaultRewritingExpressionVisitorProvider(
-            TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor)
+            TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor,
+            ITypeMappingProvider typeMappingProvider)
         {
-            this.translatabilityAnalyzingExpressionVisitor 
-                = translatabilityAnalyzingExpressionVisitor 
-                    ?? throw new ArgumentNullException(nameof(translatabilityAnalyzingExpressionVisitor));
+            this.translatabilityAnalyzingExpressionVisitor
+                = translatabilityAnalyzingExpressionVisitor
+                ?? throw new ArgumentNullException(nameof(translatabilityAnalyzingExpressionVisitor));
+
+            this.typeMappingProvider
+                = typeMappingProvider
+                ?? throw new ArgumentNullException(nameof(typeMappingProvider));
         }
 
         public virtual IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
@@ -45,6 +51,8 @@ namespace Impatient.Query.Infrastructure
             yield return new EnumerableContainsRewritingExpressionVisitor();
 
             yield return new EnumerableQueryEqualityRewritingExpressionVisitor();
+
+            yield return new EnumHasFlagRewritingExpressionVisitor(typeMappingProvider);
 
             // SQL Server specific rewriters (should be pulled from the default provider at some point)
 

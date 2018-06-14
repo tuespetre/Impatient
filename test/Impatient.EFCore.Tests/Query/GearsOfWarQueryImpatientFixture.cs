@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.TestUtilities;
 
 namespace Impatient.EFCore.Tests.Query
 {
-    public class GearsOfWarQueryImpatientFixture : GearsOfWarQueryFixtureBase
+    public class GearsOfWarQueryImpatientFixture : GearsOfWarQueryRelationalFixture
     {
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
