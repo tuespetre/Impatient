@@ -8,7 +8,10 @@ namespace Impatient.Tests.Utilities
 {
     public static class ExtensionMethods
     {
-        public static IServiceProvider CreateServiceProvider(DescriptorSet descriptorSet = null, string connectionString = null)
+        public static IServiceProvider CreateServiceProvider(
+            DescriptorSet descriptorSet = null, 
+            string connectionString = null,
+            ImpatientCompatibility compatibility = ImpatientCompatibility.Default)
         {
             var services = new ServiceCollection();
 
@@ -26,6 +29,8 @@ namespace Impatient.Tests.Utilities
 
             services.AddScoped<IRewritingExpressionVisitorProvider, DefaultRewritingExpressionVisitorProvider>();
 
+            services.AddScoped<IProviderSpecificRewritingExpressionVisitorProvider, SqlServerRewritingExpressionVisitorProvider>();
+
             services.AddScoped<IOptimizingExpressionVisitorProvider, DefaultOptimizingExpressionVisitorProvider>();
 
             services.AddScoped<IComposingExpressionVisitorProvider, DefaultComposingExpressionVisitorProvider>();
@@ -36,7 +41,12 @@ namespace Impatient.Tests.Utilities
 
             services.AddScoped<IQueryTranslatingExpressionVisitorFactory, DefaultQueryTranslatingExpressionVisitorFactory>();
 
-            services.AddScoped<IQueryProcessingContextFactory, DefaultQueryProcessingContextFactory>();
+            services.AddScoped<IQueryProcessingContextFactory>(provider =>
+            {
+                return new DefaultQueryProcessingContextFactory(
+                    provider.GetRequiredService<DescriptorSet>(),
+                    compatibility);
+            });
 
             services.AddScoped<IDbCommandExecutorFactory>(provider => provider.GetRequiredService<TestDbCommandExecutorFactory>());
 

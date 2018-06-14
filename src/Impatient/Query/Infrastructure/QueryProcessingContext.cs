@@ -12,17 +12,20 @@ namespace Impatient.Query.Infrastructure
 
         public QueryProcessingContext(
             IQueryProvider queryProvider,
-            DescriptorSet descriptorSet)
+            DescriptorSet descriptorSet,
+            ImpatientCompatibility compatibility)
         {
             QueryProvider = queryProvider;
             DescriptorSet = descriptorSet;
+            Compatibility = compatibility;
             ParameterMapping = new Dictionary<object, ParameterExpression>();
-            //ExecutionContextParameter = Expression.Parameter(typeof(IDbCommandExecutor), "executor");
         }
 
         public IQueryProvider QueryProvider { get; }
 
         public DescriptorSet DescriptorSet { get; }
+
+        public ImpatientCompatibility Compatibility { get; }
 
         public IDictionary<object, ParameterExpression> ParameterMapping { get; }
 

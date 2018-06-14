@@ -1,4 +1,5 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
+using Impatient.Metadata;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
@@ -10,7 +11,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 {
     public static class ImpatientEFCoreServiceCollectionExtensions
     {
-        public static IServiceCollection AddImpatientEFCoreQueryCompiler(this IServiceCollection services)
+        public static IServiceCollection AddImpatientEFCoreQueryCompiler(
+            this IServiceCollection services,
+            ImpatientCompatibility compatibility)
         {
             foreach (var descriptor in services.Where(s => s.ServiceType == typeof(IQueryCompiler)).ToArray())
             {
@@ -41,13 +44,21 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             services.AddScoped<IRewritingExpressionVisitorProvider, EFCoreRewritingExpressionVisitorProvider>();
 
+            services.AddScoped<IProviderSpecificRewritingExpressionVisitorProvider, SqlServerRewritingExpressionVisitorProvider>();
+
             services.AddScoped<ICompilingExpressionVisitorProvider, EFCoreCompilingExpressionVisitorProvider>();
 
             services.AddScoped<IQueryableInliningExpressionVisitorFactory, EFCoreQueryableInliningExpressionVisitorFactory>();
 
             services.AddScoped<IDbCommandExecutorFactory, EFCoreDbCommandExecutorFactory>();
 
-            services.AddScoped<IQueryProcessingContextFactory, EFCoreQueryProcessingContextFactory>();
+            services.AddScoped<IQueryProcessingContextFactory>(provider =>
+            {
+                return new EFCoreQueryProcessingContextFactory(
+                    provider.GetRequiredService<ICurrentDbContext>(),
+                    provider.GetRequiredService<DescriptorSet>(),
+                    compatibility);
+            });
 
             services.AddScoped<IImpatientQueryProcessor, DefaultImpatientQueryProcessor>();
 

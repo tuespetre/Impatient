@@ -1890,7 +1890,7 @@ ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
 
             var provider = services.GetService<IOptimizingExpressionVisitorProvider>();
 
-            var context = new QueryProcessingContext(impatient, DescriptorSet.Empty);
+            var context = new QueryProcessingContext(impatient, DescriptorSet.Empty, ImpatientCompatibility.Default);
 
             var expression
                 = provider
@@ -1901,6 +1901,7 @@ ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
                 = new QueryComposingExpressionVisitor(
                     services.GetService<TranslatabilityAnalyzingExpressionVisitor>(),
                     services.GetService<IRewritingExpressionVisitorProvider>().CreateExpressionVisitors(context),
+                    services.GetService<IProviderSpecificRewritingExpressionVisitorProvider>().CreateExpressionVisitors(context),
                     new SqlParameterRewritingExpressionVisitor(context.ParameterMapping.Values))
                     .Visit(expression);
 
@@ -1937,7 +1938,7 @@ FROM [dbo].[MyClass1] AS [m_0]",
 
             var provider = services.GetService<IOptimizingExpressionVisitorProvider>();
 
-            var context = new QueryProcessingContext(impatient, DescriptorSet.Empty);
+            var context = new QueryProcessingContext(impatient, DescriptorSet.Empty, ImpatientCompatibility.Default);
 
             var expression
                 = provider
@@ -1948,6 +1949,7 @@ FROM [dbo].[MyClass1] AS [m_0]",
                 = new QueryComposingExpressionVisitor(
                     services.GetService<TranslatabilityAnalyzingExpressionVisitor>(),
                     services.GetService<IRewritingExpressionVisitorProvider>().CreateExpressionVisitors(context),
+                    services.GetService<IProviderSpecificRewritingExpressionVisitorProvider>().CreateExpressionVisitors(context),
                     new SqlParameterRewritingExpressionVisitor(context.ParameterMapping.Values))
                     .Visit(expression);
 
@@ -4844,7 +4846,7 @@ WHERE JSON_VALUE([z].[value], N'$.Prop') = JSON_VALUE([y].[t], N'$.Prop')",
                 SqlLog);
         }
 
-        [TestMethod] 
+        [TestMethod]
         public void ToString_integer()
         {
             var query = from m in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Cast<MyClass1>()
@@ -4856,6 +4858,103 @@ WHERE JSON_VALUE([z].[value], N'$.Prop') = JSON_VALUE([y].[t], N'$.Prop')",
                 @"SELECT CONVERT(VARCHAR(100), [m].[Prop2])
 FROM [dbo].[MyClass1] AS [m]",
                 SqlLog);
+        }
+
+        [TestMethod]
+        public void StringJoin_StringArray()
+        {
+            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True");
+            var impatient = services.GetRequiredService<ImpatientQueryProvider>();
+            var customers = impatient.CreateQuery<Northwind.Customer>(CreateQueryExpression(typeof(Northwind.Customer)));
+            var orders = impatient.CreateQuery<Northwind.Order>(CreateQueryExpression(typeof(Northwind.Order)));
+
+            var query = from c in customers
+                        let os = orders.Where(o => o.CustomerID == c.CustomerID)
+                        select string.Join(", ", os.Select(o => o.ShipName).ToArray());
+
+            query.ToList();
+
+            var log = services.GetService<TestDbCommandExecutorFactory>().Log.ToString();
+
+            Assert.AreEqual(@"SELECT (
+    SELECT COALESCE(STRING_AGG([o].[ShipName], N', '), N'')
+    FROM [dbo].[Orders] AS [o]
+    WHERE [o].[CustomerID] = [c].[CustomerID]
+)
+FROM [dbo].[Customers] AS [c]", log);
+        }
+
+        [TestMethod]
+        public void StringJoin_StringEnumerable()
+        {
+            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True");
+            var impatient = services.GetRequiredService<ImpatientQueryProvider>();
+            var customers = impatient.CreateQuery<Northwind.Customer>(CreateQueryExpression(typeof(Northwind.Customer)));
+            var orders = impatient.CreateQuery<Northwind.Order>(CreateQueryExpression(typeof(Northwind.Order)));
+
+            var query = from c in customers
+                        let os = orders.Where(o => o.CustomerID == c.CustomerID)
+                        select string.Join(", ", os.Select(o => o.ShipName));
+
+            query.ToList();
+
+            var log = services.GetService<TestDbCommandExecutorFactory>().Log.ToString();
+
+            Assert.AreEqual(@"SELECT (
+    SELECT COALESCE(STRING_AGG([o].[ShipName], N', '), N'')
+    FROM [dbo].[Orders] AS [o]
+    WHERE [o].[CustomerID] = [c].[CustomerID]
+)
+FROM [dbo].[Customers] AS [c]", log);
+        }
+
+        [TestMethod]
+        public void StringJoin_GenericEnumerable()
+        {
+            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True");
+            var impatient = services.GetRequiredService<ImpatientQueryProvider>();
+            var customers = impatient.CreateQuery<Northwind.Customer>(CreateQueryExpression(typeof(Northwind.Customer)));
+            var orders = impatient.CreateQuery<Northwind.Order>(CreateQueryExpression(typeof(Northwind.Order)));
+
+            var query = from c in customers
+                        let os = orders.Where(o => o.CustomerID == c.CustomerID)
+                        select string.Join(", ", os.Select(o => o.OrderDate).ToArray());
+
+            query.ToList();
+
+            var log = services.GetService<TestDbCommandExecutorFactory>().Log.ToString();
+
+            Assert.AreEqual(@"SELECT (
+    SELECT COALESCE(STRING_AGG([o].[OrderDate], N', '), N'')
+    FROM [dbo].[Orders] AS [o]
+    WHERE [o].[CustomerID] = [c].[CustomerID]
+)
+FROM [dbo].[Customers] AS [c]", log);
+        }
+
+        [TestMethod]
+        public void StringJoin_RespectsCompatibility()
+        {
+            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True", compatibility: ImpatientCompatibility.SqlServer2016);
+            var impatient = services.GetRequiredService<ImpatientQueryProvider>();
+            var customers = impatient.CreateQuery<Northwind.Customer>(CreateQueryExpression(typeof(Northwind.Customer)));
+            var orders = impatient.CreateQuery<Northwind.Order>(CreateQueryExpression(typeof(Northwind.Order)));
+
+            var query = from c in customers
+                        let os = orders.Where(o => o.CustomerID == c.CustomerID)
+                        select string.Join(", ", os.Select(o => o.ShipName).ToArray());
+
+            query.ToList();
+
+            var log = services.GetService<TestDbCommandExecutorFactory>().Log.ToString();
+
+            Assert.AreEqual(@"SELECT [c].[CustomerID] AS [c.CustomerID], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[Region] AS [c.Region], [c].[PostalCode] AS [c.PostalCode], [c].[Country] AS [c.Country], [c].[Phone] AS [c.Phone], [c].[Fax] AS [c.Fax], (
+    SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShippedDate] AS [ShippedDate], [o].[ShipVia] AS [ShipVia], [o].[Freight] AS [Freight], [o].[ShipName] AS [ShipName], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipRegion] AS [ShipRegion], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipCountry] AS [ShipCountry]
+    FROM [dbo].[Orders] AS [o]
+    WHERE [o].[CustomerID] = [c].[CustomerID]
+    FOR JSON PATH
+) AS [os]
+FROM [dbo].[Customers] AS [c]", log);
         }
 
         private class QueryWrapper
@@ -4870,7 +4969,7 @@ FROM [dbo].[MyClass1] AS [m]",
                 get;
                 set;
             }
-            
+
             [MethodImpl(MethodImplOptions.NoInlining)]
             public IQueryable<MyClass2> GetQueryMethod()
             {

@@ -1,4 +1,5 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer;
+using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -10,6 +11,8 @@ namespace Impatient.EFCore.Tests.Utilities
     {
         public static ImpatientTestStoreFactory Instance { get; } = new ImpatientTestStoreFactory();
 
+        private readonly ImpatientCompatibility compatibility = ImpatientCompatibility.Default;
+
         private ImpatientTestStoreFactory()
         {
         }
@@ -17,7 +20,7 @@ namespace Impatient.EFCore.Tests.Utilities
         public IServiceCollection AddProviderServices(IServiceCollection serviceCollection)
             => serviceCollection
                 .AddEntityFrameworkSqlServer()
-                .AddImpatientEFCoreQueryCompiler()
+                .AddImpatientEFCoreQueryCompiler(compatibility)
                 .AddSingleton<ILoggerFactory>(new TestSqlLoggerFactory());
 
         public TestStore Create(string storeName)

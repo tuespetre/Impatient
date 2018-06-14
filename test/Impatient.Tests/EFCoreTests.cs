@@ -455,7 +455,7 @@ WHERE [p].[Discontinued] IN (0, 1)
             {
                 options
                     .UseSqlServer(@"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=true")
-                    .UseImpatientQueryCompiler();
+                    .UseImpatient();
             });
 
             var provider = services.BuildServiceProvider();
@@ -553,7 +553,7 @@ CROSS APPLY (
             {
                 options
                     .UseSqlServer(@"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=true; MultipleActiveResultSets=True")
-                    .UseImpatientQueryCompiler();
+                    .UseImpatient();
             });
 
             var provider = services.BuildServiceProvider();
@@ -579,7 +579,7 @@ CROSS APPLY (
             {
                 options
                     .UseSqlServer(@"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=true; MultipleActiveResultSets=True")
-                    .UseImpatientQueryCompiler();
+                    .UseImpatient();
             });
 
             var provider = services.BuildServiceProvider();

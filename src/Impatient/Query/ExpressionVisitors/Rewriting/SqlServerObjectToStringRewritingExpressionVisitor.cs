@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Rewriting
 {
-    public class ObjectToStringRewritingExpressionVisitor : ExpressionVisitor
+    public class SqlServerObjectToStringRewritingExpressionVisitor : ExpressionVisitor
     {        
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {

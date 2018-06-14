@@ -4,6 +4,7 @@ using Impatient.Query.ExpressionVisitors.Rewriting;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
@@ -14,15 +15,18 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         private readonly ICurrentDbContext currentDbContext;
         private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
         private readonly IRewritingExpressionVisitorProvider rewritingExpressionVisitorProvider;
+        private readonly IProviderSpecificRewritingExpressionVisitorProvider providerSpecificRewritingExpressionVisitor;
 
         public EFCoreComposingExpressionVisitorProvider(
             ICurrentDbContext currentDbContext,
             TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor, 
-            IRewritingExpressionVisitorProvider rewritingExpressionVisitorProvider)
+            IRewritingExpressionVisitorProvider rewritingExpressionVisitorProvider,
+            IProviderSpecificRewritingExpressionVisitorProvider providerSpecificRewritingExpressionVisitor)
         {
-            this.currentDbContext = currentDbContext;
-            this.translatabilityAnalyzingExpressionVisitor = translatabilityAnalyzingExpressionVisitor;
-            this.rewritingExpressionVisitorProvider = rewritingExpressionVisitorProvider;
+            this.currentDbContext = currentDbContext ?? throw new ArgumentNullException(nameof(currentDbContext));
+            this.translatabilityAnalyzingExpressionVisitor = translatabilityAnalyzingExpressionVisitor ?? throw new ArgumentNullException(nameof(translatabilityAnalyzingExpressionVisitor));
+            this.rewritingExpressionVisitorProvider = rewritingExpressionVisitorProvider ?? throw new ArgumentNullException(nameof(rewritingExpressionVisitorProvider));
+            this.providerSpecificRewritingExpressionVisitor = providerSpecificRewritingExpressionVisitor ?? throw new ArgumentNullException(nameof(providerSpecificRewritingExpressionVisitor));
         }
 
         public virtual IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
@@ -66,6 +70,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             yield return new QueryComposingExpressionVisitor(
                 translatabilityAnalyzingExpressionVisitor,
                 rewritingExpressionVisitorProvider.CreateExpressionVisitors(context),
+                providerSpecificRewritingExpressionVisitor.CreateExpressionVisitors(context),
                 new SqlParameterRewritingExpressionVisitor(context.ParameterMapping.Values));
 
             // Apply possible relational null semantics after the whole query is composed

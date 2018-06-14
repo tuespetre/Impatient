@@ -10,11 +10,16 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
     {
         private readonly ICurrentDbContext currentDbContext;
         private readonly DescriptorSet descriptorSet;
+        private readonly ImpatientCompatibility compatibility;
 
-        public EFCoreQueryProcessingContextFactory(ICurrentDbContext currentDbContext, DescriptorSet descriptorSet)
+        public EFCoreQueryProcessingContextFactory(
+            ICurrentDbContext currentDbContext, 
+            DescriptorSet descriptorSet,
+            ImpatientCompatibility compatibility)
         {
             this.currentDbContext = currentDbContext ?? throw new ArgumentNullException(nameof(currentDbContext));
             this.descriptorSet = descriptorSet ?? throw new ArgumentNullException(nameof(descriptorSet));
+            this.compatibility = compatibility;
         }
 
         public QueryProcessingContext CreateQueryProcessingContext(IQueryProvider queryProvider)
@@ -24,7 +29,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
                 throw new ArgumentNullException(nameof(queryProvider));
             }
 
-            var processingContext = new QueryProcessingContext(queryProvider, descriptorSet);
+            var processingContext = new QueryProcessingContext(queryProvider, descriptorSet, compatibility);
 
             processingContext.ParameterMapping.Add(
                 currentDbContext.Context,

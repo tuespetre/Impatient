@@ -17,6 +17,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
     {
         private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor;
         private readonly IEnumerable<ExpressionVisitor> rewritingExpressionVisitors;
+        private readonly IEnumerable<ExpressionVisitor> providerSpecificRewritingExpressionVisitors;
         private readonly ExpressionVisitor parameterizingExpressionVisitor;
         
         private bool topLevel = true;
@@ -24,15 +25,20 @@ namespace Impatient.Query.ExpressionVisitors.Composing
         public QueryComposingExpressionVisitor(
             TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor,
             IEnumerable<ExpressionVisitor> rewritingExpressionVisitors,
+            IEnumerable<ExpressionVisitor> providerSpecificRewritingExpressionVisitors,
             ExpressionVisitor parameterizingExpressionVisitor)
         {
             this.translatabilityVisitor = translatabilityVisitor ?? throw new ArgumentNullException(nameof(translatabilityVisitor));
             this.rewritingExpressionVisitors = rewritingExpressionVisitors ?? throw new ArgumentNullException(nameof(rewritingExpressionVisitors));
-            this.parameterizingExpressionVisitor = parameterizingExpressionVisitor;
+            this.providerSpecificRewritingExpressionVisitors = providerSpecificRewritingExpressionVisitors ?? throw new ArgumentNullException(nameof(providerSpecificRewritingExpressionVisitors));
+            this.parameterizingExpressionVisitor = parameterizingExpressionVisitor ?? throw new ArgumentNullException(nameof(parameterizingExpressionVisitor));
         }
 
         private IEnumerable<ExpressionVisitor> ServerPostExpansionVisitors
-            => rewritingExpressionVisitors.Concat(ClientPostExpansionVisitors);
+            => rewritingExpressionVisitors
+                .Append(this)
+                .Concat(providerSpecificRewritingExpressionVisitors)
+                .Concat(ClientPostExpansionVisitors);
 
         private IEnumerable<ExpressionVisitor> ClientPostExpansionVisitors
         {

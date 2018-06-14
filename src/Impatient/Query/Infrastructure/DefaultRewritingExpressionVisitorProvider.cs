@@ -26,13 +26,27 @@ namespace Impatient.Query.Infrastructure
 
         public virtual IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
         {
-            // 'Simple' replacement rewriters
+            /*
+            
+            Order-dependency notes:
+
+            - ListContainsToEnumerableContainsRewritingExpressionVisitor
+                - has to run before EnumerableContainsRewritingExpressionVisitor
+
+            - GroupingAggregationRewritingExpressionVisitor
+                - has to run before the QueryComposingExpressionVisitor recurses
+
+            - SqlServerStringJoinRewritingExpressionVisitor
+                - has to run after the QueryComposingExpressionVisitor recurses
+
+            Ideally none of these would be order-dependent beyond running before
+            or after the QueryComposingExpressionVisitor recurses.
+
+            */
 
             yield return new ListContainsToEnumerableContainsRewritingExpressionVisitor();
 
             yield return new EqualsMethodRewritingExpressionVisitor();
-
-            // 'Core' rewriters
 
             yield return new KeyEqualityRewritingExpressionVisitor(context.DescriptorSet);
 
@@ -53,18 +67,6 @@ namespace Impatient.Query.Infrastructure
             yield return new EnumerableQueryEqualityRewritingExpressionVisitor();
 
             yield return new EnumHasFlagRewritingExpressionVisitor(typeMappingProvider);
-
-            // SQL Server specific rewriters (should be pulled from the default provider at some point)
-
-            yield return new ObjectToStringRewritingExpressionVisitor();
-
-            yield return new StringToNumberAsciiRewritingExpressionVisitor();
-
-            yield return new SqlServerCountRewritingExpressionVisitor();
-
-            yield return new SqlServerMathMethodRewritingExpressionVisitor();
-
-            yield return new SqlServerJsonMemberRewritingExpressionVisitor();
         }
     }
 }
