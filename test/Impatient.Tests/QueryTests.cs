@@ -2210,6 +2210,54 @@ FROM (
         }
 
         [TestMethod]
+        public void Concat_cast()
+        {
+            var set1 = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => (int?)m.Prop2);
+            var set2 = impatient.CreateQuery<MyClass2>(MyClass2QueryExpression).Select(m => (int?)m.Prop2);
+
+            var query = set1.Concat(set2);
+
+            var result = query.ToList();
+
+            Assert.AreEqual(4, result.Count);
+
+            Assert.AreEqual(
+                @"SELECT [set].[Prop2]
+FROM (
+    SELECT [m].[Prop2]
+    FROM [dbo].[MyClass1] AS [m]
+    UNION ALL
+    SELECT [m_0].[Prop2]
+    FROM [dbo].[MyClass2] AS [m_0]
+) AS [set]",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Concat_different_column_names()
+        {
+            var set1 = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => m.Prop2);
+            var set2 = impatient.CreateQuery<MyClass2>(MyClass2QueryExpression).Select(m => m.Prop1.Length);
+
+            var query = set1.Concat(set2);
+
+            var result = query.ToList();
+
+            Assert.AreEqual(4, result.Count);
+
+            Assert.AreEqual(
+                @"SELECT [set].[Prop2]
+FROM (
+    SELECT [m].[Prop2]
+    FROM [dbo].[MyClass1] AS [m]
+    UNION ALL
+    SELECT CAST(LEN([m_0].[Prop1]) AS int)
+    FROM [dbo].[MyClass2] AS [m_0]
+) AS [set]",
+                SqlLog);
+        }
+
+        [TestMethod]
         public void Except_simple()
         {
             var set1 = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => new { m.Prop1, m.Prop2 });

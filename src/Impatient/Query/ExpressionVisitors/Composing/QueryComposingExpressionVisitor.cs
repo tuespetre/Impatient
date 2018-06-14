@@ -2330,34 +2330,37 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 return fallbackToEnumerable();
             }
 
-            var outerGatherer = new ProjectionLeafGatheringExpressionVisitor();
-            var innerGatherer = new ProjectionLeafGatheringExpressionVisitor();
-            outerGatherer.Visit(outerProjection);
-            innerGatherer.Visit(innerProjection);
-
-            var shapesMatch = false;
-
-            if (outerGatherer.GatheredExpressions.Count == innerGatherer.GatheredExpressions.Count)
+            if (!outerProjection.Type.IsScalarType() || !innerProjection.Type.IsScalarType())
             {
-                shapesMatch = true;
+                var outerGatherer = new ProjectionLeafGatheringExpressionVisitor();
+                var innerGatherer = new ProjectionLeafGatheringExpressionVisitor();
+                outerGatherer.Visit(outerProjection);
+                innerGatherer.Visit(innerProjection);
 
-                var zippedPairs
-                    = outerGatherer.GatheredExpressions
-                        .Zip(innerGatherer.GatheredExpressions, ValueTuple.Create);
+                var shapesMatch = false;
 
-                foreach (var (pair1, pair2) in zippedPairs)
+                if (outerGatherer.GatheredExpressions.Count == innerGatherer.GatheredExpressions.Count)
                 {
-                    if (pair1.Key != pair2.Key || pair1.Value.Type != pair2.Value.Type)
+                    shapesMatch = true;
+
+                    var zippedPairs
+                        = outerGatherer.GatheredExpressions
+                            .Zip(innerGatherer.GatheredExpressions, ValueTuple.Create);
+
+                    foreach (var (pair1, pair2) in zippedPairs)
                     {
-                        shapesMatch = false;
-                        break;
+                        if (pair1.Key != pair2.Key || pair1.Value.Type != pair2.Value.Type)
+                        {
+                            shapesMatch = false;
+                            break;
+                        }
                     }
                 }
-            }
 
-            if (!shapesMatch)
-            {
-                return fallbackToEnumerable();
+                if (!shapesMatch)
+                {
+                    return fallbackToEnumerable();
+                }
             }
 
             var typesMatch = outerProjection.Type == innerProjection.Type;
