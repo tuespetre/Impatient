@@ -56,14 +56,15 @@ namespace Impatient.Query.Infrastructure
 
                 var hash = ComputeHash(inlined, context);
 
-                if (!queryCache.TryGetValue(hash, out var compiled))
-                {
-                    var visited = ApplyVisitors(inlined, context);
-
-                    compiled = CompileDelegate(visited, context);
-
-                    queryCache.Add(hash, compiled);
-                }
+                var compiled
+                    = queryCache.GetOrAdd(
+                        hash,
+                        arg => arg.self.CompileDelegate(
+                            arg.self.ApplyVisitors(
+                                arg.inlined, 
+                                arg.context),
+                            arg.context),
+                        (self: this, inlined, context));
 
                 var arguments = new object[context.ParameterMapping.Count + 1];
 

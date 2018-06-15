@@ -5,10 +5,25 @@ namespace Impatient.Query.Infrastructure
 {
     public class DefaultImpatientQueryCache : IImpatientQueryCache
     {
-        private readonly Dictionary<int, Delegate> dictionaryCache = new Dictionary<int, Delegate>();
+        private readonly Dictionary<int, Delegate> dictionary
+            = new Dictionary<int, Delegate>();
 
-        public void Add(int key, Delegate value) => dictionaryCache.Add(key, value);
+        public Delegate GetOrAdd<TArg>(int key, Func<TArg, Delegate> factory, TArg arg) where TArg : struct
+        {
+            if (factory == null)
+            {
+                throw new ArgumentNullException(nameof(factory));
+            }
 
-        public bool TryGetValue(int key, out Delegate value) => dictionaryCache.TryGetValue(key, out value);
+            lock (dictionary)
+            {
+                if (!dictionary.TryGetValue(key, out var value))
+                {
+                    dictionary.Add(key, value = factory(arg));
+                }
+
+                return value;
+            }
+        }
     }
 }

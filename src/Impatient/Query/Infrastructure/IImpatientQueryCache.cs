@@ -4,8 +4,6 @@ namespace Impatient.Query.Infrastructure
 {
     public interface IImpatientQueryCache
     {
-        bool TryGetValue(int key, out Delegate value);
-
-        void Add(int key, Delegate value);
+        Delegate GetOrAdd<TArg>(int key, Func<TArg, Delegate> factory, TArg arg) where TArg : struct;
     }
 }
