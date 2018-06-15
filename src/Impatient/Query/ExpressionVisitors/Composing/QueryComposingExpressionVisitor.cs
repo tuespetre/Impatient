@@ -1331,7 +1331,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                 if (!IsTranslatable(predicateBody))
                 {
-                    // TODO: fallback to Where(predicate).First()
                     return fallbackToEnumerable();
                 }
 
@@ -1385,7 +1384,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                 if (!IsTranslatable(predicateBody))
                 {
-                    // TODO: fallback to Where(predicate).FirstOrDefault()
                     return fallbackToEnumerable();
                 }
 
@@ -1448,7 +1446,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                 if (!IsTranslatable(predicateBody))
                 {
-                    // TODO: fallback to Where(predicate).Last()
                     return fallbackToEnumerable();
                 }
 
@@ -1518,7 +1515,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                 if (!IsTranslatable(predicateBody))
                 {
-                    // TODO: fallback to Where(predicate).LastOrDefault()
                     return fallbackToEnumerable();
                 }
 
@@ -1550,15 +1546,22 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                         false);
             }
 
-            // TODO: Return SingleValueRelationalQuery instead
+            outerSelectExpression
+                = outerSelectExpression
+                    .UpdateOrderBy(orderByExpression.Reverse())
+                    .UpdateLimit(Expression.Constant(1));
+
+            if (outerProjection.Type.IsScalarType())
+            {
+                return new SingleValueRelationalQueryExpression(
+                    outerSelectExpression);
+            }
 
             return Expression.Call(
                 GetGenericMethodDefinition((IEnumerable<object> e) => e.LastOrDefault())
                     .MakeGenericMethod(outerSelectExpression.Type),
                 outerQuery
-                    .UpdateSelectExpression(outerSelectExpression
-                        .UpdateOrderBy(orderByExpression.Reverse())
-                        .UpdateLimit(Expression.Constant(1))));
+                    .UpdateSelectExpression(outerSelectExpression));
         }
 
         protected Expression HandleSingle(
@@ -1590,7 +1593,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                 if (!IsTranslatable(predicateBody))
                 {
-                    // TODO: fallback to Where(predicate).Single()
                     return fallbackToEnumerable();
                 }
 
@@ -1644,7 +1646,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                 if (!IsTranslatable(predicateBody))
                 {
-                    // TODO: fallback to Where(predicate).SingleOrDefault()
                     return fallbackToEnumerable();
                 }
 
@@ -1761,8 +1762,6 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                             ComputeDefaultWindowOrderBy(outerSelectExpression)),
                         false);
             }
-
-            // TODO: Return SingleValueRelationalQuery instead
 
             return Expression.Call(
                 GetGenericMethodDefinition((IEnumerable<object> e) => e.ElementAtOrDefault(0))

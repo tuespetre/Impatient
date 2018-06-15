@@ -1,6 +1,5 @@
 ﻿using Impatient.Metadata;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
 using System.Linq;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
@@ -17,8 +16,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public DescriptorSet GetDescriptorSet(DbContext context)
         {
-            // TODO: This is probably broken as hell, doesn't consider 
-            // that a different model could be passed in at any time.
+            // TODO: This is probably broken as hell, doesn't consider that a different model could be passed in at any time.
 
             // TODO: Parameterize all DbContext references in query filters upfront.
 

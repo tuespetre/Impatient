@@ -78,8 +78,6 @@ namespace Impatient.Query.Expressions
             IEnumerable<MemberInfo> readableMembers,
             IEnumerable<MemberInfo> writableMembers)
         {
-            // TODO: Argument validation
-
             arguments = arguments?.ToArray();
             readableMembers = readableMembers?.ToArray();
             writableMembers = writableMembers?.ToArray();
@@ -131,19 +129,22 @@ namespace Impatient.Query.Expressions
 
                 if (!(ReadableMembers[i].DeclaringType.IsAssignableFrom(newExpression.Type)))
                 {
-                    throw new ArgumentException($"ReadableMembers must be valid for the NewExpression. Element {i} is not valid.");
+                    throw new ArgumentException($"ReadableMembers must be valid for the NewExpression's type. Element {i} is not valid.");
                 }
 
                 if (!(WritableMembers[i].DeclaringType.IsAssignableFrom(newExpression.Type)))
                 {
-                    throw new ArgumentException($"WritableMembers must be valid for the NewExpression. Element {i} is not valid.");
+                    throw new ArgumentException($"WritableMembers must be valid for the NewExpression's type. Element {i} is not valid.");
                 }
             }
         }
 
         protected override Expression VisitChildren(ExpressionVisitor visitor)
         {
-            // TODO: Argument validation
+            if (visitor == null)
+            {
+                throw new ArgumentNullException(nameof(visitor));
+            }
 
             var newExpression = visitor.VisitAndConvert(NewExpression, nameof(VisitChildren));
             var arguments = visitor.Visit(Arguments);
@@ -153,7 +154,15 @@ namespace Impatient.Query.Expressions
 
         public ExtendedMemberInitExpression Update(ExtendedNewExpression newExpression, IEnumerable<Expression> arguments)
         {
-            // TODO: Argument validation
+            if (newExpression == null)
+            {
+                throw new ArgumentNullException(nameof(newExpression));
+            }
+
+            if (arguments == null)
+            {
+                throw new ArgumentNullException(nameof(arguments));
+            }
 
             if (newExpression != NewExpression || arguments != Arguments)
             {

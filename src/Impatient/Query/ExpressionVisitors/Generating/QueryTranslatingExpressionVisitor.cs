@@ -440,7 +440,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                 case Enum value:
                 {
-                    // TODO: This is probably not correct
+                    // TODO: tests for when the source type is a) the underlying type, b) string
 
                     Builder.Append(Convert.ChangeType(value, Enum.GetUnderlyingType(value.GetType())).ToString());
 
