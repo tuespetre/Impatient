@@ -25,6 +25,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         private static readonly MethodInfo queryableWhereMethodInfo
             = ReflectionExtensions.GetGenericMethodDefinition((IQueryable<bool> e) => e.Where(x => x));
 
+        private static readonly MethodInfo queryableCastMethodInfo
+            = ReflectionExtensions.GetMethodInfo(() => Queryable.Cast<object>(default)).GetGenericMethodDefinition();
+
         private readonly IRelationalTypeMappingSource relationalTypeMappingSource;
 
         public ModelExpressionProvider(IRelationalTypeMappingSource relationalTypeMappingSource)
@@ -213,6 +216,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             ApplyQueryFilters:
 
             var currentType = targetType;
+            var recast = false;
 
             while (currentType != null)
             {
@@ -237,9 +241,19 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                 Expression.Lambda(
                                     new QueryFilterExpression(filterBody),
                                     currentType.QueryFilter.Parameters)));
+
+                    recast |= currentType != targetType;
                 }
 
                 currentType = currentType.BaseType;
+            }
+
+            if (recast)
+            {
+                queryExpression
+                    = Expression.Call(
+                        queryableCastMethodInfo.MakeGenericMethod(targetType.ClrType),
+                        queryExpression);
             }
 
             return queryExpression;

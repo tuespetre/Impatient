@@ -26,9 +26,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             ICurrentDbContext currentDbContext)
             : base(provider, parameterMapping)
         {
-            this.modelExpressionProvider = modelExpressionProvider ?? throw new System.ArgumentNullException(nameof(modelExpressionProvider));
-            this.modelQueryExpressionCache = modelQueryExpressionCache ?? throw new System.ArgumentNullException(nameof(modelQueryExpressionCache));
-            this.currentDbContext = currentDbContext ?? throw new System.ArgumentNullException(nameof(currentDbContext));
+            this.modelExpressionProvider = modelExpressionProvider ?? throw new ArgumentNullException(nameof(modelExpressionProvider));
+            this.modelQueryExpressionCache = modelQueryExpressionCache ?? throw new ArgumentNullException(nameof(modelQueryExpressionCache));
+            this.currentDbContext = currentDbContext ?? throw new ArgumentNullException(nameof(currentDbContext));
             dbContextParameter = parameterMapping[currentDbContext.Context];
         }
 
@@ -58,18 +58,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     var repointed = repointer.Visit(query);
 
                     query = Visit(Reparameterize(repointed));
-                }
-
-                // TODO: Should be able to get rid of this block
-
-                if (queryable.ElementType != query.Type.GetSequenceType())
-                {
-                    query
-                        = Expression.Call(
-                            typeof(Queryable)
-                                .GetMethod(nameof(Queryable.Cast))
-                                .MakeGenericMethod(queryable.ElementType),
-                            query);
                 }
 
                 return query;
