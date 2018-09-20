@@ -52,7 +52,9 @@ namespace Impatient.Extensions
         {
             var typeInfo = type.GetTypeInfo();
             var constructor = typeInfo.DeclaredConstructors.Single();
-            var fields = typeInfo.DeclaredFields.ToArray();
+            // There is no guarantee of the declaration order of the ValueTuple's fields,
+            // so we need to order them ourselves (Item1, Item2, ..., Rest)
+            var fields = typeInfo.DeclaredFields.OrderBy(f => f.Name).ToArray();
             var newArguments = new List<Expression>(fields.Length);
 
             foreach (var argument in arguments.Take(Min(7, fields.Length)))
@@ -77,7 +79,9 @@ namespace Impatient.Extensions
                 type = restField.FieldType;
             }
 
-            var itemField = type.GetTypeInfo().DeclaredFields.ElementAt(index % 7);
+            // There is no guarantee of the declaration order of the ValueTuple's fields,
+            // so we need to access the target field by name.
+            var itemField = type.GetTypeInfo().GetDeclaredField($"Item{(index % 7) + 1}");
 
             return Expression.MakeMemberAccess(expression, itemField);
         }
