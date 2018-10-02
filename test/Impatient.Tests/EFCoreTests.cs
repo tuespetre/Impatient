@@ -548,11 +548,44 @@ CROSS APPLY (
                 context.Set<Customer>().AsTracking().ToList();
 
                 // Load the query type with the navigation to customers
-                var qos 
+                var qos
                     = context
                         .Query<QuarterlyOrders>()
                         .AsTracking()
                         .ToList();
+            });
+        }
+
+        [TestMethod]
+        public void OrderedQueryable_LetClause()
+        {
+            // The issue was that having an IOrderedQueryable in
+            // a Select, that has an expanded navigation property,
+            // will get rewritten into an IQueryable by the navigation
+            // composing visitor, when it needs to stay an IOrderedQueryable
+            // to satisfy things like anonymous type ctor sigs.
+            EfCoreTestCase((context, log) =>
+            {
+                var query = from c in context.Set<Customer>()
+                            let os = (from o in context.Set<Order>()
+                                      where o.Customer == c
+                                      orderby o.OrderDate
+                                      select o)
+                            select new { c, os };
+
+                query.ToList();
+
+                Assert.AreEqual(@"
+SELECT [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Country] AS [c.Country], [c].[Fax] AS [c.Fax], [c].[Phone] AS [c.Phone], [c].[PostalCode] AS [c.PostalCode], [c].[Region] AS [c.Region], (
+    SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate]
+    FROM [dbo].[Orders] AS [o]
+    INNER JOIN [dbo].[Customers] AS [c_0] ON [o].[CustomerID] = [c_0].[CustomerID]
+    WHERE [c_0].[CustomerID] = [c].[CustomerID]
+    ORDER BY [o].[OrderDate] ASC
+    FOR JSON PATH
+) AS [os]
+FROM [dbo].[Customers] AS [c]
+".Trim(), log.ToString().Trim());
             });
         }
 

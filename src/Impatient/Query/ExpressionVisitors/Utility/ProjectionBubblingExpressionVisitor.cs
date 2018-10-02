@@ -225,6 +225,17 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                 }
             }
 
+            if (node.Method.DeclaringType == typeof(ImpatientExtensions)
+                && node.Method.Name == nameof(ImpatientExtensions.AsOrderedQueryable))
+            {
+                var arguments = Visit(node.Arguments);
+
+                if (arguments[0] is ProjectionExpression projection)
+                {
+                    return projection;
+                }
+            }
+
             return node;
         }
 

@@ -85,6 +85,28 @@ namespace Impatient.Extensions
                         expression)));
         }
 
+        public static MethodCallExpression AsQueryable(this Expression expression)
+        {
+            Debug.Assert(expression.Type.IsSequenceType());
+
+            return Expression.Call(
+                ReflectionExtensions
+                    .GetGenericMethodDefinition((IEnumerable<object> o) => o.AsQueryable())
+                    .MakeGenericMethod(expression.Type.GetGenericArguments()[0]),
+                expression);
+        }
+
+        public static MethodCallExpression AsOrderedQueryable(this Expression expression)
+        {
+            Debug.Assert(expression.Type.IsSequenceType());
+
+            return Expression.Call(
+                typeof(ImpatientExtensions)
+                    .GetMethod(nameof(ImpatientExtensions.AsOrderedQueryable))
+                    .MakeGenericMethod(expression.Type.GetGenericArguments()[0]),
+                expression.AsQueryable());
+        }
+
         private static Expression ResolveProperty(Expression expression, string segment)
         {
             switch (expression)

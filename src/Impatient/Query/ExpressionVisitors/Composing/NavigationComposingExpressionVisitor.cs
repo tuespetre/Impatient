@@ -5,7 +5,6 @@ using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -54,8 +53,28 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 this.navigationDescriptors = navigationDescriptors ?? throw new ArgumentNullException(nameof(navigationDescriptors));
             }
 
+            public override Expression Visit(Expression node)
+            {
+                var visited = base.Visit(node);
+                
+                if (!(node is null || visited is null)
+                    && node.Type.IsGenericType(typeof(IOrderedQueryable<>))
+                    && !visited.Type.IsGenericType(typeof(IOrderedQueryable<>)))
+                {
+                    visited = visited.AsOrderedQueryable();
+                }
+
+                return visited;
+            }
+
             protected override Expression VisitMethodCall(MethodCallExpression node)
             {
+                if (node.Method.DeclaringType == typeof(ImpatientExtensions)
+                    && node.Method.Name == nameof(ImpatientExtensions.AsOrderedQueryable))
+                {
+                    return HandlePassthroughMethod(node);
+                }
+
                 if (!node.Method.IsQueryableOrEnumerableMethod()
                     || node.ContainsNonLambdaDelegates()
                     || node.ContainsNonLambdaExpressions())

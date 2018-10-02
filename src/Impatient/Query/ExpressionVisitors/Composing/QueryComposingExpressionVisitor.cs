@@ -109,6 +109,19 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
+            if (node.Method.DeclaringType == typeof(ImpatientExtensions)
+                && node.Method.Name == nameof(ImpatientExtensions.AsOrderedQueryable))
+            {
+                var inner = Visit(node.Arguments.Single());
+
+                if (inner is EnumerableRelationalQueryExpression ordered)
+                {
+                    return ordered.AsOrdered();
+                }
+
+                return node.Update(node.Object, new[] { inner });
+            }
+
             if (!node.Method.IsQueryableOrEnumerableMethod())
             {
                 return base.VisitMethodCall(node);
