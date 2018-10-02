@@ -539,6 +539,23 @@ CROSS APPLY (
             });
         }
 
+        [TestMethod]
+        public void QueryType_AsTracking()
+        {
+            EfCoreTestCase((context, log) =>
+            {
+                // Load the customers first
+                context.Set<Customer>().AsTracking().ToList();
+
+                // Load the query type with the navigation to customers
+                var qos 
+                    = context
+                        .Query<QuarterlyOrders>()
+                        .AsTracking()
+                        .ToList();
+            });
+        }
+
         private void EfCoreTestCase(Action<NorthwindDbContext, StringBuilder> action)
         {
             var services = new ServiceCollection();
@@ -712,6 +729,15 @@ CROSS APPLY (
             modelBuilder.Entity<DiscontinuedProduct>(e =>
             {
                 e.HasDiscriminator(p => p.Discontinued).HasValue(true);
+            });
+
+            modelBuilder.Query<QuarterlyOrders>(q =>
+            {
+                q.ToView("Quarterly Orders", "dbo");
+
+                q.Property(o => o.Id).HasColumnName("CustomerID");
+
+                q.HasOne(o => o.Customer).WithMany().HasForeignKey(o => o.Id);
             });
         }
     }
