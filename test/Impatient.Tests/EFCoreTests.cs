@@ -589,6 +589,37 @@ FROM [dbo].[Customers] AS [c]
             });
         }
 
+        [TestMethod]
+        public void DefaultIfEmpty_NoArg_Max_NoArg()
+        {
+            EfCoreTestCase((context, log) =>
+            {
+                var query = from c in context.Set<Customer>()
+                            select new
+                            {
+                                c,
+                                o = c.Orders.Select(o => o.OrderDate).DefaultIfEmpty().Max()
+                            };
+
+                query.ToList();
+
+                Assert.AreEqual(@"
+SELECT [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Country] AS [c.Country], [c].[Fax] AS [c.Fax], [c].[Phone] AS [c.Phone], [c].[PostalCode] AS [c.PostalCode], [c].[Region] AS [c.Region], (
+    SELECT MAX((CASE WHEN [t].[$empty] IS NULL THEN [t].[OrderDate] ELSE NULL END))
+    FROM (
+        SELECT NULL AS [$empty]
+    ) AS [t_0]
+    LEFT JOIN (
+        SELECT 0 AS [$empty], [o].[OrderDate]
+        FROM [dbo].[Orders] AS [o]
+        WHERE [c].[CustomerID] = [o].[CustomerID]
+    ) AS [t] ON 1 = 1
+) AS [o]
+FROM [dbo].[Customers] AS [c]
+".Trim(), log.ToString().Trim());
+            });
+        }
+
         private void EfCoreTestCase(Action<NorthwindDbContext, StringBuilder> action)
         {
             var services = new ServiceCollection();

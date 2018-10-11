@@ -1304,12 +1304,30 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 = new ProjectionReferenceRewritingExpressionVisitor(innerSubquery)
                     .Visit(outerProjection);
 
+            var flag
+                = new SqlColumnExpression(
+                    innerSubquery, "$empty", typeof(int?), true, null);
+
+            if (projectionBody.Type.IsScalarType())
+            {
+                projectionBody
+                    = Expression.Condition(
+                        Expression.Equal(
+                            flag,
+                            Expression.Constant(null, typeof(int?))),
+                        projectionBody,
+                        Expression.Constant(
+                            Activator.CreateInstance(projectionBody.Type),
+                            projectionBody.Type));
+            }
+            else
+            {
+                projectionBody = new DefaultIfEmptyExpression(projectionBody, flag);
+            }
+
             var selectExpression
                 = new SelectExpression(
-                    new ServerProjectionExpression(
-                        new DefaultIfEmptyExpression(
-                            projectionBody,
-                            new SqlColumnExpression(innerSubquery, "$empty", typeof(int?), true, null))),
+                    new ServerProjectionExpression(projectionBody),
                     joinExpression);
 
             return new EnumerableRelationalQueryExpression(selectExpression);
