@@ -619,6 +619,36 @@ FROM [dbo].[Customers] AS [c]
 ".Trim(), log.ToString().Trim());
             });
         }
+        
+        [TestMethod]
+        public void GroupBy_Aggregate_Subquery()
+        {
+            EfCoreTestCase((context, log) =>
+            {
+                var query
+                = from c in context.Set<Customer>()
+                  let agg = c.Orders.Where(e => e.Freight != null).Max(o => o.Freight)
+                  group new { c, agg } by c.CustomerID into g
+                  select new { g.Key, agg = g.Sum(e => e.agg) };
+
+                query.ToList();
+
+                Assert.AreEqual(@"
+SELECT [c].[CustomerID] AS [Key], (
+    SELECT [c_0].[CustomerID] AS [c.CustomerID], [c_0].[Address] AS [c.Address], [c_0].[City] AS [c.City], [c_0].[CompanyName] AS [c.CompanyName], [c_0].[ContactName] AS [c.ContactName], [c_0].[ContactTitle] AS [c.ContactTitle], [c_0].[Country] AS [c.Country], [c_0].[Fax] AS [c.Fax], [c_0].[Phone] AS [c.Phone], [c_0].[PostalCode] AS [c.PostalCode], [c_0].[Region] AS [c.Region], (
+        SELECT MAX([o].[Freight])
+        FROM [dbo].[Orders] AS [o]
+        WHERE ([c_0].[CustomerID] = [o].[CustomerID]) AND ([o].[Freight] IS NOT NULL)
+    ) AS [agg]
+    FROM [dbo].[Customers] AS [c_0]
+    WHERE [c].[CustomerID] = [c_0].[CustomerID]
+    FOR JSON PATH
+) AS [Elements]
+FROM [dbo].[Customers] AS [c]
+GROUP BY [c].[CustomerID]
+".Trim(), log.ToString().Trim());
+            });
+        }
 
         private void EfCoreTestCase(Action<NorthwindDbContext, StringBuilder> action)
         {

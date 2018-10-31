@@ -42,7 +42,9 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                             selector = node.Arguments[1].UnwrapLambda().ExpandParameters(selector);
                         }
 
-                        if (!(translatabilityAnalyzingExpressionVisitor.Visit(selector) is TranslatableExpression))
+                        // TODO: Find a suitable place to perform lifting of subqueries out into an OUTER APPLY or LEFT JOIN.
+                        if (selector.ContainsAggregateOrSubquery()
+                            || !(translatabilityAnalyzingExpressionVisitor.Visit(selector) is TranslatableExpression))
                         {
                             break;
                         }
