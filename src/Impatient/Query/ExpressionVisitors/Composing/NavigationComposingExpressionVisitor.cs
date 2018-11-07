@@ -2209,7 +2209,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
             protected override Expression VisitMember(MemberExpression node)
             {
-                var descriptor = descriptors.SingleOrDefault(d => d.Member == node.Member);
+                var descriptor = descriptors.SingleOrDefault(d => d.Type == node.Type && d.Member == node.Member);
 
                 if (descriptor == null)
                 {
