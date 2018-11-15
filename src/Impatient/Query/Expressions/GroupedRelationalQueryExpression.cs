@@ -1,6 +1,4 @@
-﻿using Impatient.Query.ExpressionVisitors.Utility;
-using System;
-using System.Linq;
+﻿using System;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions
@@ -37,31 +35,16 @@ namespace Impatient.Query.Expressions
 
         protected override Expression VisitChildren(ExpressionVisitor visitor)
         {
-            var selectExpression = visitor.VisitAndConvert(SelectExpression, nameof(VisitChildren));
             var outerKeySelector = visitor.VisitAndConvert(OuterKeySelector, nameof(VisitChildren));
-            var innerKeySelector = visitor.VisitAndConvert(InnerKeySelector, nameof(VisitChildren));
             var innerKeyLambda = visitor.VisitAndConvert(InnerKeyLambda, nameof(VisitChildren));
 
-            if (selectExpression != SelectExpression)
-            {
-                var oldTables = SelectExpression.Table.Flatten().ToArray();
-                var newTables = selectExpression.Table.Flatten().ToArray();
-
-                var updater = new TableUpdatingExpressionVisitor(oldTables, newTables);
-
-                outerKeySelector = updater.VisitAndConvert(outerKeySelector, nameof(VisitChildren));
-                innerKeySelector = updater.VisitAndConvert(innerKeySelector, nameof(VisitChildren));
-            }
-
-            if (selectExpression != SelectExpression
-                || outerKeySelector != OuterKeySelector
-                || innerKeySelector != InnerKeySelector
+            if (outerKeySelector != OuterKeySelector
                 || innerKeyLambda != InnerKeyLambda)
             {
                 return new GroupedRelationalQueryExpression(
-                    selectExpression,
+                    SelectExpression,
                     outerKeySelector,
-                    innerKeySelector,
+                    InnerKeySelector,
                     innerKeyLambda,
                     RequiresDenullification,
                     Type);

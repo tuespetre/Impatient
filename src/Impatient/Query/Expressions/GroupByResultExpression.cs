@@ -1,6 +1,4 @@
-﻿using Impatient.Query.ExpressionVisitors;
-using Impatient.Query.ExpressionVisitors.Utility;
-using System;
+﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -44,35 +42,26 @@ namespace Impatient.Query.Expressions
 
         protected override Expression VisitChildren(ExpressionVisitor visitor)
         {
-            var selectExpression = visitor.VisitAndConvert(SelectExpression, nameof(VisitChildren));
+            // VisitChildren must leave SelectExpression, InnerKeySelector, and ElementSelector alone
+            // or else they may end up pointing to new table expression instances, and then when
+            // an aggregation based on the GroupByResultExpression is rewritten into a SqlAggregateExpression
+            // it will be referencing a disconnected/orphaned table expression instance.
+            // There should be nothing that would need to legitimately be rewritten within
+            // those properties anyways; that all would have been done before the GroupByResultExpression
+            // was constructed, and anything that happens later will be after it has been
+            // replaced by a GroupedRelationalQueryExpression and the aggregate concern is no longer relevant.
+
             var outerKeySelector = visitor.VisitAndConvert(OuterKeySelector, nameof(VisitChildren));
-            var innerKeySelector = visitor.VisitAndConvert(InnerKeySelector, nameof(VisitChildren));
             var innerKeyLambda = visitor.VisitAndConvert(InnerKeyLambda, nameof(VisitChildren));
-            var elementSelector = visitor.VisitAndConvert(ElementSelector, nameof(VisitChildren));
-
-            if (selectExpression != SelectExpression)
-            {
-                var oldTables = SelectExpression.Table.Flatten().ToArray();
-                var newTables = selectExpression.Table.Flatten().ToArray();
-
-                var updater = new TableUpdatingExpressionVisitor(oldTables, newTables);
-
-                innerKeySelector = updater.VisitAndConvert(innerKeySelector, nameof(VisitChildren));
-                elementSelector = updater.VisitAndConvert(elementSelector, nameof(VisitChildren));
-            }
-
-            if (selectExpression != SelectExpression
-                || outerKeySelector != OuterKeySelector
-                || innerKeySelector != InnerKeySelector
-                || innerKeyLambda != InnerKeyLambda
-                || elementSelector != ElementSelector)
+            
+            if (outerKeySelector != OuterKeySelector || innerKeyLambda != InnerKeyLambda)
             {
                 return new GroupByResultExpression(
-                    selectExpression,
+                    SelectExpression,
                     outerKeySelector,
-                    innerKeySelector,
+                    InnerKeySelector,
                     innerKeyLambda,
-                    elementSelector,
+                    ElementSelector,
                     IsDistinct);
             }
 

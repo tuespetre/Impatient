@@ -69,7 +69,10 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                         var query
                             = new EnumerableRelationalQueryExpression(
                                 newSelectExpression
-                                    .UpdateProjection(new ServerProjectionExpression(projection))
+                                    .UpdateProjection(new ServerProjectionExpression(
+                                        Expression.Lambda(
+                                            typeof(Func<>).MakeGenericType(elementSelector.Type),
+                                            projection)))
                                     .AddToPredicate(predicate));
 
                         return ExpandedGrouping.Create(
