@@ -48,6 +48,11 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                 || (!canRewriteLeft && !leftIsNullConstant)
                 || (!canRewriteRight && !rightIsNullConstant))
             {
+                if (visitedLeft == node.Left && visitedRight == node.Right)
+                {
+                    return node;
+                }
+
                 if (left.Type != node.Left.Type)
                 {
                     left = Expression.Convert(left, node.Left.Type);
