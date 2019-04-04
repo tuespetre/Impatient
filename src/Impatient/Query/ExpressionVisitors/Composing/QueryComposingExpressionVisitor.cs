@@ -2342,6 +2342,16 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     .AsDistinct());
         }
 
+        /// <summary>
+        /// MatchTypeIgnoringNullableWrapper(byte?, byte) = true
+        /// </summary>
+        private static bool MatchTypeIgnoringNullableWrapper(Type t1, Type t2)
+        {
+            var underlyingType1 = t1.IsNullableType() ? t1.UnwrapNullableType() : t1;
+            var underlyingType2 = t2.IsNullableType() ? t2.UnwrapNullableType() : t2;
+            return underlyingType1 == underlyingType2;
+        }
+
         protected Expression HandleSetOperator(
             EnumerableRelationalQueryExpression outerQuery,
             MethodCallExpression node,
@@ -2385,7 +2395,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                     foreach (var (pair1, pair2) in zippedPairs)
                     {
-                        if (pair1.Key != pair2.Key || pair1.Value.Type != pair2.Value.Type)
+                        if (pair1.Key != pair2.Key || !MatchTypeIgnoringNullableWrapper(pair1.Value.Type, pair2.Value.Type))
                         {
                             shapesMatch = false;
                             break;
