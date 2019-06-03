@@ -8,26 +8,6 @@ namespace Impatient.Extensions
     {
         #region Naive implementations of Enumerable operators from .NET Core 2.0
 
-        public static IEnumerable<TSource> Append<TSource>(this IEnumerable<TSource> source, TSource element)
-        {
-            foreach (var item in source)
-            {
-                yield return item;
-            }
-
-            yield return element;
-        }
-
-        public static IEnumerable<TSource> Prepend<TSource>(this IEnumerable<TSource> source, TSource element)
-        {
-            yield return element;
-
-            foreach (var item in source)
-            {
-                yield return item;
-            }
-        }
-
         public static IEnumerable<TSource> SkipLast<TSource>(this IEnumerable<TSource> source, int count)
         {
             return source.Reverse().Skip(count).Reverse();
@@ -38,7 +18,7 @@ namespace Impatient.Extensions
             return source.Reverse().Take(count).Reverse();
         }
 
-        #endregion
+        #endregion Naive implementations of Enumerable operators from .NET Core 2.0
 
         public static IOrderedQueryable<TSource> AsOrderedQueryable<TSource>(this IQueryable<TSource> source)
         {

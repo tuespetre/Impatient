@@ -34,20 +34,20 @@ namespace Impatient.Extensions
             switch (expression.UnwrapInnerExpression())
             {
                 case ConstantExpression constantExpression:
-                {
-                    return constantExpression.Value == null;
-                }
+                    {
+                        return constantExpression.Value == null;
+                    }
 
                 case DefaultExpression defaultExpression:
-                {
-                    return defaultExpression.Type.IsNullableType()
-                        || !defaultExpression.Type.GetTypeInfo().IsValueType;
-                }
+                    {
+                        return defaultExpression.Type.IsNullableType()
+                            || !defaultExpression.Type.GetTypeInfo().IsValueType;
+                    }
 
                 default:
-                {
-                    return false;
-                }
+                    {
+                        return false;
+                    }
             }
         }
 
@@ -101,8 +101,8 @@ namespace Impatient.Extensions
             Debug.Assert(expression.Type.IsSequenceType());
 
             return Expression.Call(
-                typeof(ImpatientExtensions)
-                    .GetMethod(nameof(ImpatientExtensions.AsOrderedQueryable))
+                typeof(Enumerable)
+                    .GetMethod(nameof(Enumerable.AsEnumerable))
                     .MakeGenericMethod(expression.Type.GetGenericArguments()[0]),
                 expression.AsQueryable());
         }
@@ -112,114 +112,114 @@ namespace Impatient.Extensions
             switch (expression)
             {
                 case NewExpression newExpression:
-                {
-                    var match = newExpression.Members?.FirstOrDefault(m => m.GetPathSegmentName() == segment);
-
-                    if (match != null)
                     {
-                        return newExpression.Arguments[newExpression.Members.IndexOf(match)];
-                    }
+                        var match = newExpression.Members?.FirstOrDefault(m => m.GetPathSegmentName() == segment);
 
-                    return null;
-                }
+                        if (match != null)
+                        {
+                            return newExpression.Arguments[newExpression.Members.IndexOf(match)];
+                        }
+
+                        return null;
+                    }
 
                 case MemberInitExpression memberInitExpression:
-                {
-                    var match = ResolveProperty(memberInitExpression.NewExpression, segment);
-
-                    if (match != null)
                     {
-                        return match;
+                        var match = ResolveProperty(memberInitExpression.NewExpression, segment);
+
+                        if (match != null)
+                        {
+                            return match;
+                        }
+
+                        match
+                            = memberInitExpression.Bindings
+                                .OfType<MemberAssignment>()
+                                .Where(a => a.Member.GetPathSegmentName() == segment)
+                                .Select(a => a.Expression)
+                                .FirstOrDefault();
+
+                        if (match != null)
+                        {
+                            return match;
+                        }
+
+                        return null;
                     }
-
-                    match
-                        = memberInitExpression.Bindings
-                            .OfType<MemberAssignment>()
-                            .Where(a => a.Member.GetPathSegmentName() == segment)
-                            .Select(a => a.Expression)
-                            .FirstOrDefault();
-
-                    if (match != null)
-                    {
-                        return match;
-                    }
-
-                    return null;
-                }
 
                 case ExtendedNewExpression newExpression:
-                {
-                    var match = newExpression.ReadableMembers.FirstOrDefault(m => m.GetPathSegmentName() == segment);
-
-                    if (match != null)
                     {
-                        return newExpression.Arguments[newExpression.ReadableMembers.IndexOf(match)];
-                    }
+                        var match = newExpression.ReadableMembers.FirstOrDefault(m => m.GetPathSegmentName() == segment);
 
-                    return null;
-                }
+                        if (match != null)
+                        {
+                            return newExpression.Arguments[newExpression.ReadableMembers.IndexOf(match)];
+                        }
+
+                        return null;
+                    }
 
                 case ExtendedMemberInitExpression memberInitExpression:
-                {
-                    var match = ResolveProperty(memberInitExpression.NewExpression, segment);
-
-                    if (match != null)
                     {
-                        return match;
-                    }
+                        var match = ResolveProperty(memberInitExpression.NewExpression, segment);
 
-                    for (var i = 0; i < memberInitExpression.Arguments.Count; i++)
-                    {
-                        if (memberInitExpression.ReadableMembers[i].GetPathSegmentName() == segment)
+                        if (match != null)
                         {
-                            return memberInitExpression.Arguments[i];
+                            return match;
                         }
-                    }
 
-                    return null;
-                }
+                        for (var i = 0; i < memberInitExpression.Arguments.Count; i++)
+                        {
+                            if (memberInitExpression.ReadableMembers[i].GetPathSegmentName() == segment)
+                            {
+                                return memberInitExpression.Arguments[i];
+                            }
+                        }
+
+                        return null;
+                    }
 
                 case ExtraPropertiesExpression extraPropertiesExpression:
-                {
-                    for (var i = 0; i < extraPropertiesExpression.Names.Count; i++)
                     {
-                        var name = extraPropertiesExpression.Names[i];
-
-                        if (name.Equals(segment))
+                        for (var i = 0; i < extraPropertiesExpression.Names.Count; i++)
                         {
-                            return extraPropertiesExpression.Properties[i];
-                        }
-                    }
+                            var name = extraPropertiesExpression.Names[i];
 
-                    return ResolveProperty(extraPropertiesExpression.Expression, segment);
-                }
+                            if (name.Equals(segment))
+                            {
+                                return extraPropertiesExpression.Properties[i];
+                            }
+                        }
+
+                        return ResolveProperty(extraPropertiesExpression.Expression, segment);
+                    }
 
                 case AnnotationExpression annotationExpression:
-                {
-                    return ResolveProperty(annotationExpression.Expression, segment);
-                }
-
-                case PolymorphicExpression polymorphicExpression:
-                {
-                    foreach (var descriptor in polymorphicExpression.Descriptors)
                     {
-                        var expanded = descriptor.Materializer.ExpandParameters(polymorphicExpression.Row);
-
-                        var resolved = ResolveProperty(expanded, segment);
-
-                        if (resolved != null)
-                        {
-                            return resolved;
-                        }
+                        return ResolveProperty(annotationExpression.Expression, segment);
                     }
 
-                    return null;
-                }
+                case PolymorphicExpression polymorphicExpression:
+                    {
+                        foreach (var descriptor in polymorphicExpression.Descriptors)
+                        {
+                            var expanded = descriptor.Materializer.ExpandParameters(polymorphicExpression.Row);
+
+                            var resolved = ResolveProperty(expanded, segment);
+
+                            if (resolved != null)
+                            {
+                                return resolved;
+                            }
+                        }
+
+                        return null;
+                    }
 
                 default:
-                {
-                    return null;
-                }
+                    {
+                        return null;
+                    }
             }
         }
 
@@ -292,7 +292,7 @@ namespace Impatient.Extensions
                 || node.NodeType == ExpressionType.LessThanOrEqual
                 || node.NodeType == ExpressionType.AndAlso
                 || node.NodeType == ExpressionType.OrElse;
-            
+
             if (isLogical)
             {
                 if (left.Type != right.Type)
@@ -461,64 +461,64 @@ namespace Impatient.Extensions
             switch (unwrapped)
             {
                 case null:
-                {
-                    return false;
-                }
+                    {
+                        return false;
+                    }
 
                 case SqlExistsExpression _:
                 case SqlInExpression _:
                 case SqlLikeExpression _:
-                {
-                    return true;
-                }
+                    {
+                        return true;
+                    }
 
                 case BinaryExpression _:
-                {
-                    switch (unwrapped.NodeType)
                     {
-                        case ExpressionType.Equal:
-                        case ExpressionType.NotEqual:
-                        case ExpressionType.AndAlso:
-                        case ExpressionType.OrElse:
-                        case ExpressionType.LessThan:
-                        case ExpressionType.LessThanOrEqual:
-                        case ExpressionType.GreaterThan:
-                        case ExpressionType.GreaterThanOrEqual:
-                        case ExpressionType.And:
-                        case ExpressionType.Or:
+                        switch (unwrapped.NodeType)
                         {
-                            return true;
-                        }
+                            case ExpressionType.Equal:
+                            case ExpressionType.NotEqual:
+                            case ExpressionType.AndAlso:
+                            case ExpressionType.OrElse:
+                            case ExpressionType.LessThan:
+                            case ExpressionType.LessThanOrEqual:
+                            case ExpressionType.GreaterThan:
+                            case ExpressionType.GreaterThanOrEqual:
+                            case ExpressionType.And:
+                            case ExpressionType.Or:
+                                {
+                                    return true;
+                                }
 
-                        default:
-                        {
-                            return false;
+                            default:
+                                {
+                                    return false;
+                                }
                         }
                     }
-                }
 
                 case UnaryExpression unaryExpression:
-                {
-                    switch (unwrapped.NodeType)
                     {
-                        case ExpressionType.Not:
+                        switch (unwrapped.NodeType)
                         {
-                            return unaryExpression.Operand is SqlInExpression
-                                || unaryExpression.Operand is SqlExistsExpression
-                                || unaryExpression.Operand is SqlLikeExpression;
-                        }
+                            case ExpressionType.Not:
+                                {
+                                    return unaryExpression.Operand is SqlInExpression
+                                        || unaryExpression.Operand is SqlExistsExpression
+                                        || unaryExpression.Operand is SqlLikeExpression;
+                                }
 
-                        default:
-                        {
-                            return false;
+                            default:
+                                {
+                                    return false;
+                                }
                         }
                     }
-                }
 
                 default:
-                {
-                    return false;
-                }
+                    {
+                        return false;
+                    }
             }
         }
 
@@ -536,23 +536,23 @@ namespace Impatient.Extensions
                 case SqlInExpression _:
                 case SqlExistsExpression _:
                 case SqlLikeExpression _:
-                {
-                    return false;
-                }
+                    {
+                        return false;
+                    }
 
                 case BinaryExpression _ when unwrapped.NodeType == ExpressionType.Coalesce:
                 case ConditionalExpression _:
                 case ConstantExpression _:
                 case SqlExpression _:
                 case RelationalQueryExpression _:
-                {
-                    return true;
-                }
+                    {
+                        return true;
+                    }
 
                 default:
-                {
-                    return false;
-                }
+                    {
+                        return false;
+                    }
             }
         }
 
@@ -563,28 +563,28 @@ namespace Impatient.Extensions
                 switch (binding)
                 {
                     case MemberAssignment memberAssignment:
-                    {
-                        yield return memberAssignment;
-
-                        break;
-                    }
-
-                    case MemberListBinding memberListBinding:
-                    {
-                        yield return memberListBinding;
-
-                        break;
-                    }
-
-                    case MemberMemberBinding memberMemberBinding:
-                    {
-                        foreach (var yielded in memberMemberBinding.Bindings.Iterate())
                         {
-                            yield return yielded;
+                            yield return memberAssignment;
+
+                            break;
                         }
 
-                        break;
-                    }
+                    case MemberListBinding memberListBinding:
+                        {
+                            yield return memberListBinding;
+
+                            break;
+                        }
+
+                    case MemberMemberBinding memberMemberBinding:
+                        {
+                            foreach (var yielded in memberMemberBinding.Bindings.Iterate())
+                            {
+                                yield return yielded;
+                            }
+
+                            break;
+                        }
                 }
             }
         }
@@ -630,25 +630,25 @@ namespace Impatient.Extensions
             {
                 case BinaryExpression binaryExpression
                 when binaryExpression.NodeType == splitOn:
-                {
-                    foreach (var left in SplitNodes(binaryExpression.Left, splitOn))
                     {
-                        yield return left;
-                    }
+                        foreach (var left in SplitNodes(binaryExpression.Left, splitOn))
+                        {
+                            yield return left;
+                        }
 
-                    foreach (var right in SplitNodes(binaryExpression.Right, splitOn))
-                    {
-                        yield return right;
-                    }
+                        foreach (var right in SplitNodes(binaryExpression.Right, splitOn))
+                        {
+                            yield return right;
+                        }
 
-                    yield break;
-                }
+                        yield break;
+                    }
 
                 default:
-                {
-                    yield return expression;
-                    yield break;
-                }
+                    {
+                        yield return expression;
+                        yield break;
+                    }
             }
         }
 
@@ -662,14 +662,14 @@ namespace Impatient.Extensions
             switch (expression?.NodeType)
             {
                 case ExpressionType.Quote:
-                {
-                    return ((UnaryExpression)expression).Operand as LambdaExpression;
-                }
+                    {
+                        return ((UnaryExpression)expression).Operand as LambdaExpression;
+                    }
 
                 default:
-                {
-                    return expression as LambdaExpression;
-                }
+                    {
+                        return expression as LambdaExpression;
+                    }
             }
         }
 

@@ -56,7 +56,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             public override Expression Visit(Expression node)
             {
                 var visited = base.Visit(node);
-                
+
                 if (!(node is null || visited is null)
                     && node.Type.IsGenericType(typeof(IOrderedQueryable<>))
                     && !visited.Type.IsGenericType(typeof(IOrderedQueryable<>)))
@@ -86,24 +86,24 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 {
                     // Uncertain
                     case nameof(Queryable.Aggregate):
-                    {
-                        break;
-                    }
+                        {
+                            break;
+                        }
 
                     case nameof(Enumerable.ToDictionary):
                     case nameof(Enumerable.ToLookup):
-                    {
-                        // TODO: Handle ToDictionary
-                        // TODO: Handle ToLookup
-                        break;
-                    }
+                        {
+                            // TODO: Handle ToDictionary
+                            // TODO: Handle ToLookup
+                            break;
+                        }
 
                     // These will need more consideration
                     case nameof(Queryable.Cast):
                     case nameof(Queryable.OfType):
-                    {
-                        break;
-                    }
+                        {
+                            break;
+                        }
 
                     // Pass-through methods (just need a generic type change)
                     case nameof(Enumerable.AsEnumerable):
@@ -111,70 +111,70 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     case nameof(Queryable.Reverse):
                     case nameof(Queryable.Skip):
                     case nameof(Queryable.Take):
-                    //case nameof(Queryable.SkipLast):
-                    //case nameof(Queryable.TakeLast):
-                    {
-                        return HandlePassthroughMethod(node);
-                    }
+                        //case nameof(Queryable.SkipLast):
+                        //case nameof(Queryable.TakeLast):
+                        {
+                            return HandlePassthroughMethod(node);
+                        }
 
                     // Complex selector lambdas
 
                     case nameof(Queryable.Select):
-                    {
-                        return HandleSelect(node);
-                    }
+                        {
+                            return HandleSelect(node);
+                        }
 
                     case nameof(Queryable.SelectMany):
-                    {
-                        return HandleSelectMany(node);
-                    }
+                        {
+                            return HandleSelectMany(node);
+                        }
 
                     case nameof(Queryable.GroupBy):
-                    {
-                        return HandleGroupBy(node);
-                    }
+                        {
+                            return HandleGroupBy(node);
+                        }
 
                     case nameof(Queryable.GroupJoin):
-                    {
-                        return HandleGroupJoin(node);
-                    }
+                        {
+                            return HandleGroupJoin(node);
+                        }
 
                     case nameof(Queryable.Join):
-                    {
-                        return HandleJoin(node);
-                    }
+                        {
+                            return HandleJoin(node);
+                        }
 
                     case nameof(Queryable.Zip):
-                    {
-                        return HandleZip(node);
-                    }
+                        {
+                            return HandleZip(node);
+                        }
 
                     // Intermediate selector lambdas
                     case nameof(Queryable.OrderBy):
                     case nameof(Queryable.OrderByDescending):
                     case nameof(Queryable.ThenBy):
                     case nameof(Queryable.ThenByDescending):
-                    {
-                        return HandleOrderByMethod(node);
-                    }
+                        {
+                            return HandleOrderByMethod(node);
+                        }
 
                     // Terminal selector lambdas
                     case nameof(Queryable.Average) when node.Arguments.Count == 2:
                     case nameof(Queryable.Max) when node.Arguments.Count == 2:
                     case nameof(Queryable.Min) when node.Arguments.Count == 2:
                     case nameof(Queryable.Sum) when node.Arguments.Count == 2:
-                    {
-                        return HandleTerminalSelectorMethod(node);
-                    }
+                        {
+                            return HandleTerminalSelectorMethod(node);
+                        }
 
                     // Type-independent terminal predicate lambdas
                     case nameof(Queryable.All):
                     case nameof(Queryable.Any) when node.Arguments.Count == 2:
                     case nameof(Queryable.Count) when node.Arguments.Count == 2:
                     case nameof(Queryable.LongCount) when node.Arguments.Count == 2:
-                    {
-                        return HandleTypeIndependentTerminalPredicateMethod(node);
-                    }
+                        {
+                            return HandleTypeIndependentTerminalPredicateMethod(node);
+                        }
 
                     // Type-dependent terminal predicate lambdas
                     case nameof(Queryable.First) when node.Arguments.Count == 2:
@@ -183,17 +183,17 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     case nameof(Queryable.LastOrDefault) when node.Arguments.Count == 2:
                     case nameof(Queryable.Single) when node.Arguments.Count == 2:
                     case nameof(Queryable.SingleOrDefault) when node.Arguments.Count == 2:
-                    {
-                        return HandleTypeDependentTerminalPredicateMethod(node);
-                    }
+                        {
+                            return HandleTypeDependentTerminalPredicateMethod(node);
+                        }
 
                     // Non-terminal predicate lambdas
                     case nameof(Queryable.SkipWhile):
                     case nameof(Queryable.TakeWhile):
                     case nameof(Queryable.Where):
-                    {
-                        return HandleNonTerminalPredicateMethod(node);
-                    }
+                        {
+                            return HandleNonTerminalPredicateMethod(node);
+                        }
                 }
 
                 return base.VisitMethodCall(node);
@@ -1416,21 +1416,21 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 switch (node)
                 {
                     case NavigationExpansionContextExpression nece:
-                    {
-                        return Visit(nece.Result);
-                    }
+                        {
+                            return Visit(nece.Result);
+                        }
 
                     default:
-                    {
-                        return base.Visit(node);
-                    }
+                        {
+                            return base.Visit(node);
+                        }
                 }
             }
         }
 
         /// <summary>
         /// This expression represents a subtree that is currently being expanded by the navigation
-        /// rewriting expression visitor. 
+        /// rewriting expression visitor.
         /// </summary>
         private sealed class NavigationExpansionContextExpression : Expression
         {
@@ -1622,7 +1622,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             }
 
             /// <summary>
-            /// Finds expandable navigations stemming from the given <paramref name="parameter"/> 
+            /// Finds expandable navigations stemming from the given <paramref name="parameter"/>
             /// within the given <paramref name="lambda"/> then builds upon the given <paramref name="source"/>
             /// while advancing the context's 'current parameter' and recording mappings from the
             /// navigation paths to the new paths that can be used to access those values in the <paramref name="source"/>.
@@ -1930,10 +1930,10 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     Parameter = context.currentParameter,
                 });
 
-                var expander 
+                var expander
                     = new NavigationExpandingExpressionVisitor(
-                        parameter, 
-                        context.currentParameter, 
+                        parameter,
+                        context.currentParameter,
                         context.mappings);
 
                 var resultSelectorBody = expander.Visit(selector.Body);
@@ -2265,19 +2265,19 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 switch (node)
                 {
                     case ExtendedNewExpression extendedNewExpression:
-                    {
-                        return VisitExtendedNew(extendedNewExpression);
-                    }
+                        {
+                            return VisitExtendedNew(extendedNewExpression);
+                        }
 
                     case ExtendedMemberInitExpression extendedMemberInitExpression:
-                    {
-                        return VisitExtendedMemberInit(extendedMemberInitExpression);
-                    }
+                        {
+                            return VisitExtendedMemberInit(extendedMemberInitExpression);
+                        }
 
                     default:
-                    {
-                        return base.VisitExtension(node);
-                    }
+                        {
+                            return base.VisitExtension(node);
+                        }
                 }
             }
 
@@ -2434,41 +2434,41 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 switch (node)
                 {
                     case MemberExpression memberExpression:
-                    {
-                        var descriptor = descriptors.SingleOrDefault(d => d.Member == memberExpression.Member);
-
-                        if (descriptor != null)
                         {
-                            UnwindMemberExpression(memberExpression, out var expression, out var path);
+                            var descriptor = descriptors.SingleOrDefault(d => d.Member == memberExpression.Member);
 
-                            if (expression is ParameterExpression parameterExpression)
+                            if (descriptor != null)
                             {
-                                Mappings.Add(
-                                    new MemberPathMapping(
-                                        parameterExpression,
-                                        path,
-                                        CurrentPath.ToList()));
+                                UnwindMemberExpression(memberExpression, out var expression, out var path);
+
+                                if (expression is ParameterExpression parameterExpression)
+                                {
+                                    Mappings.Add(
+                                        new MemberPathMapping(
+                                            parameterExpression,
+                                            path,
+                                            CurrentPath.ToList()));
+                                }
                             }
+
+                            return node;
                         }
 
-                        return node;
-                    }
-
                     case ParameterExpression parameterExpression:
-                    {
-                        Mappings.Add(
-                            new MemberPathMapping(
-                                parameterExpression,
-                                new List<MemberInfo>(),
-                                CurrentPath.ToList()));
+                        {
+                            Mappings.Add(
+                                new MemberPathMapping(
+                                    parameterExpression,
+                                    new List<MemberInfo>(),
+                                    CurrentPath.ToList()));
 
-                        return node;
-                    }
+                            return node;
+                        }
 
                     default:
-                    {
-                        return node;
-                    }
+                        {
+                            return node;
+                        }
                 }
             }
         }
