@@ -21,14 +21,14 @@ namespace Impatient.Query.ExpressionVisitors.Utility
             switch (node)
             {
                 case EnumerableRelationalQueryExpression query:
-                {
-                    return query.SelectExpression.Projection;
-                }
+                    {
+                        return query.SelectExpression.Projection;
+                    }
 
                 default:
-                {
-                    return base.VisitExtension(node);
-                }
+                    {
+                        return base.VisitExtension(node);
+                    }
             }
         }
 
@@ -58,142 +58,142 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                 switch (node.Method.Name)
                 {
                     case nameof(Queryable.Select):
-                    {
-                        if (arguments[0] is ProjectionExpression projection)
                         {
-                            return projection.Merge(arguments[1].UnwrapLambda());
-                        }
+                            if (arguments[0] is ProjectionExpression projection)
+                            {
+                                return projection.Merge(arguments[1].UnwrapLambda());
+                            }
 
-                        return node;
-                    }
+                            return node;
+                        }
 
                     case nameof(Queryable.SelectMany):
-                    {
-                        if (arguments[0] is ProjectionExpression outerProjection)
                         {
-                            var innerProjection = arguments[1] as ProjectionExpression;
-
-                            if (innerProjection == null)
+                            if (arguments[0] is ProjectionExpression outerProjection)
                             {
-                                var collectionSelectorLambda = arguments[1].UnwrapLambda();
+                                var innerProjection = arguments[1] as ProjectionExpression;
 
-                                if (collectionSelectorLambda != null)
+                                if (innerProjection == null)
                                 {
-                                    var expanded
-                                        = collectionSelectorLambda
-                                            .ExpandParameters(outerProjection.Flatten().Body);
+                                    var collectionSelectorLambda = arguments[1].UnwrapLambda();
 
-                                    innerProjection = Visit(expanded) as ProjectionExpression;
+                                    if (collectionSelectorLambda != null)
+                                    {
+                                        var expanded
+                                            = collectionSelectorLambda
+                                                .ExpandParameters(outerProjection.Flatten().Body);
+
+                                        innerProjection = Visit(expanded) as ProjectionExpression;
+                                    }
+                                }
+
+                                if (innerProjection != null)
+                                {
+                                    if (arguments.Count == 2)
+                                    {
+                                        return innerProjection;
+                                    }
+                                    else
+                                    {
+                                        return new CompositeProjectionExpression(
+                                            outerProjection,
+                                            innerProjection,
+                                            arguments[2].UnwrapLambda());
+                                    }
                                 }
                             }
 
-                            if (innerProjection != null)
-                            {
-                                if (arguments.Count == 2)
-                                {
-                                    return innerProjection;
-                                }
-                                else
-                                {
-                                    return new CompositeProjectionExpression(
-                                        outerProjection,
-                                        innerProjection,
-                                        arguments[2].UnwrapLambda());
-                                }
-                            }
+                            return node;
                         }
-
-                        return node;
-                    }
 
                     case nameof(Queryable.Join):
-                    {
-                        if (arguments[0] is ProjectionExpression outerProjection
-                            && arguments[1] is ProjectionExpression innerProjection)
                         {
-                            return new CompositeProjectionExpression(
-                                outerProjection,
-                                innerProjection,
-                                arguments[4].UnwrapLambda());
-                        }
+                            if (arguments[0] is ProjectionExpression outerProjection
+                                && arguments[1] is ProjectionExpression innerProjection)
+                            {
+                                return new CompositeProjectionExpression(
+                                    outerProjection,
+                                    innerProjection,
+                                    arguments[4].UnwrapLambda());
+                            }
 
-                        return node;
-                    }
+                            return node;
+                        }
 
                     case nameof(Queryable.GroupJoin):
-                    {
-                        if (arguments[0] is ProjectionExpression outerProjection
-                            && arguments[1] is ProjectionExpression innerProjection)
                         {
-                            return new CompositeProjectionExpression(
-                                outerProjection,
-                                new ServerProjectionExpression(
-                                    new SurrogateEnumerableRelationalQueryExpression(
-                                        new SelectExpression(innerProjection))),
-                                arguments[4].UnwrapLambda());
-                        }
+                            if (arguments[0] is ProjectionExpression outerProjection
+                                && arguments[1] is ProjectionExpression innerProjection)
+                            {
+                                return new CompositeProjectionExpression(
+                                    outerProjection,
+                                    new ServerProjectionExpression(
+                                        new SurrogateEnumerableRelationalQueryExpression(
+                                            new SelectExpression(innerProjection))),
+                                    arguments[4].UnwrapLambda());
+                            }
 
-                        return node;
-                    }
+                            return node;
+                        }
 
                     case nameof(Queryable.GroupBy):
-                    {
-                        if (arguments[0] is ProjectionExpression projection
-                            && node.Method.HasResultSelector())
                         {
-                            var keyExpression = projection.Merge(arguments[1].UnwrapLambda()).Flatten().Body;
-
-                            var elementProjectionBody
-                                = projection.Flatten().Body;
-
-                            if (node.Method.HasElementSelector())
+                            if (arguments[0] is ProjectionExpression projection
+                                && node.Method.HasResultSelector())
                             {
-                                elementProjectionBody
-                                    = projection.Merge(arguments[2].UnwrapLambda()).Flatten().Body;
+                                var keyExpression = projection.Merge(arguments[1].UnwrapLambda()).Flatten().Body;
+
+                                var elementProjectionBody
+                                    = projection.Flatten().Body;
+
+                                if (node.Method.HasElementSelector())
+                                {
+                                    elementProjectionBody
+                                        = projection.Merge(arguments[2].UnwrapLambda()).Flatten().Body;
+                                }
+
+                                var elementExpression
+                                    = new SurrogateEnumerableRelationalQueryExpression(
+                                        new SelectExpression(
+                                            new ServerProjectionExpression(
+                                                elementProjectionBody)));
+
+                                //if (node.Method.HasResultSelector())
+                                {
+                                    var resultSelector
+                                        = node.Method.HasElementSelector()
+                                            ? arguments[3]
+                                            : arguments[2];
+
+                                    return new ServerProjectionExpression(
+                                        resultSelector
+                                            .UnwrapLambda()
+                                            .ExpandParameters(keyExpression, elementExpression));
+                                }
+
+                                /*return new ServerProjectionExpression(
+                                    ExpandedGrouping.Create(
+                                        node.Type.GetSequenceType(),
+                                        keyExpression,
+                                        elementExpression.AsList()));*/
                             }
 
-                            var elementExpression
-                                = new SurrogateEnumerableRelationalQueryExpression(
-                                    new SelectExpression(
-                                        new ServerProjectionExpression(
-                                            elementProjectionBody)));
-
-                            //if (node.Method.HasResultSelector())
-                            {
-                                var resultSelector
-                                    = node.Method.HasElementSelector()
-                                        ? arguments[3]
-                                        : arguments[2];
-
-                                return new ServerProjectionExpression(
-                                    resultSelector
-                                        .UnwrapLambda()
-                                        .ExpandParameters(keyExpression, elementExpression));
-                            }
-
-                            /*return new ServerProjectionExpression(
-                                ExpandedGrouping.Create(
-                                    node.Type.GetSequenceType(),
-                                    keyExpression,
-                                    elementExpression.AsList()));*/
+                            return node;
                         }
-
-                        return node;
-                    }
 
                     case nameof(Queryable.Zip):
-                    {
-                        if (arguments[0] is ProjectionExpression outerProjection
-                            && arguments[1] is ProjectionExpression innerProjection)
                         {
-                            return new CompositeProjectionExpression(
-                                outerProjection,
-                                innerProjection,
-                                arguments[2].UnwrapLambda());
-                        }
+                            if (arguments[0] is ProjectionExpression outerProjection
+                                && arguments[1] is ProjectionExpression innerProjection)
+                            {
+                                return new CompositeProjectionExpression(
+                                    outerProjection,
+                                    innerProjection,
+                                    arguments[2].UnwrapLambda());
+                            }
 
-                        return node;
-                    }
+                            return node;
+                        }
 
                     case nameof(Queryable.All):
                     case nameof(Queryable.Any):
@@ -204,9 +204,9 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                     case nameof(Queryable.Min):
                     case nameof(Queryable.Average):
                     case nameof(Queryable.Sum):
-                    {
-                        return new ServerProjectionExpression(Expression.Default(node.Type));
-                    }
+                        {
+                            return new ServerProjectionExpression(Expression.Default(node.Type));
+                        }
 
                     case nameof(Enumerable.ToArray):
                     case nameof(Enumerable.ToDictionary):
@@ -214,19 +214,19 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                     case nameof(Enumerable.ToList):
                     case nameof(Enumerable.ToLookup):
                     default:
-                    {
-                        if (arguments[0] is ProjectionExpression projection)
                         {
-                            return projection;
-                        }
+                            if (arguments[0] is ProjectionExpression projection)
+                            {
+                                return projection;
+                            }
 
-                        return node;
-                    }
+                            return node;
+                        }
                 }
             }
 
-            if (node.Method.DeclaringType == typeof(ImpatientExtensions)
-                && node.Method.Name == nameof(ImpatientExtensions.AsOrderedQueryable))
+            if (node.Method.DeclaringType == typeof(Enumerable)
+                && node.Method.Name == nameof(Enumerable.AsEnumerable))
             {
                 var arguments = Visit(node.Arguments);
 

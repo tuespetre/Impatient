@@ -85,7 +85,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 {
                     // The ProjectionBubblingExpressionVisitor might give us some
                     // ExpandedGroupings to reference even though the actual result
-                    // of the query will not be an ExpandedGrouping. 
+                    // of the query will not be an ExpandedGrouping.
 
                     result
                         = Expression.Call(
@@ -99,9 +99,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                 Expression.Constant(GenerateAccessors(pathFinder.FoundPaths.Values.ToArray()))));
                 }
 
-                while (extraCallStack.TryPop(out call))
+                if (extraCallStack.Any())
                 {
-                    result = call.Update(call.Object, call.Arguments.Skip(1).Prepend(result));
+                    do
+                    {
+                        var callA = extraCallStack.Pop();
+                        result = callA.Update(callA.Object, callA.Arguments.Skip(1).Prepend(result));
+                    }
+                    while (extraCallStack.Any());
                 }
 
                 return result;
@@ -304,7 +309,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     {
                         foreach (var foreignKey in candidateType.GetForeignKeys())
                         {
-                            if (foreignKey.IsOwnership 
+                            if (foreignKey.IsOwnership
                                 && foreignKey.PrincipalToDependent.GetReadableMemberInfo() == targetMember)
                             {
                                 resolvedEntityType = candidateType;
@@ -318,7 +323,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         throw new InvalidOperationException();
                     }
 
-                    Resolved:
+                Resolved:
                     entityType = resolvedEntityType;
                 }
 
@@ -341,16 +346,16 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 switch (node)
                 {
                     case EntityMaterializationExpression entityMaterializationExpression:
-                    {
-                        return base.Visit(
-                            entityMaterializationExpression
-                                .UpdateIdentityMapMode(IdentityMapMode.IdentityMap));
-                    }
+                        {
+                            return base.Visit(
+                                entityMaterializationExpression
+                                    .UpdateIdentityMapMode(IdentityMapMode.IdentityMap));
+                        }
 
                     default:
-                    {
-                        return base.Visit(node);
-                    }
+                        {
+                            return base.Visit(node);
+                        }
                 }
             }
         }
@@ -362,7 +367,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             private void AddPath(Type type, MaterializerPathInfo[] subpaths = null)
             {
-                var name = string.Join('.', GetNameParts());
+                var name = string.Join(".", GetNameParts());
 
                 if (FoundPaths.TryGetValue(name, out _))
                 {
@@ -384,106 +389,106 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 switch (node)
                 {
                     case EntityMaterializationExpression entityMaterializationExpression:
-                    {
-                        //if (!entityMaterializationExpression.EntityType.IsOwned())
                         {
-                            AddPath(node.Type);
-                        }
+                            //if (!entityMaterializationExpression.EntityType.IsOwned())
+                            {
+                                AddPath(node.Type);
+                            }
 
-                        return base.Visit(node);
-                    }
+                            return base.Visit(node);
+                        }
 
                     case PolymorphicExpression polymorphicExpression:
-                    {
-                        AddPath(node.Type);
-
-                        foreach (var descriptor in polymorphicExpression.Descriptors)
                         {
-                            Visit(descriptor.Materializer.ExpandParameters(polymorphicExpression.Row));
-                        }
+                            AddPath(node.Type);
 
-                        return node;
-                    }
+                            foreach (var descriptor in polymorphicExpression.Descriptors)
+                            {
+                                Visit(descriptor.Materializer.ExpandParameters(polymorphicExpression.Row));
+                            }
+
+                            return node;
+                        }
 
                     case EnumerableRelationalQueryExpression queryExpression:
-                    {
-                        var projection = queryExpression.SelectExpression.Projection;
-
-                        var selectorVisitor = new ProjectionBubblingExpressionVisitor();
-
-                        var result = selectorVisitor.VisitAndConvert(projection, nameof(Visit));
-
-                        var pathFinder = new PathFindingExpressionVisitor();
-
-                        pathFinder.Visit(result.Flatten().Body);
-
-                        AddPath(node.Type, pathFinder.FoundPaths.Values.ToArray());
-
-                        return node;
-                    }
-
-                    case SqlColumnExpression sqlColumnExpression:
-                    {
-                        if (sqlColumnExpression.Table is SubqueryTableExpression subqueryTableExpression)
                         {
-                            var projection = subqueryTableExpression.Subquery.Projection.Flatten().Body;
+                            var projection = queryExpression.SelectExpression.Projection;
 
-                            if (projection.TryResolvePath(sqlColumnExpression.ColumnName, out var resolved))
-                            {
-                                Visit(resolved);
-                            }
+                            var selectorVisitor = new ProjectionBubblingExpressionVisitor();
+
+                            var result = selectorVisitor.VisitAndConvert(projection, nameof(Visit));
+
+                            var pathFinder = new PathFindingExpressionVisitor();
+
+                            pathFinder.Visit(result.Flatten().Body);
+
+                            AddPath(node.Type, pathFinder.FoundPaths.Values.ToArray());
+
+                            return node;
                         }
 
-                        return node;
-                    }
+                    case SqlColumnExpression sqlColumnExpression:
+                        {
+                            if (sqlColumnExpression.Table is SubqueryTableExpression subqueryTableExpression)
+                            {
+                                var projection = subqueryTableExpression.Subquery.Projection.Flatten().Body;
+
+                                if (projection.TryResolvePath(sqlColumnExpression.ColumnName, out var resolved))
+                                {
+                                    Visit(resolved);
+                                }
+                            }
+
+                            return node;
+                        }
 
                     case MethodCallExpression methodCallExpression
                     when methodCallExpression.Method.IsQueryableOrEnumerableMethod():
-                    {
-                        var selectorVisitor = new ProjectionBubblingExpressionVisitor();
-
-                        if (selectorVisitor.Visit(methodCallExpression) is ProjectionExpression projection)
                         {
-                            var pathFinder = new PathFindingExpressionVisitor();
+                            var selectorVisitor = new ProjectionBubblingExpressionVisitor();
 
-                            pathFinder.Visit(projection.Flatten().Body);
+                            if (selectorVisitor.Visit(methodCallExpression) is ProjectionExpression projection)
+                            {
+                                var pathFinder = new PathFindingExpressionVisitor();
 
-                            if (methodCallExpression.Type.IsSequenceType())
-                            {
-                                AddPath(node.Type, pathFinder.FoundPaths.Values.ToArray());
-                            }
-                            else
-                            {
-                                foreach (var (key, value) in pathFinder.FoundPaths)
+                                pathFinder.Visit(projection.Flatten().Body);
+
+                                if (methodCallExpression.Type.IsSequenceType())
                                 {
-                                    FoundPaths.Add(string.Join('.', GetNameParts().Append(key)), value);
+                                    AddPath(node.Type, pathFinder.FoundPaths.Values.ToArray());
+                                }
+                                else
+                                {
+                                    foreach (var (key, value) in pathFinder.FoundPaths)
+                                    {
+                                        FoundPaths.Add(string.Join(".", GetNameParts().Append(key)), value);
+                                    }
                                 }
                             }
-                        }
 
-                        return node;
-                    }
+                            return node;
+                        }
 
                     case IncludeExpression includeExpression:
-                    {
-                        Visit(includeExpression.Expression);
-
-                        for (var i = 0; i < includeExpression.Paths.Length; i++)
                         {
-                            var include = includeExpression.Includes[i];
-                            var path = includeExpression.Paths[i];
+                            Visit(includeExpression.Expression);
 
-                            FoundPaths.Add(
-                                string.Join('.', GetNameParts().Concat(path.Select(p => p.Name))),
-                                new MaterializerPathInfo
-                                {
-                                    Type = include.Type,
-                                    Path = CurrentPath.Concat(path.Select(p => p.GetReadableMemberInfo())).ToArray()
-                                });
+                            for (var i = 0; i < includeExpression.Paths.Length; i++)
+                            {
+                                var include = includeExpression.Includes[i];
+                                var path = includeExpression.Paths[i];
+
+                                FoundPaths.Add(
+                                    string.Join(".", GetNameParts().Concat(path.Select(p => p.Name))),
+                                    new MaterializerPathInfo
+                                    {
+                                        Type = include.Type,
+                                        Path = CurrentPath.Concat(path.Select(p => p.GetReadableMemberInfo())).ToArray()
+                                    });
+                            }
+
+                            return includeExpression;
                         }
-
-                        return includeExpression;
-                    }
                 }
 
                 return base.Visit(node);
