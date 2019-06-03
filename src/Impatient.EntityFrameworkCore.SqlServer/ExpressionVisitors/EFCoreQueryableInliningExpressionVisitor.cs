@@ -38,14 +38,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 var key = queryable.ElementType.TypeHandle.Value;
 
-                var query
-                    = modelQueryExpressionCache.Lookup.GetOrAdd(
-                        key,
-                        (k, arg) => 
-                            arg.modelExpressionProvider.CreateQueryExpression(
-                                arg.queryable.ElementType,
-                                arg.currentDbContext.Context),
-                        (modelExpressionProvider, queryable, currentDbContext));
+                if (!modelQueryExpressionCache.Lookup.ContainsKey(key))
+                {
+                    modelQueryExpressionCache.Lookup.TryAdd(key, modelExpressionProvider.CreateQueryExpression(queryable.ElementType, currentDbContext.Context));
+                }
+
+                modelQueryExpressionCache.Lookup.TryGetValue(key, out Expression query);
 
                 // This block is moreso for types with defining queries than types that
                 // just happen to have query filters. The defining queries need to be inlined.
