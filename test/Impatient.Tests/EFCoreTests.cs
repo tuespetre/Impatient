@@ -650,6 +650,36 @@ GROUP BY [c].[CustomerID]
             });
         }
 
+        [TestMethod]
+        public void GroupBy_Aggregate_Subquery2()
+        {
+            EfCoreTestCase((context, log) =>
+            {
+                var query
+                = from c in context.Set<Customer>()
+                  where c.Fax == null
+                  from o1 in c.Orders.Where(e => e.EmployeeID == TestEnum.Blah)
+                  from o2 in c.Orders
+                  group o1.Freight by o2.OrderID into g
+                  select new { g.Key, s = g.Sum() };
+
+                query.ToList();
+
+                Assert.AreEqual(@"
+SELECT [o].[OrderID] AS [Key], SUM([o1].[Freight]) AS [s]
+FROM [dbo].[Customers] AS [c]
+CROSS APPLY (
+    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[Freight] AS [Freight], [o_0].[OrderDate] AS [OrderDate], [o_0].[RequiredDate] AS [RequiredDate], [o_0].[ShipAddress] AS [ShipAddress], [o_0].[ShipCity] AS [ShipCity], [o_0].[ShipCountry] AS [ShipCountry], [o_0].[ShipName] AS [ShipName], [o_0].[ShipPostalCode] AS [ShipPostalCode], [o_0].[ShipRegion] AS [ShipRegion], [o_0].[ShipVia] AS [ShipVia], [o_0].[ShippedDate] AS [ShippedDate]
+    FROM [dbo].[Orders] AS [o_0]
+    WHERE ([c].[CustomerID] = [o_0].[CustomerID]) AND ([o_0].[EmployeeID] = @p0)
+) AS [o1]
+INNER JOIN [dbo].[Orders] AS [o] ON [c].[CustomerID] = [o].[CustomerID]
+WHERE [c].[Fax] IS NULL
+GROUP BY [o].[OrderID]
+".Trim(), log.ToString().Trim());
+            });
+        }
+
         private void EfCoreTestCase(Action<NorthwindDbContext, StringBuilder> action)
         {
             var services = new ServiceCollection();

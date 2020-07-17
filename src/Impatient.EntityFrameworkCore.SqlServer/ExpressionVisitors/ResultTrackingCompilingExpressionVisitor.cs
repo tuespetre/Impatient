@@ -99,8 +99,10 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                 Expression.Constant(GenerateAccessors(pathFinder.FoundPaths.Values.ToArray()))));
                 }
 
-                while (extraCallStack.TryPop(out call))
+                while (extraCallStack.Count > 0)
                 {
+                    call = extraCallStack.Pop();
+
                     result = call.Update(call.Object, call.Arguments.Skip(1).Prepend(result));
                 }
 
@@ -362,7 +364,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             private void AddPath(Type type, MaterializerPathInfo[] subpaths = null)
             {
-                var name = string.Join('.', GetNameParts());
+                var name = string.Join(".", GetNameParts());
 
                 if (FoundPaths.TryGetValue(name, out _))
                 {
@@ -456,7 +458,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                             {
                                 foreach (var (key, value) in pathFinder.FoundPaths)
                                 {
-                                    FoundPaths.Add(string.Join('.', GetNameParts().Append(key)), value);
+                                    FoundPaths.Add(string.Join(".", GetNameParts().Append(key)), value);
                                 }
                             }
                         }
@@ -474,7 +476,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                             var path = includeExpression.Paths[i];
 
                             FoundPaths.Add(
-                                string.Join('.', GetNameParts().Concat(path.Select(p => p.Name))),
+                                string.Join(".", GetNameParts().Concat(path.Select(p => p.Name))),
                                 new MaterializerPathInfo
                                 {
                                     Type = include.Type,

@@ -325,7 +325,7 @@ namespace Impatient.Query.Infrastructure
             DbType? dbType,
             Func<object, object> conversion)
         {
-            DbParameter parameter;
+            DbParameter parameter = default;
             string formattedName;
             IEnumerator enumerator = default;
             var index = 0;
@@ -348,10 +348,7 @@ namespace Impatient.Query.Infrastructure
                     }
                     else
                     {
-                        if (!addedParameter)
-                        {
-                            stringBuilder.Append(" IN (");
-                        }
+                        stringBuilder.Append(" IN (");
 
                         addedParameter = true;
                         formattedName = queryFormattingProvider.FormatParameterName($"{name}_{index++}");
@@ -431,6 +428,27 @@ namespace Impatient.Query.Infrastructure
                 }
                 else
                 {
+                    var remaining
+                        = (index < 10 ? index
+                        : index < 50 ? 50
+                        : index < 100 ? 100
+                        : index < 500 ? 500
+                        : index < 1000 ? 1000
+                        : index) - index;
+
+                    var template = parameter;
+
+                    for (var i = 0; i < remaining; i++)
+                    {
+                        formattedName = queryFormattingProvider.FormatParameterName($"{name}_{index++}");
+                        stringBuilder.Append($", {formattedName}");
+                        parameter = dbCommand.CreateParameter();
+                        parameter.ParameterName = formattedName;
+                        parameter.Value = template.Value;
+                        parameter.DbType = template.DbType;
+                        dbCommand.Parameters.Add(parameter);
+                    }
+
                     stringBuilder.Append(")");
 
                     if (foundNull)

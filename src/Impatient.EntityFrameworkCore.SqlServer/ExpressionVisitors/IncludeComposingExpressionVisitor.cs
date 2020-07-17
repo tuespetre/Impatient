@@ -122,7 +122,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     {
                         throw new NotSupportedException(
                             CoreStrings.IncludeNotSpecifiedDirectlyOnEntityType(
-                                $"Include(\"{string.Join('.', paths.First().Select(m => m.Name))}\")",
+                                $"Include(\"{string.Join(".", paths.First().Select(m => m.Name))}\")",
                                 paths.First().First().Name));
                     }
 
@@ -167,7 +167,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 throw new NotSupportedException(
                     CoreStrings.IncludeNotSpecifiedDirectlyOnEntityType(
-                        $"Include(\"{string.Join('.', names)}\")",
+                        $"Include(\"{string.Join(".", names)}\")",
                         names[0]));
             }
 
@@ -265,7 +265,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 throw new NotSupportedException(
                     CoreStrings.IncludeNotSpecifiedDirectlyOnEntityType(
-                        $"Include(\"{string.Join('.', properties.Select(p => p.Name))}\")",
+                        $"Include(\"{string.Join(".", properties.Select(p => p.Name))}\")",
                         properties.First().Name));
             }
 

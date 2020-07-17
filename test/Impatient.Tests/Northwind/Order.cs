@@ -11,7 +11,7 @@ namespace Impatient.Tests.Northwind
 
         public string CustomerID { get; set; }
 
-        public int? EmployeeID { get; set; }
+        public TestEnum? EmployeeID { get; set; }
 
         public DateTime? OrderDate { get; set; }
 
@@ -38,5 +38,10 @@ namespace Impatient.Tests.Northwind
         public Customer Customer { get; set; }
 
         public IEnumerable<OrderDetail> OrderDetails { get; set; }
+    }
+
+    public enum TestEnum
+    {
+        Blah = 1,
     }
 }
