@@ -68,7 +68,7 @@ namespace Impatient.Tests
             services 
                 = ExtensionMethods.CreateServiceProvider(
                     descriptorSet: new DescriptorSet(primaryKeyDescriptors, navigationDescriptors),
-                    connectionString: @"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True");
+                    connectionString: @"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=True");
         }
 
         [TestCleanup]

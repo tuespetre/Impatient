@@ -454,7 +454,7 @@ WHERE [p].[Discontinued] IN (0, 1)
             services.AddDbContext<NorthwindDbContext>(options =>
             {
                 options
-                    .UseSqlServer(@"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=true")
+                    .UseSqlServer(@"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=true")
                     .UseImpatient();
             });
 
@@ -663,7 +663,7 @@ GROUP BY [c].[CustomerID]
             services.AddDbContext<NorthwindDbContext>(options =>
             {
                 options
-                    .UseSqlServer(@"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=true; MultipleActiveResultSets=True")
+                    .UseSqlServer(@"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=true; MultipleActiveResultSets=True")
                     .UseImpatient();
             });
 
@@ -689,7 +689,7 @@ GROUP BY [c].[CustomerID]
             services.AddDbContext<NorthwindDbContext>(options =>
             {
                 options
-                    .UseSqlServer(@"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=true; MultipleActiveResultSets=True")
+                    .UseSqlServer(@"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=true; MultipleActiveResultSets=True")
                     .UseImpatient();
             });
 

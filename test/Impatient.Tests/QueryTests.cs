@@ -2972,7 +2972,7 @@ INNER JOIN [dbo].[MyClass2] AS [m2_1] ON [m1].[Prop1] = [m2_1].[Prop1]",
         [TestMethod]
         public void GroupJoin_floated_up_from_subquery()
         {
-            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True");
+            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=True");
             var impatient = services.GetRequiredService<ImpatientQueryProvider>();
 
             var customers = CreateQueryExpression(typeof(Northwind.Customer));
@@ -4863,7 +4863,7 @@ FROM [dbo].[MyClass1] AS [m]",
         [TestMethod]
         public void StringJoin_StringArray()
         {
-            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True");
+            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=True");
             var impatient = services.GetRequiredService<ImpatientQueryProvider>();
             var customers = impatient.CreateQuery<Northwind.Customer>(CreateQueryExpression(typeof(Northwind.Customer)));
             var orders = impatient.CreateQuery<Northwind.Order>(CreateQueryExpression(typeof(Northwind.Order)));
@@ -4887,7 +4887,7 @@ FROM [dbo].[Customers] AS [c]", log);
         [TestMethod]
         public void StringJoin_StringEnumerable()
         {
-            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True");
+            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=True");
             var impatient = services.GetRequiredService<ImpatientQueryProvider>();
             var customers = impatient.CreateQuery<Northwind.Customer>(CreateQueryExpression(typeof(Northwind.Customer)));
             var orders = impatient.CreateQuery<Northwind.Order>(CreateQueryExpression(typeof(Northwind.Order)));
@@ -4911,7 +4911,7 @@ FROM [dbo].[Customers] AS [c]", log);
         [TestMethod]
         public void StringJoin_GenericEnumerable()
         {
-            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True");
+            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=True");
             var impatient = services.GetRequiredService<ImpatientQueryProvider>();
             var customers = impatient.CreateQuery<Northwind.Customer>(CreateQueryExpression(typeof(Northwind.Customer)));
             var orders = impatient.CreateQuery<Northwind.Order>(CreateQueryExpression(typeof(Northwind.Order)));
@@ -4935,7 +4935,7 @@ FROM [dbo].[Customers] AS [c]", log);
         [TestMethod]
         public void StringJoin_RespectsCompatibility()
         {
-            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=NORTHWND; Trusted_Connection=True", compatibility: ImpatientCompatibility.SqlServer2016);
+            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=True", compatibility: ImpatientCompatibility.SqlServer2016);
             var impatient = services.GetRequiredService<ImpatientQueryProvider>();
             var customers = impatient.CreateQuery<Northwind.Customer>(CreateQueryExpression(typeof(Northwind.Customer)));
             var orders = impatient.CreateQuery<Northwind.Order>(CreateQueryExpression(typeof(Northwind.Order)));
