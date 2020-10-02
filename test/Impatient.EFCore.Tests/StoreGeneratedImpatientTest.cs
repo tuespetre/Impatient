@@ -6,18 +6,19 @@ using Microsoft.EntityFrameworkCore.TestUtilities;
 
 namespace Impatient.EFCore.Tests
 {
-    public class StoreGeneratedImpatientTest : StoreGeneratedTestBase<StoreGeneratedImpatientTest.StoreGeneratedImpatientFixture>
+    public class StoreGeneratedImpatientTest : StoreGeneratedTestBase<StoreGeneratedImpatientTest.Fixture>
     {
-        public StoreGeneratedImpatientTest(StoreGeneratedImpatientFixture fixture) : base(fixture)
+        public StoreGeneratedImpatientTest(Fixture fixture) : base(fixture)
         {
         }
 
         protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
             => facade.UseTransaction(transaction.GetDbTransaction());
 
-        public class StoreGeneratedImpatientFixture : StoreGeneratedFixtureBase
+        public class Fixture : StoreGeneratedFixtureBase
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
+
             protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
             {
                 modelBuilder.Entity<Gumball>(

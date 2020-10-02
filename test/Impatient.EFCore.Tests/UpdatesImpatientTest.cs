@@ -10,9 +10,9 @@ using Xunit;
 
 namespace Impatient.EFCore.Tests
 {
-    public class UpdatesImpatientTest : UpdatesRelationalTestBase<UpdatesImpatientTest.UpdatesImpatientFixture>
+    public class UpdatesImpatientTest : UpdatesRelationalTestBase<UpdatesImpatientTest.Fixture>
     {
-        public UpdatesImpatientTest(UpdatesImpatientFixture fixture) : base(fixture)
+        public UpdatesImpatientTest(Fixture fixture) : base(fixture)
         {
         }
 
@@ -32,7 +32,7 @@ namespace Impatient.EFCore.Tests
         protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
             => facade.UseTransaction(transaction.GetDbTransaction());
 
-        public class UpdatesImpatientFixture : UpdatesRelationalFixture
+        public class Fixture : UpdatesRelationalFixture
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 

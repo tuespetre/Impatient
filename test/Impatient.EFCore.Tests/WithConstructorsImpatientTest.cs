@@ -6,16 +6,16 @@ using Microsoft.EntityFrameworkCore.TestUtilities;
 
 namespace Impatient.EFCore.Tests
 {
-    public class WithConstructorsImpatientTest : WithConstructorsTestBase<WithConstructorsImpatientTest.WithConstructorsImpatientFixture>
+    public class WithConstructorsImpatientTest : WithConstructorsTestBase<WithConstructorsImpatientTest.Fixture>
     {
-        public WithConstructorsImpatientTest(WithConstructorsImpatientFixture fixture) : base(fixture)
+        public WithConstructorsImpatientTest(Fixture fixture) : base(fixture)
         {
         }
 
         protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
             => facade.UseTransaction(transaction.GetDbTransaction());
 
-        public class WithConstructorsImpatientFixture : WithConstructorsFixtureBase
+        public class Fixture : WithConstructorsFixtureBase
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 

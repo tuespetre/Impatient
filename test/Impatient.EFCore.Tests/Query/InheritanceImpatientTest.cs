@@ -1,14 +1,16 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Impatient.EFCore.Tests.Utilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.TestUtilities;
 using Xunit;
 
 namespace Impatient.EFCore.Tests.Query
 {
-    public class InheritanceImpatientTest : InheritanceRelationalQueryTestBase<InheritanceImpatientFixture>
+    public class InheritanceImpatientTest : InheritanceRelationalQueryTestBase<InheritanceImpatientTest.Fixture>
     {
-        public InheritanceImpatientTest(InheritanceImpatientFixture fixture) : base(fixture)
+        public InheritanceImpatientTest(Fixture fixture) : base(fixture)
         {
             fixture.TestSqlLoggerFactory.Clear();
         }
@@ -27,5 +29,10 @@ namespace Impatient.EFCore.Tests.Query
 
         protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
             => facade.UseTransaction(transaction.GetDbTransaction());
+
+        public class Fixture : InheritanceQueryRelationalFixture
+        {
+            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
+        }
     }
 }

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 
-namespace Impatient.EFCore.Tests.Query
+namespace Impatient.EFCore.Tests
 {
     public abstract class NorthwindQueryImpatientFixtureBase<TCustomizer> : NorthwindQueryRelationalFixture<TCustomizer>
         where TCustomizer : IModelCustomizer, new()

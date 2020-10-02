@@ -8,10 +8,9 @@ namespace Impatient.EFCore.Tests.Query
     {
         public AsyncGearsOfWarQueryImpatientTest(Fixture fixture) : base(fixture)
         {
-            fixture.ListLoggerFactory.Clear();
         }
 
-        public class Fixture : GearsOfWarQueryFixtureBase
+        public class Fixture : GearsOfWarQueryRelationalFixture
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
         }

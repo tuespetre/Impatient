@@ -1,6 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System.Data.SqlClient;
 
 namespace Impatient.EFCore.Tests.Utilities
 {
@@ -26,6 +29,20 @@ namespace Impatient.EFCore.Tests.Utilities
 
         public override void Clean(DbContext context)
         {
+            // had to add this try/catch block since updating efcore refs to 5.x,
+            // looks like they handle this in latest source tho, packages not up to date yet?
+            try
+            {
+                context.Database.EnsureCreated();
+            }
+            catch (SqlException sql) when (sql.Number is 4060)
+            {
+                var creator = context.GetService<IRelationalDatabaseCreator>();
+
+                creator.Create();
+                creator.CreateTables();
+            }
+
             new ImpatientDatabaseCleaner().Clean(context.Database);
         }
     }

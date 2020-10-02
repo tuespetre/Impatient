@@ -1,6 +1,7 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
+using Microsoft.EntityFrameworkCore.TestUtilities;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -1667,6 +1668,9 @@ GROUP BY [o].[CustomerID]
         private void AssertSql(string sql) => Fixture.AssertSql(sql);
 
         private void AssertSqlStartsWith(string sql) => Fixture.AssertSqlStartsWith(sql);
+
+        protected override QueryAsserter CreateQueryAsserter(NorthwindQueryImpatientFixture fixture) =>
+            new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
 
         #endregion
     }

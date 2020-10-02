@@ -7,9 +7,9 @@ using System.Data.SqlClient;
 
 namespace Impatient.EFCore.Tests
 {
-    public class TransactionImpatientTest : TransactionTestBase<TransactionImpatientTest.TransactionImpatientFixture>
+    public class TransactionImpatientTest : TransactionTestBase<TransactionImpatientTest.Fixture>
     {
-        public TransactionImpatientTest(TransactionImpatientFixture fixture) : base(fixture)
+        public TransactionImpatientTest(Fixture fixture) : base(fixture)
         {
         }
 
@@ -19,15 +19,15 @@ namespace Impatient.EFCore.Tests
 
         protected override DbContext CreateContextWithConnectionString()
         {
-            var options = Fixture.AddOptions(
+            var options = base.Fixture.AddOptions(
                     new DbContextOptionsBuilder()
                         .UseSqlServer(TestStore.ConnectionString))
-                .UseInternalServiceProvider(Fixture.ServiceProvider);
+                .UseInternalServiceProvider(base.Fixture.ServiceProvider);
 
             return new DbContext(options.Options);
         }
 
-        public class TransactionImpatientFixture : TransactionFixtureBase
+        public class Fixture : TransactionFixtureBase
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 

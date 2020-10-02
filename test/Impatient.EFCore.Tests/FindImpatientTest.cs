@@ -1,11 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Impatient.EFCore.Tests.Utilities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.TestUtilities;
 using System.Threading.Tasks;
 
 namespace Impatient.EFCore.Tests
 {
-    public class FindImpatientTest : FindTestBase<FindImpatientFixture>
+    public class FindImpatientTest : FindTestBase<FindImpatientTest.Fixture>
     {
-        public FindImpatientTest(FindImpatientFixture fixture) : base(fixture)
+        public FindImpatientTest(Fixture fixture) : base(fixture)
         {
             fixture.ListLoggerFactory.Clear();
         }
@@ -18,6 +20,11 @@ namespace Impatient.EFCore.Tests
         protected override ValueTask<TEntity> FindAsync<TEntity>(DbContext context, params object[] keyValues)
         {
             return context.FindAsync<TEntity>(keyValues);
+        }
+
+        public class Fixture : FindFixtureBase
+        {
+            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
         }
     }
 }
