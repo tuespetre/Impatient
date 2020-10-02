@@ -36,7 +36,10 @@ namespace Impatient.Query.Expressions
                     from i in Enumerable.Range(0, Arguments.Count)
                     let a = Arguments[i]
                     let m = WritableMembers[i]
-                    select Bind(m, a));
+                    // https://github.com/dotnet/runtime/issues/42966
+                    let needsWrap = m.GetMemberType().Equals(typeof(object)) && !a.Type.Equals(typeof(object))
+                    let b = needsWrap ? Convert(a, typeof(object)) : a
+                    select Bind(m, b));
             }
             else
             {
@@ -100,8 +103,6 @@ namespace Impatient.Query.Expressions
 
             for (var i = 0; i < Arguments.Count; i++)
             {
-                var argument = Arguments[i];
-
                 if (Arguments[i] is null)
                 {
                     throw new ArgumentException($"Arguments cannot be null. Element {i} is null.");
@@ -117,22 +118,22 @@ namespace Impatient.Query.Expressions
                     throw new ArgumentException($"WritableMembers cannot be null. Element {i} is null.");
                 }
 
-                if (!(ReadableMembers[i].GetMemberType().IsAssignableFrom(Arguments[i].Type)))
+                if (!ReadableMembers[i].GetMemberType().IsAssignableFrom(Arguments[i].Type))
                 {
                     throw new ArgumentException($"Arguments and ReadableMembers must match. Elements at index {i} do not match.");
                 }
 
-                if (!(WritableMembers[i].GetMemberType().IsAssignableFrom(Arguments[i].Type)))
+                if (!WritableMembers[i].GetMemberType().IsAssignableFrom(Arguments[i].Type))
                 {
                     throw new ArgumentException($"Arguments and WritableMembers must match. Elements at index {i} do not match.");
                 }
 
-                if (!(ReadableMembers[i].DeclaringType.IsAssignableFrom(newExpression.Type)))
+                if (!ReadableMembers[i].DeclaringType.IsAssignableFrom(newExpression.Type))
                 {
                     throw new ArgumentException($"ReadableMembers must be valid for the NewExpression's type. Element {i} is not valid.");
                 }
 
-                if (!(WritableMembers[i].DeclaringType.IsAssignableFrom(newExpression.Type)))
+                if (!WritableMembers[i].DeclaringType.IsAssignableFrom(newExpression.Type))
                 {
                     throw new ArgumentException($"WritableMembers must be valid for the NewExpression's type. Element {i} is not valid.");
                 }

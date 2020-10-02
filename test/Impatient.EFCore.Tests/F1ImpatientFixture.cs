@@ -9,6 +9,8 @@ namespace Impatient.EFCore.Tests
     {
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 
+        public override TestHelpers TestHelpers => ImpatientTestHelpers.Instance;
+
         protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
         {
             base.OnModelCreating(modelBuilder, context);

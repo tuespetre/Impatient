@@ -1,6 +1,6 @@
 ﻿using Impatient.Extensions;
 using Impatient.Query.ExpressionVisitors.Optimizing;
-using Microsoft.EntityFrameworkCore.Extensions.Internal;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;

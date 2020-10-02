@@ -67,7 +67,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                 IEnumerable<INavigation> path)
             {
                 this.includedExpression
-                    = path.Last().GetReadableMemberInfo().GetMemberType().IsCollectionType()
+                    = path.Last().GetSemanticReadableMemberInfo().GetMemberType().IsCollectionType()
                         ? includedExpression.AsCollectionType()
                         : includedExpression;
 
@@ -168,7 +168,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                         var navigation = path.Peek();
 
-                        var member = navigation.GetReadableMemberInfo();
+                        var member = navigation.GetSemanticReadableMemberInfo();
 
                         var hasCompatibleDescriptor
                             = polymorphicExpression.Descriptors
@@ -252,7 +252,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                     var argument = arguments[i];
                     var member = node.Members[i];
 
-                    if (member == currentMember.GetReadableMemberInfo())
+                    if (member == currentMember.GetSemanticReadableMemberInfo())
                     {
                         arguments[i] = Visit(argument);
                         break;
@@ -275,7 +275,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                 var bindings = node.Bindings.ToList();
                 var currentMember = path.Pop();
-                var currentMemberInfo = currentMember.GetReadableMemberInfo();
+                var currentMemberInfo = currentMember.GetSemanticReadableMemberInfo();
                 var foundMember = false;
 
                 for (var i = 0; i < bindings.Count; i++)
@@ -321,7 +321,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                     var argument = arguments[i];
                     var member = node.ReadableMembers[i];
 
-                    if (member == currentMember.GetReadableMemberInfo())
+                    if (member == currentMember.GetSemanticReadableMemberInfo())
                     {
                         arguments[i] = Visit(argument);
                         break;
@@ -347,7 +347,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                 var writableMembers = node.WritableMembers.ToList();
 
                 var currentMember = path.Pop();
-                var currentMemberInfo = currentMember.GetReadableMemberInfo();
+                var currentMemberInfo = currentMember.GetSemanticReadableMemberInfo();
                 var foundMember = false;
 
                 for (var i = 0; i < arguments.Count; i++)
@@ -385,7 +385,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                             ? includedExpression.AsCollectionType()
                             : includedExpression);
                     
-                    readableMembers.Add(currentMember.GetReadableMemberInfo());
+                    readableMembers.Add(currentMember.GetSemanticReadableMemberInfo());
                     writableMembers.Add(writableMemberInfo);
 
                     return new ExtendedMemberInitExpression(

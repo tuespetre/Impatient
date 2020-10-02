@@ -2,7 +2,7 @@
 
 namespace Impatient.EFCore.Tests.Query
 {
-    public class ChangeTrackingImpatientTest : ChangeTrackingTestBase<NorthwindQueryImpatientFixture>
+    public class ChangeTrackingImpatientTest : NorthwindChangeTrackingQueryTestBase<NorthwindQueryImpatientFixture>
     {
         public ChangeTrackingImpatientTest(NorthwindQueryImpatientFixture fixture) : base(fixture)
         {

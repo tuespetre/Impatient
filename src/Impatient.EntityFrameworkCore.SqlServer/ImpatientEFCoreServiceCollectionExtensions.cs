@@ -2,7 +2,7 @@
 using Impatient.Metadata;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
-using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using System.Linq;

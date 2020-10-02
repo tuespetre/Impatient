@@ -6,10 +6,11 @@ using Xunit;
 
 namespace Impatient.EFCore.Tests.Query
 {
-    public class InheritanceImpatientTest : InheritanceRelationalTestBase<InheritanceImpatientFixture>
+    public class InheritanceImpatientTest : InheritanceRelationalQueryTestBase<InheritanceImpatientFixture>
     {
         public InheritanceImpatientTest(InheritanceImpatientFixture fixture) : base(fixture)
         {
+            fixture.TestSqlLoggerFactory.Clear();
         }
 
         [Fact(Skip = EFCoreSkipReasons.FromSql)]

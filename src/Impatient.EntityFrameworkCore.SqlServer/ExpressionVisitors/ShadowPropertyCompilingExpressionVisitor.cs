@@ -1,10 +1,10 @@
 ﻿using Impatient.Extensions;
+using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Microsoft.EntityFrameworkCore.Extensions.Internal;
-using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,14 +16,10 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
     public class ShadowPropertyCompilingExpressionVisitor : ExpressionVisitor
     {
         private readonly IModel model;
-        private ParameterExpression executionContextParameter;
 
-        public ShadowPropertyCompilingExpressionVisitor(
-            IModel model,
-            ParameterExpression executionContextParameter)
+        public ShadowPropertyCompilingExpressionVisitor(IModel model)
         {
-            this.model = model;
-            this.executionContextParameter = executionContextParameter;
+            this.model = model ?? throw new ArgumentNullException(nameof(model));
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
@@ -51,7 +47,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                             = currentType.DefiningEntityType.FindNavigation(
                                 currentType.DefiningNavigationName);
 
-                        if (definingNavigation?.GetReadableMemberInfo() != memberExpression.Member)
+                        if (definingNavigation?.GetSemanticReadableMemberInfo() != memberExpression.Member)
                         {
                             return node.Update(@object, arguments);
                         }
@@ -68,7 +64,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                             Expression.MakeMemberAccess(
                                 Expression.MakeMemberAccess(
                                     Expression.Convert(
-                                        executionContextParameter,
+                                        ExecutionContextParameters.DbCommandExecutor,
                                         typeof(EFCoreDbCommandExecutor)),
                                     typeof(EFCoreDbCommandExecutor).GetProperty(nameof(EFCoreDbCommandExecutor.CurrentDbContext))),
                                 typeof(ICurrentDbContext).GetProperty(nameof(ICurrentDbContext.Context))),

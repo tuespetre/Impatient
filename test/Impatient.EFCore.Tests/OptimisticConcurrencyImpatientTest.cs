@@ -32,9 +32,8 @@ namespace Impatient.EFCore.Tests
                 c =>
                     Assert.Equal(47.642576, c.Engines.Single(s => s.Name == "CA2010").StorageLocation.Latitude));
         }
-        protected override async Task ConcurrencyTestAsync(
-           Action<F1Context> storeChange, Action<F1Context> clientChange,
-           Action<F1Context, DbUpdateException> resolver, Action<F1Context> validator)
+
+        protected override async Task ConcurrencyTestAsync(Action<F1Context> storeChange, Action<F1Context> clientChange, Action<F1Context, DbUpdateConcurrencyException> resolver, Action<F1Context> validator)
         {
             using (var c = CreateF1Context())
             {
@@ -51,7 +50,7 @@ namespace Impatient.EFCore.Tests
                                 storeChange(innerContext);
                                 await innerContext.SaveChangesAsync();
 
-                                var updateException = await Assert.ThrowsAnyAsync<DbUpdateException>(() => context.SaveChangesAsync());
+                                var updateException = await Assert.ThrowsAnyAsync<DbUpdateConcurrencyException>(() => context.SaveChangesAsync());
 
                                 resolver(context, updateException);
 

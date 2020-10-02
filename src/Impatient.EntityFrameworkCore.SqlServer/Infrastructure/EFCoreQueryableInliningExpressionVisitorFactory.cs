@@ -1,7 +1,7 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.Infrastructure;
-using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {

@@ -13,7 +13,8 @@ namespace Impatient.Query.ExpressionVisitors.Utility
         private readonly HashSet<ParameterExpression> declaredVariables
             = new HashSet<ParameterExpression>()
             {
-                ExecutionContextParameter.Instance
+                ExecutionContextParameters.DbCommandExecutor,
+                ExecutionContextParameters.CancellationToken,
             };
 
         public IEnumerable<ParameterExpression> DiscoveredVariables => foundVariables.Except(declaredVariables);

@@ -76,10 +76,12 @@ namespace Impatient.EFCore.Tests
 
             public override bool SupportsBinaryKeys => true;
 
+            public override bool SupportsDecimalComparisons => true;
+
             public override DateTime DefaultDateTime => new DateTime();
 
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
-            
+
             protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
             {
                 base.OnModelCreating(modelBuilder, context);
@@ -130,9 +132,7 @@ namespace Impatient.EFCore.Tests
             public override DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder)
             {
                 var options = base.AddOptions(builder).ConfigureWarnings(
-                    c => c
-                        .Log(RelationalEventId.QueryClientEvaluationWarning)
-                        .Log(SqlServerEventId.DecimalTypeDefaultWarning));
+                    c => c.Log(SqlServerEventId.DecimalTypeDefaultWarning));
 
                 new SqlServerDbContextOptionsBuilder(options).MinBatchSize(1);
 

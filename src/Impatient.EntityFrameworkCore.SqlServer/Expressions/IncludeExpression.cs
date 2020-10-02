@@ -63,7 +63,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
 
         public override IEnumerable<MemberInfo> GetMemberPath(int index)
         {
-            return Paths[index].Select(p => p.GetReadableMemberInfo());
+            return Paths[index].Select(p => p.GetSemanticReadableMemberInfo());
         }
 
         public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)

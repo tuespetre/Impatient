@@ -13,9 +13,9 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
     {
         private static readonly MethodInfo[] supportedMethods = new[]
         {
-            ReflectionExtensions.GetMethodInfo(() => string.Join(default, new string[0])),
-            ReflectionExtensions.GetMethodInfo(() => string.Join(default, default(IEnumerable<string>))),
-            ReflectionExtensions.GetMethodInfo(() => string.Join(default, default(IEnumerable<object>))).GetGenericMethodDefinition(),
+            ReflectionExtensions.GetMethodInfo(() => string.Join(default(string), new string[0])),
+            ReflectionExtensions.GetMethodInfo(() => string.Join(default(string), default(IEnumerable<string>))),
+            ReflectionExtensions.GetMethodInfo(() => string.Join(default(string), default(IEnumerable<object>))).GetGenericMethodDefinition(),
         };
 
         private readonly QueryProcessingContext context;

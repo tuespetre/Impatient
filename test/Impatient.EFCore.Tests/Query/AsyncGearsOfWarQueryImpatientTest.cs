@@ -1,33 +1,19 @@
-﻿using System.Threading.Tasks;
+﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore.Query;
-using Xunit;
+using Microsoft.EntityFrameworkCore.TestUtilities;
 
 namespace Impatient.EFCore.Tests.Query
 {
-    public class AsyncGearsOfWarQueryImpatientTest : AsyncGearsOfWarQueryTestBase<GearsOfWarQueryImpatientFixture>
+    public class AsyncGearsOfWarQueryImpatientTest : AsyncGearsOfWarQueryRelationalTestBase<AsyncGearsOfWarQueryImpatientTest.Fixture>
     {
-        public AsyncGearsOfWarQueryImpatientTest(GearsOfWarQueryImpatientFixture fixture) : base(fixture)
+        public AsyncGearsOfWarQueryImpatientTest(Fixture fixture) : base(fixture)
         {
+            fixture.ListLoggerFactory.Clear();
         }
 
-        [Fact(Skip = EFCoreSkipReasons.Punt)]
-        public override Task ThenInclude_collection_on_derived_after_derived_collection()
+        public class Fixture : GearsOfWarQueryFixtureBase
         {
-            return base.ThenInclude_collection_on_derived_after_derived_collection();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.ManualLeftJoinNullabilityPropagation)]
-        [Trait("Impatient", "Feature Difference")]
-        public override Task Correlated_collections_deeply_nested_left_join()
-        {
-            return base.Correlated_collections_deeply_nested_left_join();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.ManualLeftJoinNullabilityPropagation)]
-        [Trait("Impatient", "Feature Difference")]
-        public override Task Correlated_collections_on_left_join_with_predicate()
-        {
-            return base.Correlated_collections_on_left_join_with_predicate();
+            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
         }
     }
 }

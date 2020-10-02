@@ -174,7 +174,7 @@ namespace Impatient.Query.Infrastructure
         {
             var parameters = new ParameterExpression[context.ParameterMapping.Count + 1];
 
-            parameters[0] = context.ExecutionContextParameter;
+            parameters[0] = ExecutionContextParameters.DbCommandExecutor;
 
             context.ParameterMapping.Values.CopyTo(parameters, 1);
 

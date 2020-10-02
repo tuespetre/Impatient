@@ -37,7 +37,7 @@ namespace Impatient.EFCore.Tests.Query
         }
     }
 
-    public class NullSemanticsQueryImpatientFixture : NullSemanticsQueryRelationalFixture
+    public class NullSemanticsQueryImpatientFixture : NullSemanticsQueryFixtureBase
     {
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }

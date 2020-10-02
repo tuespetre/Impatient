@@ -50,7 +50,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                         for (var j = 0; j < path.Length - 1; j++)
                         {
                             // Prefer field over property access b/c proxies, etc.
-                            var member = path[j].FieldInfo ?? path[j].GetReadableMemberInfo();
+                            var member = path[j].FieldInfo ?? path[j].GetSemanticReadableMemberInfo();
                             var access = Expression.MakeMemberAccess(target, member);
                             var innerVariable = Expression.Variable(access.Type, member.Name);
 

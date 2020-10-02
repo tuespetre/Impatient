@@ -1,5 +1,4 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Expressions;
-using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 using Impatient.Query.Expressions;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -33,8 +32,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
         private class QueryOptionsApplyingExpressionVisitor : ExpressionVisitor
         {
-            private QueryTrackingBehavior queryTrackingBehavior;
-            private bool ignoreQueryFilters;
+            private readonly QueryTrackingBehavior queryTrackingBehavior;
+            private readonly bool ignoreQueryFilters;
 
             public QueryOptionsApplyingExpressionVisitor(QueryTrackingBehavior queryTrackingBehavior, bool ignoreQueryFilters)
             {
@@ -76,15 +75,15 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                     case EntityMaterializationExpression entityMaterializationExpression:
                     {
-                        var identityMapMode 
+                        /*var identityMapMode 
                             = queryTrackingBehavior == QueryTrackingBehavior.TrackAll 
-                                && !entityMaterializationExpression.EntityType.IsQueryType
+                                && entityMaterializationExpression.EntityType.FindPrimaryKey() is null
                                 ? IdentityMapMode.StateManager
-                                : IdentityMapMode.IdentityMap;
+                                : IdentityMapMode.IdentityMap;*/
 
                         return base.Visit(
                             entityMaterializationExpression
-                                .UpdateIdentityMapMode(identityMapMode));
+                                .UpdateQueryTrackingBehavior(queryTrackingBehavior));
                     }
 
                     default:

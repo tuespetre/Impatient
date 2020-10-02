@@ -2,19 +2,17 @@
 using Impatient.Extensions;
 using Impatient.Metadata;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
-    using System.Linq;
-
     public class IncludeComposingExpressionVisitor : ExpressionVisitor
     {
         private static readonly MethodInfo queryableSelectMethodInfo
@@ -120,16 +118,18 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                     if (entityType == null)
                     {
-                        throw new NotSupportedException(
+                        // TODO:
+                        throw new NotSupportedException();
+                        /*throw new NotSupportedException(
                             CoreStrings.IncludeNotSpecifiedDirectlyOnEntityType(
                                 $"Include(\"{string.Join('.', paths.First().Select(m => m.Name))}\")",
-                                paths.First().First().Name));
+                                paths.First().First().Name));*/
                     }
 
                     var parameter
                         = Expression.Parameter(
                             innerSequenceType,
-                            entityType.Relational().TableName.Substring(0, 1).ToLower());
+                            entityType.GetTableName().Substring(0, 1).ToLower());
 
                     var includeAccessors
                         = BuildIncludeAccessors(
@@ -165,10 +165,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             if (entityType == null)
             {
-                throw new NotSupportedException(
+                // TODO: this
+                throw new NotSupportedException();
+                /*throw new NotSupportedException(
                     CoreStrings.IncludeNotSpecifiedDirectlyOnEntityType(
                         $"Include(\"{string.Join('.', names)}\")",
-                        names[0]));
+                        names[0]));*/
             }
 
             int depth = 0;
@@ -177,8 +179,10 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             if (!paths.Any(p => p.Count() == names.Length))
             {
-                throw new InvalidOperationException(
-                    CoreStrings.IncludeBadNavigation(names[depth], entityType.DisplayName()));
+                // TODO: this
+                throw new InvalidOperationException();
+                /*throw new InvalidOperationException(
+                    CoreStrings.IncludeBadNavigation(names[depth], entityType.DisplayName()));*/
             }
 
             return paths;
@@ -208,14 +212,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 depth--;
 
-                result.AddRange(navigations.Select(n => new List<MemberInfo> { n.GetReadableMemberInfo() }));
+                result.AddRange(navigations.Select(n => new List<MemberInfo> { n.GetSemanticReadableMemberInfo() }));
 
                 return result;
             }
 
             foreach (var navigation in navigations)
             {
-                var subtype = navigation.GetTargetType();
+                var subtype = navigation.TargetEntityType;
                 var success = false;
                 var resolvedSubpaths = ResolveIncludePaths(names, ref depth, ref subtype);
 
@@ -223,7 +227,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 {
                     success |= (subpath.Count != 0);
 
-                    subpath.Insert(0, navigation.GetReadableMemberInfo());
+                    subpath.Insert(0, navigation.GetSemanticReadableMemberInfo());
 
                     result.Add(subpath);
                 }
@@ -235,7 +239,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 if (resolvedSubpaths.Count == 0)
                 {
-                    result.Add(new List<MemberInfo> { navigation.GetReadableMemberInfo() });
+                    result.Add(new List<MemberInfo> { navigation.GetSemanticReadableMemberInfo() });
                 }
             }
 
@@ -263,10 +267,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             if (entityType == null)
             {
-                throw new NotSupportedException(
+                // TODO: this
+                throw new NotSupportedException();
+                /*throw new NotSupportedException(
                     CoreStrings.IncludeNotSpecifiedDirectlyOnEntityType(
                         $"Include(\"{string.Join('.', properties.Select(p => p.Name))}\")",
-                        properties.First().Name));
+                        properties.First().Name));*/
             }
 
             foreach (var property in properties)
@@ -278,18 +284,20 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     navigation
                         = entityType
                             .FindDerivedNavigations(property.Name)
-                            .SingleOrDefault(n => n.GetReadableMemberInfo() == property);
+                            .SingleOrDefault(n => n.GetSemanticReadableMemberInfo() == property);
                 }
 
                 if (navigation == null)
                 {
-                    throw new InvalidOperationException(
-                        CoreStrings.IncludeBadNavigation(property, entityType.DisplayName()));
+                    // TODO: this
+                    throw new InvalidOperationException();
+                    /*throw new InvalidOperationException(
+                        CoreStrings.IncludeBadNavigation(property, entityType.DisplayName()));*/
                 }
 
                 yield return property;
 
-                entityType = navigation.GetTargetType();
+                entityType = navigation.TargetEntityType;
             }
         }
 
@@ -303,7 +311,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 var includedMember = pathset.Key;
 
-                var navigation = entityType.GetNavigations().FirstOrDefault(n => n.GetReadableMemberInfo().Equals(includedMember));
+                var navigation = entityType.GetNavigations().FirstOrDefault(n => n.GetSemanticReadableMemberInfo().Equals(includedMember));
 
                 if (navigation == null)
                 {
@@ -311,7 +319,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                     navigation = (from t in entityType.GetDerivedTypes()
                                   from n in t.GetNavigations()
-                                  where n.GetReadableMemberInfo().Equals(includedMember)
+                                  where n.GetSemanticReadableMemberInfo().Equals(includedMember)
                                   select n).FirstOrDefault();
 
                     if (navigation == null)
@@ -343,7 +351,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                         var innerIncludes
                             = BuildIncludeAccessors(
-                                navigation.GetTargetType(),
+                                navigation.TargetEntityType,
                                 innerParameter,
                                 pathset,
                                 new INavigation[0]).ToArray();
@@ -371,7 +379,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     {
                         var innerIncludes
                             = BuildIncludeAccessors(
-                                navigation.GetTargetType(),
+                                navigation.TargetEntityType,
                                 includedExpression,
                                 pathset,
                                 currentPath);
@@ -401,6 +409,84 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         {
             return method?.DeclaringType == typeof(EntityFrameworkQueryableExtensions)
                 && method.Name.Equals(nameof(EntityFrameworkQueryableExtensions.ThenInclude));
+        }
+    }
+
+    internal static class ExpressionExtensionsShim
+    {
+        public static IReadOnlyList<PropertyInfo> GetComplexPropertyAccess(
+            this LambdaExpression propertyAccessExpression,
+            string methodName)
+        {
+            if (!TryGetComplexPropertyAccess(propertyAccessExpression, out var propertyPath))
+            {
+                throw new ArgumentException();
+            }
+
+            return propertyPath;
+        }
+
+        public static bool TryGetComplexPropertyAccess(
+            this LambdaExpression propertyAccessExpression,
+            out IReadOnlyList<PropertyInfo> propertyPath)
+        {
+            Debug.Assert(propertyAccessExpression.Parameters.Count == 1);
+
+            propertyPath
+                = propertyAccessExpression
+                    .Parameters
+                    .Single()
+                    .MatchPropertyAccess(propertyAccessExpression.Body);
+
+            return propertyPath != null;
+        }
+
+        private static IReadOnlyList<PropertyInfo> MatchPropertyAccess(
+            this Expression parameterExpression, 
+            Expression propertyAccessExpression)
+        {
+            var propertyInfos = new List<PropertyInfo>();
+
+            MemberExpression memberExpression;
+
+            do
+            {
+                memberExpression = RemoveTypeAs(RemoveConvert(propertyAccessExpression)) as MemberExpression;
+
+                if (!(memberExpression?.Member is PropertyInfo propertyInfo))
+                {
+                    return null;
+                }
+
+                propertyInfos.Insert(0, propertyInfo);
+
+                propertyAccessExpression = memberExpression.Expression;
+            }
+            while (RemoveTypeAs(RemoveConvert(memberExpression.Expression)) != parameterExpression);
+
+            return propertyInfos;
+        }
+
+        public static Expression RemoveConvert(this Expression expression)
+        {
+            while (expression != null
+                   && (expression.NodeType == ExpressionType.Convert
+                       || expression.NodeType == ExpressionType.ConvertChecked))
+            {
+                expression = RemoveConvert(((UnaryExpression)expression).Operand);
+            }
+
+            return expression;
+        }
+
+        public static Expression RemoveTypeAs(this Expression expression)
+        {
+            while ((expression?.NodeType == ExpressionType.TypeAs))
+            {
+                expression = RemoveConvert(((UnaryExpression)expression).Operand);
+            }
+
+            return expression;
         }
     }
 }

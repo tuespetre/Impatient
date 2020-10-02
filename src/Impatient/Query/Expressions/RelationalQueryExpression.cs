@@ -1,6 +1,5 @@
 ﻿using Impatient.Query.Infrastructure;
 using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.Expressions

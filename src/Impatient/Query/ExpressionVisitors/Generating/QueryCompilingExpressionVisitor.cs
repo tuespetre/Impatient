@@ -27,18 +27,15 @@ namespace Impatient.Query.ExpressionVisitors.Generating
         private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor;
         private readonly IQueryTranslatingExpressionVisitorFactory queryTranslatingExpressionVisitorFactory;
         private readonly MaterializerGeneratingExpressionVisitor materializerGeneratingExpressionVisitor;
-        private readonly ParameterExpression executionContextParameter;
 
         public QueryCompilingExpressionVisitor(
             TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor,
             IQueryTranslatingExpressionVisitorFactory queryTranslatingExpressionVisitorFactory,
-            MaterializerGeneratingExpressionVisitor materializerGeneratingExpressionVisitor,
-            ParameterExpression executionContextParameter)
+            MaterializerGeneratingExpressionVisitor materializerGeneratingExpressionVisitor)
         {
             this.translatabilityVisitor = translatabilityVisitor ?? throw new ArgumentNullException(nameof(translatabilityVisitor));
             this.queryTranslatingExpressionVisitorFactory = queryTranslatingExpressionVisitorFactory ?? throw new ArgumentNullException(nameof(queryTranslatingExpressionVisitorFactory));
             this.materializerGeneratingExpressionVisitor = materializerGeneratingExpressionVisitor ?? throw new ArgumentNullException(nameof(materializerGeneratingExpressionVisitor));
-            this.executionContextParameter = executionContextParameter ?? throw new ArgumentNullException(nameof(executionContextParameter));
         }
 
         public override Expression Visit(Expression node)
@@ -56,7 +53,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                         (enumerableRelationalQueryExpression.TransformationMethod
                             ?? asQueryableMethodInfo.MakeGenericMethod(sequenceType)),
                         Expression.Call(
-                            executionContextParameter,
+                            ExecutionContextParameters.DbCommandExecutor,
                             executeEnumerableMethodInfo.MakeGenericMethod(sequenceType),
                             commandBuilderLambda,
                             materializer));
@@ -70,11 +67,11 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                     return singleValueRelationalQueryExpression.Type.IsScalarType()
                         ? Expression.Call(
-                            executionContextParameter,
+                            ExecutionContextParameters.DbCommandExecutor,
                             executeScalarMethodInfo.MakeGenericMethod(node.Type),
                             commandBuilderLambda)
                         : Expression.Call(
-                            executionContextParameter,
+                            ExecutionContextParameters.DbCommandExecutor,
                             executeComplexMethodInfo.MakeGenericMethod(node.Type),
                             commandBuilderLambda,
                             materializer);

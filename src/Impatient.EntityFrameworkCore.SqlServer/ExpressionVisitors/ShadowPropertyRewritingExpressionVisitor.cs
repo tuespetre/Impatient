@@ -1,8 +1,7 @@
 ﻿using Impatient.Extensions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Extensions.Internal;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
@@ -46,16 +45,16 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                     var property = entityType.FindProperty(propertyName);
 
-                    if (property != null && !property.IsShadowProperty)
+                    if (property != null && !property.IsShadowProperty())
                     {
-                        result = Expression.MakeMemberAccess(arguments[0], property.GetReadableMemberInfo());
+                        result = Expression.MakeMemberAccess(arguments[0], property.GetSemanticReadableMemberInfo());
                     }
 
                     var navigation = entityType.FindNavigation(propertyName);
 
-                    if (navigation != null && !navigation.IsShadowProperty)
+                    if (navigation != null && !navigation.IsShadowProperty())
                     {
-                        result = Expression.MakeMemberAccess(arguments[0], navigation.GetReadableMemberInfo());
+                        result = Expression.MakeMemberAccess(arguments[0], navigation.GetSemanticReadableMemberInfo());
                     }
 
                     if (result != null)

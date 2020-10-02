@@ -130,6 +130,34 @@ WHERE [o].[OrderID] = 10252
                        select d2).ToList();
 
                 Assert.AreEqual(0, context.ChangeTracker.Entries().Count());
+                Assert.AreEqual(details.Count, details.Distinct().Count());
+
+                Assert.AreEqual(@"
+SELECT [d2].[OrderID] AS [OrderID], [d2].[ProductID] AS [ProductID], [d2].[Discount] AS [Discount], [d2].[Quantity] AS [Quantity], [d2].[UnitPrice] AS [UnitPrice]
+FROM [dbo].[Order Details] AS [d]
+INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
+INNER JOIN (
+    SELECT [d_0].[OrderID] AS [OrderID], [d_0].[ProductID] AS [ProductID], [d_0].[Discount] AS [Discount], [d_0].[Quantity] AS [Quantity], [d_0].[UnitPrice] AS [UnitPrice]
+    FROM [dbo].[Order Details] AS [d_0]
+    WHERE [d_0].[UnitPrice] >= 5.0
+) AS [d2] ON [o].[OrderID] = [d2].[OrderID]
+WHERE ([d].[UnitPrice] >= 5.0) AND ([d].[OrderID] = 10252)
+".Trim(), log.ToString().Trim());
+            });
+        }
+
+        [TestMethod]
+        public void Tracking_Basic_AsNoTrackingWithIdentityResolution()
+        {
+            EfCoreTestCase((context, log) =>
+            {
+                var details
+                    = (from d in context.Set<OrderDetail>().AsNoTrackingWithIdentityResolution()
+                       where d.OrderID == 10252
+                       from d2 in d.Order.OrderDetails
+                       select d2).ToList();
+
+                Assert.AreEqual(0, context.ChangeTracker.Entries().Count());
                 Assert.AreNotEqual(details.Count, details.Distinct().Count());
 
                 Assert.AreEqual(@"
@@ -550,7 +578,7 @@ CROSS APPLY (
                 // Load the query type with the navigation to customers
                 var qos
                     = context
-                        .Query<QuarterlyOrders>()
+                        .Set<QuarterlyOrders>()
                         .AsTracking()
                         .ToList();
             });
@@ -825,8 +853,10 @@ GROUP BY [c].[CustomerID]
                 e.HasDiscriminator(p => p.Discontinued).HasValue(true);
             });
 
-            modelBuilder.Query<QuarterlyOrders>(q =>
+            modelBuilder.Entity<QuarterlyOrders>(q =>
             {
+                q.HasNoKey();
+
                 q.ToView("Quarterly Orders", "dbo");
 
                 q.Property(o => o.Id).HasColumnName("CustomerID");

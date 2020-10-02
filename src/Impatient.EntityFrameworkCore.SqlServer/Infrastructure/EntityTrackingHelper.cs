@@ -13,45 +13,44 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 {
     public static class EntityTrackingHelper
     {
-        public static readonly MethodInfo GetEntityUsingStateManagerMethodInfo
+        public static MethodInfo GetEntityUsingStateManagerMethodInfo { get; }
             = typeof(EntityTrackingHelper)
                 .GetMethod(nameof(GetEntityUsingStateManager), BindingFlags.NonPublic | BindingFlags.Static);
 
-        public static readonly MethodInfo GetEntityUsingIdentityMapMethodInfo
+        public static MethodInfo GetEntityUsingIdentityMapMethodInfo { get; }
             = typeof(EntityTrackingHelper)
                 .GetMethod(nameof(GetEntityUsingIdentityMap), BindingFlags.NonPublic | BindingFlags.Static);
 
-        public static readonly MethodInfo TrackEntitiesMethodInfo
+        public static MethodInfo TrackEntitiesMethodInfo { get; }
             = typeof(EntityTrackingHelper)
                 .GetMethod(nameof(TrackEntities), BindingFlags.NonPublic | BindingFlags.Static);
 
-        private static object GetEntityUsingStateManager(EFCoreDbCommandExecutor executor, IEntityType entityType, object[] keyValues, object entity, object[] shadowPropertyValues, List<INavigation> includes)
+        private static object GetEntityUsingStateManager(
+            EFCoreDbCommandExecutor executor, 
+            IEntityType entityType, 
+            object[] keyValues, 
+            object entity, 
+            object[] shadowPropertyValues, 
+            List<INavigation> includes)
         {
             var entry = executor.StateManager.TryGetEntry(entityType.FindPrimaryKey(), keyValues);
 
-            if (entry == null)
+            if (entry is null)
             {
                 if (shadowPropertyValues.Length == 0)
                 {
-                    entry 
-                        = executor.EntryFactory.Create(
-                            executor.StateManager, 
-                            entityType, 
-                            entity);
+                    entry = executor.EntryFactory.Create(executor.StateManager, entityType, entity);
+
+                    executor.StateManager.StartTrackingFromQuery(entityType, entity, ValueBuffer.Empty);
                 }
                 else
                 {
-                    entry 
-                        = executor.EntryFactory.Create(
-                            executor.StateManager, 
-                            entityType, 
-                            entity, 
-                            new ValueBuffer(shadowPropertyValues));
+                    var valueBuffer = new ValueBuffer(shadowPropertyValues);
+
+                    entry = executor.EntryFactory.Create(executor.StateManager, entityType, entity, valueBuffer);
+
+                    executor.StateManager.StartTrackingFromQuery(entityType, entity, valueBuffer);
                 }
-
-                executor.StateManager.StartTracking(entry);
-
-                entry.MarkUnchangedFromQuery(null);
 
                 for (var i = 0; i < includes.Count; i++)
                 {
@@ -62,14 +61,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
             {
                 if (entry.EntityState == EntityState.Detached)
                 {
-                    entry.MarkUnchangedFromQuery(null);
+                    entry.MarkUnchangedFromQuery();
                 }
 
                 for (var i = 0; i < includes.Count; i++)
                 {
                     var include = includes[i];
 
-                    include.GetSetter().SetClrValue(entry.Entity, include.GetGetter().GetClrValue(entity));
+                    include.AsNavigation().Setter.SetClrValue(entry.Entity, include.GetGetter().GetClrValue(entity));
 
                     entry.SetIsLoaded(include, true);
                 }
@@ -78,16 +77,22 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
             return entry.Entity;
         }
 
-        private static object GetEntityUsingIdentityMap(EFCoreDbCommandExecutor executor, IEntityType entityType, object[] keyValues, object entity, object[] shadowPropertyValues, List<INavigation> includes)
+        private static object GetEntityUsingIdentityMap(
+            EFCoreDbCommandExecutor executor, 
+            IEntityType entityType, 
+            object[] keyValues, 
+            object entity, 
+            object[] shadowPropertyValues, 
+            List<INavigation> includes)
         {
-            if (entity == null)
+            if (entity is null)
             {
                 return null;
             }
 
             if (!executor.TryGetEntity(entityType, keyValues, out var info))
             {
-                Debug.Assert(info.Entity == null);
+                Debug.Assert(info.Entity is null);
 
                 info = new EntityMaterializationInfo
                 {
@@ -105,7 +110,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 
                 executor.CacheEntity(entityType, keyValues, info);
             }
-            else if (includes.Count != 0 && info.Includes == null)
+            else if (includes.Count != 0 && info.Includes is null)
             {
                 info.Includes = new HashSet<INavigation>();
 
@@ -152,7 +157,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
             EFCoreDbCommandExecutor executor,
             MaterializerAccessorInfo[] accessorInfos)
         {
-            if (accessorInfos == null)
+            if (accessorInfos is null)
             {
                 foreach (var item in IterateSource(source))
                 {
@@ -170,7 +175,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
                 {
                     var value = accessorInfo.GetValue(item);
 
-                    if (value == null)
+                    if (value is null)
                     {
                         continue;
                     }
@@ -250,7 +255,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 
         private static void HandleEntry<TEntity>(EFCoreDbCommandExecutor executor, ref TEntity entity, IEntityType entityType)
         {
-            if (entityType == null || !executor.TryGetEntity(entity, entityType, out var info))
+            if (entityType is null || !executor.TryGetEntity(entity, entityType, out var info))
             {
                 return;
             }
@@ -261,29 +266,22 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
                 = executor.StateManager.TryGetEntry(info.Key, info.KeyValues) 
                 ?? executor.StateManager.TryGetEntry(entity);
 
-            if (entry == null)
+            if (entry is null)
             {
                 if (info.ShadowPropertyValues.Length == 0)
                 {
-                    entry 
-                        = executor.EntryFactory.Create(
-                            executor.StateManager, 
-                            info.EntityType, 
-                            entity);
+                    entry = executor.EntryFactory.Create(executor.StateManager, info.EntityType, entity);
+
+                    executor.StateManager.StartTrackingFromQuery(entityType, entity, ValueBuffer.Empty);
                 }
                 else
                 {
-                    entry 
-                        = executor.EntryFactory.Create(
-                            executor.StateManager, 
-                            info.EntityType, 
-                            entity, 
-                            new ValueBuffer(info.ShadowPropertyValues));
+                    var valueBuffer = new ValueBuffer(info.ShadowPropertyValues);
+
+                    entry = executor.EntryFactory.Create(executor.StateManager, info.EntityType, entity, valueBuffer);
+
+                    executor.StateManager.StartTrackingFromQuery(entityType, entity, valueBuffer);
                 }
-
-                executor.StateManager.StartTracking(entry);
-
-                entry.MarkUnchangedFromQuery(null);
             }
             else
             {
@@ -291,11 +289,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 
                 if (entry.EntityState == EntityState.Detached)
                 {
-                    entry.MarkUnchangedFromQuery(null);
+                    entry.MarkUnchangedFromQuery();
                 }
             }
 
-            if (info.Includes != null)
+            if (info.Includes is not null)
             {
                 foreach (INavigation include in info.Includes)
                 {
@@ -314,36 +312,36 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
         {
             var value = navigation.GetGetter().GetClrValue(entity);
 
-            if (value == null)
+            if (value is null)
             {
                 return;
             }
 
-            if (navigation.FieldInfo != null)
+            if (navigation.FieldInfo is not null)
             {
                 navigation.FieldInfo.SetValue(cached, value);
             }
             else
             {
-                navigation.GetSetter().SetClrValue(cached, value);
+                navigation.AsNavigation().Setter.SetClrValue(cached, value);
             }
 
-            var inverse = navigation.FindInverse();
+            var inverse = navigation.Inverse;
 
-            if (inverse == null)
+            if (inverse is null)
             {
                 return;
             }
 
-            if (inverse.IsCollection())
+            if (inverse.IsCollection)
             {
                 var collection = inverse.GetCollectionAccessor();
 
-                collection.Add(value, cached);
+                collection.Add(value, cached, true);
             }
             else
             {
-                var setter = inverse.GetSetter();
+                var setter = inverse.AsNavigation().Setter;
 
                 if (value is IEnumerable enumerable)
                 {

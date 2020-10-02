@@ -2,7 +2,7 @@
 
 namespace Impatient.EFCore.Tests.Query
 {
-    public class CompiledQueryImpatientTest : CompiledQueryTestBase<NorthwindQueryImpatientFixture>
+    internal class CompiledQueryImpatientTest : NorthwindCompiledQueryTestBase<NorthwindQueryImpatientFixture>
     {
         public CompiledQueryImpatientTest(NorthwindQueryImpatientFixture fixture) : base(fixture)
         {

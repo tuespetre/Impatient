@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace Impatient.EFCore.Tests
 {
@@ -12,6 +13,10 @@ namespace Impatient.EFCore.Tests
         public ProxyGraphUpdatesImpatientTest(ProxyGraphUpdatesImpatientFixture fixture) : base(fixture)
         {
         }
+
+        protected override bool DoesLazyLoading => throw new NotImplementedException();
+
+        protected override bool DoesChangeTracking => throw new NotImplementedException();
 
         protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
             => facade.UseTransaction(transaction.GetDbTransaction());
@@ -30,7 +35,7 @@ namespace Impatient.EFCore.Tests
 
             protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
             {
-                modelBuilder.ForSqlServerUseIdentityColumns();
+                modelBuilder.UseIdentityColumns();
 
                 base.OnModelCreating(modelBuilder, context);
             }

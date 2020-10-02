@@ -3,7 +3,7 @@ using Impatient.Query.ExpressionVisitors.Composing;
 using Impatient.Query.ExpressionVisitors.Rewriting;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
-using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;

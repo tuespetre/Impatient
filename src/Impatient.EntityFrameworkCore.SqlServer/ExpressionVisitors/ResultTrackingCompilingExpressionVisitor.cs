@@ -1,7 +1,9 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Expressions;
 using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
+using Impatient.Extensions;
 using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Utility;
+using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
@@ -13,19 +15,13 @@ using System.Reflection;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
-    using Impatient.Extensions;
-
     public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
     {
         private readonly IModel model;
-        private readonly ParameterExpression executionContextParameter;
 
-        public ResultTrackingCompilingExpressionVisitor(
-            IModel model,
-            ParameterExpression executionContextParameter)
+        public ResultTrackingCompilingExpressionVisitor(IModel model)
         {
-            this.model = model;
-            this.executionContextParameter = executionContextParameter;
+            this.model = model ?? throw new ArgumentNullException(nameof(model));
         }
 
         public override Expression Visit(Expression node)
@@ -34,7 +30,10 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 if (queryOptionsExpression.QueryTrackingBehavior == QueryTrackingBehavior.NoTracking)
                 {
-                    return node;
+                    // remove shadow properties from materialization expressions
+                    // so they are not pulled from the server.
+
+                    return new ShadowPropertyRemovingExpressionVisitor().Visit(node);
                 }
             }
 
@@ -95,7 +94,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                             Expression.Call(
                                 EntityTrackingHelper.TrackEntitiesMethodInfo,
                                 result,
-                                Expression.Convert(executionContextParameter, typeof(EFCoreDbCommandExecutor)),
+                                Expression.Convert(ExecutionContextParameters.DbCommandExecutor, typeof(EFCoreDbCommandExecutor)),
                                 Expression.Constant(GenerateAccessors(pathFinder.FoundPaths.Values.ToArray()))));
                 }
 
@@ -128,23 +127,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 var memberVariable = Expression.Variable(memberType, member.Name);
 
                 blockVariables.Add(memberVariable);
-
-                /*if (member.DeclaringType.IsGenericType(typeof(ExpandedGrouping<,>)))
-                {
-                    Debug.Assert(member == pathInfo.Path.Last());
-
-                    if (member.Name == "Elements")
-                    {
-                        blockExpressions.Add(
-                            Expression.IfThen(
-                                Expression.Not(Expression.TypeIs(currentExpression, member.DeclaringType)),
-                                Expression.Return(returnLabel, currentExpression)));
-                    }
-                    else
-                    {
-                        member = member.DeclaringType.FindGenericType(typeof(IGrouping<,>)).GetRuntimeProperty("Key");
-                    }
-                }*/
 
                 if (!member.DeclaringType.IsAssignableFrom(currentExpression.Type))
                 {
@@ -236,18 +218,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             var propertyInfo = (PropertyInfo)memberInfo;
 
-            //if (!propertyInfo.CanRead)
-            {
-                var configuredField
-                    = model.GetEntityTypes()
-                        .Where(e => e.ClrType == propertyInfo.DeclaringType)
-                        .FirstOrDefault()
-                        ?.FindNavigation(propertyInfo).FieldInfo;
+            var configuredField
+                = model.GetEntityTypes()
+                    .Where(e => e.ClrType == propertyInfo.DeclaringType)
+                    .FirstOrDefault()
+                    ?.FindNavigation(propertyInfo).FieldInfo;
 
-                return configuredField ?? propertyInfo.FindBackingField() ?? memberInfo;
-            }
-
-            //return memberInfo;
+            return configuredField ?? propertyInfo.FindBackingField() ?? memberInfo;
         }
 
         private MemberInfo GetMemberForWrite(MemberInfo memberInfo)
@@ -304,8 +281,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     {
                         foreach (var foreignKey in candidateType.GetForeignKeys())
                         {
-                            if (foreignKey.IsOwnership 
-                                && foreignKey.PrincipalToDependent.GetReadableMemberInfo() == targetMember)
+                            if (foreignKey.IsOwnership
+                                && foreignKey.PrincipalToDependent.GetSemanticReadableMemberInfo() == targetMember)
                             {
                                 resolvedEntityType = candidateType;
                                 goto Resolved;
@@ -318,7 +295,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         throw new InvalidOperationException();
                     }
 
-                    Resolved:
+                Resolved:
                     entityType = resolvedEntityType;
                 }
 
@@ -344,7 +321,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     {
                         return base.Visit(
                             entityMaterializationExpression
-                                .UpdateIdentityMapMode(IdentityMapMode.IdentityMap));
+                                .UpdateQueryTrackingBehavior(QueryTrackingBehavior.NoTrackingWithIdentityResolution));
                     }
 
                     default:
@@ -385,10 +362,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 {
                     case EntityMaterializationExpression entityMaterializationExpression:
                     {
-                        //if (!entityMaterializationExpression.EntityType.IsOwned())
-                        {
-                            AddPath(node.Type);
-                        }
+                        AddPath(node.Type);
 
                         return base.Visit(node);
                     }
@@ -478,7 +452,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                 new MaterializerPathInfo
                                 {
                                     Type = include.Type,
-                                    Path = CurrentPath.Concat(path.Select(p => p.GetReadableMemberInfo())).ToArray()
+                                    Path = CurrentPath.Concat(path.Select(p => p.GetSemanticReadableMemberInfo())).ToArray()
                                 });
                         }
 
@@ -495,6 +469,36 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             public Type Type;
             public MemberInfo[] Path;
             public MaterializerPathInfo[] SubPaths;
+        }
+
+        private class ShadowPropertyRemovingExpressionVisitor : ExpressionVisitor
+        {
+            protected override Expression VisitExtension(Expression node)
+            {
+                switch (node)
+                {
+                    case SelectExpression select:
+                    {
+                        return select.UpdateProjection(VisitAndConvert(select.Projection, nameof(VisitExtension)));
+                    }
+
+                    case EntityMaterializationExpression entity:
+                    {
+                        return new EntityMaterializationExpression(
+                            entity.EntityType,
+                            entity.QueryTrackingBehavior,
+                            Visit(entity.KeyExpression),
+                            Enumerable.Empty<IProperty>(),
+                            Enumerable.Empty<Expression>(),
+                            Visit(entity.Expression),
+                            entity.IncludedNavigations);
+                    }
+                    default:
+                    {
+                        return base.VisitExtension(node);
+                    }
+                }
+            }
         }
     }
 }

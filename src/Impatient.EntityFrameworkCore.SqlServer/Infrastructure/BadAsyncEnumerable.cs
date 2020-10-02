@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
@@ -13,7 +14,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             this.func = func;
         }
 
-        public IAsyncEnumerator<TResult> GetEnumerator()
+        public IAsyncEnumerator<TResult> GetAsyncEnumerator(CancellationToken cancellationToken = default)
         {
             return new BadAsyncEnumerator<TResult>(func());
         }

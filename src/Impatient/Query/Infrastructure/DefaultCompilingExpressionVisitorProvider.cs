@@ -28,8 +28,7 @@ namespace Impatient.Query.Infrastructure
                 queryTranslatingExpressionVisitorFactory,
                 new MaterializerGeneratingExpressionVisitor(
                     translatabilityAnalyzingExpressionVisitor,
-                    readValueExpressionFactoryProvider),
-                context.ExecutionContextParameter);
+                    readValueExpressionFactoryProvider));
         }
     }
 }

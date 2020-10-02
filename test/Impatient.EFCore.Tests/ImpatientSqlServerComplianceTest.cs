@@ -13,10 +13,8 @@ namespace Impatient.EFCore.Tests
         protected override ICollection<Type> IgnoredTestBases { get; }
             = new List<Type>
             {
-                typeof(MigrationSqlGeneratorTestBase),
                 typeof(MigrationsTestBase<>),
                 typeof(AsyncFromSqlQueryTestBase<>),
-                typeof(AsyncFromSqlSprocQueryTestBase<>),
                 typeof(FromSqlQueryTestBase<>),
                 typeof(FromSqlSprocQueryTestBase<>),
                 typeof(GearsOfWarFromSqlQueryTestBase<>),

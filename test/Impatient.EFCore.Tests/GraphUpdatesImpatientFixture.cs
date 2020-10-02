@@ -6,5 +6,7 @@ namespace Impatient.EFCore.Tests
     public class GraphUpdatesImpatientFixture : GraphUpdatesImpatientTest.GraphUpdatesFixtureBase
     {
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
+
+        protected override string StoreName => throw new System.NotImplementedException();
     }
 }

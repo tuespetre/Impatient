@@ -1,6 +1,6 @@
 ﻿using Impatient.Metadata;
 using Impatient.Query.Infrastructure;
-using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using System;
 using System.Linq;
 

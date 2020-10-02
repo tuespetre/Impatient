@@ -23,7 +23,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
                 GetType()
                     .GetMethod(nameof(GetServiceForInjection), BindingFlags.Static | BindingFlags.NonPublic)
                     .MakeGenericMethod(Type),
-                Convert(ExecutionContextParameter.Instance, typeof(EFCoreDbCommandExecutor)));
+                Convert(ExecutionContextParameters.DbCommandExecutor, typeof(EFCoreDbCommandExecutor)));
         }
 
         private static TService GetServiceForInjection<TService>(EFCoreDbCommandExecutor executor)

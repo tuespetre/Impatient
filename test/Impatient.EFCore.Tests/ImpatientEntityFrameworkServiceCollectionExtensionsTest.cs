@@ -24,7 +24,7 @@ namespace Impatient.EFCore.Tests
         public override IServiceCollection AddProviderServices(IServiceCollection services)
             => services.AddEntityFrameworkSqlServer();
 
-        protected override void UseProviderOptions(DbContextOptionsBuilder optionsBuilder)
+        public override void UseProviderOptions(DbContextOptionsBuilder optionsBuilder)
             => optionsBuilder.UseSqlServer(new SqlConnection("Database=DummyDatabase"));
     }
 }

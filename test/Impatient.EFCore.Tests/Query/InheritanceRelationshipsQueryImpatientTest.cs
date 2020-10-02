@@ -4,15 +4,16 @@ using Microsoft.EntityFrameworkCore.TestUtilities;
 
 namespace Impatient.EFCore.Tests.Query
 {
-    public class InheritanceRelationshipsQueryImpatientTest : InheritanceRelationshipsQueryTestBase<InheritanceRelationshipsQueryImpatientFixture>
+    public class InheritanceRelationshipsQueryImpatientTest : InheritanceRelationshipsQueryRelationalTestBase<InheritanceRelationshipsQueryImpatientTest.Fixture>
     {
-        public InheritanceRelationshipsQueryImpatientTest(InheritanceRelationshipsQueryImpatientFixture fixture) : base(fixture)
+        public InheritanceRelationshipsQueryImpatientTest(Fixture fixture) : base(fixture)
         {
+            fixture.TestSqlLoggerFactory.Clear();
         }
-    }
 
-    public class InheritanceRelationshipsQueryImpatientFixture : InheritanceRelationshipsQueryRelationalFixture
-    {
-        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
+        public class Fixture : InheritanceRelationshipsQueryRelationalFixture
+        {
+            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
+        }
     }
 }

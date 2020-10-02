@@ -16,13 +16,15 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public TResult Current => enumerator.Current;
 
-        public void Dispose()
+        public ValueTask DisposeAsync()
         {
             task.Dispose();
             enumerator?.Dispose();
+
+            return default;
         }
 
-        public async Task<bool> MoveNext(CancellationToken cancellationToken)
+        public async ValueTask<bool> MoveNextAsync()
         {
             if (enumerator == null)
             {

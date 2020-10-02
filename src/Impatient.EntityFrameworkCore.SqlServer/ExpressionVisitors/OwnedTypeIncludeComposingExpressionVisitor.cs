@@ -48,12 +48,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
         {
             foreach (var navigation in entityType.GetNavigations())
             {
-                if (navigation.ForeignKey.IsOwnership && !navigation.IsDependentToPrincipal())
+                if (navigation.ForeignKey.IsOwnership && !navigation.IsOnDependent)
                 {
-                    var targetType = navigation.GetTargetType();
+                    var targetType = navigation.TargetEntityType;
 
-                    if (targetType.Relational().Schema == entityType.Relational().Schema
-                        && targetType.Relational().TableName == entityType.Relational().TableName)
+                    if (targetType.GetSchema() == entityType.GetSchema()
+                        && targetType.GetTableName() == entityType.GetTableName())
                     {
                         continue;
                     }

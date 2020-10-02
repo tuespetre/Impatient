@@ -29,8 +29,6 @@ namespace Impatient.Query.Infrastructure
 
         public IDictionary<object, ParameterExpression> ParameterMapping { get; }
 
-        public ParameterExpression ExecutionContextParameter => Infrastructure.ExecutionContextParameter.Instance;
-
         public TExtension GetExtension<TExtension>() where TExtension : class
         {
             if (extensions.TryGetValue(typeof(TExtension), out var result))

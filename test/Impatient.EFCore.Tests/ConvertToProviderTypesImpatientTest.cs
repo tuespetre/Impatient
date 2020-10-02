@@ -63,9 +63,11 @@ namespace Impatient.EFCore.Tests
 
             public override bool SupportsLargeStringComparisons => true;
 
-            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
+            public override bool SupportsDecimalComparisons => true;
 
             public override bool SupportsBinaryKeys => true;
+
+            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 
             public override DateTime DefaultDateTime => new DateTime();
 
@@ -73,8 +75,7 @@ namespace Impatient.EFCore.Tests
                 => base
                     .AddOptions(builder)
                     .ConfigureWarnings(
-                        c => c.Log(RelationalEventId.QueryClientEvaluationWarning)
-                            .Log(SqlServerEventId.DecimalTypeDefaultWarning));
+                        c => c.Log(SqlServerEventId.DecimalTypeDefaultWarning));
 
             protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
             {

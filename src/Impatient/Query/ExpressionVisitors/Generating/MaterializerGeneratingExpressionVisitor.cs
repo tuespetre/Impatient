@@ -202,7 +202,6 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                         {
                             var result = Expression.Parameter(polymorphicExpression.Type);
                             var cases = new SwitchCase[polymorphicExpression.Descriptors.Count()];
-                            //var breakTarget = Expression.Label();
                             var i = 0;
 
                             foreach (var descriptor in polymorphicExpression.Descriptors)
@@ -211,7 +210,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                                 var expansion = Expression.Convert(materializer, polymorphicExpression.Type);
                                 var assignment = Expression.Assign(result, expansion);
                                 var testValue = ((BinaryExpression)descriptor.Test.Body).Right;
-                                var body = assignment; //Expression.Block(assignment, Expression.Break(breakTarget));
+                                var body = assignment;
 
                                 cases[i] = Expression.SwitchCase(body, testValue);
                                 i++;
@@ -225,7 +224,6 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                                     Expression.Assign(result, Expression.Default(polymorphicExpression.Type)),
                                     cases));
 
-                            //expressions.Add(Expression.Label(breakTarget));
                             expressions.Add(result);
                         }
                         else

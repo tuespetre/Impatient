@@ -32,7 +32,7 @@ namespace Impatient.EFCore.Tests.Utilities
             new ImpatientDatabaseCleaner().Clean(context.Database);
         }
 
-        protected override void Initialize(Func<DbContext> createContext, Action<DbContext> seed)
+        protected override void Initialize(Func<DbContext> createContext, Action<DbContext> seed, Action<DbContext> clean)
         {
             using (var context = createContext())
             {
@@ -57,11 +57,9 @@ namespace Impatient.EFCore.Tests.Utilities
 
                         foreach (var batch in batchRegex.Split(script).Where(b => !string.IsNullOrEmpty(b)))
                         {
-                            using (var command = Connection.CreateCommand())
-                            {
-                                command.CommandText = batch;
-                                command.ExecuteNonQuery();
-                            }
+                            using var command = Connection.CreateCommand();
+                            command.CommandText = batch;
+                            command.ExecuteNonQuery();
                         }
                     }
                     finally

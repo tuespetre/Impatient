@@ -7,6 +7,7 @@ namespace Impatient.EFCore.Tests
     {
         public FindImpatientTest(FindImpatientFixture fixture) : base(fixture)
         {
+            fixture.ListLoggerFactory.Clear();
         }
 
         protected override TEntity Find<TEntity>(DbContext context, params object[] keyValues)
@@ -14,7 +15,7 @@ namespace Impatient.EFCore.Tests
             return context.Find<TEntity>(keyValues);
         }
 
-        protected override Task<TEntity> FindAsync<TEntity>(DbContext context, params object[] keyValues)
+        protected override ValueTask<TEntity> FindAsync<TEntity>(DbContext context, params object[] keyValues)
         {
             return context.FindAsync<TEntity>(keyValues);
         }

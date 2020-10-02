@@ -53,7 +53,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 unbufferedReader = null;
             }
 
-            var result = default(object);
             var connection = CurrentDbContext.Context.Database.GetService<IRelationalConnection>();
 
             connection.Open();
@@ -66,31 +65,32 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 var startTime = DateTimeOffset.UtcNow;
                 var stopwatch = Stopwatch.StartNew();
 
-                logger.CommandExecuting(
+                logger.CommandReaderExecuting(
+                    connection,
                     command,
-                    DbCommandMethod.ExecuteReader,
+                    CurrentDbContext.Context,
                     commandId,
                     connection.ConnectionId,
-                    false,
                     startTime);
 
                 try
                 {
                     using (var reader = command.ExecuteReader(CommandBehavior.CloseConnection))
                     {
-                        logger.CommandExecuted(
+                        logger.CommandReaderExecuted(
+                            connection,
                             command,
-                            DbCommandMethod.ExecuteReader,
+                            CurrentDbContext.Context,
                             commandId,
                             connection.ConnectionId,
-                            result,
-                            false,
+                            reader,
                             startTime,
                             stopwatch.Elapsed);
 
                         reader.Read();
 
-                        CurrentDbContext.GetDependencies().StateManager.BeginTrackingQuery();
+                        // TODO: this
+                        //CurrentDbContext.GetDependencies().StateManager.BeginTrackingQuery();
 
                         return materializer(reader);
                     }
@@ -98,12 +98,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 catch (Exception exception)
                 {
                     logger.CommandError(
+                        connection,
                         command,
+                        CurrentDbContext.Context,
                         DbCommandMethod.ExecuteReader,
                         commandId,
                         connection.ConnectionId,
                         exception,
-                        false,
                         startTime,
                         stopwatch.Elapsed);
 
@@ -136,12 +137,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             var startTime = DateTimeOffset.UtcNow;
             var stopwatch = Stopwatch.StartNew();
 
-            logger.CommandExecuting(
+            logger.CommandReaderExecuting(
+                connection,
                 command,
-                DbCommandMethod.ExecuteReader,
+                CurrentDbContext.Context,
                 commandId,
                 connection.ConnectionId,
-                false,
                 startTime);
 
             var reader = default(DbDataReader);
@@ -152,13 +153,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 reader = command.ExecuteReader();
 
-                logger.CommandExecuted(
+                logger.CommandReaderExecuted(
+                    connection,
                     command,
-                    DbCommandMethod.ExecuteReader,
+                    CurrentDbContext.Context,
                     commandId,
                     connection.ConnectionId,
                     reader,
-                    false,
                     startTime,
                     stopwatch.Elapsed);
             }
@@ -167,12 +168,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 caughtException = true;
 
                 logger.CommandError(
+                    connection,
                     command,
+                    CurrentDbContext.Context,
                     DbCommandMethod.ExecuteReader,
                     commandId,
                     connection.ConnectionId,
                     exception,
-                    false,
                     startTime,
                     stopwatch.Elapsed);
 
@@ -188,10 +190,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 }
             }
 
-            CurrentDbContext.GetDependencies().StateManager.BeginTrackingQuery();
+            // TODO: begin tracking query replacement??
+            //CurrentDbContext.GetDependencies().StateManager.BeginTrackingQuery();
 
             try
             {
+                // TODO: this
+                /*
                 if (!connection.IsMultipleActiveResultSetsEnabled)
                 {
                     var buffer = new BufferingDbDataReader(reader, ArrayPool<object>.Shared);
@@ -200,10 +205,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                     reader = buffer;
                 }
+                */
 
                 while (reader.Read())
                 {
-                    yield return materializer(reader);
+                    var materialized = materializer(reader);
+
+                    yield return materialized;
                 }
             }
             finally
@@ -239,25 +247,25 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 var startTime = DateTimeOffset.UtcNow;
                 var stopwatch = Stopwatch.StartNew();
 
-                logger.CommandExecuting(
+                logger.CommandScalarExecuting(
+                    connection,
                     command,
-                    DbCommandMethod.ExecuteReader,
+                    CurrentDbContext.Context,
                     commandId,
                     connection.ConnectionId,
-                    false,
                     startTime);
 
                 try
                 {
                     var result = command.ExecuteScalar();
 
-                    logger.CommandExecuted(
+                    logger.CommandScalarExecuted(
+                        connection,
                         command,
-                        DbCommandMethod.ExecuteScalar,
+                        CurrentDbContext.Context,
                         commandId,
                         connection.ConnectionId,
                         result,
-                        false,
                         startTime,
                         stopwatch.Elapsed);
 
@@ -266,12 +274,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 catch (Exception exception)
                 {
                     logger.CommandError(
+                        connection,
                         command,
+                        CurrentDbContext.Context,
                         DbCommandMethod.ExecuteScalar,
                         commandId,
                         connection.ConnectionId,
                         exception,
-                        false,
                         startTime,
                         stopwatch.Elapsed);
 
@@ -305,7 +314,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         {
             info = default;
 
-            var rootType = entityType.RootType();
+            var rootType = entityType.GetRootType();
 
             if (entityLookups.TryGetValue(rootType, out var lookups))
             {
@@ -319,7 +328,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         {
             info = default;
 
-            var rootType = entityType.RootType();
+            var rootType = entityType.GetRootType();
 
             if (entityLookups.TryGetValue(rootType, out var lookups))
             {
@@ -331,7 +340,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public void CacheEntity(IEntityType entityType, object[] keyValues, in EntityMaterializationInfo info)
         {
-            var rootType = entityType.RootType();
+            var rootType = entityType.GetRootType();
 
             if (!entityLookups.TryGetValue(rootType, out var lookups))
             {
@@ -361,7 +370,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 entityLookups[rootType] = lookups = new EntityLookups
                 {
                     KeyMap = new Dictionary<object[], EntityMaterializationInfo>(instance),
-                    EntityMap = new Dictionary<object, EntityMaterializationInfo>(ReferenceEqualityComparer.Instance)
+                    EntityMap = new Dictionary<object, EntityMaterializationInfo>(LegacyReferenceEqualityComparer.Instance)
                 };
             }
 

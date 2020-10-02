@@ -14,6 +14,8 @@ namespace Impatient.EFCore.Tests.Query
         {
         }
 
+        // TODO: this
+        /*
         [Fact]
         public override void String_starts_with_on_argument_with_wildcard_constant()
         {
@@ -83,6 +85,7 @@ namespace Impatient.EFCore.Tests.Query
                 Assert.True(0 == result8.Count);
             }
         }
+        */
     }
 
     public class FunkyDataQueryImpatientFixture : FunkyDataQueryTestBase<FunkyDataQueryImpatientFixture>.FunkyDataQueryFixtureBase

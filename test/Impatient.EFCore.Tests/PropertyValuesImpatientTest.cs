@@ -20,7 +20,8 @@ namespace Impatient.EFCore.Tests
             {
                 var options = base.AddOptions(builder).ConfigureWarnings(
                     c => c
-                        .Log(RelationalEventId.QueryClientEvaluationWarning)
+                    // TODO: this
+                        //.Log(RelationalEventId.QueryClientEvaluationWarning)
                         .Log(SqlServerEventId.DecimalTypeDefaultWarning));
 
                 new SqlServerDbContextOptionsBuilder(options).MinBatchSize(1);

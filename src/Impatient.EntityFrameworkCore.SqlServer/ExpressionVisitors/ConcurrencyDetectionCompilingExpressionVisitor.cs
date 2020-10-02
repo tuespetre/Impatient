@@ -1,13 +1,11 @@
 ﻿using Impatient.Extensions;
 using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 
 namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 {
@@ -43,7 +41,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                             .MakeGenericMethod(node.Type.GetSequenceType()),
                         inner,
                         Expression.Convert(
-                            ExecutionContextParameter.Instance,
+                            ExecutionContextParameters.DbCommandExecutor,
                             typeof(EFCoreDbCommandExecutor)));
 
                 if (conversion != null)
@@ -61,7 +59,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                         .MakeGenericMethod(node.Type),
                     Expression.Lambda(node),
                     Expression.Convert(
-                        ExecutionContextParameter.Instance,
+                        ExecutionContextParameters.DbCommandExecutor,
                         typeof(EFCoreDbCommandExecutor)));
             }
         }
@@ -72,23 +70,47 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
         {
             var detector = executor.CurrentDbContext.Context.GetService<IConcurrencyDetector>();
 
-            using (var enumerator = source.GetEnumerator())
+            using var enumerator = source.GetEnumerator();
+
+            KeepOnKeepingOn:
+
+            var keepKeepingOnKeepingOn = false;
+
+            using (detector.EnterCriticalSection())
             {
-                KeepOnKeepingOn:
+                keepKeepingOnKeepingOn = enumerator.MoveNext();
+            }
 
-                var keepKeepingOnKeepingOn = false;
+            if (keepKeepingOnKeepingOn)
+            {
+                yield return enumerator.Current;
 
-                using (detector.EnterCriticalSection())
-                {
-                    keepKeepingOnKeepingOn = enumerator.MoveNext();
-                }
+                goto KeepOnKeepingOn;
+            }
+        }
 
-                if (keepKeepingOnKeepingOn)
-                {
-                    yield return enumerator.Current;
+        private static async IAsyncEnumerable<TSource> DetectAsyncEnumerableConcurrency<TSource>(
+            IAsyncEnumerable<TSource> source,
+            EFCoreDbCommandExecutor executor)
+        {
+            var detector = executor.CurrentDbContext.Context.GetService<IConcurrencyDetector>();
 
-                    goto KeepOnKeepingOn;
-                }
+            await using var enumerator = source.GetAsyncEnumerator();
+
+            KeepOnKeepingOn:
+
+            var keepKeepingOnKeepingOn = false;
+
+            using (detector.EnterCriticalSection())
+            {
+                keepKeepingOnKeepingOn = await enumerator.MoveNextAsync();
+            }
+
+            if (keepKeepingOnKeepingOn)
+            {
+                yield return enumerator.Current;
+
+                goto KeepOnKeepingOn;
             }
         }
 

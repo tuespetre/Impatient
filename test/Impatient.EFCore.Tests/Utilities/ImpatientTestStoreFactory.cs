@@ -46,5 +46,10 @@ namespace Impatient.EFCore.Tests.Utilities
                 return new ImpatientTestStore(storeName, true);
             }
         }
+
+        public ListLoggerFactory CreateListLoggerFactory(Func<string, bool> shouldLogCategory)
+        {
+            return new TestSqlLoggerFactory(shouldLogCategory);
+        }
     }
 }

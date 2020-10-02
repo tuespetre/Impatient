@@ -1,6 +1,6 @@
-﻿using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
-using Impatient.Query.Expressions;
+﻿using Impatient.Query.Expressions;
 using Impatient.Query.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
 using System.Collections.Generic;
@@ -15,7 +15,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
     {
         public EntityMaterializationExpression(
             IEntityType entityType, 
-            IdentityMapMode identityMapMode,
+            QueryTrackingBehavior queryTrackingBehavior,
             Expression keyExpression,
             IEnumerable<IProperty> shadowProperties,
             IEnumerable<Expression> shadowPropertyExpressions,
@@ -24,7 +24,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             : base(expression)
         {
             EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
-            IdentityMapMode = identityMapMode;
+            QueryTrackingBehavior = queryTrackingBehavior;
             KeyExpression = keyExpression ?? throw new ArgumentNullException(nameof(keyExpression));
             ShadowProperties = shadowProperties.ToImmutableArray();
             IncludedNavigations = includedNavigations?.ToImmutableArray() ?? ImmutableArray.Create<INavigation>();
@@ -34,7 +34,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public IEntityType EntityType { get; }
 
-        public IdentityMapMode IdentityMapMode { get; }
+        public QueryTrackingBehavior QueryTrackingBehavior { get; }
 
         public Expression KeyExpression { get; }
 
@@ -53,7 +53,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 return new EntityMaterializationExpression(
                     EntityType,
-                    IdentityMapMode,
+                    QueryTrackingBehavior,
                     KeyExpression,
                     ShadowProperties,
                     properties,
@@ -64,11 +64,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return this;
         }
 
-        public EntityMaterializationExpression UpdateIdentityMapMode(IdentityMapMode identityMapMode)
+        public EntityMaterializationExpression UpdateQueryTrackingBehavior(QueryTrackingBehavior queryTrackingBehavior)
         {
             return new EntityMaterializationExpression(
                 EntityType, 
-                identityMapMode, 
+                queryTrackingBehavior, 
                 KeyExpression, 
                 ShadowProperties, 
                 Properties,
@@ -80,7 +80,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         {
             return new EntityMaterializationExpression(
                 EntityType,
-                IdentityMapMode,
+                QueryTrackingBehavior,
                 KeyExpression,
                 ShadowProperties,
                 Properties,

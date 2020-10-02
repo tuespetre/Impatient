@@ -37,7 +37,7 @@ namespace Impatient.EFCore.Tests.Query
 
         [Fact]
         [Trait("Impatient", "Overridden for exception difference")]
-        public override void DbContext_property_chain_is_parametrized()
+        public override void DbContext_property_chain_is_parameterized()
         {
             using (var context = CreateContext())
             {
@@ -57,7 +57,7 @@ namespace Impatient.EFCore.Tests.Query
 
         [Fact]
         [Trait("Impatient", "Overridden for exception difference")]
-        public override void DbContext_property_method_call_is_parametrized()
+        public override void DbContext_property_method_call_is_parameterized()
         {
             using (var context = CreateContext())
             {
@@ -73,7 +73,7 @@ namespace Impatient.EFCore.Tests.Query
 
         [Fact]
         [Trait("Impatient", "Overridden for exception difference")]
-        public override void EntityTypeConfiguration_DbContext_property_chain_is_parametrized()
+        public override void EntityTypeConfiguration_DbContext_property_chain_is_parameterized()
         {
             using (var context = CreateContext())
             {
@@ -93,7 +93,7 @@ namespace Impatient.EFCore.Tests.Query
 
         [Fact]
         [Trait("Impatient", "Overridden for exception difference")]
-        public override void Extension_method_DbContext_property_chain_is_parametrized()
+        public override void Extension_method_DbContext_property_chain_is_parameterized()
         {
             using (var context = CreateContext())
             {
@@ -113,7 +113,7 @@ namespace Impatient.EFCore.Tests.Query
 
         [Fact]
         [Trait("Impatient", "Overridden for exception difference")]
-        public override void Remote_method_DbContext_property_method_call_is_parametrized()
+        public override void Remote_method_DbContext_property_method_call_is_parameterized()
         {
             using (var context = CreateContext())
             {

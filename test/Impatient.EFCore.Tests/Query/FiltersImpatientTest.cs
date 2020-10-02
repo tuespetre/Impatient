@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Impatient.EFCore.Tests.Query
 {
-    public class FiltersImpatientTest : FiltersTestBase<NorthwindQueryFiltersImpatientFixture>
+    public class FiltersImpatientTest : NorthwindQueryFiltersQueryTestBase<NorthwindQueryFiltersImpatientFixture>
     {
         public FiltersImpatientTest(NorthwindQueryFiltersImpatientFixture fixture) : base(fixture)
         {
@@ -23,7 +23,7 @@ namespace Impatient.EFCore.Tests.Query
         }
     }
     
-    public class NorthwindQueryFiltersImpatientFixture : NorthwindQueryImpatientFixtureBase<NorthwindFiltersCustomizer>
+    public class NorthwindQueryFiltersImpatientFixture : NorthwindQueryImpatientFixtureBase<NorthwindQueryFiltersCustomizer>
     {
     }
 }

@@ -41,12 +41,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             var expressions
                 = (from p in properties
-                   select p.IsShadowProperty
+                   select p.IsShadowProperty()
                      ? (Expression)Expression.Call(
                          efPropertyMethodInfo.MakeGenericMethod(p.ClrType),
                          entityParameter,
                          Expression.Constant(p.Name))
-                     : Expression.MakeMemberAccess(entityParameter, p.GetReadableMemberInfo())).ToArray();
+                     : Expression.MakeMemberAccess(entityParameter, p.GetSemanticReadableMemberInfo())).ToArray();
 
             return Expression.Lambda(
                 properties.Count == 1
@@ -75,9 +75,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     typeof(object),
                     from p in type.FindPrimaryKey().Properties
                     select Expression.Convert(
-                        p.IsShadowProperty
+                        p.IsShadowProperty()
                             ? Expression.ArrayIndex(shadowPropertiesParameter, Expression.Constant(p.GetShadowIndex()))
-                            : (Expression)Expression.MakeMemberAccess(entityParameter, p.GetReadableMemberInfo()),
+                            : (Expression)Expression.MakeMemberAccess(entityParameter, p.GetSemanticReadableMemberInfo()),
                         typeof(object))),
                 entityParameter,
                 shadowPropertiesParameter);
@@ -104,11 +104,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 {
                     if (navigation.ForeignKey.IsOwnership)
                     {
-                        var source = type.Relational();
-                        var target = navigation.GetTargetType().Relational();
+                        var source = type;
+                        var target = navigation.TargetEntityType;
 
-                        if (source.Schema == target.Schema
-                            && source.TableName == target.TableName)
+                        if (source.GetSchema() == target.GetSchema()
+                            && source.GetTableName() == target.GetTableName())
                         {
                             continue;
                         }
@@ -127,7 +127,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 {
                     yield return new NavigationDescriptor(
                         fk.PrincipalEntityType.ClrType,
-                        fk.PrincipalToDependent.GetReadableMemberInfo(),
+                        fk.PrincipalToDependent.GetSemanticReadableMemberInfo(),
                         principal,
                         dependent,
                         true,
@@ -138,7 +138,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 {
                     yield return new NavigationDescriptor(
                         fk.DeclaringEntityType.ClrType,
-                        fk.DependentToPrincipal.GetReadableMemberInfo(),
+                        fk.DependentToPrincipal.GetSemanticReadableMemberInfo(),
                         dependent,
                         principal,
                         !fk.IsRequired,
@@ -150,8 +150,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         private static bool IsTablePerHierarchy(IEntityType rootType, IEnumerable<IEntityType> hierarchy)
         {
             return hierarchy.All(t =>
-                t.Relational().Schema == rootType.Relational().Schema
-                && t.Relational().TableName == rootType.Relational().TableName);
+                t.GetSchema() == rootType.GetSchema()
+                && t.GetTableName() == rootType.GetTableName());
         }
 
         public Expression CreateQueryExpression(Type elementType, DbContext context)
@@ -160,17 +160,17 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             Expression queryExpression;
 
-            if (targetType.DefiningQuery != null)
+            if (targetType.GetDefiningQuery() != null)
             {
-                queryExpression = targetType.DefiningQuery.Body;
+                queryExpression = targetType.GetDefiningQuery().Body;
 
                 goto ApplyQueryFilters;
             }
 
-            var rootType = targetType.RootType();
+            var rootType = targetType.GetRootType();
 
-            var schemaName = rootType.Relational().Schema ?? context.Model.Relational().DefaultSchema;
-            var tableName = rootType.Relational().TableName;
+            var schemaName = rootType.GetSchema() ?? rootType.GetDefaultSchema() ?? rootType.GetDefaultViewSchema();
+            var tableName = rootType.GetTableName() ?? rootType.GetViewName();
 
             var table
                 = new BaseTableExpression(
@@ -189,7 +189,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             while (discriminatingType != null)
             {
-                var discriminatorProperty = discriminatingType.Relational().DiscriminatorProperty;
+                var discriminatorProperty = discriminatingType.GetDiscriminatorProperty();
 
                 if (discriminatorProperty != null)
                 {
@@ -204,7 +204,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                    from t in discriminatingType.GetDerivedTypesInclusive()
                                    where !t.IsAbstract()
                                    select Expression.Constant(
-                                        t.Relational().DiscriminatorValue,
+                                        t.GetDiscriminatorValue(),
                                         discriminatorProperty.ClrType))));
                 }
 
@@ -220,9 +220,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             while (currentType != null)
             {
-                if (currentType.QueryFilter != null)
+                if (currentType.GetQueryFilter() != null)
                 {
-                    var filterBody = currentType.QueryFilter.Body;
+                    var filterBody = currentType.GetQueryFilter().Body;
                     
                     var repointer 
                         = new QueryFilterRepointingExpressionVisitor(
@@ -240,7 +240,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                             Expression.Quote(
                                 Expression.Lambda(
                                     new QueryFilterExpression(filterBody),
-                                    currentType.QueryFilter.Parameters)));
+                                    currentType.GetQueryFilter().Parameters)));
 
                     recast |= currentType != targetType;
                 }
@@ -261,7 +261,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private Expression CreateMaterializer(IEntityType targetType, BaseTableExpression table)
         {
-            var rootType = targetType.RootType();
+            var rootType = targetType.GetRootType();
             var hierarchy = rootType.GetDerivedTypes().Prepend(rootType).ToArray();
             var keyExpression = CreateMaterializationKeySelector(targetType);
 
@@ -304,7 +304,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 for (var i = 0; i < concreteTypes.Length; i++)
                 {
                     var type = concreteTypes[i];
-                    var relational = type.Relational();
 
                     var test
                         = Expression.Lambda(
@@ -312,8 +311,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                 ValueTupleHelper.CreateMemberExpression(
                                     tupleType, 
                                     tupleParameter,
-                                    Array.FindIndex(properties, p => p.property == relational.DiscriminatorProperty)),
-                                Expression.Constant(relational.DiscriminatorValue)),
+                                    Array.FindIndex(properties, p => p.property == type.GetDiscriminatorProperty())),
+                                Expression.Constant(type.GetDiscriminatorValue())),
                             tupleParameter);
 
                     var descriptorMaterializer
@@ -343,18 +342,18 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private ExtendedNewExpression CreateNewExpression(IEntityType type, BaseTableExpression table, Func<IProperty, Expression> makeColumnExpression)
         {
-            var constructorBinding = (ConstructorBinding)type[nameof(ConstructorBinding)];
+            var instantiationBinding = (InstantiationBinding)type[nameof(ConstructorBinding)];
 
-            switch (constructorBinding)
+            switch (instantiationBinding)
             {
-                case DirectConstructorBinding directConstructorBinding:
+                case ConstructorBinding constructorBinding:
                 {
-                    return CreateNewExpression(type, directConstructorBinding, table, makeColumnExpression);
+                    return CreateNewExpression(type, constructorBinding, table, makeColumnExpression);
                 }
 
-                case FactoryMethodConstructorBinding factoryMethodConstructorBinding:
+                case FactoryMethodBinding factoryMethodBinding:
                 {
-                    return CreateNewExpression(type, factoryMethodConstructorBinding, table, makeColumnExpression);
+                    return CreateNewExpression(type, factoryMethodBinding, table, makeColumnExpression);
                 }
 
                 case null:
@@ -364,27 +363,27 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 default:
                 {
-                    throw new NotSupportedException($"The {constructorBinding.GetType().Name} is not supported.");
+                    throw new NotSupportedException($"The {instantiationBinding.GetType().Name} is not supported.");
                 }
             }
         }
 
-        private ExtendedNewExpression CreateNewExpression(IEntityType type, DirectConstructorBinding directConstructorBinding, BaseTableExpression table, Func<IProperty, Expression> makeColumnExpression)
+        private ExtendedNewExpression CreateNewExpression(IEntityType type, ConstructorBinding constructorBinding, BaseTableExpression table, Func<IProperty, Expression> makeColumnExpression)
         {
-            var constructor = directConstructorBinding.Constructor;
+            var constructor = constructorBinding.Constructor;
             var arguments = new Expression[constructor.GetParameters().Length];
             var readableMembers = new MemberInfo[arguments.Length];
             var writableMembers = new MemberInfo[arguments.Length];
 
             for (var i = 0; i < arguments.Length; i++)
             {
-                var binding = directConstructorBinding.ParameterBindings[i];
+                var binding = constructorBinding.ParameterBindings[i];
 
                 arguments[i] = GetBindingExpression(type, binding, makeColumnExpression);
 
                 if (binding.ConsumedProperties.ElementAtOrDefault(0) is IPropertyBase property)
                 {
-                    readableMembers[i] = property.GetReadableMemberInfo();
+                    readableMembers[i] = property.GetSemanticReadableMemberInfo();
                     writableMembers[i] = property.GetWritableMemberInfo();
                 }
             }
@@ -392,28 +391,28 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return new ExtendedNewExpression(constructor, arguments, readableMembers, writableMembers);
         }
 
-        private ExtendedNewExpression CreateNewExpression(IEntityType type, FactoryMethodConstructorBinding factoryMethodConstructorBinding, BaseTableExpression table, Func<IProperty, Expression> makeColumnExpression)
+        private ExtendedNewExpression CreateNewExpression(IEntityType type, FactoryMethodBinding factoryMethodBinding, BaseTableExpression table, Func<IProperty, Expression> makeColumnExpression)
         {
             var factoryInstance
-                = typeof(FactoryMethodConstructorBinding)
+                = typeof(FactoryMethodBinding)
                     .GetField("_factoryInstance", BindingFlags.NonPublic | BindingFlags.Instance)
-                    ?.GetValue(factoryMethodConstructorBinding);
+                    ?.GetValue(factoryMethodBinding);
 
             var factoryMethod
-                = typeof(FactoryMethodConstructorBinding)
+                = typeof(FactoryMethodBinding)
                     .GetField("_factoryMethod", BindingFlags.NonPublic | BindingFlags.Instance)
-                    ?.GetValue(factoryMethodConstructorBinding) as MethodInfo;
+                    ?.GetValue(factoryMethodBinding) as MethodInfo;
 
             if (factoryInstance is null && (factoryMethod is null || !factoryMethod.IsStatic))
             {
                 throw new NotSupportedException();
             }
 
-            var bindings = factoryMethodConstructorBinding.ParameterBindings;
+            var bindings = factoryMethodBinding.ParameterBindings;
 
             if (!(bindings.Count == 3
                 && bindings[0] is EntityTypeParameterBinding entityTypeParameterBinding
-                && bindings[1] is DefaultServiceParameterBinding defaultServiceParameterBinding
+                && bindings[1] is ServiceParameterBinding serviceParameterBinding
                 && bindings[2] is ObjectArrayParameterBinding objectArrayParameterBinding))
             {
                 throw new NotSupportedException();
@@ -430,7 +429,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
 
             var constructor 
-                = factoryMethodConstructorBinding.RuntimeType
+                = factoryMethodBinding.RuntimeType
                     .GetConstructor(innerBindings.Select(b => b.ParameterType).ToArray());
 
             var arguments = new Expression[innerBindings.Count];
@@ -445,7 +444,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 if (binding.ConsumedProperties.ElementAtOrDefault(0) is IPropertyBase property)
                 {
-                    readableMembers[i] = property.GetReadableMemberInfo();
+                    readableMembers[i] = property.GetSemanticReadableMemberInfo();
                     writableMembers[i] = property.GetWritableMemberInfo();
                 }
             }
@@ -456,7 +455,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 new[]
                 {
                     GetBindingExpression(type, entityTypeParameterBinding, makeColumnExpression),
-                    GetBindingExpression(type, defaultServiceParameterBinding, makeColumnExpression)
+                    GetBindingExpression(type, serviceParameterBinding, makeColumnExpression)
                 },
                 constructor,
                 arguments,
@@ -468,12 +467,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         {
             var properties
                 = (from p in type.GetProperties()
-                   where !p.IsShadowProperty
+                   where !p.IsShadowProperty()
                    select p).ToList();
 
             var navigations
                 = (from n in type.GetNavigations()
-                   where n.ForeignKey.IsOwnership && !n.IsDependentToPrincipal()
+                   where n.ForeignKey.IsOwnership && !n.IsOnDependent
                    select n).ToList();
 
             var services
@@ -498,7 +497,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 var property = properties[i - d];
 
                 arguments[i] = makeColumnExpression(property);
-                readableMembers[i] = property.GetReadableMemberInfo();
+                readableMembers[i] = property.GetSemanticReadableMemberInfo();
                 writableMembers[i] = property.GetWritableMemberInfo();
             }
 
@@ -509,8 +508,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 var navigation = navigations[i - d];
 
-                arguments[i] = CreateMaterializationExpression(navigation.GetTargetType(), table, makeColumnExpression);
-                readableMembers[i] = navigation.GetReadableMemberInfo();
+                arguments[i] = CreateMaterializationExpression(navigation.TargetEntityType, table, makeColumnExpression);
+                readableMembers[i] = navigation.GetSemanticReadableMemberInfo();
                 writableMembers[i] = navigation.GetWritableMemberInfo();
             }
 
@@ -522,7 +521,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 var service = services[i - d];
 
                 arguments[i] = GetBindingExpression(type, service.GetParameterBinding(), makeColumnExpression);
-                readableMembers[i] = service.GetReadableMemberInfo();
+                readableMembers[i] = service.GetSemanticReadableMemberInfo();
                 writableMembers[i] = service.GetWritableMemberInfo();
             }
 
@@ -541,12 +540,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 var shadowProperties
                     = from p in type.GetProperties()
-                      where p.IsShadowProperty
+                      where p.IsShadowProperty()
                       select (property: p, expression: makeColumnExpression(p));
 
                 return new EntityMaterializationExpression(
                     type,
-                    IdentityMapMode.IdentityMap,
+                    QueryTrackingBehavior.NoTracking,
                     keySelector,
                     shadowProperties.Select(s => s.property),
                     shadowProperties.Select(s => s.expression),
@@ -560,7 +559,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         {
             switch (binding)
             {
-                case ServiceMethodParameterBinding service:
+                case DependencyInjectionMethodParameterBinding service:
                 {
                     return new ContextServiceDelegateInjectionExpression(
                         service.ParameterType,
@@ -568,7 +567,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         service.Method);
                 }
 
-                case DefaultServiceParameterBinding service:
+                case DependencyInjectionParameterBinding service:
                 {
                     return new ContextServiceInjectionExpression(service.ParameterType);
                 }
@@ -605,17 +604,17 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             foreach (var navigation in type.GetNavigations())
             {
-                if (navigation.ForeignKey.IsOwnership && !navigation.IsDependentToPrincipal())
+                if (navigation.ForeignKey.IsOwnership && !navigation.IsOnDependent)
                 {
-                    var targetType = navigation.GetTargetType();
+                    var targetType = navigation.TargetEntityType;
 
-                    if (targetType.Relational().Schema != type.Relational().Schema
-                        || targetType.Relational().TableName != type.Relational().TableName)
+                    if (targetType.GetSchema() != type.GetSchema()
+                        || targetType.GetTableName() != type.GetTableName())
                     {
                         continue;
                     }
 
-                    foreach (var property in IterateAllProperties(navigation.GetTargetType()))
+                    foreach (var property in IterateAllProperties(navigation.TargetEntityType))
                     {
                         yield return property;
                     }
@@ -645,7 +644,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             return new SqlColumnExpression(
                 table,
-                property.Relational().ColumnName,
+                property.GetColumnName(),
                 property.ClrType,
                 nullable,
                 typeMapping);
@@ -669,7 +668,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 resolvedEntityType = resolvedEntityType.FindOwnership().PrincipalToDependent.DeclaringEntityType;
             }
 
-            if (resolvedEntityType != resolvedEntityType.RootType())
+            if (resolvedEntityType != resolvedEntityType.GetRootType())
             {
                 return true;
             }
@@ -691,7 +690,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 var principalType = foreignKey.PrincipalEntityType;
 
                 if (tableId.Equals(GetRelationalId(principalType))
-                    && principalType != principalType.RootType())
+                    && principalType != principalType.GetRootType())
                 {
                     return true;
                 }
@@ -721,8 +720,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 var principalType = foreignKey.PrincipalEntityType;
 
                 if (tableId.Equals(GetRelationalId(principalType))
-                    && principalType != principalType.RootType()
-                    && principalType.RootType() != dependentType.RootType())
+                    && principalType != principalType.GetRootType()
+                    && principalType.GetRootType() != dependentType.GetRootType())
                 {
                     return principalType;
                 }
@@ -733,16 +732,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private static (string, string) GetRelationalId(IEntityType entityType)
         {
-            var relational = entityType.Relational();
-
-            return (relational.Schema, relational.TableName);
+            return (entityType.GetSchema(), entityType.GetTableName());
         }
 
         private static (string, string, string) GetRelationalId(IProperty property)
         {
-            var relational = property.DeclaringEntityType.Relational();
+            var type = property.DeclaringEntityType;
 
-            return (relational.Schema, relational.TableName, property.Relational().ColumnName);
+            return (type.GetSchema(), type.GetTableName(), property.GetColumnName());
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Expressions;
+using Impatient.Extensions;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -38,6 +39,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return (TResult)processor.Execute(provider, preparedQuery);
         }
 
+        /*
         public IAsyncEnumerable<TResult> ExecuteAsync<TResult>(Expression query)
         {
             return new BadAsyncEnumerable<TResult>(async () =>
@@ -47,12 +49,16 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 return enumerable.GetEnumerator();
             });
         }
+        */
 
+        /*
         public Task<TResult> ExecuteAsync<TResult>(Expression query, CancellationToken cancellationToken)
         {
             return Task.Run(() => Execute<TResult>(query), cancellationToken);
         }
+        */
 
+        /*
         public Func<QueryContext, IAsyncEnumerable<TResult>> CreateCompiledAsyncEnumerableQuery<TResult>(Expression query)
         {
             var compiled = CreateCompiledAsyncTaskQuery<IEnumerable<TResult>>(query);
@@ -67,7 +73,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 });
             };
         }
+        */
 
+        /*
         public Func<QueryContext, Task<TResult>> CreateCompiledAsyncTaskQuery<TResult>(Expression query)
         {
             var compiled = CreateCompiledQuery<TResult>(query);
@@ -75,6 +83,30 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return (QueryContext queryContext) =>
             {
                 return Task.Run(() => compiled(queryContext), queryContext.CancellationToken);
+            };
+        }
+        */
+
+        TResult IQueryCompiler.ExecuteAsync<TResult>(Expression query, CancellationToken cancellationToken)
+        {
+            if (typeof(TResult).IsGenericType(typeof(IAsyncEnumerable<>)))
+            {
+            }
+
+            //var task = Task.Run(() => Execute<TResult>(query), cancellationToken);
+
+            // TODO: something the fuck else than this!
+            return Execute<TResult>(query);
+        }
+
+        public Func<QueryContext, TResult> CreateCompiledAsyncQuery<TResult>(Expression query)
+        {
+            var compiled = CreateCompiledQuery<TResult>(query);
+
+            return (QueryContext queryContext) =>
+            {
+                // TODO: wtf?
+                return compiled(queryContext);
             };
         }
 
@@ -146,7 +178,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             var parameters = new ParameterExpression[context.ParameterMapping.Count + 1 + discovered.Length];
 
-            parameters[0] = context.ExecutionContextParameter;
+            parameters[0] = ExecutionContextParameters.DbCommandExecutor;
 
             context.ParameterMapping.Values.CopyTo(parameters, 1);
 

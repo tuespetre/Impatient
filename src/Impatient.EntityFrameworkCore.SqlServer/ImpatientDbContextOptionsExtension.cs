@@ -18,9 +18,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             compatibility = template.compatibility;
         }
 
-        public string LogFragment => string.Empty;
-
         public ImpatientCompatibility Compatibility { get; }
+
+        public DbContextOptionsExtensionInfo Info => new ImpatientDbContextOptionsExtensionInfo(this);
 
         public ImpatientDbContextOptionsExtension WithCompatibility(ImpatientCompatibility compatibility)
         {
@@ -30,17 +30,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             };
         }
 
-        public bool ApplyServices(IServiceCollection services)
+        void IDbContextOptionsExtension.ApplyServices(IServiceCollection services)
         {
             services.AddImpatientEFCoreQueryCompiler(compatibility);
-
-            return false;
         }
-
-        public long GetServiceProviderHashCode() => (compatibility).GetHashCode();
 
         public void Validate(IDbContextOptions options)
         {
+            // TODO: ???
         }
     }
 }

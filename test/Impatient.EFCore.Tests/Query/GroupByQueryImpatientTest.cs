@@ -2,22 +2,24 @@
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Sdk;
 
 namespace Impatient.EFCore.Tests.Query
 {
-    public class GroupByQueryImpatientTest : GroupByQueryTestBase<NorthwindQueryImpatientFixture>
+    public class GroupByQueryImpatientTest : NorthwindGroupByQueryRelationalTestBase<NorthwindQueryImpatientFixture>
     {
         public GroupByQueryImpatientTest(NorthwindQueryImpatientFixture fixture) : base(fixture)
         {
             ClearLog();
         }
 
-        [Fact]
-        public override void Anonymous_projection_Distinct_GroupBy_Aggregate()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task Anonymous_projection_Distinct_GroupBy_Aggregate(bool async)
         {
-            base.Anonymous_projection_Distinct_GroupBy_Aggregate();
+            await base.Anonymous_projection_Distinct_GroupBy_Aggregate(async);
 
             AssertSql(@"
 SELECT [o].[EmployeeID] AS [Key], COUNT(*) AS [c]
@@ -29,10 +31,11 @@ GROUP BY [o].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void Distinct_GroupBy_Aggregate()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task Distinct_GroupBy_Aggregate(bool async)
         {
-            base.Distinct_GroupBy_Aggregate();
+            await base.Distinct_GroupBy_Aggregate(async);
 
             AssertSql(@"
 SELECT [o].[CustomerID] AS [Key], COUNT(*) AS [c]
@@ -44,10 +47,11 @@ GROUP BY [o].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void Distinct_GroupBy_OrderBy_key()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task Distinct_GroupBy_OrderBy_key(bool async)
         {
-            base.Distinct_GroupBy_OrderBy_key();
+            await base.Distinct_GroupBy_OrderBy_key(async);
 
             AssertSql(@"
 SELECT [o].[CustomerID] AS [Key], COUNT(*) AS [c]
@@ -60,48 +64,11 @@ ORDER BY [o].[CustomerID] ASC
 ");
         }
 
-        [Fact]
-        public override void Double_GroupBy_with_aggregate()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_aggregate_Contains(bool async)
         {
-            base.Double_GroupBy_with_aggregate();
-
-            Fixture.AssertSql(@"SELECT [g].[Key.OrderDate] AS [Key], (
-    SELECT [g_0].[Key.OrderID] AS [Key.OrderID], [g_0].[Key.OrderDate] AS [Key.OrderDate], (
-        SELECT [g_1].[OrderID] AS [OrderID], [g_1].[CustomerID] AS [CustomerID], [g_1].[EmployeeID] AS [EmployeeID], [g_1].[OrderDate] AS [OrderDate]
-        FROM [Orders] AS [g_1]
-        WHERE ([g_0].[Key.OrderID] = [g_1].[OrderID]) AND ((([g_0].[Key.OrderDate] IS NULL AND [g_1].[OrderDate] IS NULL) OR ([g_0].[Key.OrderDate] = [g_1].[OrderDate])))
-        FOR JSON PATH
-    ) AS [Elements]
-    FROM (
-        SELECT [g_2].[OrderID] AS [Key.OrderID], [g_2].[OrderDate] AS [Key.OrderDate]
-        FROM [Orders] AS [g_2]
-        GROUP BY [g_2].[OrderID], [g_2].[OrderDate]
-    ) AS [g_0]
-    WHERE (([g].[Key.OrderDate] IS NULL AND [g_0].[Key.OrderDate] IS NULL) OR ([g].[Key.OrderDate] = [g_0].[Key.OrderDate]))
-    FOR JSON PATH
-) AS [Elements]
-FROM (
-    SELECT [g_3].[OrderID] AS [Key.OrderID], [g_3].[OrderDate] AS [Key.OrderDate]
-    FROM [Orders] AS [g_3]
-    GROUP BY [g_3].[OrderID], [g_3].[OrderDate]
-) AS [g]
-GROUP BY [g].[Key.OrderDate]");
-        }
-
-        [Fact]
-        [Trait("Impatient", "Adjusted entry count")]
-        public override void GroupBy_after_predicate_Constant_Select_Sum_Min_Key_Max_Avg()
-        {
-            var ex = Assert.Throws<EqualException>(() => base.GroupBy_after_predicate_Constant_Select_Sum_Min_Key_Max_Avg());
-
-            Assert.Equal("0", ex.Expected);
-            Assert.Equal("577", ex.Actual);
-        }
-
-        [Fact]
-        public override void GroupBy_aggregate_Contains()
-        {
-            base.GroupBy_aggregate_Contains();
+            await base.GroupBy_aggregate_Contains(async);
 
             Fixture.AssertSql(@"
 SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
@@ -121,10 +88,11 @@ WHERE [o].[CustomerID] IN (
 )");
         }
 
-        [Fact]
-        public override void GroupBy_Aggregate_Join()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Aggregate_Join(bool async)
         {
-            base.GroupBy_Aggregate_Join();
+            await base.GroupBy_Aggregate_Join(async);
 
             AssertSql(@"
 SELECT [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Country] AS [c.Country], [c].[Fax] AS [c.Fax], [c].[Phone] AS [c.Phone], [c].[PostalCode] AS [c.PostalCode], [c].[Region] AS [c.Region], [o].[OrderID] AS [o.OrderID], [o].[CustomerID] AS [o.CustomerID], [o].[EmployeeID] AS [o.EmployeeID], [o].[OrderDate] AS [o.OrderDate]
@@ -147,10 +115,11 @@ WHERE (
 ");
         }
 
-        [Fact]
-        public override void GroupBy_aggregate_Pushdown()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_aggregate_Pushdown(bool async)
         {
-            base.GroupBy_aggregate_Pushdown();
+            await base.GroupBy_aggregate_Pushdown(async);
 
             AssertSql(@"
 SELECT [t].[Key]
@@ -173,42 +142,11 @@ OFFSET 4 ROWS
 ");
         }
 
-        [Fact]
-        public override void GroupBy_anonymous()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_anonymous_Select_Average(bool async)
         {
-            base.GroupBy_anonymous();
-
-            AssertSql(@"
-SELECT [c].[City] AS [Key], (
-    SELECT [c_0].[City] AS [City], [c_0].[CustomerID] AS [CustomerID]
-    FROM [Customers] AS [c_0]
-    WHERE (([c].[City] IS NULL AND [c_0].[City] IS NULL) OR ([c].[City] = [c_0].[City]))
-    FOR JSON PATH
-) AS [Elements]
-FROM [Customers] AS [c]
-GROUP BY [c].[City]
-");
-        }
-
-        [Fact]
-        public override void GroupBy_anonymous_key_without_aggregate()
-        {
-            base.GroupBy_anonymous_key_without_aggregate();
-
-            Fixture.AssertSql(@"SELECT [g].[CustomerID] AS [Key.CustomerID], [g].[OrderDate] AS [Key.OrderDate], [g].[CustomerID] AS [g.Key.CustomerID], [g].[OrderDate] AS [g.Key.OrderDate], (
-    SELECT [g_0].[OrderID] AS [OrderID], [g_0].[CustomerID] AS [CustomerID], [g_0].[EmployeeID] AS [EmployeeID], [g_0].[OrderDate] AS [OrderDate]
-    FROM [Orders] AS [g_0]
-    WHERE ((([g].[CustomerID] IS NULL AND [g_0].[CustomerID] IS NULL) OR ([g].[CustomerID] = [g_0].[CustomerID]))) AND ((([g].[OrderDate] IS NULL AND [g_0].[OrderDate] IS NULL) OR ([g].[OrderDate] = [g_0].[OrderDate])))
-    FOR JSON PATH
-) AS [g.Elements]
-FROM [Orders] AS [g]
-GROUP BY [g].[CustomerID], [g].[OrderDate]");
-        }
-
-        [Fact]
-        public override void GroupBy_anonymous_Select_Average()
-        {
-            base.GroupBy_anonymous_Select_Average();
+            await base.GroupBy_anonymous_Select_Average(async);
 
             AssertSql(@"
 SELECT AVG(CAST([g].[OrderID] AS float))
@@ -217,10 +155,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_anonymous_Select_Count()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_anonymous_Select_Count(bool async)
         {
-            base.GroupBy_anonymous_Select_Count();
+            await base.GroupBy_anonymous_Select_Count(async);
 
             AssertSql(@"
 SELECT COUNT(*)
@@ -229,10 +168,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_anonymous_Select_LongCount()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_anonymous_Select_LongCount(bool async)
         {
-            base.GroupBy_anonymous_Select_LongCount();
+            await base.GroupBy_anonymous_Select_LongCount(async);
 
             AssertSql(@"
 SELECT COUNT_BIG(*)
@@ -241,10 +181,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_anonymous_Select_Max()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_anonymous_Select_Max(bool async)
         {
-            base.GroupBy_anonymous_Select_Max();
+            await base.GroupBy_anonymous_Select_Max(async);
 
             AssertSql(@"
 SELECT MAX([g].[OrderID])
@@ -253,10 +194,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_anonymous_Select_Min()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_anonymous_Select_Min(bool async)
         {
-            base.GroupBy_anonymous_Select_Min();
+            await base.GroupBy_anonymous_Select_Min(async);
 
             AssertSql(@"
 SELECT MIN([g].[OrderID])
@@ -265,10 +207,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_anonymous_Select_Sum()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_anonymous_Select_Sum(bool async)
         {
-            base.GroupBy_anonymous_Select_Sum();
+            await base.GroupBy_anonymous_Select_Sum(async);
 
             AssertSql(@"
 SELECT SUM([g].[OrderID])
@@ -277,10 +220,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_anonymous_Select_Sum_Min_Max_Avg()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_anonymous_Select_Sum_Min_Max_Avg(bool async)
         {
-            base.GroupBy_anonymous_Select_Sum_Min_Max_Avg();
+            await base.GroupBy_anonymous_Select_Sum_Min_Max_Avg(async);
 
             AssertSql(@"
 SELECT SUM([g].[OrderID]) AS [Sum], MIN([g].[OrderID]) AS [Min], MAX([g].[OrderID]) AS [Max], AVG(CAST([g].[OrderID] AS float)) AS [Avg]
@@ -289,44 +233,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        [Trait("Impatient", "Skipped by EFCore")]
-        public override void GroupBy_anonymous_subquery()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_anonymous_with_alias_Select_Key_Sum(bool async)
         {
-            AssertQuery<Customer>(
-                cs => cs
-                    .Select(c => new { c.City, c.CustomerID })
-                    .GroupBy(a => from c2 in cs select c2),
-                elementAsserter: (a, b) =>
-                {
-                    var ca = (IGrouping<IQueryable<Customer>, dynamic>)a;
-                    var cb = (IGrouping<IQueryable<Customer>, dynamic>)b;
-
-                    Assert.Equal(ca.Key.AsEnumerable(), cb.Key.AsEnumerable());
-                    Assert.Equal(ca.AsEnumerable().OrderBy(d => d.CustomerID), cb.AsEnumerable().OrderBy(d => d.CustomerID));
-                },
-                elementSorter: o =>
-                {
-                    var co = (IGrouping<IQueryable<Customer>, dynamic>)o;
-
-                    return co.First().CustomerID;
-                },
-                assertOrder: false,
-                entryCount: 91);
-
-            AssertSqlStartsWith(@"
-SELECT [c].[City] AS [City], [c].[CustomerID] AS [CustomerID]
-FROM [Customers] AS [c]
-
-SELECT [c2].[CustomerID] AS [CustomerID], [c2].[Address] AS [Address], [c2].[City] AS [City], [c2].[CompanyName] AS [CompanyName], [c2].[ContactName] AS [ContactName], [c2].[ContactTitle] AS [ContactTitle], [c2].[Country] AS [Country], [c2].[Fax] AS [Fax], [c2].[Phone] AS [Phone], [c2].[PostalCode] AS [PostalCode], [c2].[Region] AS [Region]
-FROM [Customers] AS [c2]
-");
-        }
-
-        [Fact]
-        public override void GroupBy_anonymous_with_alias_Select_Key_Sum()
-        {
-            base.GroupBy_anonymous_with_alias_Select_Key_Sum();
+            await base.GroupBy_anonymous_with_alias_Select_Key_Sum(async);
 
             AssertSql(@"
 SELECT [g].[CustomerID] AS [Key], SUM([g].[OrderID]) AS [Sum]
@@ -335,41 +246,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_anonymous_with_where()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_Average(bool async)
         {
-            base.GroupBy_anonymous_with_where();
-
-            AssertSql(@"
-@p0_0='Argentina' (Nullable = false) (Size = 9)
-@p0_1='Austria' (Nullable = false) (Size = 7)
-@p0_2='Brazil' (Nullable = false) (Size = 6)
-@p0_3='France' (Nullable = false) (Size = 6)
-@p0_4='Germany' (Nullable = false) (Size = 7)
-@p0_5='USA' (Nullable = false) (Size = 3)
-@p1_0='Argentina' (Nullable = false) (Size = 9)
-@p1_1='Austria' (Nullable = false) (Size = 7)
-@p1_2='Brazil' (Nullable = false) (Size = 6)
-@p1_3='France' (Nullable = false) (Size = 6)
-@p1_4='Germany' (Nullable = false) (Size = 7)
-@p1_5='USA' (Nullable = false) (Size = 3)
-
-SELECT [c].[City] AS [Key], (
-    SELECT [c_0].[City] AS [City], [c_0].[CustomerID] AS [CustomerID]
-    FROM [Customers] AS [c_0]
-    WHERE [c_0].[Country] IN (@p0_0, @p0_1, @p0_2, @p0_3, @p0_4, @p0_5) AND ((([c].[City] IS NULL AND [c_0].[City] IS NULL) OR ([c].[City] = [c_0].[City])))
-    FOR JSON PATH
-) AS [Elements]
-FROM [Customers] AS [c]
-WHERE [c].[Country] IN (@p1_0, @p1_1, @p1_2, @p1_3, @p1_4, @p1_5)
-GROUP BY [c].[City]
-");
-        }
-
-        [Fact]
-        public override void GroupBy_Composite_Select_Average()
-        {
-            base.GroupBy_Composite_Select_Average();
+            await base.GroupBy_Composite_Select_Average(async);
 
             AssertSql(@"
 SELECT AVG(CAST([g].[OrderID] AS float))
@@ -378,10 +259,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Composite_Select_Count()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_Count(bool async)
         {
-            base.GroupBy_Composite_Select_Count();
+            await base.GroupBy_Composite_Select_Count(async);
 
             AssertSql(@"
 SELECT COUNT(*)
@@ -390,10 +272,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Composite_Select_Dto_Sum_Min_Key_flattened_Max_Avg()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_Dto_Sum_Min_Key_flattened_Max_Avg(bool async)
         {
-            base.GroupBy_Composite_Select_Dto_Sum_Min_Key_flattened_Max_Avg();
+            await base.GroupBy_Composite_Select_Dto_Sum_Min_Key_flattened_Max_Avg(async);
 
             AssertSql(@"
 SELECT SUM([g].[OrderID]) AS [Sum], MIN([g].[OrderID]) AS [Min], [g].[CustomerID] AS [CustomerId], [g].[EmployeeID] AS [EmployeeId], MAX([g].[OrderID]) AS [Max], AVG(CAST([g].[OrderID] AS float)) AS [Avg]
@@ -402,10 +285,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Composite_Select_Key_Average()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_Key_Average(bool async)
         {
-            base.GroupBy_Composite_Select_Key_Average();
+            await base.GroupBy_Composite_Select_Key_Average(async);
 
             AssertSql(@"
 SELECT [g].[CustomerID] AS [Key.CustomerID], [g].[EmployeeID] AS [Key.EmployeeID], AVG(CAST([g].[OrderID] AS float)) AS [Average]
@@ -414,10 +298,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Composite_Select_Key_Count()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_Key_Count(bool async)
         {
-            base.GroupBy_Composite_Select_Key_Count();
+            await base.GroupBy_Composite_Select_Key_Count(async);
 
             AssertSql(@"
 SELECT [g].[CustomerID] AS [Key.CustomerID], [g].[EmployeeID] AS [Key.EmployeeID], COUNT(*) AS [Count]
@@ -426,10 +311,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Composite_Select_Key_LongCount()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_Key_LongCount(bool async)
         {
-            base.GroupBy_Composite_Select_Key_LongCount();
+            await base.GroupBy_Composite_Select_Key_LongCount(async);
 
             AssertSql(@"
 SELECT [g].[CustomerID] AS [Key.CustomerID], [g].[EmployeeID] AS [Key.EmployeeID], COUNT_BIG(*) AS [LongCount]
@@ -438,10 +324,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Composite_Select_Key_Max()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_Key_Max(bool async)
         {
-            base.GroupBy_Composite_Select_Key_Max();
+            await base.GroupBy_Composite_Select_Key_Max(async);
 
             AssertSql(@"
 SELECT [g].[CustomerID] AS [Key.CustomerID], [g].[EmployeeID] AS [Key.EmployeeID], MAX([g].[OrderID]) AS [Max]
@@ -450,10 +337,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Composite_Select_Key_Min()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_Key_Min(bool async)
         {
-            base.GroupBy_Composite_Select_Key_Min();
+            await base.GroupBy_Composite_Select_Key_Min(async);
 
             AssertSql(@"
 SELECT [g].[CustomerID] AS [Key.CustomerID], [g].[EmployeeID] AS [Key.EmployeeID], MIN([g].[OrderID]) AS [Min]
@@ -462,10 +350,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Composite_Select_Key_Sum()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_Key_Sum(bool async)
         {
-            base.GroupBy_Composite_Select_Key_Sum();
+            await base.GroupBy_Composite_Select_Key_Sum(async);
 
             AssertSql(@"
 SELECT [g].[CustomerID] AS [Key.CustomerID], [g].[EmployeeID] AS [Key.EmployeeID], SUM([g].[OrderID]) AS [Sum]
@@ -474,10 +363,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Composite_Select_Key_Sum_Min_Max_Avg()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_Key_Sum_Min_Max_Avg(bool async)
         {
-            base.GroupBy_Composite_Select_Key_Sum_Min_Max_Avg();
+            await base.GroupBy_Composite_Select_Key_Sum_Min_Max_Avg(async);
 
             AssertSql(@"
 SELECT [g].[CustomerID] AS [Key.CustomerID], [g].[EmployeeID] AS [Key.EmployeeID], SUM([g].[OrderID]) AS [Sum], MIN([g].[OrderID]) AS [Min], MAX([g].[OrderID]) AS [Max], AVG(CAST([g].[OrderID] AS float)) AS [Avg]
@@ -486,10 +376,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Composite_Select_LongCount()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_LongCount(bool async)
         {
-            base.GroupBy_Composite_Select_LongCount();
+            await base.GroupBy_Composite_Select_LongCount(async);
 
             AssertSql(@"
 SELECT COUNT_BIG(*)
@@ -498,10 +389,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Composite_Select_Max()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_Max(bool async)
         {
-            base.GroupBy_Composite_Select_Max();
+            await base.GroupBy_Composite_Select_Max(async);
 
             AssertSql(@"
 SELECT MAX([g].[OrderID])
@@ -510,10 +402,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Composite_Select_Min()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_Min(bool async)
         {
-            base.GroupBy_Composite_Select_Min();
+            await base.GroupBy_Composite_Select_Min(async);
 
             AssertSql(@"
 SELECT MIN([g].[OrderID])
@@ -522,10 +415,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Composite_Select_Sum()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_Sum(bool async)
         {
-            base.GroupBy_Composite_Select_Sum();
+            await base.GroupBy_Composite_Select_Sum(async);
 
             AssertSql(@"
 SELECT SUM([g].[OrderID])
@@ -534,10 +428,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Composite_Select_Sum_Min_Key_flattened_Max_Avg()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_Sum_Min_Key_flattened_Max_Avg(bool async)
         {
-            base.GroupBy_Composite_Select_Sum_Min_Key_flattened_Max_Avg();
+            await base.GroupBy_Composite_Select_Sum_Min_Key_flattened_Max_Avg(async);
 
             AssertSql(@"
 SELECT SUM([g].[OrderID]) AS [Sum], MIN([g].[OrderID]) AS [Min], [g].[CustomerID] AS [CustomerID], [g].[EmployeeID] AS [EmployeeID], MAX([g].[OrderID]) AS [Max], AVG(CAST([g].[OrderID] AS float)) AS [Avg]
@@ -546,10 +441,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Composite_Select_Sum_Min_Key_Max_Avg()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_Sum_Min_Key_Max_Avg(bool async)
         {
-            base.GroupBy_Composite_Select_Sum_Min_Key_Max_Avg();
+            await base.GroupBy_Composite_Select_Sum_Min_Key_Max_Avg(async);
 
             AssertSql(@"
 SELECT SUM([g].[OrderID]) AS [Sum], MIN([g].[OrderID]) AS [Min], [g].[CustomerID] AS [Key.CustomerID], [g].[EmployeeID] AS [Key.EmployeeID], MAX([g].[OrderID]) AS [Max], AVG(CAST([g].[OrderID] AS float)) AS [Avg]
@@ -558,10 +454,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Composite_Select_Sum_Min_Max_Avg()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_Sum_Min_Max_Avg(bool async)
         {
-            base.GroupBy_Composite_Select_Sum_Min_Max_Avg();
+            await base.GroupBy_Composite_Select_Sum_Min_Max_Avg(async);
 
             AssertSql(@"
 SELECT SUM([g].[OrderID]) AS [Sum], MIN([g].[OrderID]) AS [Min], MAX([g].[OrderID]) AS [Max], AVG(CAST([g].[OrderID] AS float)) AS [Avg]
@@ -570,10 +467,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Composite_Select_Sum_Min_part_Key_flattened_Max_Avg()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Composite_Select_Sum_Min_part_Key_flattened_Max_Avg(bool async)
         {
-            base.GroupBy_Composite_Select_Sum_Min_part_Key_flattened_Max_Avg();
+            await base.GroupBy_Composite_Select_Sum_Min_part_Key_flattened_Max_Avg(async);
 
             AssertSql(@"
 SELECT SUM([g].[OrderID]) AS [Sum], MIN([g].[OrderID]) AS [Min], [g].[CustomerID] AS [CustomerID], MAX([g].[OrderID]) AS [Max], AVG(CAST([g].[OrderID] AS float)) AS [Avg]
@@ -582,48 +480,11 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        [Trait("Impatient", "Adjusted entry count")]
-        public override void GroupBy_Constant_Select_Sum_Min_Key_Max_Avg()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Distinct(bool async)
         {
-            var ex = Assert.Throws<EqualException>(() => base.GroupBy_Constant_Select_Sum_Min_Key_Max_Avg());
-
-            Assert.Equal("0", ex.Expected);
-            Assert.Equal("830", ex.Actual);
-        }
-
-        [Fact]
-        [Trait("Impatient", "Adjusted entry count")]
-        public override void GroupBy_Constant_with_element_selector_Select_Sum_Min_Key_Max_Avg()
-        {
-            var ex = Assert.Throws<EqualException>(() => base.GroupBy_Constant_with_element_selector_Select_Sum_Min_Key_Max_Avg());
-
-            Assert.Equal("0", ex.Expected);
-            Assert.Equal("830", ex.Actual);
-        }
-
-        [Fact]
-        public override void GroupBy_DateTimeOffset_Property()
-        {
-            base.GroupBy_DateTimeOffset_Property();
-
-            AssertSql(@"
-SELECT DATEPART(month, [o].[OrderDate]) AS [Key], (
-    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate]
-    FROM [Orders] AS [o_0]
-    WHERE ([o_0].[OrderDate] IS NOT NULL) AND (DATEPART(month, [o].[OrderDate]) = DATEPART(month, [o_0].[OrderDate]))
-    FOR JSON PATH
-) AS [Elements]
-FROM [Orders] AS [o]
-WHERE [o].[OrderDate] IS NOT NULL
-GROUP BY DATEPART(month, [o].[OrderDate])
-");
-        }
-
-        [Fact]
-        public override void GroupBy_Distinct()
-        {
-            base.GroupBy_Distinct();
+            await base.GroupBy_Distinct(async);
 
             AssertSql(@"
 SELECT [g].[Key]
@@ -635,10 +496,11 @@ FROM (
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Dto_as_element_selector_Select_Sum()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Dto_as_element_selector_Select_Sum(bool async)
         {
-            base.GroupBy_Dto_as_element_selector_Select_Sum();
+            await base.GroupBy_Dto_as_element_selector_Select_Sum(async);
 
             AssertSql(@"
 SELECT SUM(CAST([g].[EmployeeID] AS bigint)) AS [Sum], [g].[CustomerID] AS [Key]
@@ -647,10 +509,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Dto_as_key_Select_Sum()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Dto_as_key_Select_Sum(bool async)
         {
-            base.GroupBy_Dto_as_key_Select_Sum();
+            await base.GroupBy_Dto_as_key_Select_Sum(async);
 
             AssertSql(@"
 SELECT SUM([g].[OrderID]) AS [Sum], [g].[CustomerID] AS [Key.CustomerID], [g].[EmployeeID] AS [Key.EmployeeID]
@@ -659,29 +522,21 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_empty_key_Aggregate()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_empty_key_Aggregate(bool async)
         {
-            base.GroupBy_empty_key_Aggregate();
+            await base.GroupBy_empty_key_Aggregate(async);
 
             Fixture.AssertSql(@"SELECT [g].[OrderID] AS [OrderID], [g].[CustomerID] AS [CustomerID], [g].[EmployeeID] AS [EmployeeID], [g].[OrderDate] AS [OrderDate]
 FROM [Orders] AS [g]");
         }
 
-        [Fact]
-        [Trait("Impatient", "Adjusted entry count")]
-        public override void GroupBy_empty_key_Aggregate_Key()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_filter_count(bool async)
         {
-            var ex = Assert.Throws<EqualException>(() => base.GroupBy_empty_key_Aggregate_Key());
-
-            Assert.Equal("0", ex.Expected);
-            Assert.Equal("830", ex.Actual);
-        }
-
-        [Fact]
-        public override void GroupBy_filter_count()
-        {
-            base.GroupBy_filter_count();
+            await base.GroupBy_filter_count(async);
 
             AssertSql(@"
 SELECT [o].[Key] AS [Key], (
@@ -702,10 +557,11 @@ WHERE (
 ");
         }
 
-        [Fact]
-        public override void GroupBy_filter_count_OrderBy_count_Select_sum()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_filter_count_OrderBy_count_Select_sum(bool async)
         {
-            base.GroupBy_filter_count_OrderBy_count_Select_sum();
+            await base.GroupBy_filter_count_OrderBy_count_Select_sum(async);
 
             AssertSql(@"
 SELECT [o].[Key] AS [Key], (
@@ -735,10 +591,11 @@ ORDER BY (
 ");
         }
 
-        [Fact]
-        public override void GroupBy_filter_key()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_filter_key(bool async)
         {
-            base.GroupBy_filter_key();
+            await base.GroupBy_filter_key(async);
 
             AssertSql(@"
 SELECT [o].[Key] AS [Key], (
@@ -755,80 +612,11 @@ WHERE [o].[Key] = N'ALFKI'
 ");
         }
 
-        [Fact]
-        public override void GroupBy_first()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_multi_navigation_members_Aggregate(bool async)
         {
-            base.GroupBy_first();
-
-            AssertSql(@"
-SELECT [o].[CustomerID] AS [Key], (
-    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate]
-    FROM [Orders] AS [o_0]
-    WHERE ([o_0].[CustomerID] = N'ALFKI') AND ((([o].[CustomerID] IS NULL AND [o_0].[CustomerID] IS NULL) OR ([o].[CustomerID] = [o_0].[CustomerID])))
-    FOR JSON PATH
-) AS [Elements]
-FROM [Orders] AS [o]
-WHERE [o].[CustomerID] = N'ALFKI'
-GROUP BY [o].[CustomerID]
-");
-        }
-
-        [Fact]
-        public override void GroupBy_join_anonymous()
-        {
-            base.GroupBy_join_anonymous();
-
-            AssertSql(@"
-SELECT [x].[Key.OrderID] AS [Key.OrderID], [x].[Key.OrderDate] AS [Key.OrderDate], (
-    SELECT [orderDetail].[ProductID] AS [ProductID], [orderDetail].[Quantity] AS [Quantity], [orderDetail].[UnitPrice] AS [UnitPrice]
-    FROM [Orders] AS [order]
-    INNER JOIN [Order Details] AS [orderDetail] ON [order].[OrderID] = [orderDetail].[OrderID]
-    WHERE ([x].[Key.OrderID] = [order].[OrderID]) AND ((([x].[Key.OrderDate] IS NULL AND [order].[OrderDate] IS NULL) OR ([x].[Key.OrderDate] = [order].[OrderDate])))
-    FOR JSON PATH
-) AS [Elements]
-FROM (
-    SELECT [order_0].[OrderID] AS [Key.OrderID], [order_0].[OrderDate] AS [Key.OrderDate]
-    FROM [Orders] AS [order_0]
-    INNER JOIN [Order Details] AS [orderDetail_0] ON [order_0].[OrderID] = [orderDetail_0].[OrderID]
-    GROUP BY [order_0].[OrderID], [order_0].[OrderDate]
-) AS [x]
-WHERE [x].[Key.OrderID] = 10248
-");
-        }
-
-        [Fact]
-        public override void GroupBy_join_default_if_empty_anonymous()
-        {
-            base.GroupBy_join_default_if_empty_anonymous();
-
-            AssertSql(@"
-SELECT [x].[Key.OrderID] AS [Key.OrderID], [x].[Key.OrderDate] AS [Key.OrderDate], (
-    SELECT [orderDetail].[ProductID] AS [ProductID], [orderDetail].[Quantity] AS [Quantity], [orderDetail].[UnitPrice] AS [UnitPrice]
-    FROM [Orders] AS [order]
-    LEFT JOIN (
-        SELECT [orderDetail_0].[OrderID] AS [OrderID], [orderDetail_0].[ProductID] AS [ProductID], [orderDetail_0].[Discount] AS [Discount], [orderDetail_0].[Quantity] AS [Quantity], [orderDetail_0].[UnitPrice] AS [UnitPrice]
-        FROM [Order Details] AS [orderDetail_0]
-    ) AS [orderDetail] ON [order].[OrderID] = [orderDetail].[OrderID]
-    WHERE ([x].[Key.OrderID] = [order].[OrderID]) AND ((([x].[Key.OrderDate] IS NULL AND [order].[OrderDate] IS NULL) OR ([x].[Key.OrderDate] = [order].[OrderDate])))
-    FOR JSON PATH
-) AS [Elements]
-FROM (
-    SELECT [order_0].[OrderID] AS [Key.OrderID], [order_0].[OrderDate] AS [Key.OrderDate]
-    FROM [Orders] AS [order_0]
-    LEFT JOIN (
-        SELECT 0 AS [$empty], [orderDetail_1].[OrderID] AS [OrderID], [orderDetail_1].[ProductID] AS [ProductID], [orderDetail_1].[Discount] AS [Discount], [orderDetail_1].[Quantity] AS [Quantity], [orderDetail_1].[UnitPrice] AS [UnitPrice]
-        FROM [Order Details] AS [orderDetail_1]
-    ) AS [orderDetail_2] ON [order_0].[OrderID] = [orderDetail_2].[OrderID]
-    GROUP BY [order_0].[OrderID], [order_0].[OrderDate]
-) AS [x]
-WHERE [x].[Key.OrderID] = 10248
-");
-        }
-
-        [Fact]
-        public override void GroupBy_multi_navigation_members_Aggregate()
-        {
-            base.GroupBy_multi_navigation_members_Aggregate();
+            await base.GroupBy_multi_navigation_members_Aggregate(async);
 
             AssertSql(@"
 SELECT [o].[CustomerID] AS [CompositeKey.CustomerID], [p].[ProductName] AS [CompositeKey.ProductName], COUNT(*) AS [Count]
@@ -839,28 +627,11 @@ GROUP BY [o].[CustomerID], [p].[ProductName]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_nested_order_by_enumerable()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_optional_navigation_member_Aggregate(bool async)
         {
-            base.GroupBy_nested_order_by_enumerable();
-
-            AssertSql(@"
-SELECT (
-    SELECT [c].[Country] AS [Country], [c].[CustomerID] AS [CustomerID]
-    FROM [Customers] AS [c]
-    WHERE (([c_0].[Country] IS NULL AND [c].[Country] IS NULL) OR ([c_0].[Country] = [c].[Country]))
-    ORDER BY [c].[CustomerID] ASC
-    FOR JSON PATH
-)
-FROM [Customers] AS [c_0]
-GROUP BY [c_0].[Country]
-");
-        }
-
-        [Fact]
-        public override void GroupBy_optional_navigation_member_Aggregate()
-        {
-            base.GroupBy_optional_navigation_member_Aggregate();
+            await base.GroupBy_optional_navigation_member_Aggregate(async);
 
             AssertSql(@"
 SELECT [c].[Country] AS [Country], COUNT(*) AS [Count]
@@ -873,10 +644,11 @@ GROUP BY [c].[Country]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_OrderBy_count()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_OrderBy_count(bool async)
         {
-            base.GroupBy_OrderBy_count();
+            await base.GroupBy_OrderBy_count(async);
 
             AssertSql(@"
 SELECT [o].[CustomerID] AS [Key], COUNT(*) AS [Count]
@@ -886,10 +658,11 @@ ORDER BY COUNT(*) ASC, [o].[CustomerID] ASC
 ");
         }
 
-        [Fact]
-        public override void GroupBy_OrderBy_count_Select_sum()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_OrderBy_count_Select_sum(bool async)
         {
-            base.GroupBy_OrderBy_count_Select_sum();
+            await base.GroupBy_OrderBy_count_Select_sum(async);
 
             AssertSql(@"
 SELECT [o].[CustomerID] AS [Key], SUM([o].[OrderID]) AS [Sum]
@@ -899,10 +672,11 @@ ORDER BY COUNT(*) ASC, [o].[CustomerID] ASC
 ");
         }
 
-        [Fact]
-        public override void GroupBy_OrderBy_key()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_OrderBy_key(bool async)
         {
-            base.GroupBy_OrderBy_key();
+            await base.GroupBy_OrderBy_key(async);
 
             AssertSql(@"
 SELECT [o].[CustomerID] AS [Key], COUNT(*) AS [c]
@@ -912,30 +686,11 @@ ORDER BY [o].[CustomerID] ASC
 ");
         }
 
-        [Fact]
-        [Trait("Impatient", "Adjusted entry count")]
-        public override void GroupBy_param_Select_Sum_Min_Key_Max_Avg()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_anonymous_element_selector_Average(bool async)
         {
-            var ex = Assert.Throws<EqualException>(() => base.GroupBy_Constant_with_element_selector_Select_Sum_Min_Key_Max_Avg());
-
-            Assert.Equal("0", ex.Expected);
-            Assert.Equal("830", ex.Actual);
-        }
-
-        [Fact]
-        [Trait("Impatient", "Adjusted entry count")]
-        public override void GroupBy_param_with_element_selector_Select_Sum_Min_Key_Max_Avg()
-        {
-            var ex = Assert.Throws<EqualException>(() => base.GroupBy_Constant_with_element_selector_Select_Sum_Min_Key_Max_Avg());
-
-            Assert.Equal("0", ex.Expected);
-            Assert.Equal("830", ex.Actual);
-        }
-
-        [Fact]
-        public override void GroupBy_Property_anonymous_element_selector_Average()
-        {
-            base.GroupBy_Property_anonymous_element_selector_Average();
+            await base.GroupBy_Property_anonymous_element_selector_Average(async);
 
             AssertSql(@"
 SELECT AVG(CAST([g].[OrderID] AS float))
@@ -944,10 +699,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_anonymous_element_selector_Count()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_anonymous_element_selector_Count(bool async)
         {
-            base.GroupBy_Property_anonymous_element_selector_Count();
+            await base.GroupBy_Property_anonymous_element_selector_Count(async);
 
             AssertSql(@"
 SELECT COUNT(*)
@@ -956,10 +712,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_anonymous_element_selector_LongCount()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_anonymous_element_selector_LongCount(bool async)
         {
-            base.GroupBy_Property_anonymous_element_selector_LongCount();
+            await base.GroupBy_Property_anonymous_element_selector_LongCount(async);
 
             AssertSql(@"
 SELECT COUNT_BIG(*)
@@ -968,10 +725,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_anonymous_element_selector_Max()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_anonymous_element_selector_Max(bool async)
         {
-            base.GroupBy_Property_anonymous_element_selector_Max();
+            await base.GroupBy_Property_anonymous_element_selector_Max(async);
 
             AssertSql(@"
 SELECT MAX([g].[OrderID])
@@ -980,10 +738,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_anonymous_element_selector_Min()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_anonymous_element_selector_Min(bool async)
         {
-            base.GroupBy_Property_anonymous_element_selector_Min();
+            await base.GroupBy_Property_anonymous_element_selector_Min(async);
 
             AssertSql(@"
 SELECT MIN([g].[OrderID])
@@ -992,10 +751,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_anonymous_element_selector_Sum()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_anonymous_element_selector_Sum(bool async)
         {
-            base.GroupBy_Property_anonymous_element_selector_Sum();
+            await base.GroupBy_Property_anonymous_element_selector_Sum(async);
 
             AssertSql(@"
 SELECT SUM([g].[OrderID])
@@ -1004,10 +764,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_anonymous_element_selector_Sum_Min_Max_Avg()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_anonymous_element_selector_Sum_Min_Max_Avg(bool async)
         {
-            base.GroupBy_Property_anonymous_element_selector_Sum_Min_Max_Avg();
+            await base.GroupBy_Property_anonymous_element_selector_Sum_Min_Max_Avg(async);
 
             AssertSql(@"
 SELECT SUM([g].[OrderID]) AS [Sum], MIN([g].[EmployeeID]) AS [Min], MAX([g].[EmployeeID]) AS [Max], AVG(CAST([g].[OrderID] AS float)) AS [Avg]
@@ -1016,10 +777,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_scalar_element_selector_Average()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_scalar_element_selector_Average(bool async)
         {
-            base.GroupBy_Property_scalar_element_selector_Average();
+            await base.GroupBy_Property_scalar_element_selector_Average(async);
 
             AssertSql(@"
 SELECT AVG(CAST([g].[OrderID] AS float))
@@ -1028,10 +790,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_scalar_element_selector_Count()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_scalar_element_selector_Count(bool async)
         {
-            base.GroupBy_Property_scalar_element_selector_Count();
+            await base.GroupBy_Property_scalar_element_selector_Count(async);
 
             AssertSql(@"
 SELECT COUNT([g].[OrderID])
@@ -1040,10 +803,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_scalar_element_selector_LongCount()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_scalar_element_selector_LongCount(bool async)
         {
-            base.GroupBy_Property_scalar_element_selector_LongCount();
+            await base.GroupBy_Property_scalar_element_selector_LongCount(async);
 
             AssertSql(@"
 SELECT COUNT_BIG([g].[OrderID])
@@ -1052,10 +816,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_scalar_element_selector_Max()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_scalar_element_selector_Max(bool async)
         {
-            base.GroupBy_Property_scalar_element_selector_Max();
+            await base.GroupBy_Property_scalar_element_selector_Max(async);
 
             AssertSql(@"
 SELECT MAX([g].[OrderID])
@@ -1064,10 +829,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_scalar_element_selector_Min()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_scalar_element_selector_Min(bool async)
         {
-            base.GroupBy_Property_scalar_element_selector_Min();
+            await base.GroupBy_Property_scalar_element_selector_Min(async);
 
             AssertSql(@"
 SELECT MIN([g].[OrderID])
@@ -1076,10 +842,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_scalar_element_selector_Sum()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_scalar_element_selector_Sum(bool async)
         {
-            base.GroupBy_Property_scalar_element_selector_Sum();
+            await base.GroupBy_Property_scalar_element_selector_Sum(async);
 
             AssertSql(@"
 SELECT SUM([g].[OrderID])
@@ -1088,10 +855,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_scalar_element_selector_Sum_Min_Max_Avg()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_scalar_element_selector_Sum_Min_Max_Avg(bool async)
         {
-            base.GroupBy_Property_scalar_element_selector_Sum_Min_Max_Avg();
+            await base.GroupBy_Property_scalar_element_selector_Sum_Min_Max_Avg(async);
 
             AssertSql(@"
 SELECT SUM([g].[OrderID]) AS [Sum], MIN([g].[OrderID]) AS [Min], MAX([g].[OrderID]) AS [Max], AVG(CAST([g].[OrderID] AS float)) AS [Avg]
@@ -1100,10 +868,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_Select_Average()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_Select_Average(bool async)
         {
-            base.GroupBy_Property_Select_Average();
+            await base.GroupBy_Property_Select_Average(async);
 
             AssertSql(@"
 SELECT AVG(CAST([g].[OrderID] AS float))
@@ -1112,10 +881,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_Select_Count()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_Select_Count(bool async)
         {
-            base.GroupBy_Property_Select_Count();
+            await base.GroupBy_Property_Select_Count(async);
 
             AssertSql(@"
 SELECT COUNT(*)
@@ -1124,10 +894,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_Select_Key_Average()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_Select_Key_Average(bool async)
         {
-            base.GroupBy_Property_Select_Key_Average();
+            await base.GroupBy_Property_Select_Key_Average(async);
 
             AssertSql(@"
 SELECT [g].[CustomerID] AS [Key], AVG(CAST([g].[OrderID] AS float)) AS [Average]
@@ -1136,10 +907,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_Select_Key_Count()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_Select_Key_Count(bool async)
         {
-            base.GroupBy_Property_Select_Key_Count();
+            await base.GroupBy_Property_Select_Key_Count(async);
 
             AssertSql(@"
 SELECT [g].[CustomerID] AS [Key], COUNT(*) AS [Count]
@@ -1148,10 +920,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_Select_Key_LongCount()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_Select_Key_LongCount(bool async)
         {
-            base.GroupBy_Property_Select_Key_LongCount();
+            await base.GroupBy_Property_Select_Key_LongCount(async);
 
             AssertSql(@"
 SELECT [g].[CustomerID] AS [Key], COUNT_BIG(*) AS [LongCount]
@@ -1160,10 +933,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_Select_Key_Max()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_Select_Key_Max(bool async)
         {
-            base.GroupBy_Property_Select_Key_Max();
+            await base.GroupBy_Property_Select_Key_Max(async);
 
             AssertSql(@"
 SELECT [g].[CustomerID] AS [Key], MAX([g].[OrderID]) AS [Max]
@@ -1172,10 +946,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_Select_Key_Min()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_Select_Key_Min(bool async)
         {
-            base.GroupBy_Property_Select_Key_Min();
+            await base.GroupBy_Property_Select_Key_Min(async);
 
             AssertSql(@"
 SELECT [g].[CustomerID] AS [Key], MIN([g].[OrderID]) AS [Min]
@@ -1184,10 +959,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_Select_Key_Sum()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_Select_Key_Sum(bool async)
         {
-            base.GroupBy_Property_Select_Key_Sum();
+            await base.GroupBy_Property_Select_Key_Sum(async);
 
             AssertSql(@"
 SELECT [g].[CustomerID] AS [Key], SUM([g].[OrderID]) AS [Sum]
@@ -1196,10 +972,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_Select_Key_Sum_Min_Max_Avg()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_Select_Key_Sum_Min_Max_Avg(bool async)
         {
-            base.GroupBy_Property_Select_Key_Sum_Min_Max_Avg();
+            await base.GroupBy_Property_Select_Key_Sum_Min_Max_Avg(async);
 
             AssertSql(@"
 SELECT [g].[CustomerID] AS [Key], SUM([g].[OrderID]) AS [Sum], MIN([g].[OrderID]) AS [Min], MAX([g].[OrderID]) AS [Max], AVG(CAST([g].[OrderID] AS float)) AS [Avg]
@@ -1208,10 +985,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_Select_LongCount()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_Select_LongCount(bool async)
         {
-            base.GroupBy_Property_Select_LongCount();
+            await base.GroupBy_Property_Select_LongCount(async);
 
             AssertSql(@"
 SELECT COUNT_BIG(*)
@@ -1220,10 +998,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_Select_Max()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_Select_Max(bool async)
         {
-            base.GroupBy_Property_Select_Max();
+            await base.GroupBy_Property_Select_Max(async);
 
             AssertSql(@"
 SELECT MAX([g].[OrderID])
@@ -1232,10 +1011,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_Select_Min()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_Select_Min(bool async)
         {
-            base.GroupBy_Property_Select_Min();
+            await base.GroupBy_Property_Select_Min(async);
 
             AssertSql(@"
 SELECT MIN([g].[OrderID])
@@ -1244,10 +1024,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_Select_Sum()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_Select_Sum(bool async)
         {
-            base.GroupBy_Property_Select_Sum();
+            await base.GroupBy_Property_Select_Sum(async);
 
             AssertSql(@"
 SELECT SUM([g].[OrderID])
@@ -1256,10 +1037,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_Select_Sum_Min_Key_Max_Avg()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_Select_Sum_Min_Key_Max_Avg(bool async)
         {
-            base.GroupBy_Property_Select_Sum_Min_Key_Max_Avg();
+            await base.GroupBy_Property_Select_Sum_Min_Key_Max_Avg(async);
 
             AssertSql(@"
 SELECT SUM([g].[OrderID]) AS [Sum], MIN([g].[OrderID]) AS [Min], [g].[CustomerID] AS [Key], MAX([g].[OrderID]) AS [Max], AVG(CAST([g].[OrderID] AS float)) AS [Avg]
@@ -1268,10 +1050,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Property_Select_Sum_Min_Max_Avg()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Property_Select_Sum_Min_Max_Avg(bool async)
         {
-            base.GroupBy_Property_Select_Sum_Min_Max_Avg();
+            await base.GroupBy_Property_Select_Sum_Min_Max_Avg(async);
 
             AssertSql(@"
 SELECT SUM([g].[OrderID]) AS [Sum], MIN([g].[OrderID]) AS [Min], MAX([g].[OrderID]) AS [Max], AVG(CAST([g].[OrderID] AS float)) AS [Avg]
@@ -1280,10 +1063,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_required_navigation_member_Aggregate()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_required_navigation_member_Aggregate(bool async)
         {
-            base.GroupBy_required_navigation_member_Aggregate();
+            await base.GroupBy_required_navigation_member_Aggregate(async);
 
             AssertSql(@"
 SELECT [o].[CustomerID] AS [CustomerId], COUNT(*) AS [Count]
@@ -1293,10 +1077,11 @@ GROUP BY [o].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_SelectMany()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_SelectMany(bool async)
         {
-            base.GroupBy_SelectMany();
+            await base.GroupBy_SelectMany(async);
 
             AssertSql(@"
 SELECT [g].[CustomerID] AS [CustomerID], [g].[Address] AS [Address], [g].[City] AS [City], [g].[CompanyName] AS [CompanyName], [g].[ContactName] AS [ContactName], [g].[ContactTitle] AS [ContactTitle], [g].[Country] AS [Country], [g].[Fax] AS [Fax], [g].[Phone] AS [Phone], [g].[PostalCode] AS [PostalCode], [g].[Region] AS [Region]
@@ -1309,52 +1094,11 @@ INNER JOIN [Customers] AS [g] ON [g_1].[Key] = [g].[City]
 ");
         }
 
-        [Fact]
-        [Trait("Impatient", "Adjusted entry count")]
-        public override void GroupBy_Select_First_GroupBy()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Shadow(bool async)
         {
-            AssertQuery<Customer>(
-                cs =>
-                    cs.GroupBy(c => c.City)
-                      .Select(g => g.OrderBy(c => c.CustomerID).First())
-                      .GroupBy(c => c.ContactName),
-                elementSorter: GroupingSorter<string, object>(),
-                elementAsserter: GroupingAsserter<string, dynamic>(d => d.CustomerID),
-                entryCount: 91);
-
-            AssertSql(@"
-SELECT [g].[City] AS [Key], (
-    SELECT [g_0].[CustomerID] AS [CustomerID], [g_0].[Address] AS [Address], [g_0].[City] AS [City], [g_0].[CompanyName] AS [CompanyName], [g_0].[ContactName] AS [ContactName], [g_0].[ContactTitle] AS [ContactTitle], [g_0].[Country] AS [Country], [g_0].[Fax] AS [Fax], [g_0].[Phone] AS [Phone], [g_0].[PostalCode] AS [PostalCode], [g_0].[Region] AS [Region]
-    FROM [Customers] AS [g_0]
-    WHERE (([g].[City] IS NULL AND [g_0].[City] IS NULL) OR ([g].[City] = [g_0].[City]))
-    FOR JSON PATH
-) AS [Elements]
-FROM [Customers] AS [g]
-GROUP BY [g].[City]
-");
-        }
-
-        [Fact]
-        public override void GroupBy_Select_sum_over_unmapped_property()
-        {
-            base.GroupBy_Select_sum_over_unmapped_property();
-
-            AssertSql(@"
-SELECT [g].[CustomerID] AS [Key], (
-    SELECT [g_0].[OrderID] AS [OrderID], [g_0].[CustomerID] AS [CustomerID], [g_0].[EmployeeID] AS [EmployeeID], [g_0].[OrderDate] AS [OrderDate]
-    FROM [Orders] AS [g_0]
-    WHERE (([g].[CustomerID] IS NULL AND [g_0].[CustomerID] IS NULL) OR ([g].[CustomerID] = [g_0].[CustomerID]))
-    FOR JSON PATH
-) AS [Elements]
-FROM [Orders] AS [g]
-GROUP BY [g].[CustomerID]
-");
-        }
-
-        [Fact]
-        public override void GroupBy_Shadow()
-        {
-            base.GroupBy_Shadow();
+            await base.GroupBy_Shadow(async);
 
             AssertSql(@"
 @p0='1'
@@ -1371,20 +1115,11 @@ GROUP BY [e].[Title]
 ");
         }
 
-        [Fact]
-        [Trait("Impatient", "Adjusted entry count")]
-        public override void GroupBy_Shadow2()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Shadow3(bool async)
         {
-            var ex = Assert.Throws<EqualException>(() => base.GroupBy_Shadow2());
-
-            Assert.Equal("0", ex.Expected);
-            Assert.Equal("1", ex.Actual);
-        }
-
-        [Fact]
-        public override void GroupBy_Shadow3()
-        {
-            base.GroupBy_Shadow3();
+            await base.GroupBy_Shadow3(async);
 
             AssertSql(@"
 @p0='1'
@@ -1401,44 +1136,11 @@ GROUP BY [e].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_simple()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Sum_constant(bool async)
         {
-            base.GroupBy_simple();
-
-            AssertSql(@"
-SELECT [o].[CustomerID] AS [Key], (
-    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate]
-    FROM [Orders] AS [o_0]
-    WHERE (([o].[CustomerID] IS NULL AND [o_0].[CustomerID] IS NULL) OR ([o].[CustomerID] = [o_0].[CustomerID]))
-    FOR JSON PATH
-) AS [Elements]
-FROM [Orders] AS [o]
-GROUP BY [o].[CustomerID]
-");
-        }
-
-        [Fact]
-        public override void GroupBy_simple2()
-        {
-            base.GroupBy_simple2();
-
-            AssertSql(@"
-SELECT [g].[CustomerID] AS [Key], (
-    SELECT [g_0].[OrderID] AS [OrderID], [g_0].[CustomerID] AS [CustomerID], [g_0].[EmployeeID] AS [EmployeeID], [g_0].[OrderDate] AS [OrderDate]
-    FROM [Orders] AS [g_0]
-    WHERE (([g].[CustomerID] IS NULL AND [g_0].[CustomerID] IS NULL) OR ([g].[CustomerID] = [g_0].[CustomerID]))
-    FOR JSON PATH
-) AS [Elements]
-FROM [Orders] AS [g]
-GROUP BY [g].[CustomerID]
-");
-        }
-
-        [Fact]
-        public override void GroupBy_Sum_constant()
-        {
-            base.GroupBy_Sum_constant();
+            await base.GroupBy_Sum_constant(async);
 
             AssertSql(@"
 SELECT SUM(CAST(1 AS int))
@@ -1447,10 +1149,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Sum_constant_cast()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_Sum_constant_cast(bool async)
         {
-            base.GroupBy_Sum_constant_cast();
+            await base.GroupBy_Sum_constant_cast(async);
 
             AssertSql(@"
 SELECT SUM(CAST(1 AS bigint))
@@ -1459,26 +1162,11 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_Where_in_aggregate()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_with_aggregate_through_navigation_property(bool async)
         {
-            base.GroupBy_Where_in_aggregate();
-
-            AssertSql(@"
-SELECT (
-    SELECT COUNT(*)
-    FROM [Orders] AS [g]
-    WHERE ((([g_0].[CustomerID] IS NULL AND [g].[CustomerID] IS NULL) OR ([g_0].[CustomerID] = [g].[CustomerID]))) AND ([g].[OrderID] < 10300)
-)
-FROM [Orders] AS [g_0]
-GROUP BY [g_0].[CustomerID]
-");
-        }
-
-        [Fact]
-        public override void GroupBy_with_aggregate_through_navigation_property()
-        {
-            base.GroupBy_with_aggregate_through_navigation_property();
+            await base.GroupBy_with_aggregate_through_navigation_property(async);
 
             AssertSql(@"
 SELECT (
@@ -1495,111 +1183,11 @@ GROUP BY [g_0].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void GroupBy_with_element_selector()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupBy_with_result_selector(bool async)
         {
-            base.GroupBy_with_element_selector();
-
-            AssertSql(@"
-SELECT (
-    SELECT [g].[OrderID]
-    FROM [Orders] AS [g]
-    WHERE (([g_0].[CustomerID] IS NULL AND [g].[CustomerID] IS NULL) OR ([g_0].[CustomerID] = [g].[CustomerID]))
-    ORDER BY [g].[OrderID] ASC
-    FOR JSON PATH
-)
-FROM [Orders] AS [g_0]
-GROUP BY [g_0].[CustomerID]
-ORDER BY [g_0].[CustomerID] ASC
-");
-        }
-
-        [Fact]
-        [Trait("Impatient", "Adjusted entry count")]
-        public override void GroupBy_with_element_selector2()
-        {
-            var ex = Assert.Throws<EqualException>(() => base.GroupBy_with_element_selector2());
-
-            Assert.Equal("0", ex.Expected);
-            Assert.Equal("830", ex.Actual);
-        }
-
-        [Fact]
-        [Trait("Impatient", "Adjusted entry count")]
-        public override void GroupBy_with_element_selector3()
-        {
-            var ex = Assert.Throws<EqualException>(() => base.GroupBy_with_element_selector3());
-
-            Assert.Equal("0", ex.Expected);
-            Assert.Equal("9", ex.Actual);
-        }
-
-        [Fact]
-        public override void GroupBy_with_orderby()
-        {
-            base.GroupBy_with_orderby();
-
-            AssertSql(@"
-SELECT [o].[CustomerID] AS [Key], (
-    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate]
-    FROM [Orders] AS [o_0]
-    WHERE (([o].[CustomerID] IS NULL AND [o_0].[CustomerID] IS NULL) OR ([o].[CustomerID] = [o_0].[CustomerID]))
-    FOR JSON PATH
-) AS [Elements]
-FROM [Orders] AS [o]
-GROUP BY [o].[CustomerID]
-ORDER BY [o].[CustomerID] ASC
-");
-        }
-
-        [Fact]
-        public override void GroupBy_with_orderby_and_anonymous_projection()
-        {
-            base.GroupBy_with_orderby_and_anonymous_projection();
-
-            AssertSql(@"
-SELECT N'Foo' AS [Foo], [g].[CustomerID] AS [Group.Key], (
-    SELECT [g_0].[OrderID] AS [OrderID], [g_0].[CustomerID] AS [CustomerID], [g_0].[EmployeeID] AS [EmployeeID], [g_0].[OrderDate] AS [OrderDate]
-    FROM [Orders] AS [g_0]
-    WHERE (([g].[CustomerID] IS NULL AND [g_0].[CustomerID] IS NULL) OR ([g].[CustomerID] = [g_0].[CustomerID]))
-    FOR JSON PATH
-) AS [Group.Elements]
-FROM [Orders] AS [g]
-GROUP BY [g].[CustomerID]
-ORDER BY [g].[CustomerID] ASC
-");
-        }
-
-        [Fact]
-        public override void GroupBy_with_orderby_take_skip_distinct()
-        {
-            base.GroupBy_with_orderby_take_skip_distinct();
-
-            AssertSql(@"
-SELECT DISTINCT [t].[Key] AS [Key], (
-    SELECT [g].[OrderID] AS [OrderID], [g].[CustomerID] AS [CustomerID], [g].[EmployeeID] AS [EmployeeID], [g].[OrderDate] AS [OrderDate]
-    FROM [Orders] AS [g]
-    WHERE (([t].[Key] IS NULL AND [g].[CustomerID] IS NULL) OR ([t].[Key] = [g].[CustomerID]))
-    FOR JSON PATH
-) AS [Elements]
-FROM (
-    SELECT [t_0].[Key] AS [Key]
-    FROM (
-        SELECT TOP (5) [g_0].[CustomerID] AS [Key]
-        FROM [Orders] AS [g_0]
-        GROUP BY [g_0].[CustomerID]
-        ORDER BY [g_0].[CustomerID] ASC
-    ) AS [t_0]
-    ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
-    OFFSET 3 ROWS
-) AS [t]
-");
-        }
-
-        [Fact]
-        public override void GroupBy_with_result_selector()
-        {
-            base.GroupBy_with_result_selector();
+            await base.GroupBy_with_result_selector(async);
 
             AssertSql(@"
 SELECT SUM([o].[OrderID]) AS [Sum], MIN([o].[OrderID]) AS [Min], MAX([o].[OrderID]) AS [Max], AVG(CAST([o].[OrderID] AS float)) AS [Avg]
@@ -1608,10 +1196,11 @@ GROUP BY [o].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupJoin_complex_GroupBy_Aggregate()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupJoin_complex_GroupBy_Aggregate(bool async)
         {
-            base.GroupJoin_complex_GroupBy_Aggregate();
+            await base.GroupJoin_complex_GroupBy_Aggregate(async);
 
             AssertSql(@"
 SELECT [o].[CustomerID] AS [Key], AVG(CAST([o].[OrderID] AS float)) AS [Count]
@@ -1633,10 +1222,11 @@ GROUP BY [o].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupJoin_GroupBy_Aggregate()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupJoin_GroupBy_Aggregate(bool async)
         {
-            base.GroupJoin_GroupBy_Aggregate();
+            await base.GroupJoin_GroupBy_Aggregate(async);
 
             AssertSql(@"
 SELECT [o].[CustomerID] AS [Key], AVG(CAST([o].[OrderID] AS float)) AS [Average]
@@ -1650,10 +1240,11 @@ GROUP BY [o].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupJoin_GroupBy_Aggregate_2()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupJoin_GroupBy_Aggregate_2(bool async)
         {
-            base.GroupJoin_GroupBy_Aggregate_2();
+            await base.GroupJoin_GroupBy_Aggregate_2(async);
 
             AssertSql(@"
 SELECT [c].[CustomerID] AS [Key], MAX([c].[City]) AS [Max]
@@ -1666,10 +1257,11 @@ GROUP BY [c].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupJoin_GroupBy_Aggregate_3()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupJoin_GroupBy_Aggregate_3(bool async)
         {
-            base.GroupJoin_GroupBy_Aggregate_3();
+            await base.GroupJoin_GroupBy_Aggregate_3(async);
 
             AssertSql(@"
 SELECT [o].[CustomerID] AS [Key], AVG(CAST([o].[OrderID] AS float)) AS [Average]
@@ -1682,10 +1274,11 @@ GROUP BY [o].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupJoin_GroupBy_Aggregate_4()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupJoin_GroupBy_Aggregate_4(bool async)
         {
-            base.GroupJoin_GroupBy_Aggregate_4();
+            await base.GroupJoin_GroupBy_Aggregate_4(async);
 
             AssertSql(@"
 SELECT [c].[CustomerID] AS [Value], MAX([c].[City]) AS [Max]
@@ -1698,10 +1291,11 @@ GROUP BY [c].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void GroupJoin_GroupBy_Aggregate_5()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task GroupJoin_GroupBy_Aggregate_5(bool async)
         {
-            base.GroupJoin_GroupBy_Aggregate_5();
+            await base.GroupJoin_GroupBy_Aggregate_5(async);
 
             AssertSql(@"
 SELECT [o].[OrderID] AS [Value], AVG(CAST([o].[OrderID] AS float)) AS [Average]
@@ -1714,10 +1308,11 @@ GROUP BY [o].[OrderID]
 ");
         }
 
-        [Fact]
-        public override void Join_complex_GroupBy_Aggregate()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task Join_complex_GroupBy_Aggregate(bool async)
         {
-            base.Join_complex_GroupBy_Aggregate();
+            await base.Join_complex_GroupBy_Aggregate(async);
 
             AssertSql(@"
 SELECT [c].[CustomerID] AS [Key], AVG(CAST([o].[OrderID] AS float)) AS [Count]
@@ -1738,10 +1333,11 @@ GROUP BY [c].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void Join_GroupBy_Aggregate()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task Join_GroupBy_Aggregate(bool async)
         {
-            base.Join_GroupBy_Aggregate();
+            await base.Join_GroupBy_Aggregate(async);
 
             AssertSql(@"
 SELECT [c].[CustomerID] AS [Key], AVG(CAST([o].[OrderID] AS float)) AS [Count]
@@ -1751,56 +1347,11 @@ GROUP BY [c].[CustomerID]
 ");
         }
 
-        [Fact]
-        [Trait("Impatient", "EFCore missing entries")]
-        [Trait("Impatient", "Adjusted entry count")]
-        public override void Join_GroupBy_Aggregate_in_subquery()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task Join_GroupBy_Aggregate_multijoins(bool async)
         {
-            AssertQuery<Order, Customer>(
-                (os, cs) =>
-                    from o in os.Where(o => o.OrderID < 10400)
-                    join i in (from c in cs
-                               join a in os.GroupBy(o => o.CustomerID)
-                                           .Where(g => g.Count() > 5)
-                                           .Select(g => new { CustomerID = g.Key, LastOrderID = g.Max(o => o.OrderID) })
-                                   on c.CustomerID equals a.CustomerID
-                               select new { c, a.LastOrderID })
-                        on o.CustomerID equals i.c.CustomerID
-                    select new { o, i.c, i.c.CustomerID },
-                entryCount: 187);
-
-            AssertSql(@"
-SELECT [o].[OrderID] AS [o.OrderID], [o].[CustomerID] AS [o.CustomerID], [o].[EmployeeID] AS [o.EmployeeID], [o].[OrderDate] AS [o.OrderDate], [i].[c.CustomerID] AS [c.CustomerID], [i].[c.Address] AS [c.Address], [i].[c.City] AS [c.City], [i].[c.CompanyName] AS [c.CompanyName], [i].[c.ContactName] AS [c.ContactName], [i].[c.ContactTitle] AS [c.ContactTitle], [i].[c.Country] AS [c.Country], [i].[c.Fax] AS [c.Fax], [i].[c.Phone] AS [c.Phone], [i].[c.PostalCode] AS [c.PostalCode], [i].[c.Region] AS [c.Region], [i].[c.CustomerID] AS [CustomerID]
-FROM [Orders] AS [o]
-INNER JOIN (
-    SELECT [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Country] AS [c.Country], [c].[Fax] AS [c.Fax], [c].[Phone] AS [c.Phone], [c].[PostalCode] AS [c.PostalCode], [c].[Region] AS [c.Region], [a].[LastOrderID] AS [LastOrderID]
-    FROM [Customers] AS [c]
-    INNER JOIN (
-        SELECT [g].[Key] AS [CustomerID], (
-            SELECT MAX([g_0].[OrderID])
-            FROM [Orders] AS [g_0]
-            WHERE (([g].[Key] IS NULL AND [g_0].[CustomerID] IS NULL) OR ([g].[Key] = [g_0].[CustomerID]))
-        ) AS [LastOrderID]
-        FROM (
-            SELECT [g_1].[CustomerID] AS [Key]
-            FROM [Orders] AS [g_1]
-            GROUP BY [g_1].[CustomerID]
-        ) AS [g]
-        WHERE (
-            SELECT COUNT(*)
-            FROM [Orders] AS [g_0]
-            WHERE (([g].[Key] IS NULL AND [g_0].[CustomerID] IS NULL) OR ([g].[Key] = [g_0].[CustomerID]))
-        ) > 5
-    ) AS [a] ON [c].[CustomerID] = [a].[CustomerID]
-) AS [i] ON [o].[CustomerID] = [i].[c.CustomerID]
-WHERE [o].[OrderID] < 10400
-");
-        }
-
-        [Fact]
-        public override void Join_GroupBy_Aggregate_multijoins()
-        {
-            base.Join_GroupBy_Aggregate_multijoins();
+            await base.Join_GroupBy_Aggregate_multijoins(async);
 
             AssertSql(@"
 SELECT [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Country] AS [c.Country], [c].[Fax] AS [c.Fax], [c].[Phone] AS [c.Phone], [c].[PostalCode] AS [c.PostalCode], [c].[Region] AS [c.Region], [o].[OrderID] AS [o.OrderID], [o].[CustomerID] AS [o.CustomerID], [o].[EmployeeID] AS [o.EmployeeID], [o].[OrderDate] AS [o.OrderDate]
@@ -1826,10 +1377,11 @@ INNER JOIN [Orders] AS [o] ON [a].[LastOrderID] = [o].[OrderID]
 ");
         }
 
-        [Fact]
-        public override void Join_GroupBy_Aggregate_on_key()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task Join_GroupBy_Aggregate_on_key(bool async)
         {
-            base.Join_GroupBy_Aggregate_on_key();
+            await base.Join_GroupBy_Aggregate_on_key(async);
 
             Fixture.AssertSql(@"SELECT [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Country] AS [c.Country], [c].[Fax] AS [c.Fax], [c].[Phone] AS [c.Phone], [c].[PostalCode] AS [c.PostalCode], [c].[Region] AS [c.Region], [a].[LastOrderID] AS [LastOrderID]
 FROM [Customers] AS [c]
@@ -1852,10 +1404,11 @@ INNER JOIN (
 ) AS [a] ON [c].[CustomerID] = [a].[Key]");
         }
 
-        [Fact]
-        public override void Join_GroupBy_Aggregate_single_join()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task Join_GroupBy_Aggregate_single_join(bool async)
         {
-            base.Join_GroupBy_Aggregate_single_join();
+            await base.Join_GroupBy_Aggregate_single_join(async);
 
             AssertSql(@"
 SELECT [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Country] AS [c.Country], [c].[Fax] AS [c.Fax], [c].[Phone] AS [c.Phone], [c].[PostalCode] AS [c.PostalCode], [c].[Region] AS [c.Region], [a].[LastOrderID] AS [LastOrderID]
@@ -1880,10 +1433,11 @@ INNER JOIN (
 ");
         }
 
-        [Fact]
-        public override void Join_GroupBy_Aggregate_with_another_join()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task Join_GroupBy_Aggregate_with_another_join(bool async)
         {
-            base.Join_GroupBy_Aggregate_with_another_join();
+            await base.Join_GroupBy_Aggregate_with_another_join(async);
 
             AssertSql(@"
 SELECT [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Country] AS [c.Country], [c].[Fax] AS [c.Fax], [c].[Phone] AS [c.Phone], [c].[PostalCode] AS [c.PostalCode], [c].[Region] AS [c.Region], [a].[LastOrderID] AS [LastOrderID], [o].[OrderID] AS [OrderID]
@@ -1909,45 +1463,11 @@ INNER JOIN [Orders] AS [o] ON [c].[CustomerID] = [o].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void Join_GroupBy_entity_ToList()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task OrderBy_GroupBy_Aggregate(bool async)
         {
-            base.Join_GroupBy_entity_ToList();
-
-            AssertSql(@"
-SELECT [c].[CustomerID] AS [C.CustomerID], [c].[Address] AS [C.Address], [c].[City] AS [C.City], [c].[CompanyName] AS [C.CompanyName], [c].[ContactName] AS [C.ContactName], [c].[ContactTitle] AS [C.ContactTitle], [c].[Country] AS [C.Country], [c].[Fax] AS [C.Fax], [c].[Phone] AS [C.Phone], [c].[PostalCode] AS [C.PostalCode], [c].[Region] AS [C.Region], (
-    SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
-    FROM (
-        SELECT TOP (5) [c_0].[CustomerID] AS [CustomerID], [c_0].[Address] AS [Address], [c_0].[City] AS [City], [c_0].[CompanyName] AS [CompanyName], [c_0].[ContactName] AS [ContactName], [c_0].[ContactTitle] AS [ContactTitle], [c_0].[Country] AS [Country], [c_0].[Fax] AS [Fax], [c_0].[Phone] AS [Phone], [c_0].[PostalCode] AS [PostalCode], [c_0].[Region] AS [Region]
-        FROM [Customers] AS [c_0]
-        ORDER BY [c_0].[CustomerID] ASC
-    ) AS [c_1]
-    INNER JOIN (
-        SELECT TOP (50) [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate]
-        FROM [Orders] AS [o_0]
-        ORDER BY [o_0].[OrderID] ASC
-    ) AS [o] ON [c_1].[CustomerID] = [o].[CustomerID]
-    WHERE [c].[CustomerID] = [c_1].[CustomerID]
-    FOR JSON PATH
-) AS [Os]
-FROM (
-    SELECT TOP (5) [c_2].[CustomerID] AS [CustomerID], [c_2].[Address] AS [Address], [c_2].[City] AS [City], [c_2].[CompanyName] AS [CompanyName], [c_2].[ContactName] AS [ContactName], [c_2].[ContactTitle] AS [ContactTitle], [c_2].[Country] AS [Country], [c_2].[Fax] AS [Fax], [c_2].[Phone] AS [Phone], [c_2].[PostalCode] AS [PostalCode], [c_2].[Region] AS [Region]
-    FROM [Customers] AS [c_2]
-    ORDER BY [c_2].[CustomerID] ASC
-) AS [c]
-INNER JOIN (
-    SELECT TOP (50) [o_1].[OrderID] AS [OrderID], [o_1].[CustomerID] AS [CustomerID], [o_1].[EmployeeID] AS [EmployeeID], [o_1].[OrderDate] AS [OrderDate]
-    FROM [Orders] AS [o_1]
-    ORDER BY [o_1].[OrderID] ASC
-) AS [o_2] ON [c].[CustomerID] = [o_2].[CustomerID]
-GROUP BY [c].[CustomerID], [c].[Address], [c].[City], [c].[CompanyName], [c].[ContactName], [c].[ContactTitle], [c].[Country], [c].[Fax], [c].[Phone], [c].[PostalCode], [c].[Region]
-");
-        }
-
-        [Fact]
-        public override void OrderBy_GroupBy_Aggregate()
-        {
-            base.OrderBy_GroupBy_Aggregate();
+            await base.OrderBy_GroupBy_Aggregate(async);
 
             AssertSql(@"
 SELECT SUM([o].[OrderID])
@@ -1956,10 +1476,11 @@ GROUP BY [o].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void OrderBy_GroupBy_SelectMany()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task OrderBy_GroupBy_SelectMany(bool async)
         {
-            base.OrderBy_GroupBy_SelectMany();
+            await base.OrderBy_GroupBy_SelectMany(async);
 
             AssertSql(@"
 SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
@@ -1972,10 +1493,11 @@ INNER JOIN [Orders] AS [o] ON [g].[Key] = [o].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void OrderBy_GroupBy_SelectMany_shadow()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task OrderBy_GroupBy_SelectMany_shadow(bool async)
         {
-            base.OrderBy_GroupBy_SelectMany_shadow();
+            await base.OrderBy_GroupBy_SelectMany_shadow(async);
 
             AssertSql(@"
 SELECT [e].[Title]
@@ -1988,37 +1510,11 @@ INNER JOIN [Employees] AS [e] ON [g].[Key] = [e].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void OrderBy_Skip_GroupBy()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task OrderBy_Skip_GroupBy_Aggregate(bool async)
         {
-            base.OrderBy_Skip_GroupBy();
-
-            AssertSql(@"
-SELECT [o].[CustomerID] AS [Key], (
-    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate]
-    FROM (
-        SELECT [o_1].[OrderID] AS [OrderID], [o_1].[CustomerID] AS [CustomerID], [o_1].[EmployeeID] AS [EmployeeID], [o_1].[OrderDate] AS [OrderDate]
-        FROM [Orders] AS [o_1]
-        ORDER BY [o_1].[OrderDate] ASC, [o_1].[OrderID] ASC
-        OFFSET 800 ROWS
-    ) AS [o_0]
-    WHERE (([o].[CustomerID] IS NULL AND [o_0].[CustomerID] IS NULL) OR ([o].[CustomerID] = [o_0].[CustomerID]))
-    FOR JSON PATH
-) AS [Elements]
-FROM (
-    SELECT [o_2].[OrderID] AS [OrderID], [o_2].[CustomerID] AS [CustomerID], [o_2].[EmployeeID] AS [EmployeeID], [o_2].[OrderDate] AS [OrderDate]
-    FROM [Orders] AS [o_2]
-    ORDER BY [o_2].[OrderDate] ASC, [o_2].[OrderID] ASC
-    OFFSET 800 ROWS
-) AS [o]
-GROUP BY [o].[CustomerID]
-");
-        }
-
-        [Fact]
-        public override void OrderBy_Skip_GroupBy_Aggregate()
-        {
-            base.OrderBy_Skip_GroupBy_Aggregate();
+            await base.OrderBy_Skip_GroupBy_Aggregate(async);
 
             AssertSql(@"
 SELECT AVG(CAST([o].[OrderID] AS float))
@@ -2032,37 +1528,11 @@ GROUP BY [o].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void OrderBy_Skip_Take_GroupBy()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task OrderBy_Skip_Take_GroupBy_Aggregate(bool async)
         {
-            base.OrderBy_Skip_Take_GroupBy();
-
-            AssertSql(@"
-SELECT [o].[CustomerID] AS [Key], (
-    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate]
-    FROM (
-        SELECT [o_1].[OrderID] AS [OrderID], [o_1].[CustomerID] AS [CustomerID], [o_1].[EmployeeID] AS [EmployeeID], [o_1].[OrderDate] AS [OrderDate]
-        FROM [Orders] AS [o_1]
-        ORDER BY [o_1].[OrderDate] ASC
-        OFFSET 450 ROWS FETCH NEXT 50 ROWS ONLY
-    ) AS [o_0]
-    WHERE (([o].[CustomerID] IS NULL AND [o_0].[CustomerID] IS NULL) OR ([o].[CustomerID] = [o_0].[CustomerID]))
-    FOR JSON PATH
-) AS [Elements]
-FROM (
-    SELECT [o_2].[OrderID] AS [OrderID], [o_2].[CustomerID] AS [CustomerID], [o_2].[EmployeeID] AS [EmployeeID], [o_2].[OrderDate] AS [OrderDate]
-    FROM [Orders] AS [o_2]
-    ORDER BY [o_2].[OrderDate] ASC
-    OFFSET 450 ROWS FETCH NEXT 50 ROWS ONLY
-) AS [o]
-GROUP BY [o].[CustomerID]
-");
-        }
-
-        [Fact]
-        public override void OrderBy_Skip_Take_GroupBy_Aggregate()
-        {
-            base.OrderBy_Skip_Take_GroupBy_Aggregate();
+            await base.OrderBy_Skip_Take_GroupBy_Aggregate(async);
 
             AssertSql(@"
 SELECT MAX([o].[OrderID])
@@ -2076,35 +1546,11 @@ GROUP BY [o].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void OrderBy_Take_GroupBy()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task OrderBy_Take_GroupBy_Aggregate(bool async)
         {
-            base.OrderBy_Take_GroupBy();
-
-            AssertSql(@"
-SELECT [o].[CustomerID] AS [Key], (
-    SELECT [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate]
-    FROM (
-        SELECT TOP (50) [o_1].[OrderID] AS [OrderID], [o_1].[CustomerID] AS [CustomerID], [o_1].[EmployeeID] AS [EmployeeID], [o_1].[OrderDate] AS [OrderDate]
-        FROM [Orders] AS [o_1]
-        ORDER BY [o_1].[OrderDate] ASC
-    ) AS [o_0]
-    WHERE (([o].[CustomerID] IS NULL AND [o_0].[CustomerID] IS NULL) OR ([o].[CustomerID] = [o_0].[CustomerID]))
-    FOR JSON PATH
-) AS [Elements]
-FROM (
-    SELECT TOP (50) [o_2].[OrderID] AS [OrderID], [o_2].[CustomerID] AS [CustomerID], [o_2].[EmployeeID] AS [EmployeeID], [o_2].[OrderDate] AS [OrderDate]
-    FROM [Orders] AS [o_2]
-    ORDER BY [o_2].[OrderDate] ASC
-) AS [o]
-GROUP BY [o].[CustomerID]
-");
-        }
-
-        [Fact]
-        public override void OrderBy_Take_GroupBy_Aggregate()
-        {
-            base.OrderBy_Take_GroupBy_Aggregate();
+            await base.OrderBy_Take_GroupBy_Aggregate(async);
 
             AssertSql(@"
 SELECT MIN([o].[OrderID])
@@ -2117,10 +1563,11 @@ GROUP BY [o].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void SelectMany_GroupBy_Aggregate()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task SelectMany_GroupBy_Aggregate(bool async)
         {
-            base.SelectMany_GroupBy_Aggregate();
+            await base.SelectMany_GroupBy_Aggregate(async);
 
             AssertSql(@"
 SELECT [o].[EmployeeID] AS [Key], COUNT(*) AS [c]
@@ -2130,10 +1577,11 @@ GROUP BY [o].[EmployeeID]
 ");
         }
 
-        [Fact]
-        public override void Select_anonymous_GroupBy_Aggregate()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task Select_anonymous_GroupBy_Aggregate(bool async)
         {
-            base.Select_anonymous_GroupBy_Aggregate();
+            await base.Select_anonymous_GroupBy_Aggregate(async);
 
             AssertSql(@"
 SELECT MIN([o].[OrderDate]) AS [Min], MAX([o].[OrderDate]) AS [Max], SUM([o].[OrderID]) AS [Sum], AVG(CAST([o].[OrderID] AS float)) AS [Avg]
@@ -2143,50 +1591,11 @@ GROUP BY [o].[CustomerID]
 ");
         }
 
-        [Fact]
-        public override void Select_Distinct_GroupBy()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task Select_GroupBy_All(bool async)
         {
-            base.Select_Distinct_GroupBy();
-
-            AssertSql(@"
-SELECT [o].[CustomerID] AS [Key], (
-    SELECT [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID]
-    FROM (
-        SELECT DISTINCT [o_1].[CustomerID] AS [CustomerID], [o_1].[EmployeeID] AS [EmployeeID]
-        FROM [Orders] AS [o_1]
-    ) AS [o_0]
-    WHERE (([o].[CustomerID] IS NULL AND [o_0].[CustomerID] IS NULL) OR ([o].[CustomerID] = [o_0].[CustomerID]))
-    FOR JSON PATH
-) AS [Elements]
-FROM (
-    SELECT DISTINCT [o_2].[CustomerID] AS [CustomerID], [o_2].[EmployeeID] AS [EmployeeID]
-    FROM [Orders] AS [o_2]
-) AS [o]
-GROUP BY [o].[CustomerID]
-");
-        }
-
-        [Fact]
-        public override void Select_GroupBy()
-        {
-            base.Select_GroupBy();
-
-            AssertSql(@"
-SELECT [o].[CustomerID] AS [Key], (
-    SELECT [o_0].[OrderID] AS [Order], [o_0].[CustomerID] AS [Customer]
-    FROM [Orders] AS [o_0]
-    WHERE (([o].[CustomerID] IS NULL AND [o_0].[CustomerID] IS NULL) OR ([o].[CustomerID] = [o_0].[CustomerID]))
-    FOR JSON PATH
-) AS [Elements]
-FROM [Orders] AS [o]
-GROUP BY [o].[CustomerID]
-");
-        }
-
-        [Fact]
-        public override void Select_GroupBy_All()
-        {
-            base.Select_GroupBy_All();
+            await base.Select_GroupBy_All(async);
 
             AssertSql(@"
 SELECT CAST((CASE WHEN EXISTS (
@@ -2201,10 +1610,11 @@ SELECT CAST((CASE WHEN EXISTS (
 ");
         }
 
-        [Fact]
-        public override void Select_GroupBy_SelectMany()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task Select_GroupBy_SelectMany(bool async)
         {
-            base.Select_GroupBy_SelectMany();
+            await base.Select_GroupBy_SelectMany(async);
 
             AssertSql(@"
 SELECT [o].[OrderID] AS [Order], [o].[CustomerID] AS [Customer]
@@ -2217,10 +1627,11 @@ INNER JOIN [Orders] AS [o] ON [g].[Key] = [o].[OrderID]
 ");
         }
 
-        [Fact]
-        public override void Select_nested_collection_with_groupby()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task Select_nested_collection_with_groupby(bool async)
         {
-            base.Select_nested_collection_with_groupby();
+            await base.Select_nested_collection_with_groupby(async);
 
             AssertSql(@"
 SELECT [c].[CustomerID] AS [$outer.CustomerID], [c].[Address] AS [$outer.Address], [c].[City] AS [$outer.City], [c].[CompanyName] AS [$outer.CompanyName], [c].[ContactName] AS [$outer.ContactName], [c].[ContactTitle] AS [$outer.ContactTitle], [c].[Country] AS [$outer.Country], [c].[Fax] AS [$outer.Fax], [c].[Phone] AS [$outer.Phone], [c].[PostalCode] AS [$outer.PostalCode], [c].[Region] AS [$outer.Region], (
@@ -2234,10 +1645,11 @@ WHERE LEFT([c].[CustomerID], LEN(N'A')) = N'A'
 ");
         }
 
-        [Fact]
-        public override void Self_join_GroupBy_Aggregate()
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override async Task Self_join_GroupBy_Aggregate(bool async)
         {
-            base.Self_join_GroupBy_Aggregate();
+            await base.Self_join_GroupBy_Aggregate(async);
 
             AssertSql(@"
 SELECT [o].[CustomerID] AS [Key], AVG(CAST([o2].[OrderID] AS float)) AS [Count]
@@ -2245,40 +1657,6 @@ FROM [Orders] AS [o]
 INNER JOIN [Orders] AS [o2] ON [o].[OrderID] = [o2].[OrderID]
 WHERE [o].[OrderID] < 10400
 GROUP BY [o].[CustomerID]
-");
-        }
-
-        [Fact]
-        [Trait("Impatient", "Skipped by EFCore")]
-        [Trait("Impatient", "Adjusted entry count")]
-        public override void Union_simple_groupby()
-        {
-            // Corrected entry count from 19 to 0.
-
-            AssertQuery<Customer>(
-                cs => cs.Where(s => s.ContactTitle == "Owner")
-                    .Union(cs.Where(c => c.City == "México D.F."))
-                    .GroupBy(c => c.City)
-                    .Select(
-                        g => new
-                        {
-                            g.Key,
-                            Total = g.Count()
-                        }),
-                entryCount: 0);
-
-            AssertSql(@"
-SELECT [set].[City] AS [Key], COUNT(*) AS [Total]
-FROM (
-    SELECT [s].[CustomerID] AS [CustomerID], [s].[Address] AS [Address], [s].[City] AS [City], [s].[CompanyName] AS [CompanyName], [s].[ContactName] AS [ContactName], [s].[ContactTitle] AS [ContactTitle], [s].[Country] AS [Country], [s].[Fax] AS [Fax], [s].[Phone] AS [Phone], [s].[PostalCode] AS [PostalCode], [s].[Region] AS [Region]
-    FROM [Customers] AS [s]
-    WHERE [s].[ContactTitle] = N'Owner'
-    UNION
-    SELECT [c].[CustomerID] AS [CustomerID], [c].[Address] AS [Address], [c].[City] AS [City], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Country] AS [Country], [c].[Fax] AS [Fax], [c].[Phone] AS [Phone], [c].[PostalCode] AS [PostalCode], [c].[Region] AS [Region]
-    FROM [Customers] AS [c]
-    WHERE [c].[City] = N'México D.F.'
-) AS [set]
-GROUP BY [set].[City]
 ");
         }
 

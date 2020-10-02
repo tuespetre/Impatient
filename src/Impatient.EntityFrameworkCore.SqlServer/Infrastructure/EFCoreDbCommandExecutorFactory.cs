@@ -1,7 +1,7 @@
 ﻿using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 {

@@ -23,7 +23,7 @@ namespace Impatient.EFCore.Tests
             {
                 base.OnModelCreating(modelBuilder, context);
 
-                modelBuilder.Query<BlogQuery>().ToView("Blog");
+                modelBuilder.Entity<BlogQuery>().ToView("Blog").HasNoKey();
             }
         }
     }

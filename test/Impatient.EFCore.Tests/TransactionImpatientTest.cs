@@ -31,15 +31,15 @@ namespace Impatient.EFCore.Tests
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 
-            protected override void Seed(DbContext context)
+            protected override void Seed(PoolableDbContext context)
             {
                 base.Seed(context);
 
                 var database = context.Database.GetDbConnection().Database;
 
 #pragma warning disable EF1000 // Possible SQL injection vulnerability.
-                context.Database.ExecuteSqlCommand($"ALTER DATABASE [{database}] SET ALLOW_SNAPSHOT_ISOLATION ON".ToString());
-                context.Database.ExecuteSqlCommand($"ALTER DATABASE [{database}] SET READ_COMMITTED_SNAPSHOT ON".ToString());
+                context.Database.ExecuteSqlRaw($"ALTER DATABASE [{database}] SET ALLOW_SNAPSHOT_ISOLATION ON".ToString());
+                context.Database.ExecuteSqlRaw($"ALTER DATABASE [{database}] SET READ_COMMITTED_SNAPSHOT ON".ToString());
 #pragma warning restore EF1000 // Possible SQL injection vulnerability.
             }
 
@@ -54,7 +54,7 @@ namespace Impatient.EFCore.Tests
                 }
             }
 
-            public override DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder)
+            /*public override DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder)
             {
                 new SqlServerDbContextOptionsBuilder(
                         base.AddOptions(builder)
@@ -63,7 +63,7 @@ namespace Impatient.EFCore.Tests
                                       .Log(CoreEventId.FirstWithoutOrderByAndFilterWarning)))
                     .MaxBatchSize(1);
                 return builder;
-            }
+            }*/
         }
     }
 }

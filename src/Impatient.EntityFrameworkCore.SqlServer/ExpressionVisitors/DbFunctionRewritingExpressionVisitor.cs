@@ -37,17 +37,19 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                 return new SqlLikeExpression(arguments[1], arguments[2], arguments.ElementAtOrDefault(3));
             }
             
-            var function = model.Relational().FindDbFunction(node.Method);
+            var function = model.FindDbFunction(node.Method);
 
             if (function != null)
             {
                 if (function.Translation != null)
                 {
-                    return function.Translation.Invoke(arguments);
+                    // TODO
+                    throw new NotImplementedException();
+                    //return function.Translation.Invoke(arguments);
                 }
                 else
                 {
-                    return new SqlFunctionExpression(function.Schema, function.FunctionName, node.Type, arguments);
+                    return new SqlFunctionExpression(function.Schema, function.Name, node.Type, arguments);
                 }
             }
 
