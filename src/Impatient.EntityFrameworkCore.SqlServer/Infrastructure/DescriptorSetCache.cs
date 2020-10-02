@@ -20,7 +20,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             // TODO: Parameterize all DbContext references in query filters upfront.
 
-            if (cachedDescriptorSet == null)
+            if (cachedDescriptorSet is null)
             {
                 cachedDescriptorSet = new DescriptorSet(
                     modelExpressionProvider.CreatePrimaryKeyDescriptors(context).ToArray(),

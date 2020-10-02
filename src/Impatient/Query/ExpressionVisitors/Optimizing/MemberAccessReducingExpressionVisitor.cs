@@ -171,7 +171,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
         private static bool FindExpressionForMember(NewExpression newExpression, MemberInfo memberInfo, out Expression expression)
         {
-            if (newExpression.Members != null)
+            if (newExpression.Members is not null)
             {
                 for (var i = 0; i < newExpression.Members.Count; i++)
                 {
@@ -216,7 +216,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             {
                 var member = extendedNewExpression.ReadableMembers[i];
 
-                if (member != null
+                if (member is not null
                     && member.DeclaringType == memberInfo.DeclaringType
                     && member.Name == memberInfo.Name)
                 {

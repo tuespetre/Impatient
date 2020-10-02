@@ -72,7 +72,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                 {
                     case ExpressionType.AndAlso:
                     {
-                        if (leftConstant != null && rightConstant != null)
+                        if (leftConstant is not null && rightConstant is not null)
                         {
                             if (false.Equals(leftConstant.Value) || false.Equals(rightConstant.Value))
                             {
@@ -83,7 +83,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                                 return Expression.Constant(true);
                             }
                         }
-                        else if (leftConstant != null)
+                        else if (leftConstant is not null)
                         {
                             if (false.Equals(leftConstant.Value))
                             {
@@ -94,7 +94,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                                 return right;
                             }
                         }
-                        else if (rightConstant != null)
+                        else if (rightConstant is not null)
                         {
                             if (false.Equals(rightConstant.Value))
                             {
@@ -111,7 +111,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
                     case ExpressionType.OrElse:
                     {
-                        if (leftConstant != null && rightConstant != null)
+                        if (leftConstant is not null && rightConstant is not null)
                         {
                             if (true.Equals(leftConstant.Value) || true.Equals(rightConstant.Value))
                             {
@@ -122,7 +122,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                                 return Expression.Constant(false);
                             }
                         }
-                        else if (leftConstant != null)
+                        else if (leftConstant is not null)
                         {
                             if (true.Equals(leftConstant.Value))
                             {
@@ -133,7 +133,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                                 return right;
                             }
                         }
-                        else if (rightConstant != null)
+                        else if (rightConstant is not null)
                         {
                             if (true.Equals(rightConstant.Value))
                             {
@@ -150,8 +150,8 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
                     case ExpressionType.Equal:
                     {
-                        if (leftConstant != null
-                            && rightConstant != null
+                        if (leftConstant is not null
+                            && rightConstant is not null
                             && leftConstant.Type.IsBooleanType()
                             && rightConstant.Type.IsBooleanType())
                         {
@@ -164,7 +164,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                                 return Expression.Constant(false);
                             }
                         }
-                        else if (leftConstant != null && !right.Type.IsNullableType())
+                        else if (leftConstant is not null && !right.Type.IsNullableType())
                         {
                             if (true.Equals(leftConstant.Value))
                             {
@@ -175,7 +175,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                                 return Expression.Not(right);
                             }
                         }
-                        else if (rightConstant != null && !left.Type.IsNullableType())
+                        else if (rightConstant is not null && !left.Type.IsNullableType())
                         {
                             if (true.Equals(rightConstant.Value))
                             {
@@ -217,8 +217,8 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
                     case ExpressionType.NotEqual:
                     {
-                        if (leftConstant != null
-                            && rightConstant != null
+                        if (leftConstant is not null
+                            && rightConstant is not null
                             && leftConstant.Type.IsBooleanType()
                             && rightConstant.Type.IsBooleanType())
                         {
@@ -231,7 +231,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                                 return Expression.Constant(true);
                             }
                         }
-                        else if (leftConstant != null && !right.Type.IsNullableType())
+                        else if (leftConstant is not null && !right.Type.IsNullableType())
                         {
                             if (false.Equals(leftConstant.Value))
                             {
@@ -242,7 +242,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                                 return Expression.Not(right);
                             }
                         }
-                        else if (rightConstant != null && !left.Type.IsNullableType())
+                        else if (rightConstant is not null && !left.Type.IsNullableType())
                         {
                             if (false.Equals(rightConstant.Value))
                             {

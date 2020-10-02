@@ -31,7 +31,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
         public override Expression Visit(Expression node)
         {
-            if (node == null)
+            if (node is null)
             {
                 return node;
             }
@@ -49,7 +49,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
         {
             var expression = Visit(node.Expression);
 
-            if (expression == null)
+            if (expression is null)
             {
                 return node;
             }

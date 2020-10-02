@@ -39,9 +39,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
             
             var function = model.FindDbFunction(node.Method);
 
-            if (function != null)
+            if (function is not null)
             {
-                if (function.Translation != null)
+                if (function.Translation is not null)
                 {
                     // TODO
                     throw new NotImplementedException();

@@ -27,7 +27,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
             {
                 var mapping = typeMappingProvider.FindMapping(node.Object.Type);
 
-                if (mapping != null && mapping.SourceType.IsNumericType())
+                if (mapping is not null && mapping.SourceType.IsNumericType())
                 {
                     var underlyingType = Enum.GetUnderlyingType(node.Object.Type);
 

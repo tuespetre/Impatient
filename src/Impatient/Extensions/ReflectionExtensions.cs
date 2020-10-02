@@ -97,12 +97,12 @@ namespace Impatient.Extensions
 
         public static bool IsGenericType(this Type type, Type definition)
         {
-            return type.FindGenericType(definition) != null;
+            return type.FindGenericType(definition) is not null;
         }
 
         public static Type FindGenericType(this Type type, Type definition)
         {
-            if (type == null || type == typeof(object))
+            if (type is null || type == typeof(object))
             {
                 return null;
             }
@@ -131,7 +131,7 @@ namespace Impatient.Extensions
 
                 type = type.GetTypeInfo().BaseType;
 
-                if (type == null || type == typeof(object))
+                if (type is null || type == typeof(object))
                 {
                     return null;
                 }
@@ -534,7 +534,7 @@ namespace Impatient.Extensions
 
             var match = matching.SingleOrDefault();
 
-            if (match != null)
+            if (match is not null)
             {
                 return match.MakeGenericMethod(method.GetGenericArguments());
             }
@@ -553,7 +553,7 @@ namespace Impatient.Extensions
 
                 var attribute = member.GetCustomAttribute<JsonPropertyAttribute>(true);
 
-                if (attribute != null)
+                if (attribute is not null)
                 {
                     segment = attribute.PropertyName ?? segment;
                 }

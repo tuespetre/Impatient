@@ -630,9 +630,9 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 {
                     switch (node.Operand)
                     {
-                        case SqlExistsExpression sqlExistsExpression:
-                        case SqlInExpression sqlInExpression:
-                        case SqlLikeExpression sqlLikeExpression:
+                        case SqlExistsExpression:
+                        case SqlInExpression:
+                        case SqlLikeExpression:
                         {
                             Builder.Append("NOT ");
 
@@ -670,7 +670,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                     {
                         var mapping = typeMappingProvider.FindMapping(node.Type);
 
-                        if (mapping != null)
+                        if (mapping is not null)
                         {
                             Builder.Append("CAST(");
 
@@ -705,7 +705,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 Builder.Append("DISTINCT ");
             }
 
-            if (selectExpression.Limit != null && selectExpression.Offset == null)
+            if (selectExpression.Limit is not null && selectExpression.Offset is null)
             {
                 Builder.Append("TOP (");
 
@@ -751,7 +751,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 }
             }
 
-            if (selectExpression.Table != null)
+            if (selectExpression.Table is not null)
             {
                 Builder.AppendLine();
                 Builder.Append("FROM ");
@@ -759,7 +759,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 Visit(selectExpression.Table);
             }
 
-            if (selectExpression.Predicate != null)
+            if (selectExpression.Predicate is not null)
             {
                 Builder.AppendLine();
                 Builder.Append("WHERE ");
@@ -767,7 +767,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 Visit(selectExpression.Predicate.AsLogicalBooleanSqlExpression());
             }
 
-            if (selectExpression.Grouping != null)
+            if (selectExpression.Grouping is not null)
             {
                 Builder.AppendLine();
                 Builder.Append("GROUP BY ");
@@ -784,7 +784,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 }
             }
 
-            if (selectExpression.OrderBy != null)
+            if (selectExpression.OrderBy is not null)
             {
                 Builder.AppendLine();
                 Builder.Append("ORDER BY ");
@@ -792,7 +792,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 Visit(selectExpression.OrderBy);
             }
 
-            if (selectExpression.Offset != null)
+            if (selectExpression.Offset is not null)
             {
                 Builder.AppendLine();
                 Builder.Append("OFFSET ");
@@ -801,7 +801,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                 Builder.Append(" ROWS");
 
-                if (selectExpression.Limit != null)
+                if (selectExpression.Limit is not null)
                 {
                     Builder.Append(" FETCH NEXT ");
 
@@ -985,25 +985,25 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
             switch (setOperatorExpression)
             {
-                case ExceptTableExpression exceptExpression:
+                case ExceptTableExpression:
                 {
                     Builder.Append("EXCEPT");
                     break;
                 }
 
-                case IntersectTableExpression intersectExpression:
+                case IntersectTableExpression:
                 {
                     Builder.Append("INTERSECT");
                     break;
                 }
 
-                case UnionAllTableExpression unionAllExpression:
+                case UnionAllTableExpression:
                 {
                     Builder.Append("UNION ALL");
                     break;
                 }
 
-                case UnionTableExpression unionExpression:
+                case UnionTableExpression:
                 {
                     Builder.Append("UNION");
                     break;
@@ -1090,7 +1090,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             {
                 var mapping = typeMappingProvider.FindMapping(sqlCastExpression.Type);
 
-                if (mapping != null)
+                if (mapping is not null)
                 {
                     Builder.Append("CAST(");
 
@@ -1290,7 +1290,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
             Visit(sqlLikeExpression.Pattern);
 
-            if (sqlLikeExpression.Escape != null)
+            if (sqlLikeExpression.Escape is not null)
             {
                 Builder.Append(" ESCAPE ");
 
@@ -1311,7 +1311,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
         {
             Visit(sqlWindowFunctionExpression.Function);
 
-            if (sqlWindowFunctionExpression.Ordering != null)
+            if (sqlWindowFunctionExpression.Ordering is not null)
             {
                 Builder.Append(" OVER(ORDER BY ");
 
@@ -1389,7 +1389,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             {
                 var mapping = typeMappingProvider.FindMapping(expression.Type);
 
-                if (mapping != null)
+                if (mapping is not null)
                 {
                     Builder.Append("CAST(");
 
@@ -1741,7 +1741,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             {
                 var mapping = typeMappingProvider.FindMapping(type);
 
-                if (mapping != null)
+                if (mapping is not null)
                 {
                     return mapping.SourceType.IsNumericType();
                 }
@@ -1754,7 +1754,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
             switch (node)
             {
-                case SqlAggregateExpression sqlAggregateExpression:
+                case SqlAggregateExpression:
                 {
                     return type == typeof(float);
                 }
@@ -1771,7 +1771,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                     return false;
                 }
 
-                case ConstantExpression constantExpression:
+                case ConstantExpression:
                 {
                     return type != typeof(int) && type != typeof(decimal);
                 }
@@ -1800,13 +1800,13 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             switch (node)
             {
                 case SqlColumnExpression sqlColumnExpression
-                when sqlColumnExpression.TypeMapping != null:
+                when sqlColumnExpression.TypeMapping is not null:
                 {
                     return sqlColumnExpression.TypeMapping;
                 }
 
                 case SqlParameterExpression sqlParameterExpression
-                when sqlParameterExpression.TypeMapping != null:
+                when sqlParameterExpression.TypeMapping is not null:
                 {
                     return sqlParameterExpression.TypeMapping;
                 }

@@ -21,19 +21,19 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
         protected virtual IEnumerable<string> GetNameParts()
         {
-            return nameStack.Reverse().Where(n => n != null && !n.StartsWith("<>"));
+            return nameStack.Reverse().Where(n => n is not null && !n.StartsWith("<>"));
         }
 
         protected bool IsNotLeaf(NewExpression node)
         {
-            return node.Members != null;
+            return node.Members is not null;
         }
 
         protected bool IsNotLeaf(MemberInitExpression node)
         {
             return node.Bindings.Iterate().All(b => b is MemberAssignment)
                 && (node.NewExpression.Arguments.Count == 0
-                    || node.NewExpression.Members != null);
+                    || node.NewExpression.Members is not null);
         }
 
         public override Expression Visit(Expression node)

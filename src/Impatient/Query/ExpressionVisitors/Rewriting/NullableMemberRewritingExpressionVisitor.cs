@@ -8,7 +8,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
     {
         protected override Expression VisitMember(MemberExpression node)
         {
-            if (node.Expression != null && node.Expression.Type.IsNullableType())
+            if (node.Expression is not null && node.Expression.Type.IsNullableType())
             {
                 switch (node.Member.Name)
                 {
@@ -36,7 +36,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            if (node.Object != null && node.Object.Type.IsNullableType())
+            if (node.Object is not null && node.Object.Type.IsNullableType())
             {
                 switch (node.Method.Name)
                 {

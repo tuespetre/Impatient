@@ -61,7 +61,7 @@ namespace Impatient.Query.Expressions
 
             var descriptor = Descriptors.FirstOrDefault(d => type.IsAssignableFrom(d.Type));
 
-            if (descriptor != null)
+            if (descriptor is not null)
             {
                 return descriptor.Materializer.ExpandParameters(Row);
             }

@@ -323,7 +323,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
         {
             Append($"catch ({node.Test.Name} {node.Variable.Name})");
 
-            if (node.Filter != null)
+            if (node.Filter is not null)
             {
                 IncreaseIndent();
                 AppendLine();

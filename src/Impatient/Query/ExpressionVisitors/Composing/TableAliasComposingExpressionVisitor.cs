@@ -16,7 +16,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
         protected override Expression VisitExtension(Expression node)
         {
-            if (alias != null
+            if (alias is not null
                 && !alias.StartsWith("<>")
                 && node is EnumerableRelationalQueryExpression enumerableRelationalQueryExpression
                 && enumerableRelationalQueryExpression.SelectExpression.Table is BaseTableExpression oldTableExpression)

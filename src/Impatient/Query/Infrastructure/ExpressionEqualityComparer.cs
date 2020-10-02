@@ -26,7 +26,7 @@ namespace Impatient.Query.Infrastructure
 
         public int GetHashCode(Expression node)
         {
-            if (node == null)
+            if (node is null)
             {
                 return 0;
             }
@@ -509,7 +509,7 @@ namespace Impatient.Query.Infrastructure
             hash = Combine(hash, GetHashCode(node.Arguments));
             hash = Combine(hash, node.Constructor?.GetHashCode() ?? 0);
 
-            if (node.Members != null)
+            if (node.Members is not null)
             {
                 for (var i = 0; i < node.Members.Count; i++)
                 {

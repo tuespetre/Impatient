@@ -368,7 +368,7 @@ namespace Impatient.Query.Infrastructure
             {
                 switch (node)
                 {
-                    case ExtraPropertiesExpression extraPropertiesExpression:
+                    case ExtraPropertiesExpression:
                     {
                         var flag = extraProperties;
 
@@ -943,7 +943,7 @@ namespace Impatient.Query.Infrastructure
             {
                 reader.Read();
 
-                if (reader.Value != null)
+                if (reader.Value is not null)
                 {
                     return (TEnum?)Enum.ToObject(typeof(TEnum), reader.Value);
                 }
@@ -1093,14 +1093,14 @@ namespace Impatient.Query.Infrastructure
 
                 case JsonToken.StartArray:
                 {
-                    //Debug.Assert(name == null);
+                    //Debug.Assert(name is null);
 
                     break;
                 }
 
                 case JsonToken.PropertyName:
                 {
-                    if (name != null && !reader.Value.Equals(name))
+                    if (name is not null && !reader.Value.Equals(name))
                     {
                         return list;
                     }

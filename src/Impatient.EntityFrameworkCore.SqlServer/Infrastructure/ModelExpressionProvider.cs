@@ -62,7 +62,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         {
             var primaryKey = type.FindPrimaryKey();
 
-            if (primaryKey == null)
+            if (primaryKey is null)
             {
                 return null;
             }
@@ -88,7 +88,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return from t in context.Model.GetEntityTypes()
                    //where !t.IsOwned()
                    let k = t.FindPrimaryKey()
-                   where k != null
+                   where k is not null
                    select new PrimaryKeyDescriptor(
                        t.ClrType,
                        CreateNavigationKeySelector(k.DeclaringEntityType.ClrType, k.Properties));
@@ -123,7 +123,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 var principal = CreateNavigationKeySelector(fk.PrincipalEntityType.ClrType, fk.PrincipalKey.Properties);
                 var dependent = CreateNavigationKeySelector(fk.DeclaringEntityType.ClrType, fk.Properties);
 
-                if (fk.PrincipalToDependent != null)
+                if (fk.PrincipalToDependent is not null)
                 {
                     yield return new NavigationDescriptor(
                         fk.PrincipalEntityType.ClrType,
@@ -134,7 +134,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         CreateQueryExpression(fk.DeclaringEntityType.ClrType, context));
                 }
 
-                if (fk.DependentToPrincipal != null)
+                if (fk.DependentToPrincipal is not null)
                 {
                     yield return new NavigationDescriptor(
                         fk.DeclaringEntityType.ClrType,
@@ -160,7 +160,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             Expression queryExpression;
 
-            if (targetType.GetDefiningQuery() != null)
+            if (targetType.GetDefiningQuery() is not null)
             {
                 queryExpression = targetType.GetDefiningQuery().Body;
 
@@ -187,11 +187,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             var discriminatingType = targetType;
 
-            while (discriminatingType != null)
+            while (discriminatingType is not null)
             {
                 var discriminatorProperty = discriminatingType.GetDiscriminatorProperty();
 
-                if (discriminatorProperty != null)
+                if (discriminatorProperty is not null)
                 {
                     selectExpression
                        = selectExpression.AddToPredicate(
@@ -218,9 +218,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             var currentType = targetType;
             var recast = false;
 
-            while (currentType != null)
+            while (currentType is not null)
             {
-                if (currentType.GetQueryFilter() != null)
+                if (currentType.GetQueryFilter() is not null)
                 {
                     var filterBody = currentType.GetQueryFilter().Body;
                     
@@ -290,11 +290,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 Expression MakeTupleColumnExpression(IProperty property)
                 {
+                    var propertyRelationalId = GetRelationalId(property);
+
                     return Expression.Convert(
                         ValueTupleHelper.CreateMemberExpression(
                             tupleType,
                             tupleParameter,
-                            Array.FindIndex(properties, q => q.id.Equals(GetRelationalId(property)))),
+                            Array.FindIndex(properties, q => q.id.Equals(propertyRelationalId))),
                         property.ClrType);
                 };
 
@@ -536,7 +538,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             var keySelector
                 = CreateMaterializationKeySelector(type);
 
-            if (keySelector != null)
+            if (keySelector is not null)
             {
                 var shadowProperties
                     = from p in type.GetProperties()

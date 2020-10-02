@@ -11,7 +11,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
     {
         public override Expression Visit(Expression node)
         {
-            if (node == null || node.NodeType == ExpressionType.Constant)
+            if (node is null || node.NodeType == ExpressionType.Constant)
             {
                 return node;
             }
@@ -86,7 +86,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
         {
             var @object = Visit(node.Object);
 
-            if (@object == null && @object.NodeType != ExpressionType.Constant)
+            if (@object is null && @object.NodeType != ExpressionType.Constant)
             {
                 return node.Update(@object, Visit(node.Arguments));
             }
@@ -194,11 +194,11 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             var expression = Visit(node.Expression);
 
             if (!unevaluableMembers.Contains(node.Member)
-                && (expression == null || expression.NodeType == ExpressionType.Constant))
+                && (expression is null || expression.NodeType == ExpressionType.Constant))
             {
                 object @object = null;
 
-                if (expression != null)
+                if (expression is not null)
                 {
                     @object = ((ConstantExpression)expression).Value;
                 }
@@ -296,12 +296,12 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
         {
             var @object = Visit(node.Object);
 
-            if (@object == null && node.Arguments.Count == 0)
+            if (@object is null && node.Arguments.Count == 0)
             {
                 return node;
             }
 
-            var shouldApply = @object == null || @object.NodeType == ExpressionType.Constant;
+            var shouldApply = @object is null || @object.NodeType == ExpressionType.Constant;
 
             if (!shouldApply)
             {
@@ -364,7 +364,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
         protected override Expression VisitNew(NewExpression node)
         {
-            if (node.Constructor == null)
+            if (node.Constructor is null)
             {
                 return Expression.Constant(Activator.CreateInstance(node.Type));
             }

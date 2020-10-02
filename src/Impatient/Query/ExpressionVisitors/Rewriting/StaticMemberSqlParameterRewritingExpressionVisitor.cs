@@ -45,7 +45,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
             protected override Expression VisitMember(MemberExpression node)
             {
-                if (node.Expression == null)
+                if (node.Expression is null)
                 {
                     foundStaticReference = true;
                 }

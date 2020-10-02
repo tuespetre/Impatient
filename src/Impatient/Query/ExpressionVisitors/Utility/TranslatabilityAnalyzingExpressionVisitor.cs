@@ -92,7 +92,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            if (node.Type.IsScalarType() || node.Value == null)
+            if (node.Type.IsScalarType() || node.Value is null)
             {
                 return new TranslatableExpression(node);
             }
@@ -184,7 +184,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
         protected override Expression VisitNew(NewExpression node)
         {
-            if (node.Members == null)
+            if (node.Members is null)
             {
                 if (node.Arguments.Count == 0)
                 {

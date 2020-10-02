@@ -21,7 +21,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             {
                 case ExpressionType.Equal:
                 {
-                    if (leftConstant != null && rightConstant != null)
+                    if (leftConstant is not null && rightConstant is not null)
                     {
                         if (leftConstant.Value is null && rightConstant.Value is null)
                         {
@@ -32,7 +32,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                             return Expression.Constant(false);
                         }
                     }
-                    else if (leftDefault != null && rightDefault != null)
+                    else if (leftDefault is not null && rightDefault is not null)
                     {
                         if (HaveSameNullability(leftDefault, rightDefault))
                         {
@@ -47,9 +47,9 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                     {
                         var constantOperand = leftConstant ?? rightConstant;
                         var defaultOperand = leftDefault ?? rightDefault;
-                        var otherOperand = (leftConstant == null && leftDefault == null) ? left : right;
+                        var otherOperand = (leftConstant is null && leftDefault is null) ? left : right;
 
-                        if (constantOperand != null && defaultOperand != null)
+                        if (constantOperand is not null && defaultOperand is not null)
                         {
                             if (constantOperand.Value is null)
                             {
@@ -76,8 +76,8 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                                 }
                             }
                         }
-                        else if ((constantOperand != null && constantOperand.Value is null)
-                            || (defaultOperand != null && IsNullable(defaultOperand)))
+                        else if ((constantOperand is not null && constantOperand.Value is null)
+                            || (defaultOperand is not null && IsNullable(defaultOperand)))
                         {
                             switch (otherOperand.UnwrapInnerExpression())
                             {
@@ -100,8 +100,8 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                             }
                         }
                         else if (otherOperand.Type.GetTypeInfo().IsValueType
-                            && (constantOperand != null && constantOperand.Value.Equals(Activator.CreateInstance(otherOperand.Type)))
-                                || (defaultOperand != null && !IsNullable(defaultOperand)))
+                            && (constantOperand is not null && constantOperand.Value.Equals(Activator.CreateInstance(otherOperand.Type)))
+                                || (defaultOperand is not null && !IsNullable(defaultOperand)))
                         {
                             switch (otherOperand.UnwrapInnerExpression())
                             {
@@ -129,7 +129,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
                 case ExpressionType.NotEqual:
                 {
-                    if (leftConstant != null && rightConstant != null)
+                    if (leftConstant is not null && rightConstant is not null)
                     {
                         if (leftConstant.Value is null && rightConstant.Value is null)
                         {
@@ -140,7 +140,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                             return Expression.Constant(true);
                         }
                     }
-                    else if (leftDefault != null && rightDefault != null)
+                    else if (leftDefault is not null && rightDefault is not null)
                     {
                         if (HaveSameNullability(leftDefault, rightDefault))
                         {
@@ -155,9 +155,9 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                     {
                         var constantOperand = leftConstant ?? rightConstant;
                         var defaultOperand = leftDefault ?? rightDefault;
-                        var otherOperand = (leftConstant == null && leftDefault == null) ? left : right;
+                        var otherOperand = (leftConstant is null && leftDefault is null) ? left : right;
 
-                        if (constantOperand != null && defaultOperand != null)
+                        if (constantOperand is not null && defaultOperand is not null)
                         {
                             if (constantOperand.Value is null)
                             {
@@ -184,8 +184,8 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                                 }
                             }
                         }
-                        else if ((constantOperand != null && constantOperand.Value is null)
-                            || (defaultOperand != null && IsNullable(defaultOperand)))
+                        else if ((constantOperand is not null && constantOperand.Value is null)
+                            || (defaultOperand is not null && IsNullable(defaultOperand)))
                         {
                             switch (otherOperand.UnwrapInnerExpression())
                             {
@@ -208,8 +208,8 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                             }
                         }
                         else if (otherOperand.Type.GetTypeInfo().IsValueType
-                            && (constantOperand != null && constantOperand.Value.Equals(Activator.CreateInstance(otherOperand.Type)))
-                                || (defaultOperand != null && !IsNullable(defaultOperand)))
+                            && (constantOperand is not null && constantOperand.Value.Equals(Activator.CreateInstance(otherOperand.Type)))
+                                || (defaultOperand is not null && !IsNullable(defaultOperand)))
                         {
                             switch (otherOperand.UnwrapInnerExpression())
                             {

@@ -142,7 +142,7 @@ namespace Impatient.Query.Expressions
 
         protected override Expression VisitChildren(ExpressionVisitor visitor)
         {
-            if (visitor == null)
+            if (visitor is null)
             {
                 throw new ArgumentNullException(nameof(visitor));
             }
@@ -155,12 +155,12 @@ namespace Impatient.Query.Expressions
 
         public ExtendedMemberInitExpression Update(ExtendedNewExpression newExpression, IEnumerable<Expression> arguments)
         {
-            if (newExpression == null)
+            if (newExpression is null)
             {
                 throw new ArgumentNullException(nameof(newExpression));
             }
 
-            if (arguments == null)
+            if (arguments is null)
             {
                 throw new ArgumentNullException(nameof(arguments));
             }

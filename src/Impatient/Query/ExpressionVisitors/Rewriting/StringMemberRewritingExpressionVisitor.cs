@@ -300,11 +300,11 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
         private static Expression GetStartIndex(Expression argument)
         {
-            return argument == null
+            return argument is null
                 ? Expression.Constant(1)
                 : argument is ConstantExpression constantStartIndex
                     ? Expression.Constant((int)constantStartIndex.Value + 1)
-                    : argument is SqlParameterExpression sqlParameterExpression
+                    : argument is SqlParameterExpression
                         ? Expression.Add(argument, Expression.Constant(1))
                         : argument is SqlExpression sqlExpression
                             ? sqlExpression

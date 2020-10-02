@@ -30,7 +30,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
             {
                 var entityType = model.FindEntityType(query.SelectExpression.Type);
 
-                if (entityType != null)
+                if (entityType is not null)
                 {
                     var method = includeStringMethodInfo.MakeGenericMethod(query.SelectExpression.Type);
 

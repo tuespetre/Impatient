@@ -10,7 +10,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
         {
             if (node.Method.Name == nameof(ToString) 
                 && node.Arguments.Count == 0 
-                && node.Object != null
+                && node.Object is not null
                 && node.Object.Type.IsScalarType()
                 && !node.Object.Type.IsEnum())
             {

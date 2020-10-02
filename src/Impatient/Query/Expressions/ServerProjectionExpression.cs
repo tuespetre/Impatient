@@ -12,7 +12,7 @@ namespace Impatient.Query.Expressions
 
         public ServerProjectionExpression(Expression resultLambdaBody)
         {
-            if (resultLambdaBody == null)
+            if (resultLambdaBody is null)
             {
                 throw new ArgumentNullException(nameof(resultLambdaBody));
             }

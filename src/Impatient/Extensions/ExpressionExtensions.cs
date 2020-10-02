@@ -35,7 +35,7 @@ namespace Impatient.Extensions
             {
                 case ConstantExpression constantExpression:
                 {
-                    return constantExpression.Value == null;
+                    return constantExpression.Value is null;
                 }
 
                 case DefaultExpression defaultExpression:
@@ -115,7 +115,7 @@ namespace Impatient.Extensions
                 {
                     var match = newExpression.Members?.FirstOrDefault(m => m.GetPathSegmentName() == segment);
 
-                    if (match != null)
+                    if (match is not null)
                     {
                         return newExpression.Arguments[newExpression.Members.IndexOf(match)];
                     }
@@ -127,7 +127,7 @@ namespace Impatient.Extensions
                 {
                     var match = ResolveProperty(memberInitExpression.NewExpression, segment);
 
-                    if (match != null)
+                    if (match is not null)
                     {
                         return match;
                     }
@@ -139,7 +139,7 @@ namespace Impatient.Extensions
                             .Select(a => a.Expression)
                             .FirstOrDefault();
 
-                    if (match != null)
+                    if (match is not null)
                     {
                         return match;
                     }
@@ -151,7 +151,7 @@ namespace Impatient.Extensions
                 {
                     var match = newExpression.ReadableMembers.FirstOrDefault(m => m.GetPathSegmentName() == segment);
 
-                    if (match != null)
+                    if (match is not null)
                     {
                         return newExpression.Arguments[newExpression.ReadableMembers.IndexOf(match)];
                     }
@@ -163,7 +163,7 @@ namespace Impatient.Extensions
                 {
                     var match = ResolveProperty(memberInitExpression.NewExpression, segment);
 
-                    if (match != null)
+                    if (match is not null)
                     {
                         return match;
                     }
@@ -207,7 +207,7 @@ namespace Impatient.Extensions
 
                         var resolved = ResolveProperty(expanded, segment);
 
-                        if (resolved != null)
+                        if (resolved is not null)
                         {
                             return resolved;
                         }
@@ -231,9 +231,10 @@ namespace Impatient.Extensions
             {
                 var next = ResolveProperty(resolved, segment);
 
-                if (next == null)
+                if (next is null)
                 {
                     resolved = null;
+
                     return false;
                 }
 

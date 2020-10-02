@@ -70,17 +70,17 @@ namespace Impatient.Query.Expressions
 
         #region properties for convenience of condition checking
 
-        public bool HasPredicate => Predicate != null;
+        public bool HasPredicate => Predicate is not null;
 
-        public bool HasOffset => Offset != null;
+        public bool HasOffset => Offset is not null;
 
-        public bool HasLimit => Limit != null;
+        public bool HasLimit => Limit is not null;
 
         public bool HasOffsetOrLimit => HasOffset || HasLimit;
 
-        public bool HasGrouping => Grouping != null;
+        public bool HasGrouping => Grouping is not null;
 
-        public bool HasOrdering => OrderBy != null;
+        public bool HasOrdering => OrderBy is not null;
 
         #endregion
 
@@ -178,7 +178,7 @@ namespace Impatient.Query.Expressions
 
         public SelectExpression AddToPredicate(Expression predicate)
         {
-            predicate = Predicate == null
+            predicate = Predicate is null
                 ? predicate
                 : AndAlso(Predicate, predicate);
 
@@ -193,7 +193,7 @@ namespace Impatient.Query.Expressions
         public SelectExpression AddToOrderBy(Expression expression, bool descending)
         {
             var orderBy
-                = OrderBy == null
+                = OrderBy is null
                     ? new OrderByExpression(expression, descending)
                     : new ThenOrderByExpression(OrderBy, expression, descending);
 

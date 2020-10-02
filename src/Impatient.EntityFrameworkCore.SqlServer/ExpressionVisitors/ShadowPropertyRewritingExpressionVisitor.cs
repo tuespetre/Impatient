@@ -39,25 +39,25 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                 var entityType = model.GetEntityTypes().SingleOrDefault(t => t.ClrType == arguments[0].Type);
 
-                if (entityType != null)
+                if (entityType is not null)
                 {
                     var result = default(Expression);
 
                     var property = entityType.FindProperty(propertyName);
 
-                    if (property != null && !property.IsShadowProperty())
+                    if (property is not null && !property.IsShadowProperty())
                     {
                         result = Expression.MakeMemberAccess(arguments[0], property.GetSemanticReadableMemberInfo());
                     }
 
                     var navigation = entityType.FindNavigation(propertyName);
 
-                    if (navigation != null && !navigation.IsShadowProperty())
+                    if (navigation is not null && !navigation.IsShadowProperty())
                     {
                         result = Expression.MakeMemberAccess(arguments[0], navigation.GetSemanticReadableMemberInfo());
                     }
 
-                    if (result != null)
+                    if (result is not null)
                     {
                         if (result.Type != node.Type 
                             && result.Type.UnwrapNullableType() == node.Type.UnwrapNullableType())

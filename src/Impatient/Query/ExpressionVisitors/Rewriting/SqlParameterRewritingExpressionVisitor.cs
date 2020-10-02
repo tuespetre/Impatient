@@ -10,13 +10,11 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 {
     public class SqlParameterRewritingExpressionVisitor : ExpressionVisitor
     {
-        private readonly ParameterAndExtensionCountingExpressionVisitor countingVisitor;
         private readonly List<ParameterExpression> targetParameters;
 
         public SqlParameterRewritingExpressionVisitor(IEnumerable<ParameterExpression> targetParameters)
         {
             this.targetParameters = targetParameters.ToList();
-            countingVisitor = new ParameterAndExtensionCountingExpressionVisitor(targetParameters);
         }
 
         public override Expression Visit(Expression node)
@@ -81,23 +79,19 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
             var madeChange = false;
 
-            if (rightMapping != null)
+            if (rightMapping is not null)
             {
-                if (left is SqlParameterExpression leftParameter)
+                if (left is SqlParameterExpression leftParameter && leftParameter.TypeMapping is null)
                 {
-                    if (leftParameter.TypeMapping is null)
-                    {
-                        left
-                            = new SqlParameterExpression(
-                                leftParameter.Expression.UnwrapInnerExpression(),
-                                leftParameter.IsNullable,
-                                rightMapping);
+                    left
+                        = new SqlParameterExpression(
+                            leftParameter.Expression.UnwrapInnerExpression(),
+                            leftParameter.IsNullable,
+                            rightMapping);
 
-                        madeChange = true;
-                    }
+                    madeChange = true;
                 }
-                else if (left is ConstantExpression constant
-                    && rightMapping.SourceConversion != null)
+                else if (left is ConstantExpression && rightMapping.SourceConversion is not null)
                 {
                     left
                         = new SqlParameterExpression(
@@ -109,23 +103,19 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                 }
             }
 
-            if (leftMapping != null)
+            if (leftMapping is not null)
             {
-                if (right is SqlParameterExpression rightParameter)
+                if (right is SqlParameterExpression rightParameter && rightParameter.TypeMapping is null)
                 {
-                    if (rightParameter.TypeMapping is null)
-                    {
-                        right
-                            = new SqlParameterExpression(
-                                rightParameter.Expression.UnwrapInnerExpression(),
-                                rightParameter.IsNullable,
-                                leftMapping);
-                    }
+                    right
+                        = new SqlParameterExpression(
+                            rightParameter.Expression.UnwrapInnerExpression(),
+                            rightParameter.IsNullable,
+                            leftMapping);
 
                     madeChange = true;
                 }
-                else if (right is ConstantExpression constant
-                    && leftMapping.SourceConversion != null)
+                else if (right is ConstantExpression && leftMapping.SourceConversion is not null)
                 {
                     right
                         = new SqlParameterExpression(
@@ -156,13 +146,13 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
             switch (node)
             {
                 case SqlColumnExpression sqlColumnExpression
-                when sqlColumnExpression.TypeMapping != null:
+                when sqlColumnExpression.TypeMapping is not null:
                 {
                     return sqlColumnExpression.TypeMapping;
                 }
 
                 case SqlParameterExpression sqlParameterExpression
-                when sqlParameterExpression.TypeMapping != null:
+                when sqlParameterExpression.TypeMapping is not null:
                 {
                     return sqlParameterExpression.TypeMapping;
                 }
@@ -200,7 +190,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
             public override Expression Visit(Expression node)
             {
-                if (node == null)
+                if (node is null)
                 {
                     return node;
                 }

@@ -49,7 +49,7 @@ namespace Impatient.Query.Infrastructure
 
             var mapping = FindTypeMapping(expression) ?? typeMappingProvider.FindMapping(expression.Type);
 
-            return mapping != null;
+            return mapping is not null;
         }
 
         public Expression CreateExpression(Expression source, Expression reader, int index)
@@ -108,7 +108,7 @@ namespace Impatient.Query.Infrastructure
             switch (node)
             {
                 case SqlColumnExpression sqlColumnExpression
-                when sqlColumnExpression.TypeMapping != null:
+                when sqlColumnExpression.TypeMapping is not null:
                 {
                     return sqlColumnExpression.TypeMapping;
                 }

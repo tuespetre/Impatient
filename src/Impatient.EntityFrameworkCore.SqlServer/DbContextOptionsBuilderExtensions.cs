@@ -10,7 +10,7 @@ namespace Microsoft.EntityFrameworkCore
         public static DbContextOptionsBuilder UseImpatientQueryCompiler(
             this DbContextOptionsBuilder builder)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
@@ -26,7 +26,7 @@ namespace Microsoft.EntityFrameworkCore
             this DbContextOptionsBuilder builder,
             Action<ImpatientDbContextOptionsBuilder> configure = null)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }

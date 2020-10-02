@@ -179,7 +179,7 @@ namespace Impatient.Query.Infrastructure
 
         public void AddDynamicParameters(string fragment, Expression expression)
         {
-            Debug.Assert(expression != null && typeof(IEnumerable).IsAssignableFrom(expression.Type));
+            Debug.Assert(expression is not null && typeof(IEnumerable).IsAssignableFrom(expression.Type));
 
             EmitSql();
 
@@ -342,7 +342,7 @@ namespace Impatient.Query.Infrastructure
 
                 if (enumerator.MoveNext())
                 {
-                    if (enumerator.Current == null)
+                    if (enumerator.Current is null)
                     {
                         foundNull = true;
                     }
@@ -359,7 +359,7 @@ namespace Impatient.Query.Infrastructure
                         parameter = dbCommand.CreateParameter();
                         parameter.ParameterName = formattedName;
 
-                        if (conversion != null)
+                        if (conversion is not null)
                         {
                             parameter.Value = conversion(enumerator.Current);
                         }
@@ -378,7 +378,7 @@ namespace Impatient.Query.Infrastructure
 
                     while (enumerator.MoveNext())
                     {
-                        if (enumerator.Current == null)
+                        if (enumerator.Current is null)
                         {
                             foundNull = true;
                         }
@@ -399,7 +399,7 @@ namespace Impatient.Query.Infrastructure
                             parameter = dbCommand.CreateParameter();
                             parameter.ParameterName = formattedName;
 
-                            if (conversion != null)
+                            if (conversion is not null)
                             {
                                 parameter.Value = conversion(enumerator.Current);
                             }

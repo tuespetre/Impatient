@@ -39,8 +39,8 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
             var left = visitedLeft.UnwrapInnerExpression();
             var right = visitedRight.UnwrapInnerExpression();
-            var leftIsNullConstant = left is ConstantExpression leftConstant && leftConstant.Value == null;
-            var rightIsNullConstant = right is ConstantExpression rightConstant && rightConstant.Value == null;
+            var leftIsNullConstant = left is ConstantExpression leftConstant && leftConstant.Value is null;
+            var rightIsNullConstant = right is ConstantExpression rightConstant && rightConstant.Value is null;
             var canRewriteLeft = CanRewrite(left);
             var canRewriteRight = CanRewrite(right);
 
@@ -76,7 +76,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     .PrimaryKeyDescriptors
                     .FirstOrDefault(d => d.TargetType.IsAssignableFrom(targetType));
 
-            if (primaryKeyDescriptor == null)
+            if (primaryKeyDescriptor is null)
             {
                 return node.Update(visitedLeft, node.Conversion, visitedRight);
             }
@@ -166,7 +166,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                                         .PrimaryKeyDescriptors
                                         .FirstOrDefault(d => d.TargetType.IsAssignableFrom(genericArguments[2]));
 
-                                if (primaryKeyDescriptor != null)
+                                if (primaryKeyDescriptor is not null)
                                 {
                                     if (!rewroteOuter)
                                     {
@@ -298,7 +298,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                         .NavigationDescriptors
                         .FirstOrDefault(n => n.Member == memberExpression.Member);
 
-                if (navigationDescriptor != null)
+                if (navigationDescriptor is not null)
                 {
                     reduced = true;
 

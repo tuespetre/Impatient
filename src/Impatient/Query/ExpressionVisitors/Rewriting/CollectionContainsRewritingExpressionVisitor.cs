@@ -18,7 +18,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
             var collectionType = method.DeclaringType.FindGenericType(typeof(ICollection<>));
 
-            if (collectionType != null && @object.Type.GetSequenceType().IsScalarType())
+            if (collectionType is not null && @object.Type.GetSequenceType().IsScalarType())
             {
                 var canRewriteMethod = false;
 
@@ -43,7 +43,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     {
                         case ConstantExpression constantExpression:
                         {
-                            canUseValues = constantExpression.Value != null;
+                            canUseValues = constantExpression.Value is not null;
                             break;
                         }
 

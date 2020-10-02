@@ -108,7 +108,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     {
                         var selectorLambda = node.Arguments[1].UnwrapLambda();
 
-                        if (selectorLambda == null || selectorLambda.Parameters.Count == 2)
+                        if (selectorLambda is null || selectorLambda.Parameters.Count == 2)
                         {
                             // index parameter not supported
                             break;

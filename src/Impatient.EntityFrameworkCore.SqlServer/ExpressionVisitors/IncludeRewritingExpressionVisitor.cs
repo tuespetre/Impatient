@@ -239,7 +239,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
             protected override Expression VisitNew(NewExpression node)
             {
-                if (node.Members == null)
+                if (node.Members is null)
                 {
                     return node;
                 }

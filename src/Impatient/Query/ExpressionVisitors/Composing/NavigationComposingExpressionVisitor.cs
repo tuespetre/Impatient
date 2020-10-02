@@ -1668,7 +1668,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                     var outerKeyPath = Enumerable.Empty<MemberInfo>();
 
-                    if (targetMapping == null)
+                    if (targetMapping is null)
                     {
                         targetMapping = new ExpansionMapping
                         {
@@ -2167,7 +2167,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                 memberExpression = innerExpression as MemberExpression;
             }
-            while (memberExpression != null);
+            while (memberExpression is not null);
         }
 
         private static bool ContainsDerivedMembers(Expression expression, List<MemberInfo> path)
@@ -2211,7 +2211,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             {
                 var descriptor = descriptors.SingleOrDefault(d => d.Member == node.Member);
 
-                if (descriptor == null)
+                if (descriptor is null)
                 {
                     return base.VisitMember(node);
                 }
@@ -2368,7 +2368,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
             private Expression MaybeToList(Expression original)
             {
-                if (original == null)
+                if (original is null)
                 {
                     return original;
                 }
@@ -2437,7 +2437,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     {
                         var descriptor = descriptors.SingleOrDefault(d => d.Member == memberExpression.Member);
 
-                        if (descriptor != null)
+                        if (descriptor is not null)
                         {
                             UnwindMemberExpression(memberExpression, out var expression, out var path);
 

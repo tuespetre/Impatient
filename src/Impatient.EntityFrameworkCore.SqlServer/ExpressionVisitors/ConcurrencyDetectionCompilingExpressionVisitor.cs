@@ -44,7 +44,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                             ExecutionContextParameters.DbCommandExecutor,
                             typeof(EFCoreDbCommandExecutor)));
 
-                if (conversion != null)
+                if (conversion is not null)
                 {
                     return Expression.Call(conversion, result);
                 }

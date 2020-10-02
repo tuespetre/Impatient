@@ -26,7 +26,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public async ValueTask<bool> MoveNextAsync()
         {
-            if (enumerator == null)
+            if (enumerator is null)
             {
                 enumerator = await task;
             }

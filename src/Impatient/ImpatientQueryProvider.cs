@@ -19,7 +19,7 @@ namespace Impatient
 
         public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
         {
-            if (expression == null)
+            if (expression is null)
             {
                 throw new ArgumentNullException(nameof(expression));
             }
@@ -39,14 +39,14 @@ namespace Impatient
 
         IQueryable IQueryProvider.CreateQuery(Expression expression)
         {
-            if (expression == null)
+            if (expression is null)
             {
                 throw new ArgumentNullException(nameof(expression));
             }
 
             var elementType = expression.Type.GetSequenceType();
 
-            if (elementType == null)
+            if (elementType is null)
             {
                 throw new ArgumentException("Invalid expression for CreateQuery", nameof(expression));
             }
@@ -65,7 +65,7 @@ namespace Impatient
 
         object IQueryProvider.Execute(Expression expression)
         {
-            if (expression == null)
+            if (expression is null)
             {
                 throw new ArgumentNullException(nameof(expression));
             }
@@ -75,7 +75,7 @@ namespace Impatient
 
         TResult IQueryProvider.Execute<TResult>(Expression expression)
         {
-            if (expression == null)
+            if (expression is null)
             {
                 throw new ArgumentNullException(nameof(expression));
             }

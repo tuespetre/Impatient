@@ -43,7 +43,7 @@ namespace Impatient.Query.Expressions
 
             if (selectExpression != SelectExpression)
             {
-                if (TransformationMethod != null)
+                if (TransformationMethod is not null)
                 {
                     return new EnumerableRelationalQueryExpression(selectExpression, TransformationMethod);
                 }

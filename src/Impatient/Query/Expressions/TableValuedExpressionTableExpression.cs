@@ -9,7 +9,7 @@ namespace Impatient.Query.Expressions
     {
         public TableValuedExpressionTableExpression(Expression expression, string alias, Type type) : base(alias, type)
         {
-            if (expression == null)
+            if (expression is null)
             {
                 throw new ArgumentNullException(nameof(expression));
             }

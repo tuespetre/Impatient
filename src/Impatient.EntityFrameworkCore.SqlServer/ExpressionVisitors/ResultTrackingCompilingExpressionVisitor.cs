@@ -290,7 +290,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         }
                     }
 
-                    if (resolvedEntityType == null)
+                    if (resolvedEntityType is null)
                     {
                         throw new InvalidOperationException();
                     }

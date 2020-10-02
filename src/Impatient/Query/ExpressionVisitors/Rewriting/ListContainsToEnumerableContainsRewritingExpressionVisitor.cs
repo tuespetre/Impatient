@@ -19,7 +19,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
             var listType = node.Method.DeclaringType.FindGenericType(typeof(List<>));
 
-            if (listType != null && node.Method.Equals(listType.GetMethod(nameof(List<object>.Contains))))
+            if (listType is not null && node.Method.Equals(listType.GetMethod(nameof(List<object>.Contains))))
             {
                 return Expression.Call(
                     enumerableContainsMethodInfo.MakeGenericMethod(listType.GetGenericArguments().Single()),

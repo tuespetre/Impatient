@@ -47,7 +47,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public TResult ExecuteComplex<TResult>(Action<DbCommand> initializer, Func<DbDataReader, TResult> materializer)
         {
-            if (unbufferedReader != null)
+            if (unbufferedReader is not null)
             {
                 unbufferedReader.Buffer();
                 unbufferedReader = null;
@@ -119,7 +119,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public IEnumerable<TElement> ExecuteEnumerable<TElement>(Action<DbCommand> initializer, Func<DbDataReader, TElement> materializer)
         {
-            if (unbufferedReader != null)
+            if (unbufferedReader is not null)
             {
                 unbufferedReader.Buffer();
                 unbufferedReader = null;
@@ -229,7 +229,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public TResult ExecuteScalar<TResult>(Action<DbCommand> initializer)
         {
-            if (unbufferedReader != null)
+            if (unbufferedReader is not null)
             {
                 unbufferedReader.Buffer();
                 unbufferedReader = null;
@@ -297,7 +297,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         {
             var command = connection.DbConnection.CreateCommand();
 
-            if (connection.CurrentTransaction != null)
+            if (connection.CurrentTransaction is not null)
             {
                 command.Transaction = connection.CurrentTransaction.GetDbTransaction();
             }

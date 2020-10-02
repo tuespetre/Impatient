@@ -242,7 +242,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private IImpatientQueryProcessor GetQueryProcessor()
         {
-            if (queryProcessor == null)
+            if (queryProcessor is null)
             {
                 queryProcessor
                     = ((IInfrastructure<IServiceProvider>)currentDbContext.Context)
@@ -254,7 +254,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private IAsyncQueryProvider GetQueryProvider()
         {
-            if (queryProvider == null)
+            if (queryProvider is null)
             {
                 queryProvider = currentDbContext.GetDependencies().QueryProvider;
             }

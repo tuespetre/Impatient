@@ -116,7 +116,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                             .Where(t => !t.IsOwned())
                             .FirstOrDefault(t => t.ClrType == innerSequenceType);
 
-                    if (entityType == null)
+                    if (entityType is null)
                     {
                         // TODO:
                         throw new NotSupportedException();
@@ -163,7 +163,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 = model.GetEntityTypes()
                     .SingleOrDefault(t => !t.IsOwned() && t.ClrType == type);
 
-            if (entityType == null)
+            if (entityType is null)
             {
                 // TODO: this
                 throw new NotSupportedException();
@@ -265,7 +265,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 = model.GetEntityTypes()
                     .SingleOrDefault(t => !t.IsOwned() && t.ClrType == lambdaExpression.Parameters[0].Type);
 
-            if (entityType == null)
+            if (entityType is null)
             {
                 // TODO: this
                 throw new NotSupportedException();
@@ -279,7 +279,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 var navigation = entityType.FindNavigation(property);
 
-                if (navigation == null)
+                if (navigation is null)
                 {
                     navigation
                         = entityType
@@ -287,7 +287,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                             .SingleOrDefault(n => n.GetSemanticReadableMemberInfo() == property);
                 }
 
-                if (navigation == null)
+                if (navigation is null)
                 {
                     // TODO: this
                     throw new InvalidOperationException();
@@ -313,7 +313,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 var navigation = entityType.GetNavigations().FirstOrDefault(n => n.GetSemanticReadableMemberInfo().Equals(includedMember));
 
-                if (navigation == null)
+                if (navigation is null)
                 {
                     // The navigation may be null in some inheritance scenarios.
 
@@ -322,7 +322,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                   where n.GetSemanticReadableMemberInfo().Equals(includedMember)
                                   select n).FirstOrDefault();
 
-                    if (navigation == null)
+                    if (navigation is null)
                     {
                         // TODO: maybe throw?
                         continue;
@@ -438,7 +438,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     .Single()
                     .MatchPropertyAccess(propertyAccessExpression.Body);
 
-            return propertyPath != null;
+            return propertyPath is not null;
         }
 
         private static IReadOnlyList<PropertyInfo> MatchPropertyAccess(
@@ -469,7 +469,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public static Expression RemoveConvert(this Expression expression)
         {
-            while (expression != null
+            while (expression is not null
                    && (expression.NodeType == ExpressionType.Convert
                        || expression.NodeType == ExpressionType.ConvertChecked))
             {

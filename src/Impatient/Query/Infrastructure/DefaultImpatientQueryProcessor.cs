@@ -36,12 +36,12 @@ namespace Impatient.Query.Infrastructure
 
         public object Execute(IQueryProvider provider, Expression expression)
         {
-            if (provider == null)
+            if (provider is null)
             {
                 throw new ArgumentNullException(nameof(provider));
             }
 
-            if (expression == null)
+            if (expression is null)
             {
                 throw new ArgumentNullException(nameof(expression));
             }

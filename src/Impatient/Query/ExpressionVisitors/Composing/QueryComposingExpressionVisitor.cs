@@ -662,7 +662,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             }
 
             var selector
-                = (resultSelectorLambda == null
+                = (resultSelectorLambda is null
                     ? innerProjection
                     : resultSelectorLambda.ExpandParameters(
                         outerProjection,
@@ -670,7 +670,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     .VisitWith(ServerPostExpansionVisitors);
 
             var projection
-                = resultSelectorLambda == null || IsTranslatable(selector)
+                = resultSelectorLambda is null || IsTranslatable(selector)
                     ? new ServerProjectionExpression(selector)
                     : new CompositeProjectionExpression(
                         outerSelectExpression.Projection,
@@ -1343,7 +1343,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var predicateLambda = node.Arguments.ElementAtOrDefault(1)?.UnwrapLambda();
 
-            if (predicateLambda != null)
+            if (predicateLambda is not null)
             {
                 if (outerSelectExpression.RequiresPushdownForPredicate())
                 {
@@ -1396,7 +1396,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var predicateLambda = node.Arguments.ElementAtOrDefault(1)?.UnwrapLambda();
 
-            if (predicateLambda != null)
+            if (predicateLambda is not null)
             {
                 if (outerSelectExpression.RequiresPushdownForPredicate())
                 {
@@ -1458,7 +1458,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var predicateLambda = node.Arguments.ElementAtOrDefault(1)?.UnwrapLambda();
 
-            if (predicateLambda != null)
+            if (predicateLambda is not null)
             {
                 if (outerSelectExpression.RequiresPushdownForPredicate())
                 {
@@ -1495,7 +1495,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
             var orderByExpression = outerSelectExpression.OrderBy;
 
-            if (orderByExpression == null)
+            if (orderByExpression is null)
             {
                 // Don't use CreateRowNumberExpression because we don't need
                 // the Convert or the Subtract.
@@ -1527,7 +1527,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var predicateLambda = node.Arguments.ElementAtOrDefault(1)?.UnwrapLambda();
 
-            if (predicateLambda != null)
+            if (predicateLambda is not null)
             {
                 if (outerSelectExpression.RequiresPushdownForPredicate())
                 {
@@ -1564,7 +1564,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
             var orderByExpression = outerSelectExpression.OrderBy;
 
-            if (orderByExpression == null)
+            if (orderByExpression is null)
             {
                 // Don't use CreateRowNumberExpression because we don't need
                 // the Convert or the Subtract.
@@ -1605,7 +1605,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var predicateLambda = node.Arguments.ElementAtOrDefault(1)?.UnwrapLambda();
 
-            if (predicateLambda != null)
+            if (predicateLambda is not null)
             {
                 if (outerSelectExpression.RequiresPushdownForPredicate())
                 {
@@ -1658,7 +1658,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var predicateLambda = node.Arguments.ElementAtOrDefault(1)?.UnwrapLambda();
 
-            if (predicateLambda != null)
+            if (predicateLambda is not null)
             {
                 if (outerSelectExpression.RequiresPushdownForPredicate())
                 {
@@ -1729,7 +1729,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
             var orderByExpression = outerSelectExpression.OrderBy;
 
-            if (orderByExpression == null)
+            if (orderByExpression is null)
             {
                 // Don't use CreateRowNumberExpression because we don't need
                 // the Convert or the Subtract.
@@ -1781,7 +1781,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
             var orderByExpression = outerSelectExpression.OrderBy;
 
-            if (orderByExpression == null)
+            if (orderByExpression is null)
             {
                 // Don't use CreateRowNumberExpression because we don't need
                 // the Convert or the Subtract.
@@ -1932,7 +1932,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
             var orderByExpression = outerSelectExpression.OrderBy;
 
-            if (orderByExpression == null)
+            if (orderByExpression is null)
             {
                 // Don't use CreateRowNumberExpression because we don't need
                 // the Convert or the Subtract.
@@ -2000,7 +2000,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 Pushdown(null, ref outerSelectExpression, ref outerProjection);
             }
 
-            if (outerSelectExpression.OrderBy == null)
+            if (outerSelectExpression.OrderBy is null)
             {
                 outerSelectExpression
                     = outerSelectExpression
@@ -2737,7 +2737,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var predicateLambda = node.Arguments.ElementAtOrDefault(1)?.UnwrapLambda();
 
-            if (predicateLambda != null)
+            if (predicateLambda is not null)
             {
                 if (outerSelectExpression.RequiresPushdownForPredicate())
                 {
@@ -2771,8 +2771,8 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 = outerSelectExpression
                     .UpdateProjection(new ServerProjectionExpression(Expression.Constant(1)));
 
-            if (outerSelectExpression.Offset == null
-                && outerSelectExpression.Limit == null)
+            if (outerSelectExpression.Offset is null
+                && outerSelectExpression.Limit is null)
             {
                 outerSelectExpression
                     = outerSelectExpression.UpdateOrderBy(null);
@@ -2830,7 +2830,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var selectorLambda = node.Arguments.ElementAtOrDefault(1)?.UnwrapLambda();
 
-            if (selectorLambda != null)
+            if (selectorLambda is not null)
             {
                 if (outerSelectExpression.IsDistinct)
                 {
@@ -2931,7 +2931,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var predicateLambda = node.Arguments.ElementAtOrDefault(1)?.UnwrapLambda();
 
-            if (predicateLambda != null)
+            if (predicateLambda is not null)
             {
                 if (outerSelectExpression.RequiresPushdownForPredicate())
                 {
@@ -2991,7 +2991,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
         private void Pushdown(string alias, ref SelectExpression selectExpression, ref Expression projection)
         {
-            if (selectExpression.Limit == null && selectExpression.Offset == null)
+            if (selectExpression.Limit is null && selectExpression.Offset is null)
             {
                 selectExpression = selectExpression.UpdateOrderBy(null);
             }
@@ -3006,7 +3006,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 = new KeyPlaceholderGroupingInjectingExpressionVisitor()
                     .VisitAndConvert(selectExpression, nameof(VisitMethodCall));
 
-            alias = (alias == null || alias.StartsWith("<>")) ? "t" : alias;
+            alias = (alias is null || alias.StartsWith("<>")) ? "t" : alias;
 
             var table = new SubqueryTableExpression(selectExpression, alias);
 
@@ -3163,7 +3163,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                         root = current.Expression;
                         current = root as MemberExpression;
                     }
-                    while (current != null);
+                    while (current is not null);
 
                     if (!(root is SqlExpression sqlExpression))
                     {

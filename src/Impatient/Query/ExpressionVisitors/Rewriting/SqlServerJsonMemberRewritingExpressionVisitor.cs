@@ -20,7 +20,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                 root = current.Expression;
                 current = root as MemberExpression;
             }
-            while (current != null);
+            while (current is not null);
 
             switch (root)
             {

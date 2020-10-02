@@ -46,7 +46,7 @@ namespace Impatient.Query.Expressions
 
         public virtual OrderByExpression Combine(OrderByExpression other)
         {
-            if (other == null)
+            if (other is null)
             {
                 return this;
             }

@@ -24,7 +24,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 
         public QueryProcessingContext CreateQueryProcessingContext(IQueryProvider queryProvider)
         {
-            if (queryProvider == null)
+            if (queryProvider is null)
             {
                 throw new ArgumentNullException(nameof(queryProvider));
             }

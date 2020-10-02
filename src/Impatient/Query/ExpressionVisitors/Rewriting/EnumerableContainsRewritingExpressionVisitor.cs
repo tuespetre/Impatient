@@ -34,7 +34,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     {
                         case ConstantExpression constantExpression:
                         {
-                            canUseValues = constantExpression.Value != null;
+                            canUseValues = constantExpression.Value is not null;
                             break;
                         }
 

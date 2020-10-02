@@ -49,7 +49,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                 var leftConditional = visitedLeft as ConditionalExpression;
                 var rightConditional = visitedRight as ConditionalExpression;
 
-                if (leftConditional != null && rightConditional != null)
+                if (leftConditional is not null && rightConditional is not null)
                 {
                     var leftTest = leftConditional.Test;
                     var leftIfTrue = leftConditional.IfTrue;
@@ -164,10 +164,10 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                         }
                     }
                 }
-                else if (leftConditional != null || rightConditional != null)
+                else if (leftConditional is not null || rightConditional is not null)
                 {
                     var conditional = leftConditional ?? rightConditional;
-                    var comparand = leftConditional == null ? visitedLeft : visitedRight;
+                    var comparand = leftConditional is null ? visitedLeft : visitedRight;
 
                     return OptimizeAndRevisit(
                         Expression.OrElse(

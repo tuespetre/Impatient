@@ -24,7 +24,7 @@ namespace Impatient.Query.Infrastructure
 
         public QueryProcessingContext CreateQueryProcessingContext(IQueryProvider queryProvider)
         {
-            if (queryProvider == null)
+            if (queryProvider is null)
             {
                 throw new ArgumentNullException(nameof(queryProvider));
             }

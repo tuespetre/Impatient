@@ -31,7 +31,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
 
         public override Expression Visit(Expression node)
         {
-            if (node == null)
+            if (node is null)
             {
                 return null;
             }

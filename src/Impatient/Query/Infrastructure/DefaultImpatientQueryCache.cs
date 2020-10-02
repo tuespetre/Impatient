@@ -10,7 +10,7 @@ namespace Impatient.Query.Infrastructure
 
         public Delegate GetOrAdd<TArg>(int key, Func<TArg, Delegate> factory, TArg arg) where TArg : struct
         {
-            if (factory == null)
+            if (factory is null)
             {
                 throw new ArgumentNullException(nameof(factory));
             }

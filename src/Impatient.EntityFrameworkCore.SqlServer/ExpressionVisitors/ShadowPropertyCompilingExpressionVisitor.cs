@@ -34,7 +34,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 
                 var entityType = model.GetEntityTypes(expression.Type).FirstOrDefault();
 
-                if (entityType != null)
+                if (entityType is not null)
                 {
                     var innerExpression = arguments[0];
                     var path = new List<MemberInfo>();
@@ -115,7 +115,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                                 typeof(PropertyEntry).GetProperty(nameof(PropertyEntry.CurrentValue)));
                     }
 
-                    if (finalExpression != null)
+                    if (finalExpression is not null)
                     {
                         return Expression.Condition(
                             Expression.NotEqual(innerExpression, Expression.Default(innerExpression.Type)),

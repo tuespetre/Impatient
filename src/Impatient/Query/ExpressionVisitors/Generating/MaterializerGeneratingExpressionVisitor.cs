@@ -119,7 +119,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                             = readValueExpressionFactories
                                 .FirstOrDefault(f => f.CanReadExpression(node));
 
-                        if (readValueExpressionFactory == null)
+                        if (readValueExpressionFactory is null)
                         {
                             throw new NotSupportedException("Could not find an expression factory to read a value.");
                         }

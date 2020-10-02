@@ -22,7 +22,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
         {
             IEnumerable<string> GetNameParts()
             {
-                return nameStack.Reverse().Where(n => n != null && !n.StartsWith("<>"));
+                return nameStack.Reverse().Where(n => n is not null && !n.StartsWith("<>"));
             }
 
             switch (node)
@@ -34,7 +34,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
                 case NewExpression newExpression:
                 {
-                    if (newExpression.Members == null)
+                    if (newExpression.Members is null)
                     {
                         return newExpression;
                     }

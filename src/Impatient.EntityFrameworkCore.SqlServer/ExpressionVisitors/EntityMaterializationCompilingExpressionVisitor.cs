@@ -170,7 +170,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 var entityType = model.FindEntityType(node.Type);
 
-                if (entityType != null)
+                if (entityType is not null)
                 {
                     var collectionMembers
                         = from n in entityType.GetNavigations()
@@ -202,7 +202,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 var entityType = model.FindEntityType(node.Type);
 
-                if (entityType != null)
+                if (entityType is not null)
                 {
                     var collectionMembers
                         = from n in entityType.GetNavigations()

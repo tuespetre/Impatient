@@ -64,8 +64,6 @@ namespace Impatient.Query.Expressions
 
             for (var i = 0; i < Arguments.Count; i++)
             {
-                var argument = Arguments[i];
-
                 if (Arguments[i] is null)
                 {
                     throw new ArgumentException($"Arguments cannot be null. Element {i} is null.");
@@ -101,7 +99,7 @@ namespace Impatient.Query.Expressions
 
         protected override Expression VisitChildren(ExpressionVisitor visitor)
         {
-            if (visitor == null)
+            if (visitor is null)
             {
                 throw new ArgumentNullException(nameof(visitor));
             }
@@ -118,7 +116,7 @@ namespace Impatient.Query.Expressions
 
         public virtual ExtendedNewExpression Update(IEnumerable<Expression> arguments)
         {
-            if (arguments == null)
+            if (arguments is null)
             {
                 throw new ArgumentNullException(nameof(arguments));
             }

@@ -17,7 +17,7 @@ namespace Impatient.Query.Expressions
 
         public DefaultIfEmptyExpression(Expression expression, Expression flag) : base(expression)
         {
-            if (flag == null)
+            if (flag is null)
             {
                 throw new ArgumentNullException(nameof(flag));
             }

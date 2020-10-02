@@ -20,7 +20,7 @@ namespace Impatient.Metadata
 
         public bool Equals(PolymorphicTypeDescriptor other)
         {
-            return other != null
+            return other is not null
                 && other.Type == Type
                 && other.Test == Test
                 && other.Materializer == Materializer;

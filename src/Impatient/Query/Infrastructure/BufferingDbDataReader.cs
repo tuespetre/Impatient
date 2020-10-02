@@ -25,7 +25,7 @@ namespace Impatient.Query.Infrastructure
 
         public void Buffer()
         {
-            if (topBuffer != null)
+            if (topBuffer is not null)
             {
                 throw new InvalidOperationException();
             }
@@ -68,7 +68,7 @@ namespace Impatient.Query.Infrastructure
             }
             catch
             {
-                if (temp != null)
+                if (temp is not null)
                 {
                     bufferPool.Return(temp);
                 }
@@ -98,7 +98,7 @@ namespace Impatient.Query.Infrastructure
 
         private void ReturnBuffer(object[] buffer)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 return;
             }
@@ -112,7 +112,7 @@ namespace Impatient.Query.Infrastructure
 
         public override bool Read()
         {
-            if (innerReader != null)
+            if (innerReader is not null)
             {
                 return innerReader.Read();
             }
@@ -137,11 +137,11 @@ namespace Impatient.Query.Infrastructure
 
         public override string GetString(int ordinal)
         {
-            if (innerReader != null)
+            if (innerReader is not null)
             {
                 return innerReader.GetString(ordinal);
             }
-            else if (activeBuffer != null)
+            else if (activeBuffer is not null)
             {
                 return (string)GetValue(ordinal);
             }
@@ -153,11 +153,11 @@ namespace Impatient.Query.Infrastructure
 
         public override object GetValue(int ordinal)
         {
-            if (innerReader != null)
+            if (innerReader is not null)
             {
                 return innerReader.GetValue(ordinal);
             }
-            else if (activeBuffer != null)
+            else if (activeBuffer is not null)
             {
                 if (ordinal >= fieldCount)
                 {
@@ -176,11 +176,11 @@ namespace Impatient.Query.Infrastructure
 
         public override bool IsDBNull(int ordinal)
         {
-            if (innerReader != null)
+            if (innerReader is not null)
             {
                 return innerReader.IsDBNull(ordinal);
             }
-            else if (activeBuffer != null)
+            else if (activeBuffer is not null)
             {
                 return DBNull.Value.Equals(GetValue(ordinal));
             }

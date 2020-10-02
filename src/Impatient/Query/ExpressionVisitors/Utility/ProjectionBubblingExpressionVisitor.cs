@@ -34,7 +34,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
         protected override Expression VisitNew(NewExpression node)
         {
-            if (node.Members != null && node.Type.IsGenericType(typeof(ExpandedGrouping<,>)))
+            if (node.Members is not null && node.Type.IsGenericType(typeof(ExpandedGrouping<,>)))
             {
                 return Visit(node.Arguments[1]);
             }
@@ -73,11 +73,11 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                         {
                             var innerProjection = arguments[1] as ProjectionExpression;
 
-                            if (innerProjection == null)
+                            if (innerProjection is null)
                             {
                                 var collectionSelectorLambda = arguments[1].UnwrapLambda();
 
-                                if (collectionSelectorLambda != null)
+                                if (collectionSelectorLambda is not null)
                                 {
                                     var expanded
                                         = collectionSelectorLambda
@@ -87,7 +87,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                                 }
                             }
 
-                            if (innerProjection != null)
+                            if (innerProjection is not null)
                             {
                                 if (arguments.Count == 2)
                                 {

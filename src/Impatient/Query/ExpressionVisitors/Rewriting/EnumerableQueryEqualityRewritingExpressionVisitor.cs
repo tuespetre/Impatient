@@ -28,14 +28,14 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     var leftQuery = left.UnwrapInnerExpression() as EnumerableRelationalQueryExpression;
                     var rightQuery = right.UnwrapInnerExpression() as EnumerableRelationalQueryExpression;
                     
-                    if (leftQuery != null && rightQuery != null)
+                    if (leftQuery is not null && rightQuery is not null)
                     {
                         // TODO: Maybe return SequenceEqual?
                     }
-                    else if (leftQuery != null || rightQuery != null)
+                    else if (leftQuery is not null || rightQuery is not null)
                     {
                         var query = leftQuery ?? rightQuery;
-                        var operand = leftQuery == null ? left : right;
+                        var operand = leftQuery is null ? left : right;
 
                         if (operand.IsNullConstant())
                         {
