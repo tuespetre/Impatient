@@ -19,14 +19,16 @@ namespace Impatient.Extensions
                 lastSize = 7;
             }
 
-            var initialType
-                = lastSize == 1 ? typeof(ValueTuple<>)
-                : lastSize == 2 ? typeof(ValueTuple<,>)
-                : lastSize == 3 ? typeof(ValueTuple<,,>)
-                : lastSize == 4 ? typeof(ValueTuple<,,,>)
-                : lastSize == 5 ? typeof(ValueTuple<,,,,>)
-                : lastSize == 6 ? typeof(ValueTuple<,,,,,>)
-                : typeof(ValueTuple<,,,,,,>);
+            var initialType = lastSize switch
+            {
+                1 => typeof(ValueTuple<>),
+                2 => typeof(ValueTuple<,>),
+                3 => typeof(ValueTuple<,,>),
+                4 => typeof(ValueTuple<,,,>),
+                5 => typeof(ValueTuple<,,,,>),
+                6 => typeof(ValueTuple<,,,,,>),
+                _ => typeof(ValueTuple<,,,,,,>),
+            };
 
             types = types.Reverse().ToArray().AsEnumerable();
 

@@ -9,62 +9,57 @@ namespace Impatient.Query.Infrastructure
     {
         public IEnumerable<TElement> ExecuteEnumerable<TElement>(Action<DbCommand> initializer, Func<DbDataReader, TElement> materializer)
         {
-            using (var connection = GetDbConnection())
-            using (var command = connection.CreateCommand())
+            using var connection = GetDbConnection();
+            using var command = connection.CreateCommand();
+
+            initializer(command);
+
+            OnCommandInitialized(command);
+
+            connection.Open();
+
+            using var reader = command.ExecuteReader(CommandBehavior.CloseConnection);
+
+            while (reader.Read())
             {
-                initializer(command);
-
-                OnCommandInitialized(command);
-
-                connection.Open();
-
-                using (var reader = command.ExecuteReader(CommandBehavior.CloseConnection))
-                {
-                    while (reader.Read())
-                    {
-                        yield return materializer(reader);
-                    }
-                }
+                yield return materializer(reader);
             }
         }
 
         public TResult ExecuteComplex<TResult>(Action<DbCommand> initializer, Func<DbDataReader, TResult> materializer)
         {
-            using (var connection = GetDbConnection())
-            using (var command = connection.CreateCommand())
-            {
-                initializer(command);
+            using var connection = GetDbConnection();
+            using var command = connection.CreateCommand();
 
-                OnCommandInitialized(command);
+            initializer(command);
 
-                connection.Open();
+            OnCommandInitialized(command);
 
-                using (var reader = command.ExecuteReader(CommandBehavior.CloseConnection))
-                {
-                    // - 'DefaultIfEmpty' and '___OrDefault' behavior currently relying on the queries for:
-                    //   - The default value, through the materializer
-                    //   - Exceptions for First/Single/SingleOrDefault/Last/ElementAt
+            connection.Open();
 
-                    reader.Read();
+            using var reader = command.ExecuteReader(CommandBehavior.CloseConnection);
 
-                    return materializer(reader);
-                }
-            }
+            // - 'DefaultIfEmpty' and '___OrDefault' behavior currently relying on the queries for:
+            //   - The default value, through the materializer
+            //   - Exceptions for First/Single/SingleOrDefault/Last/ElementAt
+
+            reader.Read();
+
+            return materializer(reader);
         }
 
         public TResult ExecuteScalar<TResult>(Action<DbCommand> initializer)
         {
-            using (var connection = GetDbConnection())
-            using (var command = connection.CreateCommand())
-            {
-                initializer(command);
+            using var connection = GetDbConnection();
+            using var command = connection.CreateCommand();
 
-                OnCommandInitialized(command);
+            initializer(command);
 
-                connection.Open();
+            OnCommandInitialized(command);
 
-                return (TResult)command.ExecuteScalar();
-            }
+            connection.Open();
+
+            return (TResult)command.ExecuteScalar();
         }
 
         protected abstract DbConnection GetDbConnection();

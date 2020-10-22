@@ -40,41 +40,20 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
         #region Logical overrides
 
-        public override Expression Visit(Expression node)
+        public override Expression Visit(Expression node) => node switch
         {
-            switch (node)
-            {
-                case BinaryExpression binaryExpression:
-                {
-                    return VisitBinary(binaryExpression);
-                }
+            BinaryExpression b => VisitBinary(b),
 
-                case ConditionalExpression conditionalExpression:
-                {
-                    return VisitConditional(conditionalExpression);
-                }
+            ConditionalExpression c => VisitConditional(c),
 
-                case ConstantExpression constantExpression:
-                {
-                    return VisitConstant(constantExpression);
-                }
+            ConstantExpression c => VisitConstant(c),
 
-                case UnaryExpression unaryExpression:
-                {
-                    return VisitUnary(unaryExpression);
-                }
+            UnaryExpression u => VisitUnary(u),
 
-                default:
-                {
-                    if (node.NodeType == ExpressionType.Extension)
-                    {
-                        return VisitExtension(node);
-                    }
+            { NodeType : ExpressionType.Extension } => VisitExtension(node),
 
-                    throw new NotSupportedException();
-                }
-            }
-        }
+            _ => throw new NotSupportedException(),
+        };
 
         protected override Expression VisitBinary(BinaryExpression node)
         {
