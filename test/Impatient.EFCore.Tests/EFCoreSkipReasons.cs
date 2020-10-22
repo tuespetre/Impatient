@@ -16,5 +16,8 @@
 
         public const string FromSql =
             "FromSql is not supported.";
+
+        public const string SpecialIncludes =
+            "Not currently supporting filtered or ordered includes.";
     }
 }
