@@ -261,9 +261,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 throw new InvalidOperationException(argumentException.Message, argumentException);
             }
 
+            var clrType
+                = lambdaExpression.Parameters[0].Type.IsSequenceType()
+                    ? lambdaExpression.Parameters[0].Type.GetSequenceType()
+                    : lambdaExpression.Parameters[0].Type;
+
             var entityType
                 = model.GetEntityTypes()
-                    .SingleOrDefault(t => !t.IsOwned() && t.ClrType == lambdaExpression.Parameters[0].Type);
+                    .SingleOrDefault(t => !t.IsOwned() && t.ClrType == clrType);
 
             if (entityType is null)
             {
