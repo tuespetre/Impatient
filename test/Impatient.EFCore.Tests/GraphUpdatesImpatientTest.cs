@@ -19,7 +19,7 @@ namespace Impatient.EFCore.Tests
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 
-            protected override string StoreName => throw new System.NotImplementedException();
+            protected override string StoreName => nameof(GraphUpdatesImpatientTest);
         }
     }
 }
