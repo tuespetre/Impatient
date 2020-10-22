@@ -39,75 +39,46 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return (TResult)processor.Execute(provider, preparedQuery);
         }
 
-        /*
-        public IAsyncEnumerable<TResult> ExecuteAsync<TResult>(Expression query)
-        {
-            return new BadAsyncEnumerable<TResult>(async () =>
-            {
-                var enumerable = await ExecuteAsync<IEnumerable<TResult>>(query, default);
-
-                return enumerable.GetEnumerator();
-            });
-        }
-        */
-
-        /*
-        public Task<TResult> ExecuteAsync<TResult>(Expression query, CancellationToken cancellationToken)
-        {
-            return Task.Run(() => Execute<TResult>(query), cancellationToken);
-        }
-        */
-
-        /*
-        public Func<QueryContext, IAsyncEnumerable<TResult>> CreateCompiledAsyncEnumerableQuery<TResult>(Expression query)
-        {
-            var compiled = CreateCompiledAsyncTaskQuery<IEnumerable<TResult>>(query);
-
-            return (QueryContext queryContext) =>
-            {
-                return new BadAsyncEnumerable<TResult>(async () =>
-                {
-                    var enumerable = await compiled(queryContext);
-
-                    return enumerable.GetEnumerator();
-                });
-            };
-        }
-        */
-
-        /*
-        public Func<QueryContext, Task<TResult>> CreateCompiledAsyncTaskQuery<TResult>(Expression query)
-        {
-            var compiled = CreateCompiledQuery<TResult>(query);
-
-            return (QueryContext queryContext) =>
-            {
-                return Task.Run(() => compiled(queryContext), queryContext.CancellationToken);
-            };
-        }
-        */
-
         TResult IQueryCompiler.ExecuteAsync<TResult>(Expression query, CancellationToken cancellationToken)
         {
+            var processor = GetQueryProcessor();
+
+            var provider = GetQueryProvider();
+
+            var preparedQuery = PrepareQuery(query);
+
+            var result = processor.Execute(provider, preparedQuery);
+
             if (typeof(TResult).IsGenericType(typeof(IAsyncEnumerable<>)))
             {
+                return (TResult)GetType()
+                    .GetMethod(nameof(ReturnAsyncEnumerable), BindingFlags.NonPublic | BindingFlags.Static)
+                    .MakeGenericMethod(typeof(TResult).GetSequenceType())
+                    .Invoke(null, new object[] { result });
             }
 
-            //var task = Task.Run(() => Execute<TResult>(query), cancellationToken);
+            if (typeof(TResult).IsGenericType(typeof(ValueTask<>)))
+            {
+                return (TResult)Activator.CreateInstance(typeof(TResult), result);
+            }
 
-            // TODO: something the fuck else than this!
-            return Execute<TResult>(query);
+            if (typeof(TResult).IsGenericType(typeof(Task<>)))
+            {
+                return (TResult)typeof(Task)
+                    .GetMethod(nameof(Task<object>.FromResult))
+                    .MakeGenericMethod(typeof(TResult).GenericTypeArguments[0])
+                    .Invoke(null, new[] { result });
+            }
+
+            throw new NotSupportedException("lol");
         }
 
-        public Func<QueryContext, TResult> CreateCompiledAsyncQuery<TResult>(Expression query)
+        private static async IAsyncEnumerable<T> ReturnAsyncEnumerable<T>(IEnumerable<T> enumerable)
         {
-            var compiled = CreateCompiledQuery<TResult>(query);
-
-            return (QueryContext queryContext) =>
+            foreach (var item in enumerable)
             {
-                // TODO: wtf?
-                return compiled(queryContext);
-            };
+                yield return item;
+            }
         }
 
         public Func<QueryContext, TResult> CreateCompiledQuery<TResult>(Expression query)
@@ -119,56 +90,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     .GetService<IQueryProcessingContextFactory>()
                     .CreateQueryProcessingContext(provider);
 
-            var inlined 
-                = currentDbContext.Context
-                    .GetService<IQueryableInliningExpressionVisitorFactory>()
-                    .Create(context).Visit(query);
-
-            var visited = inlined;
-            
-            var composingExpressionVisitors
-                = currentDbContext.Context
-                    .GetService<IComposingExpressionVisitorProvider>()
-                    .CreateExpressionVisitors(context)
-                    .ToArray();
-
-            var optimizingExpressionVisitors
-                = currentDbContext.Context
-                    .GetService<IOptimizingExpressionVisitorProvider>()
-                    .CreateExpressionVisitors(context)
-                    .ToArray();
-
-            var compilingExpressionVisitors
-                = currentDbContext.Context
-                    .GetService<ICompilingExpressionVisitorProvider>()
-                    .CreateExpressionVisitors(context)
-                    .ToArray();
-
-            // Apply all optimizing visitors before each composing visitor and then apply all
-            // optimizing visitors one last time.
-
-            foreach (var optimizingVisitor in optimizingExpressionVisitors)
-            {
-                visited = optimizingVisitor.Visit(visited);
-            }
-
-            foreach (var composingVisitor in composingExpressionVisitors)
-            {
-                visited = composingVisitor.Visit(visited);
-
-                foreach (var optimizingVisitor in optimizingExpressionVisitors)
-                {
-                    visited = optimizingVisitor.Visit(visited);
-                }
-            }
-
-            // Transform the expression by rewriting all composed query expressions into 
-            // executable expressions that make database calls and perform result materialization.
-
-            foreach (var compilingVisitor in compilingExpressionVisitors)
-            {
-                visited = compilingVisitor.Visit(visited);
-            }
+            var visited = ApplyVisitors(query, context);
 
             var discoverer = new FreeVariableDiscoveringExpressionVisitor();
 
@@ -229,6 +151,73 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             };
         }
 
+        public Func<QueryContext, TResult> CreateCompiledAsyncQuery<TResult>(Expression query)
+        {
+            var compiled = CreateCompiledQuery<TResult>(query);
+
+            return (QueryContext queryContext) =>
+            {
+                // TODO: wtf?
+                return compiled(queryContext);
+            };
+        }
+
+        private Expression ApplyVisitors(Expression query, QueryProcessingContext context)
+        {
+            var inlined
+                   = currentDbContext.Context
+                       .GetService<IQueryableInliningExpressionVisitorFactory>()
+                       .Create(context).Visit(query);
+
+            var visited = inlined;
+
+            var composingExpressionVisitors
+                = currentDbContext.Context
+                    .GetService<IComposingExpressionVisitorProvider>()
+                    .CreateExpressionVisitors(context)
+                    .ToArray();
+
+            var optimizingExpressionVisitors
+                = currentDbContext.Context
+                    .GetService<IOptimizingExpressionVisitorProvider>()
+                    .CreateExpressionVisitors(context)
+                    .ToArray();
+
+            var compilingExpressionVisitors
+                = currentDbContext.Context
+                    .GetService<ICompilingExpressionVisitorProvider>()
+                    .CreateExpressionVisitors(context)
+                    .ToArray();
+
+            // Apply all optimizing visitors before each composing visitor and then apply all
+            // optimizing visitors one last time.
+
+            foreach (var optimizingVisitor in optimizingExpressionVisitors)
+            {
+                visited = optimizingVisitor.Visit(visited);
+            }
+
+            foreach (var composingVisitor in composingExpressionVisitors)
+            {
+                visited = composingVisitor.Visit(visited);
+
+                foreach (var optimizingVisitor in optimizingExpressionVisitors)
+                {
+                    visited = optimizingVisitor.Visit(visited);
+                }
+            }
+
+            // Transform the expression by rewriting all composed query expressions into 
+            // executable expressions that make database calls and perform result materialization.
+
+            foreach (var compilingVisitor in compilingExpressionVisitors)
+            {
+                visited = compilingVisitor.Visit(visited);
+            }
+
+            return visited;
+        }
+
         private Expression PrepareQuery(Expression query)
         {
             return new QueryOptionsExpression(
@@ -242,24 +231,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private IImpatientQueryProcessor GetQueryProcessor()
         {
-            if (queryProcessor is null)
-            {
-                queryProcessor
-                    = ((IInfrastructure<IServiceProvider>)currentDbContext.Context)
+            return queryProcessor
+                ??= ((IInfrastructure<IServiceProvider>)currentDbContext.Context)
                         .Instance.GetRequiredService<IImpatientQueryProcessor>();
-            }
-
-            return queryProcessor;
         }
 
         private IAsyncQueryProvider GetQueryProvider()
         {
-            if (queryProvider is null)
-            {
-                queryProvider = currentDbContext.GetDependencies().QueryProvider;
-            }
-
-            return queryProvider;
+            return queryProvider ??= currentDbContext.GetDependencies().QueryProvider;
         }
     }
 }

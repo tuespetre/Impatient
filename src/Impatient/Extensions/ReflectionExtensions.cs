@@ -87,7 +87,8 @@ namespace Impatient.Extensions
 
         public static Type GetSequenceType(this Type type)
         {
-            return type.FindGenericType(typeof(IEnumerable<>))?.GenericTypeArguments[0];
+            return type.FindGenericType(typeof(IEnumerable<>))?.GenericTypeArguments[0]
+                ?? type.FindGenericType(typeof(IAsyncEnumerable<>))?.GenericTypeArguments[0];
         }
 
         public static Type MakeEnumerableType(this Type elementType)
@@ -299,6 +300,11 @@ namespace Impatient.Extensions
         }
 
         public static MethodInfo GetMethodInfo<TResult>(Expression<Func<TResult>> expression)
+        {
+            return ((MethodCallExpression)expression.Body).Method;
+        }
+
+        public static MethodInfo GetMethodInfo(Expression<Action> expression)
         {
             return ((MethodCallExpression)expression.Body).Method;
         }
