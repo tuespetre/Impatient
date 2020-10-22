@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.TestUtilities;
 
 namespace Impatient.EFCore.Tests.Query
 {
-    public class ComplexNavigationsWeakQueryImpatientTest : ComplexNavigationsWeakQueryTestBase<ComplexNavigationsWeakQueryImpatientTest.Fixture>
+    public class ComplexNavigationsWeakQueryImpatientTest : ComplexNavigationsWeakQueryRelationalTestBase<ComplexNavigationsWeakQueryImpatientTest.Fixture>
     {
         public ComplexNavigationsWeakQueryImpatientTest(Fixture fixture) : base(fixture)
         {
