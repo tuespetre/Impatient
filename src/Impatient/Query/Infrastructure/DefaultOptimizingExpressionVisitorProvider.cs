@@ -14,6 +14,8 @@ namespace Impatient.Query.Infrastructure
     {
         public IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
         {
+            yield return new TypeBinaryOptimizingExpressionVisitor();
+
             yield return new ConditionalComparisonOptimizingExpressionVisitor();
 
             yield return new SelectorPushdownExpressionVisitor();
