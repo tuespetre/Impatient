@@ -44,7 +44,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
 
                         // TODO: Find a suitable place to perform lifting of subqueries out into an OUTER APPLY or LEFT JOIN.
                         if (selector.ContainsAggregateOrSubquery()
-                            || !(translatabilityAnalyzingExpressionVisitor.Visit(selector) is TranslatableExpression))
+                            || translatabilityAnalyzingExpressionVisitor.Visit(selector) is not TranslatableExpression)
                         {
                             break;
                         }
@@ -74,7 +74,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                         {
                             var predicate = node.Arguments[1].UnwrapLambda().ExpandParameters(selector);
 
-                            if (!(translatabilityAnalyzingExpressionVisitor.Visit(predicate) is TranslatableExpression))
+                            if (translatabilityAnalyzingExpressionVisitor.Visit(predicate) is not TranslatableExpression)
                             {
                                 break;
                             }
@@ -118,7 +118,7 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                             = selectorLambda
                                 .ExpandParameters(relationalGrouping.ElementSelector);
 
-                        if (!(translatabilityAnalyzingExpressionVisitor.Visit(selectorBody) is TranslatableExpression))
+                        if (translatabilityAnalyzingExpressionVisitor.Visit(selectorBody) is not TranslatableExpression)
                         {
                             break;
                         }

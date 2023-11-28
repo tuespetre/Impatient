@@ -14,7 +14,7 @@ namespace Impatient.EFCore.Tests.Utilities
             ConnectionString = 
                 $"Server=.\\sqlexpress; " +
                 $"Database=impatient-efcore-{name.ToLowerInvariant()}; " +
-                $"Trusted_Connection=True";
+                $"Trusted_Connection=True; TrustServerCertificate=True";
 
             Connection = new SqlConnection(ConnectionString)
             {

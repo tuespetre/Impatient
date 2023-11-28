@@ -68,17 +68,16 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
 
         public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)
         {
-            unchecked
+            var hash = new HashCode();
+
+            hash.Add(comparer.GetHashCode(Expression));
+
+            for (var i = 0; i < Includes.Count; i++)
             {
-                var hash = comparer.GetHashCode(Expression);
-
-                for (var i = 0; i < Includes.Count; i++)
-                {
-                    hash = (hash * 16777619) ^ comparer.GetHashCode(Includes[i]);
-                }
-
-                return hash;
+                hash.Add(comparer.GetHashCode(Includes[i]));
             }
+
+            return hash.ToHashCode();
         }
 
         public override ExtraPropertiesExpression Update(Expression expression, IEnumerable<Expression> properties)

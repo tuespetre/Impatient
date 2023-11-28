@@ -41,7 +41,7 @@ namespace Impatient.Extensions
                 case DefaultExpression defaultExpression:
                 {
                     return defaultExpression.Type.IsNullableType()
-                        || !defaultExpression.Type.GetTypeInfo().IsValueType;
+                        || !defaultExpression.Type.IsValueType;
                 }
 
                 default:
@@ -53,7 +53,7 @@ namespace Impatient.Extensions
 
         public static Expression AsNullable(this Expression expression)
         {
-            return Expression.Convert(expression, expression.Type.MakeNullableType());
+            return Expression.Convert(expression, expression.Type.AsNullableType());
         }
 
         public static Expression AsEnumerableQuery(this Expression expression)
@@ -542,6 +542,9 @@ namespace Impatient.Extensions
                 }
 
                 case BinaryExpression _ when unwrapped.NodeType == ExpressionType.Coalesce:
+                case BinaryExpression _ when unwrapped.NodeType == ExpressionType.ExclusiveOr:
+                case BinaryExpression _ when unwrapped.NodeType == ExpressionType.And:
+                case BinaryExpression _ when unwrapped.NodeType == ExpressionType.Or:
                 case ConditionalExpression _:
                 case ConstantExpression _:
                 case SqlExpression _:

@@ -149,7 +149,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
             var outerSource = visitedArguments[0] = ProcessQuerySource(Visit(node.Arguments[0]));
 
-            if (!(outerSource is EnumerableRelationalQueryExpression outerQuery))
+            if (outerSource is not EnumerableRelationalQueryExpression outerQuery)
             {
                 return FallbackToEnumerable();
             }
@@ -607,7 +607,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
             innerSource = ProcessQuerySource(innerSource).VisitWith(ServerPostExpansionVisitors);
 
-            if (!(innerSource is EnumerableRelationalQueryExpression innerQuery))
+            if (innerSource is not EnumerableRelationalQueryExpression innerQuery)
             {
                 return fallbackToEnumerable();
             }
@@ -620,7 +620,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
             if (defaultIfEmpty)
             {
-                if (!(innerProjection is DefaultIfEmptyExpression))
+                if (innerProjection is not DefaultIfEmptyExpression)
                 {
                     innerProjection
                         = new DefaultIfEmptyExpression(innerProjection);
@@ -709,7 +709,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
         {
             var innerSource = visitedArguments[1] = ProcessQuerySource(Visit(node.Arguments[1]));
 
-            if (!(innerSource is EnumerableRelationalQueryExpression innerQuery))
+            if (innerSource is not EnumerableRelationalQueryExpression innerQuery)
             {
                 return fallbackToEnumerable();
             }
@@ -802,7 +802,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
         {
             var innerSource = visitedArguments[1] = ProcessQuerySource(Visit(node.Arguments[1]));
 
-            if (!(innerSource is EnumerableRelationalQueryExpression innerQuery))
+            if (innerSource is not EnumerableRelationalQueryExpression innerQuery)
             {
                 return fallbackToEnumerable();
             }
@@ -2350,7 +2350,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
         {
             var innerSource = visitedArguments[1] = ProcessQuerySource(Visit(node.Arguments[1]));
 
-            if (!(innerSource is EnumerableRelationalQueryExpression innerQuery))
+            if (innerSource is not EnumerableRelationalQueryExpression innerQuery)
             {
                 return fallbackToEnumerable();
             }
@@ -2503,7 +2503,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
         {
             var innerSource = visitedArguments[1] = ProcessQuerySource(Visit(node.Arguments[1]));
 
-            if (!(innerSource is EnumerableRelationalQueryExpression innerQuery))
+            if (innerSource is not EnumerableRelationalQueryExpression innerQuery)
             {
                 return fallbackToEnumerable();
             }
@@ -2599,7 +2599,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
         {
             var innerSource = visitedArguments[1] = ProcessQuerySource(Visit(node.Arguments[1]));
 
-            if (!(innerSource is EnumerableRelationalQueryExpression innerQuery))
+            if (innerSource is not EnumerableRelationalQueryExpression innerQuery)
             {
                 return fallbackToEnumerable();
             }
@@ -3165,7 +3165,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     }
                     while (current is not null);
 
-                    if (!(root is SqlExpression sqlExpression))
+                    if (root is not SqlExpression sqlExpression)
                     {
                         return node;
                     }

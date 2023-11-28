@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore.TestUtilities;
 
 namespace Impatient.EFCore.Tests.Query
 {
-    public class AsyncGearsOfWarQueryImpatientTest : AsyncGearsOfWarQueryRelationalTestBase<AsyncGearsOfWarQueryImpatientTest.Fixture>
+    public class OptionalDependentQueryImpatientTest : OptionalDependentQueryTestBase<OptionalDependentQueryImpatientTest.Fixture>
     {
-        public AsyncGearsOfWarQueryImpatientTest(Fixture fixture) : base(fixture)
+        public OptionalDependentQueryImpatientTest(Fixture fixture) : base(fixture)
         {
         }
 
-        public class Fixture : GearsOfWarQueryRelationalFixture
+        public new class Fixture : OptionalDependentQueryFixtureBase
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
         }

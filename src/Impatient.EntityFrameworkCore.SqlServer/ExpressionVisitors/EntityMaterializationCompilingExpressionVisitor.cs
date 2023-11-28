@@ -5,6 +5,7 @@ using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -13,15 +14,10 @@ using static System.Linq.Expressions.Expression;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
-    public class EntityMaterializationCompilingExpressionVisitor : ExpressionVisitor
+    public class EntityMaterializationCompilingExpressionVisitor(IModel model) : ExpressionVisitor
     {
-        private readonly IModel model;
-        private readonly Dictionary<string, int> identifierCounts = new Dictionary<string, int>();
-
-        public EntityMaterializationCompilingExpressionVisitor(IModel model)
-        {
-            this.model = model ?? throw new System.ArgumentNullException(nameof(model));
-        }
+        private readonly IModel model = model ?? throw new System.ArgumentNullException(nameof(model));
+        private readonly Dictionary<string, int> identifierCounts = [];
 
         public override Expression Visit(Expression node)
         {
@@ -74,14 +70,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         }
                     }
 
-                    var shadowPropertiesExpression = (Expression)Constant(new object[0]);
+                    var shadowPropertiesExpression = (Expression)Constant(Array.Empty<object>());
                     var shadowProperties = entityMaterializationExpression.ShadowProperties;
 
                     if (!shadowProperties.IsDefaultOrEmpty)
                     {
                         var values 
                             = Enumerable
-                                .Repeat(Constant(null), entityType.ShadowPropertyCount())
+                                .Repeat(Constant(null), entityType.GetProperties().Count(p => p.IsShadowProperty()))
                                 .Cast<Expression>()
                                 .ToArray();
 

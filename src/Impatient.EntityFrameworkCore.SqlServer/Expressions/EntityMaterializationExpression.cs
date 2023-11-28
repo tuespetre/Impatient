@@ -27,7 +27,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             QueryTrackingBehavior = queryTrackingBehavior;
             KeyExpression = keyExpression ?? throw new ArgumentNullException(nameof(keyExpression));
             ShadowProperties = shadowProperties.ToImmutableArray();
-            IncludedNavigations = includedNavigations?.ToImmutableArray() ?? ImmutableArray.Create<INavigation>();
+            IncludedNavigations = includedNavigations?.ToImmutableArray() ?? [];
             Names = new ReadOnlyCollection<string>(shadowProperties.Select(p => p.Name).ToArray());
             Properties = new ReadOnlyCollection<Expression>(shadowPropertyExpressions.ToArray());
         }

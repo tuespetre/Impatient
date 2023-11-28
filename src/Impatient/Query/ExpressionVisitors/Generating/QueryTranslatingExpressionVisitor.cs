@@ -109,6 +109,17 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                     return node.UpdateWithConversion(left, right);
                 }
 
+                case ExpressionType.ExclusiveOr when node.Type.IsBooleanType():
+                {
+                    var left = VisitBinaryOperand(node.Left.AsBooleanValuedSqlExpression());
+
+                    Builder.Append(" ^ ");
+
+                    var right = VisitBinaryOperand(node.Right.AsBooleanValuedSqlExpression());
+
+                    return node.UpdateWithConversion(left, right);
+                }
+
                 case ExpressionType.Equal:
                 {
                     var left = node.Left;
@@ -398,7 +409,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
                 case DateTime value:
                 {
-                    Builder.Append($"'{value.ToString("yyyy-MM-ddTHH:mm:ss.fffK")}'");
+                    Builder.Append($"'{value:yyyy-MM-ddTHH:mm:ss.fffK}'");
 
                     return node;
                 }
@@ -1326,7 +1337,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 {
                     var hash = ExpressionEqualityComparer.Instance.GetHashCode(ordering.Expression);
 
-                    needsWrapping = !hashes.Add(hash) && !(ordering.Expression is RelationalQueryExpression);
+                    needsWrapping = !hashes.Add(hash) && ordering.Expression is not RelationalQueryExpression;
                 }
 
                 if (needsWrapping)
@@ -1578,7 +1589,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
         protected static IEnumerable<(string alias, Expression expression)> FlattenProjection(ProjectionExpression projection)
         {
-            IEnumerable<Expression> IterateServerProjectionExpressions(ProjectionExpression p)
+            static IEnumerable<Expression> IterateServerProjectionExpressions(ProjectionExpression p)
             {
                 switch (p)
                 {
@@ -1648,15 +1659,15 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             {
                 switch (node)
                 {
-                    case SqlParameterExpression _ when !ParameterDetected:
-                    case SqlInExpression _ when !ParameterDetected:
+                    case SqlParameterExpression when !ParameterDetected:
+                    case SqlInExpression when !ParameterDetected:
                     {
                         ParameterDetected = true;
 
                         return node;
                     }
 
-                    case RelationalQueryExpression _:
+                    case RelationalQueryExpression:
                     {
                         return node;
                     }
@@ -1716,7 +1727,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
         {
             var type = node.Type.UnwrapNullableType();
 
-            if (type.IsEnum() && !(node.UnwrapInnerExpression() is SqlColumnExpression))
+            if (type.IsEnum() && node.UnwrapInnerExpression() is not SqlColumnExpression)
             {
                 var mapping = typeMappingProvider.FindMapping(type);
 

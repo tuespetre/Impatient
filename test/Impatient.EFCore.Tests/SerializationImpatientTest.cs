@@ -6,7 +6,6 @@ namespace Impatient.EFCore.Tests
     {
         public SerializationImpatientTest(F1ImpatientFixture fixture) : base(fixture)
         {
-            fixture.TestSqlLoggerFactory.Clear();
         }
     }
 }

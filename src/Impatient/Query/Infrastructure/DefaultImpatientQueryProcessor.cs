@@ -36,15 +36,8 @@ namespace Impatient.Query.Infrastructure
 
         public object Execute(IQueryProvider provider, Expression expression)
         {
-            if (provider is null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
-
-            if (expression is null)
-            {
-                throw new ArgumentNullException(nameof(expression));
-            }
+            ArgumentNullException.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(expression);
 
             try
             {
@@ -59,7 +52,7 @@ namespace Impatient.Query.Infrastructure
                 var compiled
                     = queryCache.GetOrAdd(
                         hash,
-                        arg => arg.self.CompileDelegate(
+                        arg => CompileDelegate(
                             arg.self.ApplyVisitors(
                                 arg.inlined, 
                                 arg.context),
@@ -80,7 +73,7 @@ namespace Impatient.Query.Infrastructure
             }
         }
 
-        private Expression ParameterizeQuery(Expression expression, QueryProcessingContext context)
+        private static Expression ParameterizeQuery(Expression expression, QueryProcessingContext context)
         {
             // Parameterize the expression by substituting any ConstantExpression
             // that is not a literal constant (such as a closure instance) with a ParameterExpression.
@@ -99,7 +92,7 @@ namespace Impatient.Query.Infrastructure
             return queryableInliningExpressionVisitorFactory.Create(context).Visit(expression);
         }
 
-        private int ComputeHash(Expression expression, QueryProcessingContext context)
+        private static int ComputeHash(Expression expression, QueryProcessingContext context)
         {
             // Generate a hash code for the parameterized expression.
             // Because the expression is parameterized, the hash code will be identical
@@ -170,7 +163,7 @@ namespace Impatient.Query.Infrastructure
             return expression;
         }
 
-        private Func<object[], object> CompileDelegate(Expression expression, QueryProcessingContext context)
+        private static Func<object[], object> CompileDelegate(Expression expression, QueryProcessingContext context)
         {
             var parameters = new ParameterExpression[context.ParameterMapping.Count + 1];
 

@@ -195,12 +195,6 @@ namespace Impatient.EFCore.Tests.Query
             return base.Throws_when_different_filtered_then_include_via_different_paths(async);
         }
 
-        [Theory(Skip = EFCoreSkipReasons.SpecialIncludes)]
-        public override Task Filered_includes_accessed_via_different_path_are_merged(bool async)
-        {
-            return base.Filered_includes_accessed_via_different_path_are_merged(async);
-        }
-
         public ManyToManyNoTrackingQueryImpatientTest(Fixture fixture) : base(fixture)
         {
             fixture.ListLoggerFactory.Clear();

@@ -37,7 +37,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                     return resolved;
                 }
 
-                var entityType = model.GetEntityTypes().SingleOrDefault(t => t.ClrType == arguments[0].Type);
+                // TODO: used to be SingleOrDefault. something is probably wrong here (as in, with using FirstOrDefault)
+                var entityType = model.GetEntityTypes().FirstOrDefault(t => t.ClrType == arguments[0].Type);
 
                 if (entityType is not null)
                 {

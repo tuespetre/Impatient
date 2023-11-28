@@ -1,6 +1,7 @@
 ﻿using Impatient.Extensions;
 using System.Linq;
 using System.Linq.Expressions;
+using static System.Linq.Expressions.ExpressionType;
 
 namespace Impatient.Query.ExpressionVisitors.Optimizing
 {
@@ -37,13 +38,13 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
         {
             switch (expressionType)
             {
-                case ExpressionType.Add:
-                case ExpressionType.And:
-                case ExpressionType.AndAlso:
-                case ExpressionType.Multiply:
-                case ExpressionType.Or:
-                case ExpressionType.OrElse:
-                case ExpressionType.Subtract:
+                case Add:
+                case And:
+                case AndAlso:
+                case Multiply:
+                case Or:
+                case OrElse:
+                case Subtract:
                 {
                     return true;
                 }

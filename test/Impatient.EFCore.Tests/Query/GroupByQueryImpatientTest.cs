@@ -1481,7 +1481,13 @@ GROUP BY [o].[CustomerID]
         [MemberData(nameof(IsAsyncData))]
         public override async Task OrderBy_GroupBy_SelectMany(bool async)
         {
-            await base.OrderBy_GroupBy_SelectMany(async);
+            //await base.OrderBy_GroupBy_SelectMany(async);
+
+            await AssertQuery(
+                async,
+                ss => ss.Set<Order>().OrderBy(o => o.OrderID)
+                    .GroupBy(o => o.CustomerID)
+                    .SelectMany(g => g));
 
             AssertSql(@"
 SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
@@ -1620,11 +1626,11 @@ SELECT CAST((CASE WHEN EXISTS (
             AssertSql(@"
 SELECT [o].[OrderID] AS [Order], [o].[CustomerID] AS [Customer]
 FROM (
-    SELECT [o_0].[OrderID] AS [Key]
+    SELECT [o_0].[CustomerID] AS [Key]
     FROM [Orders] AS [o_0]
-    GROUP BY [o_0].[OrderID]
+    GROUP BY [o_0].[CustomerID]
 ) AS [g]
-INNER JOIN [Orders] AS [o] ON [g].[Key] = [o].[OrderID]
+INNER JOIN [Orders] AS [o] ON [g].[Key] = [o].[CustomerID]
 ");
         }
 

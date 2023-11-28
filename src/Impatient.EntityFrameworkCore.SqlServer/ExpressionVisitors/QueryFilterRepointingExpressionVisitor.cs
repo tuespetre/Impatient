@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using Impatient.Extensions;
+using System.Linq.Expressions;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
@@ -33,7 +34,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            if (node.Type.IsAssignableFrom(dbContextParameter.Type))
+            if (node.Type.IsAssignableFrom(dbContextParameter.Type) && !node.IsNullConstant())
             {
                 return dbContextParameter;
             }

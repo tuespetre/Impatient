@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Impatient.EFCore.Tests
 {
-    public class OptimisticConcurrencyImpatientTest : OptimisticConcurrencyTestBase<F1ImpatientFixture>
+    public class OptimisticConcurrencyImpatientTest : OptimisticConcurrencyRelationalTestBase<F1ImpatientFixture, byte[]>
     {
         public OptimisticConcurrencyImpatientTest(F1ImpatientFixture fixture) : base(fixture)
         {

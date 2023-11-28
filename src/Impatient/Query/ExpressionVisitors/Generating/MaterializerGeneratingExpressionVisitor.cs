@@ -51,7 +51,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             }
         }
 
-        private Expression VisitProjection(ProjectionExpression projection, MaterializerBuildingExpressionVisitor visitor)
+        private static Expression VisitProjection(ProjectionExpression projection, MaterializerBuildingExpressionVisitor visitor)
         {
             switch (projection)
             {
@@ -94,8 +94,8 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             private readonly ParameterExpression readerParameter;
             private int readerIndex;
 
-            private readonly Dictionary<string, Expression> readValueExpressions = new Dictionary<string, Expression>();
-            private readonly Dictionary<string, int> identifierCounts = new Dictionary<string, int>();
+            private readonly Dictionary<string, Expression> readValueExpressions = [];
+            private readonly Dictionary<string, int> identifierCounts = [];
 
             public MaterializerBuildingExpressionVisitor(
                 TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor,

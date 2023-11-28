@@ -8,11 +8,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
     public class EFCoreDbCommandExecutorFactory : IDbCommandExecutorFactory
     {
         private readonly ICurrentDbContext currentDbContext;
-        private readonly IDiagnosticsLogger<DbLoggerCategory.Database.Command> logger;
+        private readonly IRelationalCommandDiagnosticsLogger logger;
 
         public EFCoreDbCommandExecutorFactory(
             ICurrentDbContext currentDbContext,
-            IDiagnosticsLogger<DbLoggerCategory.Database.Command> logger)
+            IRelationalCommandDiagnosticsLogger logger)
         {
             this.currentDbContext = currentDbContext;
             this.logger = logger;

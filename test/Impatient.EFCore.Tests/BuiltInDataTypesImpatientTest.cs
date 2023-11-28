@@ -82,6 +82,8 @@ namespace Impatient.EFCore.Tests
 
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 
+            public override bool PreservesDateTimeKind => throw new NotImplementedException();
+
             protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
             {
                 base.OnModelCreating(modelBuilder, context);

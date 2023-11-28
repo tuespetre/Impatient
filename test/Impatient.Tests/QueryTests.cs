@@ -37,7 +37,7 @@ namespace Impatient.Tests
 
         private static Expression CreateQueryExpression(Type type)
         {
-            var annotation = type.GetTypeInfo().GetCustomAttribute<TableAttribute>();
+            var annotation = type.GetCustomAttribute<TableAttribute>();
 
             var table = new BaseTableExpression(
                 annotation.Schema ?? "dbo",
@@ -50,11 +50,11 @@ namespace Impatient.Tests
                     new ServerProjectionExpression(
                         Expression.MemberInit(
                             Expression.New(type),
-                            from property in type.GetTypeInfo().DeclaredProperties
+                            from property in type.GetRuntimeProperties()
                             where property.PropertyType.IsScalarType()
                             let nullable =
                                 (property.PropertyType.IsNullableType())
-                                || (!property.PropertyType.GetTypeInfo().IsValueType
+                                || (!property.PropertyType.IsValueType
                                     && property.GetCustomAttribute<RequiredAttribute>() == null)
                             let column = new SqlColumnExpression(table, property.Name, property.PropertyType, nullable, null)
                             select Expression.Bind(property, column))),

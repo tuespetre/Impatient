@@ -15,7 +15,7 @@ namespace Impatient.EFCore.Tests
             throw new System.NotImplementedException();
         }
 
-        protected override DbContextOptionsBuilder CreateTestOptions(DbContextOptionsBuilder optionsBuilder, bool withConnectionString = false)
+        protected override DbContextOptionsBuilder CreateTestOptions(DbContextOptionsBuilder optionsBuilder, bool withConnectionString = false, bool withNullConnectionString = false)
         {
             throw new System.NotImplementedException();
         }

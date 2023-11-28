@@ -31,6 +31,7 @@ namespace Impatient.EFCore.Tests
                 .HasColumnType("int");
 
             modelBuilder.Entity<OrderDetail>()
+                .ToTable("Order Details")
                 .Property(od => od.UnitPrice)
                 .HasColumnType("money");
 

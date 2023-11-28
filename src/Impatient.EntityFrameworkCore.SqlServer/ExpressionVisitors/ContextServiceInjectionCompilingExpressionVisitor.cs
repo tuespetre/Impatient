@@ -7,14 +7,9 @@ using System.Reflection;
 
 namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
 {
-    public class ContextServiceInjectionCompilingExpressionVisitor : ExpressionVisitor
+    public class ContextServiceInjectionCompilingExpressionVisitor(ParameterExpression executionContextParameter) : ExpressionVisitor
     {
-        private readonly ParameterExpression executionContextParameter;
-
-        public ContextServiceInjectionCompilingExpressionVisitor(ParameterExpression executionContextParameter)
-        {
-            this.executionContextParameter = executionContextParameter ?? throw new ArgumentNullException(nameof(executionContextParameter));
-        }
+        private readonly ParameterExpression executionContextParameter = executionContextParameter ?? throw new ArgumentNullException(nameof(executionContextParameter));
 
         protected override Expression VisitExtension(Expression node)
         {
@@ -39,7 +34,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                 return service;
             }
 
-            var infrastructure = executor.CurrentDbContext.Context.GetInfrastructure();
+            var infrastructure = context.GetInfrastructure();
 
             service = infrastructure.GetRequiredService<TService>();
 

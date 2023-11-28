@@ -1547,7 +1547,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 var target = string.Join(".", NewPath.Select(m => m.Name).Prepend("$R"));
                 var source = string.Join(".", OldPath.Select(m => m.Name).Prepend("$P"));
 
-                return $"{source.PadRight(50)} => {target.PadRight(50)}";
+                return $"{source,-50} => {target,-50}";
             }
         }
 
@@ -1563,9 +1563,9 @@ namespace Impatient.Query.ExpressionVisitors.Composing
         private sealed class NavigationExpansionContext
         {
             private ParameterExpression currentParameter;
-            private IEnumerable<NavigationDescriptor> descriptors;
-            private List<ExpansionMapping> mappings = new List<ExpansionMapping>();
-            private Stack<MemberInfo> terminalPath = new Stack<MemberInfo>();
+            private readonly IEnumerable<NavigationDescriptor> descriptors;
+            private readonly List<ExpansionMapping> mappings = new List<ExpansionMapping>();
+            private readonly Stack<MemberInfo> terminalPath = new Stack<MemberInfo>();
 
             public NavigationExpansionContext(
                 ParameterExpression parameter,
@@ -1706,7 +1706,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                     var keyType
                         = nullableKeyType
-                            ? outerKeySelector.ReturnType.MakeNullableType()
+                            ? outerKeySelector.ReturnType.AsNullableType()
                             : outerKeySelector.ReturnType;
 
                     if (nullableKeyType)
@@ -2414,7 +2414,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 var target = string.Join(".", TargetPath.Select(m => m.Name).Prepend("$R"));
                 var source = string.Join(".", SourcePath.Select(m => m.Name).Prepend("$P"));
 
-                return $"{target.PadRight(50)} => {source.PadRight(50)}";
+                return $"{target,-50} => {source,-50}";
             }
         }
 

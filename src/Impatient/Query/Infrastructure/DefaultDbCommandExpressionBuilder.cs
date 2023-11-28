@@ -18,21 +18,21 @@ namespace Impatient.Query.Infrastructure
         private int parameterIndex = 0;
         private int indentationLevel = 0;
         private bool containsParameterList = false;
-        private Stack<StringBuilder> captureStack = new Stack<StringBuilder>();
-        private StringBuilder archiveStringBuilder = new StringBuilder();
-        private StringBuilder workingStringBuilder = new StringBuilder();
+        private readonly Stack<StringBuilder> captureStack = new();
+        private StringBuilder archiveStringBuilder = new();
+        private readonly StringBuilder workingStringBuilder = new();
 
         private readonly ParameterExpression dbCommandVariable = Expression.Parameter(typeof(DbCommand), "command");
         private readonly ParameterExpression stringBuilderVariable = Expression.Parameter(typeof(StringBuilder), "builder");
-        private readonly List<Expression> blockExpressions = new List<Expression>();
-        private readonly List<Expression> dbParameterExpressions = new List<Expression>();
-        private readonly Dictionary<int, int> parameterCache = new Dictionary<int, int>();
+        private readonly List<Expression> blockExpressions = [];
+        private readonly List<Expression> dbParameterExpressions = [];
+        private readonly Dictionary<int, int> parameterCache = [];
 
         private static readonly MethodInfo stringBuilderAppendMethodInfo
             = typeof(StringBuilder).GetRuntimeMethod(nameof(StringBuilder.Append), new[] { typeof(string) });
 
         private static readonly MethodInfo stringBuilderToStringMethodInfo
-            = typeof(StringBuilder).GetRuntimeMethod(nameof(StringBuilder.ToString), new Type[0]);
+            = typeof(StringBuilder).GetRuntimeMethod(nameof(StringBuilder.ToString), []);
 
         private static readonly PropertyInfo dbCommandCommandTextPropertyInfo
             = typeof(DbCommand).GetTypeInfo().GetDeclaredProperty(nameof(DbCommand.CommandText));
@@ -431,15 +431,14 @@ namespace Impatient.Query.Infrastructure
                 }
                 else
                 {
-                    stringBuilder.Append(")");
+                    stringBuilder.Append(')');
 
                     if (foundNull)
                     {
                         stringBuilder.Insert(insertPoint, "(");
                         stringBuilder.Append(" OR ");
                         stringBuilder.Append(fragment);
-                        stringBuilder.Append(" IS NULL");
-                        stringBuilder.Append(")");
+                        stringBuilder.Append(" IS NULL)");
                     }
                 }
             }

@@ -382,7 +382,7 @@ WHERE [o].[OrderID] = 10252
             {
                 var results = context.Set<Product>().ToList();
 
-                Assert.IsTrue(results.Where(r => !r.Discontinued).All(r => r is Product && !(r is DiscontinuedProduct)));
+                Assert.IsTrue(results.Where(r => !r.Discontinued).All(r => r is Product && r is not DiscontinuedProduct));
                 Assert.IsTrue(results.Where(r => r.Discontinued).All(r => r is DiscontinuedProduct));
 
                 Assert.AreEqual(@"
@@ -482,7 +482,7 @@ WHERE [p].[Discontinued] IN (0, 1)
             services.AddDbContext<NorthwindDbContext>(options =>
             {
                 options
-                    .UseSqlServer(@"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=true")
+                    .UseSqlServer(@"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=true; TrustServerCertificate=true")
                     .UseImpatient();
             });
 
@@ -691,7 +691,7 @@ GROUP BY [c].[CustomerID]
             services.AddDbContext<NorthwindDbContext>(options =>
             {
                 options
-                    .UseSqlServer(@"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=true; MultipleActiveResultSets=True")
+                    .UseSqlServer(@"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=true; MultipleActiveResultSets=True; TrustServerCertificate=true")
                     .UseImpatient();
             });
 
@@ -717,7 +717,7 @@ GROUP BY [c].[CustomerID]
             services.AddDbContext<NorthwindDbContext>(options =>
             {
                 options
-                    .UseSqlServer(@"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=true; MultipleActiveResultSets=True")
+                    .UseSqlServer(@"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=true; MultipleActiveResultSets=True; TrustServerCertificate=true")
                     .UseImpatient();
             });
 

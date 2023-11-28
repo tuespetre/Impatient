@@ -2,7 +2,7 @@
 
 namespace Impatient.EFCore.Tests
 {
-    public class DataBindingImpatientTest : DatabindingTestBase<F1ImpatientFixture>
+    public class DataBindingImpatientTest : DataBindingTestBase<F1ImpatientFixture>
     {
         public DataBindingImpatientTest(F1ImpatientFixture fixture) : base(fixture)
         {

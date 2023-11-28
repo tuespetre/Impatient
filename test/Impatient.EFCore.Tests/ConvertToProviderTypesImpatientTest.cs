@@ -27,7 +27,7 @@ namespace Impatient.EFCore.Tests
                 context.Set<BinaryKeyDataType>().Add(
                     new BinaryKeyDataType
                     {
-                        Id = new byte[] { 1, 2, 3 }
+                        Id = [1, 2, 3]
                     });
 
                 context.Set<BinaryForeignKeyDataType>().Add(
@@ -70,6 +70,8 @@ namespace Impatient.EFCore.Tests
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 
             public override DateTime DefaultDateTime => new DateTime();
+
+            public override bool PreservesDateTimeKind => throw new NotImplementedException();
 
             public override DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder)
                 => base

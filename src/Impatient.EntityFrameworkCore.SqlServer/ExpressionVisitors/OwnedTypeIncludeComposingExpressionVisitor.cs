@@ -44,7 +44,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
             return node;
         }
 
-        private IEnumerable<(Type, string)> GetOwnedTypeIncludePaths(IEntityType entityType)
+        private static IEnumerable<(Type, string)> GetOwnedTypeIncludePaths(IEntityType entityType)
         {
             foreach (var navigation in entityType.GetNavigations())
             {

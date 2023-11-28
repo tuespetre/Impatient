@@ -64,7 +64,7 @@ namespace Impatient.Tests
 
         public struct TreeNode<TValue>
         {
-            private IEnumerable<TreeNode<TValue>> children;
+            private readonly IEnumerable<TreeNode<TValue>> children;
 
             public TValue Value { get; }
 
@@ -131,9 +131,9 @@ namespace Impatient.Tests
             {
                 yield return from;
 
-                from = from.GetTypeInfo().BaseType;
+                from = from.BaseType;
             }
-            while (from != null && to.IsAssignableFrom(from));
+            while (from is not null && to.IsAssignableFrom(from));
         }
 
         private static IEnumerable<Expression> CreateQueryExpressions(
@@ -197,7 +197,7 @@ namespace Impatient.Tests
             var inheritancePaths
                 = (from t in tableDescriptors
                    select GetInheritancePath(t.SourceType, rootType) into p
-                   where !p.First().GetTypeInfo().IsAbstract
+                   where !p.First().IsAbstract
                    orderby p.Count()
                    select p.Reverse()).ToArray();
 
@@ -221,7 +221,7 @@ namespace Impatient.Tests
                              select new SqlColumnExpression(
                                  table,
                                  cd.ColumnName,
-                                 cd.Type.MakeNullableType(),
+                                 cd.Type.AsNullableType(),
                                  nullable || cd.IsNullable,
                                  null);
 
@@ -257,7 +257,7 @@ namespace Impatient.Tests
 
             var polymorphicTypeDescriptors
                 = (from node in hierarchyRoot.Flatten()
-                   where !node.Type.GetTypeInfo().IsAbstract
+                   where !node.Type.IsAbstract
                    let testMember = node.TableDescriptor.PrimaryKeyMembers.First()
                    select new PolymorphicTypeDescriptor(
                        node.Type,
@@ -269,7 +269,7 @@ namespace Impatient.Tests
                                  (from x in columnDescriptors
                                   where x.c.SourceMember == testMember
                                   select x.i).Single()),
-                             Expression.Constant(null, testMember.GetMemberType().MakeNullableType())),
+                             Expression.Constant(null, testMember.GetMemberType().AsNullableType())),
                          tupleParameter),
                        Expression.Lambda(
                          Expression.MemberInit(

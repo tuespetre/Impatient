@@ -182,7 +182,7 @@ namespace Impatient.Query.Infrastructure
                         return node;
                     }
 
-                    if (function.Arguments.Count() == 2)
+                    if (function.Arguments.Count == 2)
                     {
                         return node;
                     }

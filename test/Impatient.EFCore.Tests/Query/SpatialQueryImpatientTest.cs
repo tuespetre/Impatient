@@ -11,7 +11,7 @@ namespace Impatient.EFCore.Tests.Query
             fixture.TestSqlLoggerFactory.Clear();
         }
 
-        public class Fixture : SpatialQueryRelationalFixture
+        public new class Fixture : SpatialQueryRelationalFixture
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
         }

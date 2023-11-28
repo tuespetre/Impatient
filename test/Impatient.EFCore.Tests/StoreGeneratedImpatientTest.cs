@@ -19,6 +19,8 @@ namespace Impatient.EFCore.Tests
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 
+            protected override string StoreName => "StoreGenerated";
+
             protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
             {
                 modelBuilder.Entity<Gumball>(

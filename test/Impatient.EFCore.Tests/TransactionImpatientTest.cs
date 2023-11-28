@@ -36,11 +36,8 @@ namespace Impatient.EFCore.Tests
                 base.Seed(context);
 
                 var database = context.Database.GetDbConnection().Database;
-
-#pragma warning disable EF1000 // Possible SQL injection vulnerability.
                 context.Database.ExecuteSqlRaw($"ALTER DATABASE [{database}] SET ALLOW_SNAPSHOT_ISOLATION ON".ToString());
                 context.Database.ExecuteSqlRaw($"ALTER DATABASE [{database}] SET READ_COMMITTED_SNAPSHOT ON".ToString());
-#pragma warning restore EF1000 // Possible SQL injection vulnerability.
             }
 
             public override void Reseed()

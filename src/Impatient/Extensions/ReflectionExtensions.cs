@@ -34,7 +34,7 @@ namespace Impatient.Extensions
 
         public static bool IsEnum(this Type type)
         {
-            return type.GetTypeInfo().IsEnum;
+            return type.IsEnum;
         }
 
         public static bool IsNullableType(this Type type)
@@ -55,14 +55,14 @@ namespace Impatient.Extensions
             }
         }
 
-        public static Type MakeNullableType(this Type type)
+        public static Type AsNullableType(this Type type)
         {
             if (type.IsNullableType())
             {
                 return type;
             }
 
-            if (type.GetTypeInfo().IsValueType)
+            if (type.IsValueType)
             {
                 return typeof(Nullable<>).MakeGenericType(type);
             }
@@ -112,9 +112,7 @@ namespace Impatient.Extensions
                 return type;
             }
 
-            var definitionTypeInfo = definition.GetTypeInfo();
-
-            if (definitionTypeInfo.IsInterface)
+            if (definition.IsInterface)
             {
                 foreach (var interfaceType in type.GetInterfaces())
                 {
@@ -130,7 +128,7 @@ namespace Impatient.Extensions
             {
                 GetBaseType:
 
-                type = type.GetTypeInfo().BaseType;
+                type = type.BaseType;
 
                 if (type is null || type == typeof(object))
                 {
@@ -167,7 +165,7 @@ namespace Impatient.Extensions
         }
 
         private static readonly Type[] scalarTypes =
-        {
+        [
             // Value types
             typeof(long), // bigint
             typeof(int), // int
@@ -204,7 +202,7 @@ namespace Impatient.Extensions
             typeof(sbyte),
             typeof(ushort),
             typeof(ulong),
-        };
+        ];
 
         public static bool IsTimeType(this Type type)
         {
@@ -228,7 +226,7 @@ namespace Impatient.Extensions
         }
 
         private static readonly Type[] numericTypes =
-        {
+        [
             typeof(byte),
             typeof(sbyte),
             typeof(ushort),
@@ -240,7 +238,7 @@ namespace Impatient.Extensions
             typeof(float),
             typeof(double),
             typeof(decimal),
-        };
+        ];
 
         public static bool IsConstantLiteralType(this Type type)
         {
@@ -248,7 +246,7 @@ namespace Impatient.Extensions
         }
 
         private static readonly Type[] constantLiteralTypes =
-        {
+        [
             typeof(sbyte),
             typeof(byte),
             typeof(short),
@@ -276,7 +274,7 @@ namespace Impatient.Extensions
             typeof(double?),
             typeof(decimal?),
             typeof(bool?),
-        };
+        ];
 
         #endregion
 

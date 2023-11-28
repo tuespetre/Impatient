@@ -334,8 +334,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private class PathFindingExpressionVisitor : ProjectionExpressionVisitor
         {
-            public Dictionary<string, MaterializerPathInfo> FoundPaths
-                = new Dictionary<string, MaterializerPathInfo>();
+            public Dictionary<string, MaterializerPathInfo> FoundPaths = [];
 
             private void AddPath(Type type, MaterializerPathInfo[] subpaths = null)
             {

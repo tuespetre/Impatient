@@ -39,7 +39,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
             {
                 if (shadowPropertyValues.Length == 0)
                 {
-                    entry = executor.EntryFactory.Create(executor.StateManager, entityType, entity);
+                    entry = new(executor.StateManager, entityType, entity);
 
                     executor.StateManager.StartTrackingFromQuery(entityType, entity, ValueBuffer.Empty);
                 }
@@ -47,7 +47,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
                 {
                     var valueBuffer = new ValueBuffer(shadowPropertyValues);
 
-                    entry = executor.EntryFactory.Create(executor.StateManager, entityType, entity, valueBuffer);
+                    entry = new(executor.StateManager, entityType, entity, valueBuffer);
 
                     executor.StateManager.StartTrackingFromQuery(entityType, entity, valueBuffer);
                 }
@@ -68,7 +68,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
                 {
                     var include = includes[i];
 
-                    include.AsNavigation().Setter.SetClrValue(entry.Entity, include.GetGetter().GetClrValue(entity));
+                    ((IRuntimePropertyBase)include).MaterializationSetter.SetClrValue(entry.Entity, include.GetGetter().GetClrValue(entity));
 
                     entry.SetIsLoaded(include, true);
                 }
@@ -105,14 +105,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
 
                 if (includes.Count != 0)
                 {
-                    info.Includes = new HashSet<INavigation>();
+                    info.Includes = [];
                 }
 
                 executor.CacheEntity(entityType, keyValues, info);
             }
             else if (includes.Count != 0 && info.Includes is null)
             {
-                info.Includes = new HashSet<INavigation>();
+                info.Includes = [];
 
                 executor.CacheEntity(entityType, keyValues, info);
             }
@@ -270,7 +270,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
             {
                 if (info.ShadowPropertyValues.Length == 0)
                 {
-                    entry = executor.EntryFactory.Create(executor.StateManager, info.EntityType, entity);
+                    entry = new(executor.StateManager, info.EntityType, entity);
 
                     executor.StateManager.StartTrackingFromQuery(entityType, entity, ValueBuffer.Empty);
                 }
@@ -278,7 +278,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
                 {
                     var valueBuffer = new ValueBuffer(info.ShadowPropertyValues);
 
-                    entry = executor.EntryFactory.Create(executor.StateManager, info.EntityType, entity, valueBuffer);
+                    entry = new(executor.StateManager, info.EntityType, entity, valueBuffer);
 
                     executor.StateManager.StartTrackingFromQuery(entityType, entity, valueBuffer);
                 }
@@ -323,7 +323,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
             }
             else
             {
-                navigation.AsNavigation().Setter.SetClrValue(cached, value);
+                ((IRuntimePropertyBase)navigation).MaterializationSetter.SetClrValue(cached, value);
             }
 
             var inverse = navigation.Inverse;
@@ -341,7 +341,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
             }
             else
             {
-                var setter = inverse.AsNavigation().Setter;
+                var setter = ((IRuntimePropertyBase)inverse).MaterializationSetter;
 
                 if (value is IEnumerable enumerable)
                 {

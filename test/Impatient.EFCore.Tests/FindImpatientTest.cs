@@ -1,6 +1,7 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Impatient.EFCore.Tests
@@ -12,14 +13,19 @@ namespace Impatient.EFCore.Tests
             fixture.ListLoggerFactory.Clear();
         }
 
-        protected override TEntity Find<TEntity>(DbContext context, params object[] keyValues)
-        {
-            return context.Find<TEntity>(keyValues);
-        }
+        protected override TestFinder Finder => new TestFinder2();
 
-        protected override ValueTask<TEntity> FindAsync<TEntity>(DbContext context, params object[] keyValues)
+        public class TestFinder2 : TestFinder
         {
-            return context.FindAsync<TEntity>(keyValues);
+            public override TEntity Find<TEntity>(DbContext context, params object[] keyValues)
+            {
+                return context.Find<TEntity>(keyValues);
+            }
+
+            public override ValueTask<TEntity> FindAsync<TEntity>(CancellationType cancellationType, DbContext context, object[] keyValues, CancellationToken cancellationToken = default)
+            {
+                return context.FindAsync<TEntity>(keyValues, cancellationToken);
+            }
         }
 
         public class Fixture : FindFixtureBase

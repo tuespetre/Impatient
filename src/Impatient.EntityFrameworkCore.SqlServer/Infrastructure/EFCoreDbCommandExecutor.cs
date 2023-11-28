@@ -20,18 +20,16 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 {
     public class EFCoreDbCommandExecutor : IDbCommandExecutor
     {
-        private readonly IDiagnosticsLogger<DbLoggerCategory.Database.Command> logger;
+        private readonly IRelationalCommandDiagnosticsLogger logger;
 
-        private readonly Dictionary<IEntityType, EntityLookups> entityLookups
-            = new Dictionary<IEntityType, EntityLookups>();
+        private readonly Dictionary<IEntityType, EntityLookups> entityLookups = [];
 
         private IStateManager stateManager;
-        private IInternalEntityEntryFactory entryFactory;
         private BufferingDbDataReader unbufferedReader;
 
         public EFCoreDbCommandExecutor(
             ICurrentDbContext currentDbContext,
-            IDiagnosticsLogger<DbLoggerCategory.Database.Command> logger)
+            IRelationalCommandDiagnosticsLogger logger)
         {
             CurrentDbContext = currentDbContext;
             this.logger = logger;
@@ -39,11 +37,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         public ICurrentDbContext CurrentDbContext { get; }
 
-        public IStateManager StateManager => stateManager
-            ?? (stateManager = CurrentDbContext.GetDependencies().StateManager);
-
-        public IInternalEntityEntryFactory EntryFactory => entryFactory
-            ?? (entryFactory = CurrentDbContext.Context.GetService<IInternalEntityEntryFactory>());
+        public IStateManager StateManager => 
+            stateManager ??= CurrentDbContext.GetDependencies().StateManager;
 
         public TResult ExecuteComplex<TResult>(Action<DbCommand> initializer, Func<DbDataReader, TResult> materializer)
         {
@@ -57,63 +52,64 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             connection.Open();
 
-            using (var command = CreateCommand(connection))
+            using var command = CreateCommand(connection);
+
+            initializer(command);
+
+            var commandId = Guid.NewGuid();
+            var startTime = DateTimeOffset.UtcNow;
+            var stopwatch = Stopwatch.StartNew();
+
+            logger.CommandReaderExecuting(
+                connection,
+                command,
+                CurrentDbContext.Context,
+                commandId,
+                connection.ConnectionId,
+                startTime,
+                CommandSource.LinqQuery);
+
+            try
             {
-                initializer(command);
+                using var reader = command.ExecuteReader(CommandBehavior.CloseConnection);
 
-                var commandId = Guid.NewGuid();
-                var startTime = DateTimeOffset.UtcNow;
-                var stopwatch = Stopwatch.StartNew();
-
-                logger.CommandReaderExecuting(
+                logger.CommandReaderExecuted(
                     connection,
                     command,
                     CurrentDbContext.Context,
                     commandId,
                     connection.ConnectionId,
-                    startTime);
+                    reader,
+                    startTime,
+                    stopwatch.Elapsed,
+                    CommandSource.LinqQuery);
 
-                try
-                {
-                    using (var reader = command.ExecuteReader(CommandBehavior.CloseConnection))
-                    {
-                        logger.CommandReaderExecuted(
-                            connection,
-                            command,
-                            CurrentDbContext.Context,
-                            commandId,
-                            connection.ConnectionId,
-                            reader,
-                            startTime,
-                            stopwatch.Elapsed);
+                reader.Read();
 
-                        reader.Read();
+                // TODO: this
+                //CurrentDbContext.GetDependencies().StateManager.BeginTrackingQuery();
 
-                        // TODO: this
-                        //CurrentDbContext.GetDependencies().StateManager.BeginTrackingQuery();
+                return materializer(reader);
+            }
+            catch (Exception exception)
+            {
+                logger.CommandError(
+                    connection,
+                    command,
+                    CurrentDbContext.Context,
+                    DbCommandMethod.ExecuteReader,
+                    commandId,
+                    connection.ConnectionId,
+                    exception,
+                    startTime,
+                    stopwatch.Elapsed,
+                    CommandSource.LinqQuery);
 
-                        return materializer(reader);
-                    }
-                }
-                catch (Exception exception)
-                {
-                    logger.CommandError(
-                        connection,
-                        command,
-                        CurrentDbContext.Context,
-                        DbCommandMethod.ExecuteReader,
-                        commandId,
-                        connection.ConnectionId,
-                        exception,
-                        startTime,
-                        stopwatch.Elapsed);
-
-                    throw;
-                }
-                finally
-                {
-                    connection.Close();
-                }
+                throw;
+            }
+            finally
+            {
+                connection.Close();
             }
         }
 
@@ -143,7 +139,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 CurrentDbContext.Context,
                 commandId,
                 connection.ConnectionId,
-                startTime);
+                startTime,
+                CommandSource.LinqQuery);
 
             var reader = default(DbDataReader);
 
@@ -161,7 +158,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     connection.ConnectionId,
                     reader,
                     startTime,
-                    stopwatch.Elapsed);
+                    stopwatch.Elapsed,
+                    CommandSource.LinqQuery);
             }
             catch (Exception exception)
             {
@@ -176,7 +174,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     connection.ConnectionId,
                     exception,
                     startTime,
-                    stopwatch.Elapsed);
+                    stopwatch.Elapsed,
+                    CommandSource.LinqQuery);
 
                 throw;
             }
@@ -239,61 +238,63 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             connection.Open();
 
-            using (var command = CreateCommand(connection))
+            using var command = CreateCommand(connection);
+
+            initializer(command);
+
+            var commandId = Guid.NewGuid();
+            var startTime = DateTimeOffset.UtcNow;
+            var stopwatch = Stopwatch.StartNew();
+
+            logger.CommandScalarExecuting(
+                connection,
+                command,
+                CurrentDbContext.Context,
+                commandId,
+                connection.ConnectionId,
+                startTime,
+                CommandSource.LinqQuery);
+
+            try
             {
-                initializer(command);
+                var result = command.ExecuteScalar();
 
-                var commandId = Guid.NewGuid();
-                var startTime = DateTimeOffset.UtcNow;
-                var stopwatch = Stopwatch.StartNew();
-
-                logger.CommandScalarExecuting(
+                logger.CommandScalarExecuted(
                     connection,
                     command,
                     CurrentDbContext.Context,
                     commandId,
                     connection.ConnectionId,
-                    startTime);
+                    result,
+                    startTime,
+                    stopwatch.Elapsed,
+                    CommandSource.LinqQuery);
 
-                try
-                {
-                    var result = command.ExecuteScalar();
+                return DBNull.Value.Equals(result) ? default : (TResult)result;
+            }
+            catch (Exception exception)
+            {
+                logger.CommandError(
+                    connection,
+                    command,
+                    CurrentDbContext.Context,
+                    DbCommandMethod.ExecuteScalar,
+                    commandId,
+                    connection.ConnectionId,
+                    exception,
+                    startTime,
+                    stopwatch.Elapsed,
+                    CommandSource.LinqQuery);
 
-                    logger.CommandScalarExecuted(
-                        connection,
-                        command,
-                        CurrentDbContext.Context,
-                        commandId,
-                        connection.ConnectionId,
-                        result,
-                        startTime,
-                        stopwatch.Elapsed);
-
-                    return DBNull.Value.Equals(result) ? default : (TResult)result;
-                }
-                catch (Exception exception)
-                {
-                    logger.CommandError(
-                        connection,
-                        command,
-                        CurrentDbContext.Context,
-                        DbCommandMethod.ExecuteScalar,
-                        commandId,
-                        connection.ConnectionId,
-                        exception,
-                        startTime,
-                        stopwatch.Elapsed);
-
-                    throw;
-                }
-                finally
-                {
-                    connection.Close();
-                }
+                throw;
+            }
+            finally
+            {
+                connection.Close();
             }
         }
 
-        private DbCommand CreateCommand(IRelationalConnection connection)
+        private static DbCommand CreateCommand(IRelationalConnection connection)
         {
             var command = connection.DbConnection.CreateCommand();
 
@@ -386,7 +387,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private class KeyValuesComparer1 : IEqualityComparer<object[]>
         {
-            public static KeyValuesComparer1 Instance = new KeyValuesComparer1();
+            public static KeyValuesComparer1 Instance = new();
 
             public bool Equals(object[] x, object[] y)
             {
@@ -401,7 +402,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private class KeyValuesComparer2 : IEqualityComparer<object[]>
         {
-            public static KeyValuesComparer2 Instance = new KeyValuesComparer2();
+            public static KeyValuesComparer2 Instance = new();
 
             public bool Equals(object[] x, object[] y)
             {

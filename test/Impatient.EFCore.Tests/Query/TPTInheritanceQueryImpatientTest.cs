@@ -6,7 +6,7 @@ namespace Impatient.EFCore.Tests.Query
 {
     public class TPTInheritanceQueryImpatientTest : TPTInheritanceQueryTestBase<TPTInheritanceQueryImpatientTest.Fixture>
     {
-        public TPTInheritanceQueryImpatientTest(Fixture fixture) : base(fixture)
+        public TPTInheritanceQueryImpatientTest(Fixture fixture, Xunit.Abstractions.ITestOutputHelper helper) : base(fixture, helper)
         {
             fixture.TestSqlLoggerFactory.Clear();
         }

@@ -67,7 +67,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                             target = innerVariable;
                         }
 
-                        target = Expression.MakeMemberAccess(target, path[path.Length - 1].GetWritableMemberInfo());
+                        target = Expression.MakeMemberAccess(target, path[^1].GetWritableMemberInfo());
 
                         if (target.Type.IsCollectionType())
                         {

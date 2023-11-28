@@ -4,33 +4,24 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Impatient.EFCore.Tests.Query
 {
-    public class InheritanceImpatientTest : InheritanceRelationalQueryTestBase<InheritanceImpatientTest.Fixture>
+    public class InheritanceImpatientTest : InheritanceRelationshipsQueryRelationalTestBase<InheritanceImpatientTest.Fixture>
     {
         public InheritanceImpatientTest(Fixture fixture) : base(fixture)
         {
             fixture.TestSqlLoggerFactory.Clear();
         }
 
-        [Fact(Skip = EFCoreSkipReasons.FromSql)]
-        public override void FromSql_on_derived()
+        public override Task Nested_include_with_inheritance_reference_reference(bool async)
         {
-            base.FromSql_on_derived();
+            return base.Nested_include_with_inheritance_reference_reference(async);
         }
 
-        [Fact(Skip = EFCoreSkipReasons.FromSql)]
-        public override void FromSql_on_root()
-        {
-            base.FromSql_on_root();
-        }
-
-        protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
-            => facade.UseTransaction(transaction.GetDbTransaction());
-
-        public class Fixture : InheritanceQueryRelationalFixture
+        public class Fixture : InheritanceRelationshipsQueryRelationalFixture
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
         }

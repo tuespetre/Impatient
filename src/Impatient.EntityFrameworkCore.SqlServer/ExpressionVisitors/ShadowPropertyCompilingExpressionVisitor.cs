@@ -32,7 +32,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                 var expression = arguments[0].UnwrapInnerExpression();
                 var propertyNameArgument = arguments[1];
 
-                var entityType = model.GetEntityTypes(expression.Type).FirstOrDefault();
+                var entityType = model.FindEntityType(expression.Type);
 
                 if (entityType is not null)
                 {
@@ -41,11 +41,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                     var currentType = entityType;
 
                     while (innerExpression is MemberExpression memberExpression
-                        && currentType.HasDefiningNavigation())
+                        && currentType.IsOwned())
                     {
-                        var definingNavigation 
-                            = currentType.DefiningEntityType.FindNavigation(
-                                currentType.DefiningNavigationName);
+                        var definingNavigation = currentType.FindOwnership().GetNavigation(false);
 
                         if (definingNavigation?.GetSemanticReadableMemberInfo() != memberExpression.Member)
                         {
@@ -77,7 +75,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                             = Expression.MakeMemberAccess(
                                 Expression.Call(
                                     entry,
-                                    typeof(EntityEntry).GetMethod(nameof(EntityEntry.Reference)),
+                                    typeof(EntityEntry).GetMethod(nameof(EntityEntry.Reference), [typeof(string)]),
                                     Expression.Constant(member.Name)),
                                 typeof(ReferenceEntry).GetProperty(nameof(ReferenceEntry.TargetEntry)));
                     }
@@ -90,7 +88,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                             Expression.MakeMemberAccess(
                                 Expression.Call(
                                     entry,
-                                    typeof(EntityEntry).GetMethod(nameof(EntityEntry.Reference)),
+                                    typeof(EntityEntry).GetMethod(nameof(EntityEntry.Reference), [typeof(string)]),
                                     arguments[1]),
                                 typeof(ReferenceEntry).GetProperty(nameof(ReferenceEntry.CurrentValue)));
                     }
@@ -100,7 +98,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                             Expression.MakeMemberAccess(
                                 Expression.Call(
                                     entry,
-                                    typeof(EntityEntry).GetMethod(nameof(EntityEntry.Collection)),
+                                    typeof(EntityEntry).GetMethod(nameof(EntityEntry.Collection), [typeof(string)]),
                                     arguments[1]),
                                 typeof(CollectionEntry).GetProperty(nameof(CollectionEntry.CurrentValue), typeof(IEnumerable)));
                     }
@@ -110,7 +108,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                             = Expression.MakeMemberAccess(
                                 Expression.Call(
                                     entry,
-                                    typeof(EntityEntry).GetMethod(nameof(EntityEntry.Property)),
+                                    typeof(EntityEntry).GetMethod(nameof(EntityEntry.Property), [typeof(string)]),
                                     arguments[1]),
                                 typeof(PropertyEntry).GetProperty(nameof(PropertyEntry.CurrentValue)));
                     }

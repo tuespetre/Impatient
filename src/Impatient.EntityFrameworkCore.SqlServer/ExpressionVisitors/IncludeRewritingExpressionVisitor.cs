@@ -157,7 +157,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                             return polymorphicExpression.Update(row, polymorphicExpression.Descriptors);
                         }
 
-                        if (!(row is SimpleExtraPropertiesExpression extraProperties))
+                        if (row is not SimpleExtraPropertiesExpression extraProperties)
                         {
                             extraProperties
                                 = new SimpleExtraPropertiesExpression(

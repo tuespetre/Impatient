@@ -2,7 +2,6 @@
 using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -18,7 +17,7 @@ namespace Impatient.Tests
         {
             get
             {
-                foreach (var methodInfo in typeof(Queryable).GetTypeInfo().DeclaredMethods)
+                foreach (var methodInfo in typeof(Queryable).GetRuntimeMethods())
                 {
                     if (methodInfo.Name == nameof(Queryable.AsQueryable) || !methodInfo.IsPublic || !methodInfo.IsStatic)
                     {
@@ -87,7 +86,7 @@ namespace Impatient.Tests
             visitor.Visit(query.Expression);
 
             Assert.AreEqual(1, mapping.Count);
-            Assert.IsTrue(mapping.Keys.Single().GetType().GetTypeInfo().GetCustomAttribute<CompilerGeneratedAttribute>() != null);
+            Assert.IsTrue(mapping.Keys.Single().GetType().GetCustomAttribute<CompilerGeneratedAttribute>() != null);
         }
     }
 }

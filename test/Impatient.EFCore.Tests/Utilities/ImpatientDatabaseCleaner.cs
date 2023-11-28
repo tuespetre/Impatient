@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Scaffolding;
 using Microsoft.EntityFrameworkCore.Scaffolding.Metadata;
 using Microsoft.EntityFrameworkCore.SqlServer.Diagnostics.Internal;
 using Microsoft.EntityFrameworkCore.SqlServer.Scaffolding.Internal;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
@@ -20,7 +21,8 @@ namespace Impatient.EFCore.Tests.Utilities
                     new LoggingOptions(),
                     new DiagnosticListener("Fake"),
                     new SqlServerLoggingDefinitions(),
-                    new NullDbContextLogger()));
+                    new NullDbContextLogger()),
+                default);
 
         protected override string BuildCustomEndingSql(DatabaseModel databaseModel)
             => @"

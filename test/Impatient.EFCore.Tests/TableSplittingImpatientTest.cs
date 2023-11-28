@@ -3,8 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Xunit.Abstractions;
 
-#pragma warning disable xUnit1024 // Test methods cannot have overloads
-
 namespace Impatient.EFCore.Tests
 {
     public class TableSplittingImpatientTest : TableSplittingTestBase

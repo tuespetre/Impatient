@@ -31,6 +31,8 @@ namespace Impatient.EFCore.Tests
 
             public override bool SupportsDecimalComparisons => true;
 
+            public override bool PreservesDateTimeKind => throw new NotImplementedException();
+
             public override DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder)
                 => base
                     .AddOptions(builder)

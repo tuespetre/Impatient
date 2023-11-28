@@ -138,7 +138,7 @@ namespace Impatient.Query.Expressions
 
         public bool RequiresPushdownForRightSideOfJoin()
         {
-            return RequiresPushdownForLeftSideOfJoin() || !(Table is AliasedTableExpression) || HasPredicate || HasOrdering;
+            return RequiresPushdownForLeftSideOfJoin() || Table is not AliasedTableExpression || HasPredicate || HasOrdering;
         }
 
         public bool RequiresPushdownForPredicate()

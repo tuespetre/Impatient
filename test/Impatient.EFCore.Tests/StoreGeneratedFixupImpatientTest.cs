@@ -12,14 +12,19 @@ namespace Impatient.EFCore.Tests
         {
         }
 
-        protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
-            => facade.UseTransaction(transaction.GetDbTransaction());
-
         protected override void MarkIdsTemporary(DbContext context, object dependent, object principal)
         {
             var entry = context.Entry(dependent);
             entry.Property("Id1").IsTemporary = true;
             entry.Property("Id2").IsTemporary = true;
+
+            foreach (var property in entry.Properties)
+            {
+                if (property.Metadata.IsForeignKey())
+                {
+                    property.IsTemporary = true;
+                }
+            }
 
             entry = context.Entry(principal);
             entry.Property("Id1").IsTemporary = true;
@@ -35,11 +40,16 @@ namespace Impatient.EFCore.Tests
             entry.Property("Id").IsTemporary = true;
         }
 
-        protected override bool EnforcesFKs => true;
+        protected override bool EnforcesFKs
+            => true;
+
+        protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
+            => facade.UseTransaction(transaction.GetDbTransaction());
 
         public class StoreGeneratedFixupImpatientFixture : StoreGeneratedFixupRelationalFixtureBase
         {
-            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
+            protected override ITestStoreFactory TestStoreFactory
+                => ImpatientTestStoreFactory.Instance;
 
             protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
             {
@@ -157,9 +167,9 @@ namespace Impatient.EFCore.Tests
                         b.Property(e => e.Id2).ValueGeneratedOnAdd().HasDefaultValueSql("newid()");
                     });
 
-                modelBuilder.Entity<Item>(b => { b.Property(e => e.Id).ValueGeneratedOnAdd(); });
+                modelBuilder.Entity<Item>(b => b.Property(e => e.Id).ValueGeneratedOnAdd());
 
-                modelBuilder.Entity<Game>(b => { b.Property(e => e.Id).ValueGeneratedOnAdd().HasDefaultValueSql("newid()"); });
+                modelBuilder.Entity<Game>(b => b.Property(e => e.Id).ValueGeneratedOnAdd().HasDefaultValueSql("newid()"));
             }
         }
     }

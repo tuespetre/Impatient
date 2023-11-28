@@ -10,6 +10,11 @@ namespace Impatient.EFCore.Tests
             fixture.ListLoggerFactory.Clear();
         }
 
+        protected override DbContextOptionsBuilder ConfigureProvider(DbContextOptionsBuilder optionsBuilder)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override BadUniverseContext CreateBadUniverse(DbContextOptionsBuilder optionsBuilder)
         {
             throw new NotImplementedException();

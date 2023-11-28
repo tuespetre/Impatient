@@ -4,17 +4,11 @@ using Microsoft.EntityFrameworkCore.TestUtilities;
 
 namespace Impatient.EFCore.Tests.Query
 {
-    public class FiltersInheritanceImpatientTest : FiltersInheritanceQueryTestBase<FiltersInheritanceImpatientTest.Fixture>
+    public class FiltersInheritanceImpatientTest(FiltersInheritanceImpatientTest.Fixture fixture) : FiltersInheritanceQueryTestBase<FiltersInheritanceImpatientTest.Fixture>(fixture)
     {
-        public FiltersInheritanceImpatientTest(Fixture fixture) : base(fixture)
-        {
-        }
-
-        public class Fixture : InheritanceQueryRelationalFixture
+        public class Fixture : InheritanceQueryFixtureBase
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
-
-            protected override bool EnableFilters => true;
         }
     }
 }

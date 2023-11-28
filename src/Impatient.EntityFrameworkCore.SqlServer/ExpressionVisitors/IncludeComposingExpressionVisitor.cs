@@ -13,7 +13,7 @@ using System.Reflection;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
-    public class IncludeComposingExpressionVisitor : ExpressionVisitor
+    public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descriptorSet) : ExpressionVisitor
     {
         private static readonly MethodInfo queryableSelectMethodInfo
             = ReflectionExtensions.GetGenericMethodDefinition((IQueryable<object> o) => o.Select(x => x));
@@ -27,16 +27,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         private static readonly MethodInfo queryableOfTypeMethodInfo
             = ReflectionExtensions.GetGenericMethodDefinition((IQueryable o) => o.OfType<object>());
 
-        private readonly IModel model;
-        private readonly DescriptorSet descriptorSet;
-
-        public IncludeComposingExpressionVisitor(
-            IModel model,
-            DescriptorSet descriptorSet)
-        {
-            this.model = model;
-            this.descriptorSet = descriptorSet;
-        }
+        private readonly IModel model = model;
+        private readonly DescriptorSet descriptorSet = descriptorSet;
 
         public override Expression Visit(Expression node)
         {
@@ -45,7 +37,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 case MethodCallExpression call
                 when IsIncludeOrThenIncludeMethod(call.Method):
                 {
-                    var currentSet = new List<List<MemberInfo>> { new List<MemberInfo>() };
+                    var currentSet = new List<List<MemberInfo>> { new() };
                     var paths = new List<List<MemberInfo>>();
                     var inner = call.Arguments[0];
                     var type = inner.Type.GetSequenceType();
@@ -75,7 +67,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                 {
                                     foreach (var resolvedPath in resolvedPaths)
                                     {
-                                        currentSet.Add(resolvedPath.Concat(currentSet[i]).ToList());
+                                        currentSet.Add([.. resolvedPath, .. currentSet[i]]);
                                     }
                                 }
 
@@ -95,7 +87,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                             // Paths are inserted at the beginning to preserve the 
                             // semantic order of includes defined by the query.
                             paths.InsertRange(0, currentSet);
-                            currentSet = new List<List<MemberInfo>> { new List<MemberInfo>() };
+                            currentSet = [[]];
                         }
 
                         inner = call.Arguments[0];
@@ -104,7 +96,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     }
                     while (IsIncludeOrThenIncludeMethod(call?.Method));
 
-                    if (currentSet.Any(p => p.Any()))
+                    if (currentSet.Any(p => p.Count != 0))
                     {
                         paths.InsertRange(0, currentSet);
                     }
@@ -129,14 +121,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     var parameter
                         = Expression.Parameter(
                             innerSequenceType,
-                            entityType.GetTableName().Substring(0, 1).ToLower());
+                            entityType.GetTableName()[..1].ToLower());
 
                     var includeAccessors
                         = BuildIncludeAccessors(
                             entityType,
                             parameter,
                             paths.AsEnumerable(),
-                            new INavigation[0]).ToArray();
+                            Array.Empty<INavigation>()).ToArray();
 
                     var includeExpression
                         = new IncludeExpression(
@@ -161,7 +153,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         {
             var entityType
                 = model.GetEntityTypes()
-                    .SingleOrDefault(t => !t.IsOwned() && t.ClrType == type);
+                    .SingleOrDefault(t => !t.IsOwned() && t.ClrType == type) as IReadOnlyEntityType;
 
             if (entityType is null)
             {
@@ -177,7 +169,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             var paths = ResolveIncludePaths(names, ref depth, ref entityType).Select(p => p.ToList()).ToList();
 
-            if (!paths.Any(p => p.Count() == names.Length))
+            if (!paths.Any(p => p.Count == names.Length))
             {
                 // TODO: this
                 throw new InvalidOperationException();
@@ -188,7 +180,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return paths;
         }
 
-        private List<List<MemberInfo>> ResolveIncludePaths(string[] names, ref int depth, ref IEntityType entityType)
+        private List<List<MemberInfo>> ResolveIncludePaths(string[] names, ref int depth, ref IReadOnlyEntityType entityType)
         {
             var navigations = entityType.FindDerivedNavigations(names[depth]);
 
@@ -212,7 +204,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 depth--;
 
-                result.AddRange(navigations.Select(n => new List<MemberInfo> { n.GetSemanticReadableMemberInfo() }));
+                result.AddRange(navigations.Select(n => new List<MemberInfo> { n.GetIdentifyingMemberInfo() }));
 
                 return result;
             }
@@ -225,9 +217,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 foreach (var subpath in resolvedSubpaths)
                 {
-                    success |= (subpath.Count != 0);
+                    success |= subpath.Count != 0;
 
-                    subpath.Insert(0, navigation.GetSemanticReadableMemberInfo());
+                    subpath.Insert(0, navigation.GetIdentifyingMemberInfo());
 
                     result.Add(subpath);
                 }
@@ -239,7 +231,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 if (resolvedSubpaths.Count == 0)
                 {
-                    result.Add(new List<MemberInfo> { navigation.GetSemanticReadableMemberInfo() });
+                    result.Add([navigation.GetIdentifyingMemberInfo()]);
                 }
             }
 
@@ -252,9 +244,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             try
             {
-                properties
-                    = lambdaExpression
-                        .GetComplexPropertyAccess(nameof(EntityFrameworkQueryableExtensions.Include));
+                properties = lambdaExpression.GetComplexPropertyAccess();
             }
             catch (ArgumentException argumentException)
             {
@@ -268,7 +258,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             var entityType
                 = model.GetEntityTypes()
-                    .SingleOrDefault(t => !t.IsOwned() && t.ClrType == clrType);
+                    .SingleOrDefault(t => !t.IsOwned() && t.ClrType == clrType) as IReadOnlyEntityType;
 
             if (entityType is null)
             {
@@ -289,7 +279,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     navigation
                         = entityType
                             .FindDerivedNavigations(property.Name)
-                            .SingleOrDefault(n => n.GetSemanticReadableMemberInfo() == property);
+                            .SingleOrDefault(n => n.GetIdentifyingMemberInfo() == property);
                 }
 
                 if (navigation is null)
@@ -306,7 +296,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
         }
 
-        private IEnumerable<(Expression expression, IList<INavigation> path)> BuildIncludeAccessors(
+        private static IEnumerable<(Expression expression, IList<INavigation> path)> BuildIncludeAccessors(
             IEntityType entityType,
             Expression baseExpression,
             IEnumerable<IEnumerable<MemberInfo>> paths,
@@ -359,7 +349,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                                 navigation.TargetEntityType,
                                 innerParameter,
                                 pathset,
-                                new INavigation[0]).ToArray();
+                                Array.Empty<INavigation>()).ToArray();
 
                         var includeExpression
                             = new IncludeExpression(
@@ -419,9 +409,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
     internal static class ExpressionExtensionsShim
     {
-        public static IReadOnlyList<PropertyInfo> GetComplexPropertyAccess(
-            this LambdaExpression propertyAccessExpression,
-            string methodName)
+        public static IReadOnlyList<PropertyInfo> GetComplexPropertyAccess(this LambdaExpression propertyAccessExpression)
         {
             if (!TryGetComplexPropertyAccess(propertyAccessExpression, out var propertyPath))
             {
@@ -458,7 +446,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 memberExpression = RemoveTypeAs(RemoveConvert(propertyAccessExpression)) as MemberExpression;
 
-                if (!(memberExpression?.Member is PropertyInfo propertyInfo))
+                if (memberExpression?.Member is not PropertyInfo propertyInfo)
                 {
                     return null;
                 }

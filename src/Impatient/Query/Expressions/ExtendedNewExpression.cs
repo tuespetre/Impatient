@@ -31,7 +31,7 @@ namespace Impatient.Query.Expressions
 
         public ExtendedNewExpression(Type type)
         {
-            var constructor = type.GetConstructor(Array.Empty<Type>());
+            var constructor = type.GetConstructor([]);
 
             if (constructor is null)
             {
@@ -69,7 +69,7 @@ namespace Impatient.Query.Expressions
                     throw new ArgumentException($"Arguments cannot be null. Element {i} is null.");
                 }
 
-                if (!(ReadableMembers[i] is null))
+                if (ReadableMembers[i] is not null)
                 {
                     if (!(ReadableMembers[i].GetMemberType().IsAssignableFrom(Arguments[i].Type)))
                     {
@@ -82,7 +82,7 @@ namespace Impatient.Query.Expressions
                     }
                 }
                 
-                if (!(WritableMembers[i] is null))
+                if (WritableMembers[i] is not null)
                 {
                     if (!(WritableMembers[i].GetMemberType().IsAssignableFrom(Arguments[i].Type)))
                     {

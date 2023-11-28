@@ -14,7 +14,7 @@ namespace Impatient.Query.Infrastructure
      */
     public class ExpressionEqualityComparer : IEqualityComparer<Expression>
     {
-        public static readonly ExpressionEqualityComparer Instance = new ExpressionEqualityComparer();
+        public static readonly ExpressionEqualityComparer Instance = new();
 
         public bool Equals(Expression x, Expression y)
         {
@@ -282,11 +282,11 @@ namespace Impatient.Query.Infrastructure
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int GetHashCode(ConstantExpression node)
+        private static int GetHashCode(ConstantExpression node)
         {
             var hash = StartHashCode(node);
 
-            if (node.Value is IQueryable queryable && !(queryable is EnumerableQuery))
+            if (node.Value is IQueryable queryable && queryable is not EnumerableQuery)
             {
                 hash = Combine(hash, queryable.ElementType.GetHashCode());
                 hash = Combine(hash, queryable.Provider.GetType().GetHashCode());
@@ -300,7 +300,7 @@ namespace Impatient.Query.Infrastructure
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int GetHashCode(DebugInfoExpression node)
+        private static int GetHashCode(DebugInfoExpression node)
         {
             var hash = StartHashCode(node);
 
@@ -318,7 +318,7 @@ namespace Impatient.Query.Infrastructure
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int GetHashCode(DefaultExpression node)
+        private static int GetHashCode(DefaultExpression node)
         {
             return StartHashCode(node);
         }
@@ -715,9 +715,9 @@ namespace Impatient.Query.Infrastructure
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int Combine(int a, int b) => unchecked((a * 16777619) ^ b);
+        private static int Combine(int a, int b) => unchecked((a * 16777619) ^ b);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int StartHashCode(Expression node) => Combine(node.NodeType.GetHashCode(), node.Type.GetHashCode());
+        private static int StartHashCode(Expression node) => Combine(node.NodeType.GetHashCode(), node.Type.GetHashCode());
     }
 }

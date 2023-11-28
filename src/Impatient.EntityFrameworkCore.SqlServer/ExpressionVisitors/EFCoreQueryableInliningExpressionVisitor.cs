@@ -43,7 +43,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 case FromSqlQueryRootExpression fromSqlQueryRoot:
                 {
                     // TODO: more details?
-                    throw new NotSupportedException();
+                    throw new NotSupportedException("Impatient for EF Core does not support ad-hoc SQL query building.");
                 }
 
                 case QueryRootExpression queryRoot:
@@ -63,7 +63,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     // This block is moreso for types with defining queries than types that
                     // just happen to have query filters. The defining queries need to be inlined.
 
-                    if (!(query is RelationalQueryExpression))
+                    if (query is not RelationalQueryExpression)
                     {
                         var repointer = new QueryFilterRepointingExpressionVisitor(dbContextParameter);
 
@@ -100,7 +100,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 // This block is moreso for types with defining queries than types that
                 // just happen to have query filters. The defining queries need to be inlined.
 
-                if (!(query is RelationalQueryExpression))
+                if (query is not RelationalQueryExpression)
                 {
                     var repointer = new QueryFilterRepointingExpressionVisitor(dbContextParameter);
 
