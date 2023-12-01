@@ -1290,6 +1290,44 @@ WHERE ([a].[Prop1] = N'What the') AND ([a].[Prop2] = 9)",
         }
 
         [TestMethod]
+        public void Where_StartsWith_EmptyString()
+        {
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                where a.Prop1.StartsWith(string.Empty)
+                select a;
+
+            var results = query.ToList();
+
+            Assert.AreEqual(2, results.Count);
+
+            Assert.AreEqual(
+                @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [a]
+WHERE [a].[Prop1] IS NOT NULL",
+                SqlLog);
+        }
+
+        [TestMethod]
+        public void Where_EndsWith_EmptyString()
+        {
+            var query =
+                from a in impatient.CreateQuery<MyClass1>(MyClass1QueryExpression)
+                where a.Prop1.EndsWith(string.Empty)
+                select a;
+
+            var results = query.ToList();
+
+            Assert.AreEqual(2, results.Count);
+
+            Assert.AreEqual(
+                @"SELECT [a].[Prop1] AS [Prop1], [a].[Prop2] AS [Prop2]
+FROM [dbo].[MyClass1] AS [a]
+WHERE [a].[Prop1] IS NOT NULL",
+                SqlLog);
+        }
+
+        [TestMethod]
         public void Where_PartialClientEval_LeftSide()
         {
             var query =

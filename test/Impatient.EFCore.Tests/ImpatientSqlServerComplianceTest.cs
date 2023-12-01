@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.BulkUpdates;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.Update;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -41,6 +42,28 @@ namespace Impatient.EFCore.Tests
                 // Migrations - not our concern
                 typeof(MigrationsTestBase<>),
                 typeof(MigrationsSqlGeneratorTestBase),
+
+                // Updates - not our concern
+                typeof(JsonUpdateTestBase<>),
+                typeof(NonSharedModelUpdatesTestBase),
+                typeof(StoredProcedureUpdateTestBase),
+                typeof(StoreValueGenerationTestBase<>),
+                typeof(UpdateSqlGeneratorTestBase),
+
+                // Miscellaneous updates - not our concern
+                typeof(DataBindingTestBase<>),
+                typeof(GraphUpdatesTestBase<>),
+                typeof(MusicStoreImpatientTest),
+                typeof(ProxyGraphUpdatesTestBase<>),
+                typeof(TransactionTestBase<>),
+                typeof(UpdatesRelationalTestBase<>),
+                typeof(UpdatesTestBase<>),
+
+                // The test is not built to use the TestStoreFactory, so sticking our compiler in is too tricky
+                typeof(JsonTypesTestBase),
+                typeof(JsonTypesRelationalTestBase),
+                typeof(ModelBuilding101TestBase),
+                typeof(ModelBuilding101RelationalTestBase),
             };
     }
 }

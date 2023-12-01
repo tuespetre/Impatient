@@ -30,140 +30,119 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         private readonly IModel model = model;
         private readonly DescriptorSet descriptorSet = descriptorSet;
 
-        public override Expression Visit(Expression node)
+        protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            switch (node)
+            if (!IsIncludeOrThenIncludeMethod(node.Method))
             {
-                case MethodCallExpression call
-                when IsIncludeOrThenIncludeMethod(call.Method):
-                {
-                    var currentSet = new List<List<MemberInfo>> { new() };
-                    var paths = new List<List<MemberInfo>>();
-                    var inner = call.Arguments[0];
-                    var type = inner.Type.GetSequenceType();
-
-                    do
-                    {
-                        switch (call.Arguments[1].UnwrapLambda() ?? call.Arguments[1])
-                        {
-                            case LambdaExpression lambdaExpression:
-                            {
-                                foreach (var path in currentSet)
-                                {
-                                    path.InsertRange(0, ProcessIncludeLambda(lambdaExpression));
-                                }
-
-                                break;
-                            }
-
-                            case ConstantExpression constantExpression:
-                            {
-                                var argument = (string)((ConstantExpression)call.Arguments[1]).Value;
-                                var names = argument.Split('.').Select(p => p.Trim()).ToArray();
-                                var startCount = currentSet.Count;
-                                var resolvedPaths = ResolveIncludePaths(type, names);
-
-                                for (var i = 0; i < startCount; i++)
-                                {
-                                    foreach (var resolvedPath in resolvedPaths)
-                                    {
-                                        currentSet.Add([.. resolvedPath, .. currentSet[i]]);
-                                    }
-                                }
-
-                                currentSet.RemoveRange(0, startCount);
-
-                                break;
-                            }
-
-                            default:
-                            {
-                                throw new NotSupportedException($"Include argument expression of type {call.Arguments[1].NodeType} not supported");
-                            }
-                        }
-
-                        if (IsIncludeOrThenIncludeMethod(call.Method) && !IsThenIncludeMethod(call.Method))
-                        {
-                            // Paths are inserted at the beginning to preserve the 
-                            // semantic order of includes defined by the query.
-                            paths.InsertRange(0, currentSet);
-                            currentSet = [[]];
-                        }
-
-                        inner = call.Arguments[0];
-                        type = inner.Type.GetSequenceType();
-                        call = inner as MethodCallExpression;
-                    }
-                    while (IsIncludeOrThenIncludeMethod(call?.Method));
-
-                    if (currentSet.Any(p => p.Count != 0))
-                    {
-                        paths.InsertRange(0, currentSet);
-                    }
-
-                    var innerSequenceType = inner.Type.GetSequenceType();
-
-                    var entityType
-                        = model.GetEntityTypes()
-                            .Where(t => !t.IsOwned())
-                            .FirstOrDefault(t => t.ClrType == innerSequenceType);
-
-                    if (entityType is null)
-                    {
-                        // TODO:
-                        throw new NotSupportedException();
-                        /*throw new NotSupportedException(
-                            CoreStrings.IncludeNotSpecifiedDirectlyOnEntityType(
-                                $"Include(\"{string.Join('.', paths.First().Select(m => m.Name))}\")",
-                                paths.First().First().Name));*/
-                    }
-
-                    var parameter
-                        = Expression.Parameter(
-                            innerSequenceType,
-                            entityType.GetTableName()[..1].ToLower());
-
-                    var includeAccessors
-                        = BuildIncludeAccessors(
-                            entityType,
-                            parameter,
-                            paths.AsEnumerable(),
-                            Array.Empty<INavigation>()).ToArray();
-
-                    var includeExpression
-                        = new IncludeExpression(
-                            parameter,
-                            includeAccessors.Select(i => i.expression),
-                            includeAccessors.Select(i => i.path));
-
-                    return Expression.Call(
-                        queryableSelectMethodInfo.MakeGenericMethod(parameter.Type, parameter.Type),
-                        Visit(inner),
-                        Expression.Lambda(includeExpression, parameter));
-                }
-
-                default:
-                {
-                    return base.Visit(node);
-                }
+                return base.VisitMethodCall(node);
             }
+
+            /*
+                var filteredBlogs = context.Blogs
+                    .Include(blog => blog.Posts.Where(post => post.BlogId == 1))
+                    .ThenInclude(post => post.Author)
+                    .Include(blog => blog.Posts.Where(post => post.BlogId == 1))
+                    .ThenInclude(post => post.Tags.OrderBy(postTag => postTag.TagId).Skip(3))
+                    .ToList();
+            */
+
+            // Where, OrderBy, OrderByDescending, ThenBy, ThenByDescending, Skip, Take
+
+            var currentSet = new List<List<MemberInfo>> { new() };
+            var paths = new List<List<MemberInfo>>();
+            var inner = node.Arguments[0];
+            var type = inner.Type.GetSequenceType();
+
+            do
+            {
+                switch (node.Arguments[1].UnwrapLambda() ?? node.Arguments[1])
+                {
+                    case LambdaExpression lambdaExpression:
+                    {
+                        foreach (var path in currentSet)
+                        {
+                            path.InsertRange(0, ProcessIncludeLambda(lambdaExpression));
+                        }
+
+                        break;
+                    }
+
+                    case ConstantExpression constantExpression:
+                    {
+                        var argument = (string)((ConstantExpression)node.Arguments[1]).Value;
+                        var names = argument.Split('.').Select(p => p.Trim()).ToArray();
+                        var startCount = currentSet.Count;
+                        var resolvedPaths = ResolveIncludePaths(type, names);
+
+                        for (var i = 0; i < startCount; i++)
+                        {
+                            foreach (var resolvedPath in resolvedPaths)
+                            {
+                                currentSet.Add([.. resolvedPath, .. currentSet[i]]);
+                            }
+                        }
+
+                        currentSet.RemoveRange(0, startCount);
+
+                        break;
+                    }
+
+                    default:
+                    {
+                        throw new NotSupportedException($"Include argument expression of type {node.Arguments[1].NodeType} not supported");
+                    }
+                }
+
+                if (IsIncludeOrThenIncludeMethod(node.Method) && !IsThenIncludeMethod(node.Method))
+                {
+                    // Paths are inserted at the beginning to preserve the 
+                    // semantic order of includes defined by the query.
+                    paths.InsertRange(0, currentSet);
+                    currentSet = [[]];
+                }
+
+                inner = node.Arguments[0];
+                type = inner.Type.GetSequenceType();
+                node = inner as MethodCallExpression;
+            }
+            while (IsIncludeOrThenIncludeMethod(node?.Method));
+
+            if (currentSet.Any(p => p.Count != 0))
+            {
+                paths.InsertRange(0, currentSet);
+            }
+
+            var innerSequenceType = inner.Type.GetSequenceType();
+
+            var entityType = GetEntityTypeForInclude(innerSequenceType);
+
+            var parameter
+                = Expression.Parameter(
+                    innerSequenceType,
+                    entityType.GetTableName()[..1].ToLower());
+
+            var includeAccessors
+                = BuildIncludeAccessors(
+                    entityType,
+                    parameter,
+                    paths.AsEnumerable(),
+                    Array.Empty<INavigation>()).ToArray();
+
+            var includeExpression
+                = new IncludeExpression(
+                    parameter,
+                    includeAccessors.Select(i => i.expression),
+                    includeAccessors.Select(i => i.path));
+
+            return Expression.Call(
+                queryableSelectMethodInfo.MakeGenericMethod(parameter.Type, parameter.Type),
+                Visit(inner),
+                Expression.Lambda(includeExpression, parameter));
         }
 
         private List<List<MemberInfo>> ResolveIncludePaths(Type type, string[] names)
         {
-            var entityType
-                = model.GetEntityTypes()
-                    .SingleOrDefault(t => !t.IsOwned() && t.ClrType == type) as IReadOnlyEntityType;
-
-            if (entityType is null)
-            {
-                // TODO: this
-                throw new NotSupportedException();
-                /*throw new NotSupportedException(
-                    CoreStrings.IncludeNotSpecifiedDirectlyOnEntityType(
-                        $"Include(\"{string.Join('.', names)}\")",
-                        names[0]));*/
-            }
+            var entityType = GetEntityTypeForInclude(type);
 
             int depth = 0;
 
@@ -171,16 +150,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             if (!paths.Any(p => p.Count == names.Length))
             {
-                // TODO: this
-                throw new InvalidOperationException();
-                /*throw new InvalidOperationException(
-                    CoreStrings.IncludeBadNavigation(names[depth], entityType.DisplayName()));*/
+                throw new InvalidOperationException("Include error");
             }
 
             return paths;
         }
 
-        private List<List<MemberInfo>> ResolveIncludePaths(string[] names, ref int depth, ref IReadOnlyEntityType entityType)
+        private List<List<MemberInfo>> ResolveIncludePaths(string[] names, ref int depth, ref IEntityType entityType)
         {
             var navigations = entityType.FindDerivedNavigations(names[depth]);
 
@@ -240,15 +216,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private IEnumerable<MemberInfo> ProcessIncludeLambda(LambdaExpression lambdaExpression)
         {
-            IReadOnlyList<PropertyInfo> properties;
-
-            try
+            if (!lambdaExpression.TryGetComplexPropertyAccess(out var properties))
             {
-                properties = lambdaExpression.GetComplexPropertyAccess();
-            }
-            catch (ArgumentException argumentException)
-            {
-                throw new InvalidOperationException(argumentException.Message, argumentException);
+                throw new InvalidOperationException("The specified include expression is not supported.");
             }
 
             var clrType
@@ -256,19 +226,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     ? lambdaExpression.Parameters[0].Type.GetSequenceType()
                     : lambdaExpression.Parameters[0].Type;
 
-            var entityType
-                = model.GetEntityTypes()
-                    .SingleOrDefault(t => !t.IsOwned() && t.ClrType == clrType) as IReadOnlyEntityType;
-
-            if (entityType is null)
-            {
-                // TODO: this
-                throw new NotSupportedException();
-                /*throw new NotSupportedException(
-                    CoreStrings.IncludeNotSpecifiedDirectlyOnEntityType(
-                        $"Include(\"{string.Join('.', properties.Select(p => p.Name))}\")",
-                        properties.First().Name));*/
-            }
+            var entityType = GetEntityTypeForInclude(clrType);
 
             foreach (var property in properties)
             {
@@ -279,15 +237,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     navigation
                         = entityType
                             .FindDerivedNavigations(property.Name)
-                            .SingleOrDefault(n => n.GetIdentifyingMemberInfo() == property);
+                            .SingleOrDefault(n => n.PropertyInfo == property);
                 }
 
                 if (navigation is null)
                 {
-                    // TODO: this
-                    throw new InvalidOperationException();
-                    /*throw new InvalidOperationException(
-                        CoreStrings.IncludeBadNavigation(property, entityType.DisplayName()));*/
+                    throw new InvalidOperationException("The specified include expression does not reference a defined navigation.");
                 }
 
                 yield return property;
@@ -405,20 +360,22 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return method?.DeclaringType == typeof(EntityFrameworkQueryableExtensions)
                 && method.Name.Equals(nameof(EntityFrameworkQueryableExtensions.ThenInclude));
         }
+
+        private IEntityType GetEntityTypeForInclude(Type type)
+        {
+            var entityType = model.GetEntityTypes().SingleOrDefault(t => !t.IsOwned() && t.ClrType == type);
+
+            if (entityType is null)
+            {
+                throw new InvalidOperationException($"Unable to include entity of unmapped type: {type.FullName}");
+            }
+
+            return entityType;
+        }
     }
 
     internal static class ExpressionExtensionsShim
     {
-        public static IReadOnlyList<PropertyInfo> GetComplexPropertyAccess(this LambdaExpression propertyAccessExpression)
-        {
-            if (!TryGetComplexPropertyAccess(propertyAccessExpression, out var propertyPath))
-            {
-                throw new ArgumentException();
-            }
-
-            return propertyPath;
-        }
-
         public static bool TryGetComplexPropertyAccess(
             this LambdaExpression propertyAccessExpression,
             out IReadOnlyList<PropertyInfo> propertyPath)
@@ -434,7 +391,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return propertyPath is not null;
         }
 
-        private static IReadOnlyList<PropertyInfo> MatchPropertyAccess(
+        private static List<PropertyInfo> MatchPropertyAccess(
             this Expression parameterExpression, 
             Expression propertyAccessExpression)
         {

@@ -80,7 +80,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
                 pathFinder.Visit(body);
 
-                if (pathFinder.FoundPaths.Any())
+                if (pathFinder.FoundPaths.Count != 0)
                 {
                     // The ProjectionBubblingExpressionVisitor might give us some
                     // ExpandedGroupings to reference even though the actual result

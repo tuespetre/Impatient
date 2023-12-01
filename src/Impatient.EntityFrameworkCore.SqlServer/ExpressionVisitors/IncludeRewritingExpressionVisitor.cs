@@ -58,7 +58,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
         private class CoreProjectionIncludeRewritingExpressionVisitor : ExpressionVisitor
         {
             private Expression includedExpression;
-            private Stack<INavigation> path;
+            private readonly Stack<INavigation> path;
 
             public bool Finished { get; private set; }
 

@@ -12,7 +12,7 @@ namespace Impatient.EFCore.Tests
         {
         }
 
-        protected override TestHelpers TestHelpers => throw new System.NotImplementedException();
+        protected override TestHelpers TestHelpers => ImpatientTestHelpers.Instance;
 
         protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
             => facade.UseTransaction(transaction.GetDbTransaction());

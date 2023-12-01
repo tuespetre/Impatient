@@ -1159,7 +1159,7 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
             Builder.Append("(");
 
-            if (sqlFunctionExpression.Arguments.Any())
+            if (sqlFunctionExpression.Arguments.Count != 0)
             {
                 Visit(sqlFunctionExpression.Arguments.First());
 

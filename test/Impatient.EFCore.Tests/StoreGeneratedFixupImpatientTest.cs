@@ -6,9 +6,9 @@ using Microsoft.EntityFrameworkCore.TestUtilities;
 
 namespace Impatient.EFCore.Tests
 {
-    public class StoreGeneratedFixupImpatientTest : StoreGeneratedFixupRelationalTestBase<StoreGeneratedFixupImpatientTest.StoreGeneratedFixupImpatientFixture>
+    public class StoreGeneratedFixupImpatientTest : StoreGeneratedFixupRelationalTestBase<StoreGeneratedFixupImpatientTest.Fixture>
     {
-        public StoreGeneratedFixupImpatientTest(StoreGeneratedFixupImpatientFixture fixture) : base(fixture)
+        public StoreGeneratedFixupImpatientTest(Fixture fixture) : base(fixture)
         {
         }
 
@@ -46,7 +46,7 @@ namespace Impatient.EFCore.Tests
         protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
             => facade.UseTransaction(transaction.GetDbTransaction());
 
-        public class StoreGeneratedFixupImpatientFixture : StoreGeneratedFixupRelationalFixtureBase
+        public new class Fixture : StoreGeneratedFixupRelationalFixtureBase
         {
             protected override ITestStoreFactory TestStoreFactory
                 => ImpatientTestStoreFactory.Instance;

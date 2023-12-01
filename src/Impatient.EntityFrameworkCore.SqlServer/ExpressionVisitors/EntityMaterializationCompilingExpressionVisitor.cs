@@ -16,7 +16,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 {
     public class EntityMaterializationCompilingExpressionVisitor(IModel model) : ExpressionVisitor
     {
-        private readonly IModel model = model ?? throw new System.ArgumentNullException(nameof(model));
+        private readonly IModel model = model ?? throw new ArgumentNullException(nameof(model));
         private readonly Dictionary<string, int> identifierCounts = [];
 
         public override Expression Visit(Expression node)
@@ -212,7 +212,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         {
                             var collection = arguments[i].AsCollectionType();
                             var elementType = collection.Type.GetSequenceType();
-                            //var elementType = node.WritableMembers[i].GetMemberType().GetSequenceType();
                             var listType = typeof(List<>).MakeGenericType(elementType);
 
                             arguments[i] = Coalesce(collection, New(listType));

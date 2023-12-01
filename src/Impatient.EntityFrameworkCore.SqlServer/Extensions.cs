@@ -1,6 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
@@ -19,7 +22,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         /// </summary>
         public static MemberInfo GetSemanticReadableMemberInfo(this IPropertyBase propertyBase)
         {
-            return propertyBase.GetReadablePropertyInfo() ?? propertyBase.GetReadableFieldInfo();
+            return (MemberInfo)propertyBase.GetReadablePropertyInfo() ?? propertyBase.GetReadableFieldInfo();
         }
 
         /// <summary>
@@ -51,14 +54,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 case PropertyAccessMode.PreferField:
                 case PropertyAccessMode.PreferFieldDuringConstruction:
                 {
-                    return propertyBase.GetReadableFieldInfo()
+                    return (MemberInfo)propertyBase.GetReadableFieldInfo()
                         ?? propertyBase.GetReadablePropertyInfo()
                         ?? throw new InvalidOperationException();
                 }
 
                 case PropertyAccessMode.PreferProperty:
                 {
-                    return propertyBase.GetReadablePropertyInfo()
+                    return (MemberInfo)propertyBase.GetReadablePropertyInfo()
                         ?? propertyBase.GetReadableFieldInfo()
                         ?? throw new InvalidOperationException();
                 }
@@ -95,14 +98,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 case PropertyAccessMode.PreferField:
                 case PropertyAccessMode.PreferFieldDuringConstruction:
                 {
-                    return propertyBase.GetWritableFieldInfo()
+                    return (MemberInfo)propertyBase.GetWritableFieldInfo()
                         ?? propertyBase.GetWritablePropertyInfo()
                         ?? throw new InvalidOperationException();
                 }
 
                 case PropertyAccessMode.PreferProperty:
                 {
-                    return propertyBase.GetWritablePropertyInfo()
+                    return (MemberInfo)propertyBase.GetWritablePropertyInfo()
                         ?? propertyBase.GetWritableFieldInfo()
                         ?? throw new InvalidOperationException();
                 }
@@ -114,7 +117,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
         }
 
-        private static MemberInfo GetReadablePropertyInfo(this IPropertyBase propertyBase)
+        private static PropertyInfo GetReadablePropertyInfo(this IPropertyBase propertyBase)
         {
             if (propertyBase.PropertyInfo?.CanRead is true)
             {
@@ -126,12 +129,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return foundProperty?.CanRead is true ? foundProperty : null;
         }
 
-        private static MemberInfo GetReadableFieldInfo(this IPropertyBase propertyBase)
+        private static FieldInfo GetReadableFieldInfo(this IPropertyBase propertyBase)
         {
             return propertyBase.FieldInfo?.DeclaringType.GetField(propertyBase.FieldInfo.Name, bindingFlags);
         }
 
-        private static MemberInfo GetWritablePropertyInfo(this IPropertyBase propertyBase)
+        private static PropertyInfo GetWritablePropertyInfo(this IPropertyBase propertyBase)
         {
             if (propertyBase.PropertyInfo?.CanWrite is true)
             {
@@ -143,9 +146,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return foundProperty?.CanWrite is true ? foundProperty : null;
         }
 
-        private static MemberInfo GetWritableFieldInfo(this IPropertyBase propertyBase)
+        private static FieldInfo GetWritableFieldInfo(this IPropertyBase propertyBase)
         {
             return propertyBase.FieldInfo?.DeclaringType.GetField(propertyBase.FieldInfo.Name, bindingFlags);
+        }
+
+        public static IEnumerable<INavigation> FindDerivedNavigations(this IEntityType entityType, string name)
+        {
+            return entityType.GetDerivedTypes().Select(t => t.FindDeclaredNavigation(name)).Where(n => n != null);
         }
     }
 }

@@ -12,8 +12,8 @@ namespace Impatient.EFCore.Tests.Query
         {
         }
 
-        /*protected override QueryAsserter CreateQueryAsserter(Fixture fixture) =>
-            new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);*/
+        protected override QueryAsserter CreateQueryAsserter(Fixture fixture) =>
+            new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
 
         public class Fixture : ComplexNavigationsSharedTypeQueryRelationalFixtureBase
         {

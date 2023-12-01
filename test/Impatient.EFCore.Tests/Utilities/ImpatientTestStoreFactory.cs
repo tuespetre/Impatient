@@ -9,7 +9,7 @@ namespace Impatient.EFCore.Tests.Utilities
 {
     public class ImpatientTestStoreFactory : ITestStoreFactory
     {
-        public static ImpatientTestStoreFactory Instance { get; } = new ImpatientTestStoreFactory();
+        public static ImpatientTestStoreFactory Instance { get; } = new();
 
         private readonly ImpatientCompatibility compatibility = ImpatientCompatibility.Default;
 

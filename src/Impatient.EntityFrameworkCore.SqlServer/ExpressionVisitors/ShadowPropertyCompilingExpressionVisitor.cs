@@ -92,7 +92,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                                     arguments[1]),
                                 typeof(ReferenceEntry).GetProperty(nameof(ReferenceEntry.CurrentValue)));
                     }
-                    else if (node.Type.IsCollectionType())
+                    else if (node.Type.IsSequenceType())
                     {
                         finalExpression =
                             Expression.MakeMemberAccess(

@@ -126,7 +126,10 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                             }
                             else if (constant.Value.Equals(string.Empty))
                             {
-                                result = Expression.Constant(true);
+                                result
+                                    = Expression.NotEqual(
+                                        @object,
+                                        Expression.Constant(null, typeof(string)));
                             }
                         }
                         else
@@ -203,7 +206,10 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                             }
                             else if (constant.Value.Equals(string.Empty))
                             {
-                                result = Expression.Constant(true);
+                                result
+                                    = Expression.NotEqual(
+                                        @object,
+                                        Expression.Constant(null, typeof(string)));
                             }
                         }
                         else
@@ -242,7 +248,10 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                             }
                             else if (constant.Value.Equals(string.Empty))
                             {
-                                result = Expression.Constant(true);
+                                result
+                                    = Expression.NotEqual(
+                                        @object,
+                                        Expression.Constant(null, typeof(string)));
                             }
                         }
                         else

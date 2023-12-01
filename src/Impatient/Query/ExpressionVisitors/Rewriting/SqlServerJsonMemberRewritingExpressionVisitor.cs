@@ -27,11 +27,22 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                 case SqlExpression sqlExpression
                 when !sqlExpression.Type.IsScalarType():
                 {
+                    if (node.Type == typeof(bool))
+                    {
+                        var jsonValue = new SqlFunctionExpression(
+                            "JSON_VALUE",
+                            typeof(string),
+                            sqlExpression,
+                            Expression.Constant(GetJsonPath(path)));
+
+                        return Expression.Equal(jsonValue, Expression.Constant("true"));
+                    }
+
                     return new SqlFunctionExpression(
-                        node.Type.IsScalarType() ? "JSON_VALUE" : "JSON_QUERY", 
-                        node.Type, 
-                        sqlExpression, 
-                        Expression.Constant($"$.{string.Join(".", path.GetPropertyNamesForJson())}"));
+                        node.Type.IsScalarType() ? "JSON_VALUE" : "JSON_QUERY",
+                        node.Type,
+                        sqlExpression,
+                        Expression.Constant(GetJsonPath(path)));
                 }
 
                 default:
@@ -39,6 +50,11 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                     return base.VisitMember(node);
                 }
             }
+        }
+
+        private static string GetJsonPath(List<MemberInfo> path)
+        {
+            return $"$.{string.Join(".", path.GetPropertyNamesForJson())}";
         }
     }
 }

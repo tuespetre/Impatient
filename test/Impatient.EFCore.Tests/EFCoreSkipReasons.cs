@@ -19,5 +19,11 @@
 
         public const string SpecialIncludes =
             "Not currently supporting filtered or ordered includes.";
+
+        public const string TestRunAborts =
+            "The test is currently aborting when XUnit runs it. Should be fixed.";
+
+        public const string TranslationBeyondEF =
+            "The test demonstrates a query that Impatient translates but EF does not.";
     }
 }

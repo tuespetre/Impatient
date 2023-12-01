@@ -482,7 +482,7 @@ WHERE [p].[Discontinued] IN (0, 1)
             services.AddDbContext<NorthwindDbContext>(options =>
             {
                 options
-                    .UseSqlServer(@"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=true; TrustServerCertificate=true")
+                    .UseSqlServer(@"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=true; TrustServerCertificate=true; MultipleActiveResultSets=true;")
                     .UseImpatient();
             });
 
@@ -498,7 +498,9 @@ WHERE [p].[Discontinued] IN (0, 1)
                                   Customer = context.Set<Customer>().Where(ClientPredicate).FirstOrDefault()
                               }).Take(5).ToArray();
 
-                Assert.AreEqual(@"Opening connection t
+                Assert.AreEqual(@"Creating DbConnectio
+Created DbConnection
+Opening connection t
 Opened connection to
 Executing DbCommand 
 Executed DbCommand (

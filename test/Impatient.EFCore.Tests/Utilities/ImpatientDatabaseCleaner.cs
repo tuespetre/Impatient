@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore.Diagnostics.Internal;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Scaffolding;
 using Microsoft.EntityFrameworkCore.Scaffolding.Metadata;
+using Microsoft.EntityFrameworkCore.SqlServer.Design.Internal;
 using Microsoft.EntityFrameworkCore.SqlServer.Diagnostics.Internal;
 using Microsoft.EntityFrameworkCore.SqlServer.Scaffolding.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
@@ -14,7 +16,7 @@ namespace Impatient.EFCore.Tests.Utilities
 {
     public class ImpatientDatabaseCleaner : RelationalDatabaseCleaner
     {
-        protected override IDatabaseModelFactory CreateDatabaseModelFactory(ILoggerFactory loggerFactory)
+        /*protected override IDatabaseModelFactory CreateDatabaseModelFactory(ILoggerFactory loggerFactory)
             => new SqlServerDatabaseModelFactory(
                 new DiagnosticsLogger<DbLoggerCategory.Scaffolding>(
                     loggerFactory,
@@ -22,7 +24,18 @@ namespace Impatient.EFCore.Tests.Utilities
                     new DiagnosticListener("Fake"),
                     new SqlServerLoggingDefinitions(),
                     new NullDbContextLogger()),
-                default);
+                default);*/
+        protected override IDatabaseModelFactory CreateDatabaseModelFactory(ILoggerFactory loggerFactory)
+        {
+            var services = new ServiceCollection();
+            services.AddEntityFrameworkSqlServer();
+
+            new SqlServerDesignTimeServices().ConfigureDesignTimeServices(services);
+
+            return services
+                .BuildServiceProvider() // No scope validation; cleaner violates scopes, but only resolve services once.
+                .GetRequiredService<IDatabaseModelFactory>();
+        }
 
         protected override string BuildCustomEndingSql(DatabaseModel databaseModel)
             => @"

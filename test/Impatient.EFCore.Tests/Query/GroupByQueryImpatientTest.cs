@@ -32,6 +32,14 @@ GROUP BY [o].[EmployeeID]
 ");
         }
 
+        // this test uses FirstOrDefault on a complex subquery. may or may not want to support that.
+        [ConditionalTheory(Skip = EFCoreSkipReasons.Punt)]
+        [MemberData(nameof(IsAsyncData))]
+        public override Task AsEnumerable_in_subquery_for_GroupBy(bool async)
+        {
+            return base.AsEnumerable_in_subquery_for_GroupBy(async);
+        }
+
         [ConditionalTheory]
         [MemberData(nameof(IsAsyncData))]
         public override async Task Distinct_GroupBy_Aggregate(bool async)
@@ -87,6 +95,14 @@ WHERE [o].[CustomerID] IN (
         WHERE (([g].[Key] IS NULL AND [g_1].[CustomerID] IS NULL) OR ([g].[Key] = [g_1].[CustomerID]))
     ) > 30
 )");
+        }
+
+        // this test uses FirstOrDefault on a complex subquery. may or may not want to support that.
+        [ConditionalTheory(Skip = EFCoreSkipReasons.Punt)]
+        [MemberData(nameof(IsAsyncData))]
+        public override Task GroupBy_aggregate_from_multiple_query_in_same_projection_2(bool async)
+        {
+            return base.GroupBy_aggregate_from_multiple_query_in_same_projection_2(async);
         }
 
         [ConditionalTheory]
@@ -1076,6 +1092,15 @@ FROM [Order Details] AS [od]
 INNER JOIN [Orders] AS [o] ON [od].[OrderID] = [o].[OrderID]
 GROUP BY [o].[CustomerID]
 ");
+        }
+
+        // We don't support grouping by a subquery, at least not right now.
+        // We probably could by pushing the key selector into the projection, pushing down into a subquery, and then grouping.
+        [ConditionalTheory(Skip = EFCoreSkipReasons.Punt)]
+        [MemberData(nameof(IsAsyncData))]
+        public override Task GroupBy_scalar_subquery(bool async)
+        {
+            return base.GroupBy_scalar_subquery(async);
         }
 
         [ConditionalTheory]

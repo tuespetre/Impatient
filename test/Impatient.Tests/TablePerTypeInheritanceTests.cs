@@ -202,7 +202,7 @@ namespace Impatient.Tests
                    select p.Reverse()).ToArray();
 
             return from t in tableDescriptors
-                   let p = (from p in inheritancePaths where p.Contains(t.SourceType) select p)
+                   let p = from p in inheritancePaths where p.Contains(t.SourceType) select p
                    from r in TreeNode.Treeify(p)
                    select CreateTablePerTypeQueryExpression(t.SourceType, r.Transform(node =>
                    {
@@ -236,7 +236,7 @@ namespace Impatient.Tests
                    }));
         }
 
-        private static Expression CreateTablePerTypeQueryExpression(
+        private static EnumerableRelationalQueryExpression CreateTablePerTypeQueryExpression(
             Type targetType,
             TreeNode<TablePerTypeInfo> hierarchyRoot)
         {

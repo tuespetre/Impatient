@@ -1,7 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 
@@ -14,7 +13,7 @@ namespace Impatient.EFCore.Tests.Utilities
             ConnectionString = 
                 $"Server=.\\sqlexpress; " +
                 $"Database=impatient-efcore-{name.ToLowerInvariant()}; " +
-                $"Trusted_Connection=True; TrustServerCertificate=True";
+                $"Trusted_Connection=True; TrustServerCertificate=True;";
 
             Connection = new SqlConnection(ConnectionString)
             {

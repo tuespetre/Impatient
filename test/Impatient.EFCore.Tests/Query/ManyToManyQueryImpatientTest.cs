@@ -200,7 +200,10 @@ namespace Impatient.EFCore.Tests.Query
             fixture.ListLoggerFactory.Clear();
         }
 
-        public class Fixture : ManyToManyQueryFixtureBase
+        protected override QueryAsserter CreateQueryAsserter(Fixture fixture) =>
+            new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
+
+        public new class Fixture : ManyToManyQueryFixtureBase
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
         }

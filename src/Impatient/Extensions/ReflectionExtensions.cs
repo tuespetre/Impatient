@@ -77,7 +77,7 @@ namespace Impatient.Extensions
 
         public static bool IsCollectionType(this Type type)
         {
-            return type.IsGenericType(typeof(ICollection<>));
+            return type.IsGenericType(typeof(ICollection<>)) || type.IsGenericType(typeof(IReadOnlyCollection<>));
         }
 
         public static bool IsSequenceType(this Type type)

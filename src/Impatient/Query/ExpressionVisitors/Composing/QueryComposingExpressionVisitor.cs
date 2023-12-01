@@ -159,10 +159,10 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 // Pass-through operations
 
                 case nameof(Queryable.AsQueryable):
+                case nameof(Enumerable.AsEnumerable):
                 case nameof(Enumerable.ToArray):
                 case nameof(Enumerable.ToList):
-                // case nameof(Enumerable.ToHashSet):
-                case "ToHashSet":
+                case nameof(Enumerable.ToHashSet):
                 {
                     return outerQuery.WithTransformationMethod(node.Method);
                 }
@@ -323,14 +323,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     return HandleSkipWhile(outerQuery, node, visitedArguments, FallbackToEnumerable);
                 }
 
-                // case nameof(Queryable.TakeLast):
-                case "TakeLast":
+                case nameof(Queryable.TakeLast):
                 {
                     return HandleTakeLast(outerQuery, node, visitedArguments, FallbackToEnumerable);
                 }
 
-                // case nameof(Queryable.SkipLast):
-                case "SkipLast":
+                case nameof(Queryable.SkipLast):
                 {
                     return HandleSkipLast(outerQuery, node, visitedArguments, FallbackToEnumerable);
                 }
@@ -357,14 +355,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     return HandleSetOperator(outerQuery, node, visitedArguments, FallbackToEnumerable);
                 }
 
-                //case nameof(Queryable.Append):
-                case "Append":
+                case nameof(Queryable.Append):
                 {
                     return HandleAppend(outerQuery, node, visitedArguments, FallbackToEnumerable);
                 }
 
-                //case nameof(Queryable.Prepend):
-                case "Prepend":
+                case nameof(Queryable.Prepend):
                 {
                     return HandlePrepend(outerQuery, node, visitedArguments, FallbackToEnumerable);
                 }
@@ -1441,6 +1437,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     outerSelectExpression);
             }
 
+            // TODO: allow complex types as well?
             return Expression.Call(
                 GetGenericMethodDefinition((IEnumerable<object> e) => e.FirstOrDefault())
                     .MakeGenericMethod(outerSelectExpression.Type),

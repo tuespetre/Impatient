@@ -8,7 +8,6 @@ namespace Impatient.EFCore.Tests.Query
     {
         public TPTFiltersInheritanceQueryImpatientTest(Fixture fixture) : base(fixture)
         {
-            fixture.TestSqlLoggerFactory.Clear();
         }
 
         public class Fixture : TPTInheritanceQueryFixture

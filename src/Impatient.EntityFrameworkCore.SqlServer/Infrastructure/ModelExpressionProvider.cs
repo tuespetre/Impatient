@@ -10,13 +10,12 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Impatient.EntityFrameworkCore.SqlServer
 {
-    using System.Linq;
-
     public class ModelExpressionProvider
     {
         private static readonly MethodInfo efPropertyMethodInfo
@@ -152,7 +151,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         public IEnumerable<PrimaryKeyDescriptor> CreatePrimaryKeyDescriptors(DbContext context)
         {
             return from t in context.Model.GetEntityTypes()
-                   //where !t.IsOwned()
                    let k = t.FindPrimaryKey()
                    where k is not null
                    select new PrimaryKeyDescriptor(
@@ -213,13 +211,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
         }
 
-        private static bool IsTablePerHierarchy(IEntityType rootType, IEnumerable<IEntityType> hierarchy)
-        {
-            return hierarchy.All(t =>
-                t.GetSchema() == rootType.GetSchema()
-                && t.GetTableName() == rootType.GetTableName());
-        }
-
         public Expression CreateQueryExpression(Type elementType, DbContext context)
         {
             var targetTypes = context.Model.GetEntityTypes().Where(t => t.ClrType == elementType).ToArray();
@@ -228,7 +219,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return CreateQueryExpression(targetType, context);
         }
 
-        public Expression CreateQueryExpression(IEntityType targetType, DbContext context)
+        private Expression CreateQueryExpression(IEntityType targetType, DbContext context)
         {
             Expression queryExpression;
 
@@ -240,52 +231,25 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
 
             var rootType = targetType.GetRootType();
+            var hierarchy = rootType.GetDerivedTypesInclusive().ToArray();
 
-            var schemaName = rootType.GetSchema() ?? rootType.GetDefaultSchema() ?? rootType.GetDefaultViewSchema();
-            var tableName = rootType.GetTableName() ?? rootType.GetViewName();
-
-            var table
-                = new BaseTableExpression(
-                    schemaName,
-                    tableName,
-                    tableName.Substring(0, 1).ToLower(),
-                    rootType.ClrType);
-
-            var materializer = CreateMaterializer(targetType, table);
-
-            var projection = new ServerProjectionExpression(materializer);
-
-            var selectExpression = new SelectExpression(projection, table);
-
-            var discriminatingType = targetType;
-
-            while (discriminatingType is not null)
+            if (hierarchy.Length == 1)
             {
-                var discriminatorProperty = discriminatingType.FindDiscriminatorProperty();
-
-                if (discriminatorProperty is not null)
-                {
-                    selectExpression
-                       = selectExpression.AddToPredicate(
-                           new SqlInExpression(
-                               MakeColumnExpression(
-                                   table,
-                                   discriminatorProperty),
-                               Expression.NewArrayInit(
-                                   discriminatorProperty.ClrType,
-                                   from t in discriminatingType.GetDerivedTypesInclusive()
-                                   where !t.IsAbstract()
-                                   select Expression.Constant(
-                                        t.GetDiscriminatorValue(),
-                                        discriminatorProperty.ClrType))));
-                }
-
-                discriminatingType = FindSameTabledPrincipalType(discriminatingType);
+                queryExpression = CreateSingleTableMonomorphicQueryExpression(rootType);
             }
+            else 
+            {
+                var tables = hierarchy.Select(GetRelationalId).Distinct().ToArray();
 
-            queryExpression = new EnumerableRelationalQueryExpression(selectExpression);
-
-            // apply query filters lol
+                if (tables.Length == 1)
+                {
+                    queryExpression = CreateSingleTablePolymorphicQueryExpression(rootType, targetType, hierarchy);
+                }
+                else
+                {
+                    queryExpression = CreateMultiTablePolymorphicMaterializer(rootType, targetType, hierarchy);
+                }
+            }
 
             ApplyQueryFilters:
 
@@ -322,8 +286,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 currentType = currentType.BaseType;
             }
 
-            // recast lol
-
             if (recast)
             {
                 queryExpression
@@ -335,89 +297,133 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return queryExpression;
         }
 
-        private Expression CreateMaterializer(IEntityType targetType, BaseTableExpression table)
+        private EnumerableRelationalQueryExpression CreateSingleTableMonomorphicQueryExpression(IEntityType targetType)
         {
-            var rootType = targetType.GetRootType();
-            var hierarchy = rootType.GetDerivedTypes().Prepend(rootType).ToArray();
-            var keyExpression = CreateMaterializationKeySelector(targetType);
+            var schemaName = targetType.GetSchema() ?? targetType.GetDefaultSchema() ?? targetType.GetDefaultViewSchema();
+            var tableName = targetType.GetTableName() ?? targetType.GetViewName();
 
-            if (hierarchy.Length == 1)
-            {
-                // No inheritance
+            var table
+                = new BaseTableExpression(
+                    schemaName,
+                    tableName,
+                    tableName.Substring(0, 1).ToLower(),
+                    targetType.ClrType);
 
-                return CreateMaterializationExpression(targetType, table, p => MakeColumnExpression(table, p));
-            }
-            
-            if (IsTablePerHierarchy(rootType, hierarchy))
-            {
-                // Table-per-hierarchy inheritance
+            var materializer = CreateMaterializationExpression(targetType, table, p => MakeColumnExpression(table, p));
 
-                var properties
-                    = (from t in hierarchy
-                       from p in IterateAllProperties(t)
-                       group p by GetRelationalId(p) into g
-                       select (id: g.Key, property: g.First())).ToArray();
+            var projection = new ServerProjectionExpression(materializer);
 
-                var columns
-                    = (from p in properties.Select(p => p.property)
-                       select MakeColumnExpression(table, p)).ToArray();
+            var selectExpression = new SelectExpression(projection, table);
 
-                var tupleType = ValueTupleHelper.CreateTupleType(columns.Select(c => c.Type));
-                var tupleParameter = Expression.Parameter(tupleType);
-
-                Expression MakeTupleColumnExpression(IProperty property)
-                {
-                    var propertyRelationalId = GetRelationalId(property);
-
-                    return Expression.Convert(
-                        ValueTupleHelper.CreateMemberExpression(
-                            tupleType,
-                            tupleParameter,
-                            Array.FindIndex(properties, q => q.id.Equals(propertyRelationalId))),
-                        property.ClrType);
-                };
-
-                var concreteTypes = hierarchy.Where(t => !t.ClrType.IsAbstract).ToArray();
-                var descriptors = new PolymorphicTypeDescriptor[concreteTypes.Length];
-
-                for (var i = 0; i < concreteTypes.Length; i++)
-                {
-                    var concreteType = concreteTypes[i];
-
-                    var test
-                        = Expression.Lambda(
-                            Expression.Equal(
-                                ValueTupleHelper.CreateMemberExpression(
-                                    tupleType, 
-                                    tupleParameter,
-                                    Array.FindIndex(properties, p => p.property == concreteType.FindDiscriminatorProperty())),
-                                Expression.Constant(concreteType.GetDiscriminatorValue())),
-                            tupleParameter);
-
-                    var descriptorMaterializer
-                        = Expression.Lambda(
-                            CreateMaterializationExpression(concreteType, table, MakeTupleColumnExpression),
-                            tupleParameter);
-
-                    descriptors[i] = new PolymorphicTypeDescriptor(concreteType.ClrType, test, descriptorMaterializer);
-                }
-
-                return new PolymorphicExpression(
-                    targetType.ClrType,
-                    ValueTupleHelper.CreateNewExpression(tupleType, columns),
-                    descriptors).Filter(targetType.ClrType);
-            }
-
-            // Waiting on EF Core:
-
-            // TODO: (EF Core ?.?) Table-per-type polymorphism
-
-            // TODO: (EF Core ?.?) Table-per-concrete polymorphism
-
-            throw new NotSupportedException();
+            return new EnumerableRelationalQueryExpression(selectExpression);
         }
 
-        private static ExtendedNewExpression CreateNewExpression(IEntityType type, BaseTableExpression table, Func<IProperty, Expression> makeColumnExpression)
+        private EnumerableRelationalQueryExpression CreateSingleTablePolymorphicQueryExpression(IEntityType rootType, IEntityType targetType, IEntityType[] hierarchy)
+        {
+            var schemaName = rootType.GetSchema() ?? rootType.GetDefaultSchema() ?? rootType.GetDefaultViewSchema();
+            var tableName = rootType.GetTableName() ?? rootType.GetViewName();
+
+            var table
+                = new BaseTableExpression(
+                    schemaName,
+                    tableName,
+                    tableName.Substring(0, 1).ToLower(),
+                    rootType.ClrType);
+
+            var properties
+                = (from t in hierarchy
+                   from p in IterateAllProperties(t)
+                   group p by GetRelationalId(p) into g
+                   select (id: g.Key, property: g.First())).ToArray();
+
+            var columns
+                = (from p in properties.Select(p => p.property)
+                   select MakeColumnExpression(table, p)).ToArray();
+
+            var tupleType = ValueTupleHelper.CreateTupleType(columns.Select(c => c.Type));
+            var tupleParameter = Expression.Parameter(tupleType);
+
+            Expression MakeTupleColumnExpression(IProperty property)
+            {
+                var propertyRelationalId = GetRelationalId(property);
+
+                return Expression.Convert(
+                    ValueTupleHelper.CreateMemberExpression(
+                        tupleType,
+                        tupleParameter,
+                        Array.FindIndex(properties, q => q.id.Equals(propertyRelationalId))),
+                    property.ClrType);
+            };
+
+            var concreteTypes = hierarchy.Where(t => !t.ClrType.IsAbstract).ToArray();
+            var descriptors = new PolymorphicTypeDescriptor[concreteTypes.Length];
+
+            for (var i = 0; i < concreteTypes.Length; i++)
+            {
+                var concreteType = concreteTypes[i];
+
+                var test
+                    = Expression.Lambda(
+                        Expression.Equal(
+                            ValueTupleHelper.CreateMemberExpression(
+                                tupleType,
+                                tupleParameter,
+                                Array.FindIndex(properties, p => p.property == concreteType.FindDiscriminatorProperty())),
+                            Expression.Constant(concreteType.GetDiscriminatorValue())),
+                        tupleParameter);
+
+                var descriptorMaterializer
+                    = Expression.Lambda(
+                        CreateMaterializationExpression(concreteType, table, MakeTupleColumnExpression),
+                        tupleParameter);
+
+                descriptors[i] = new PolymorphicTypeDescriptor(concreteType.ClrType, test, descriptorMaterializer);
+            }
+
+            var materializer = new PolymorphicExpression(
+                targetType.ClrType,
+                ValueTupleHelper.CreateNewExpression(tupleType, columns),
+                descriptors).Filter(targetType.ClrType);
+
+            var projection = new ServerProjectionExpression(materializer);
+
+            var selectExpression = new SelectExpression(projection, table);
+
+            var discriminatingType = targetType;
+
+            while (discriminatingType is not null)
+            {
+                var discriminatorProperty = discriminatingType.FindDiscriminatorProperty();
+
+                if (discriminatorProperty is not null)
+                {
+                    selectExpression
+                       = selectExpression.AddToPredicate(
+                           new SqlInExpression(
+                               MakeColumnExpression(
+                                   table,
+                                   discriminatorProperty),
+                               Expression.NewArrayInit(
+                                   discriminatorProperty.ClrType,
+                                   from t in discriminatingType.GetDerivedTypesInclusive()
+                                   where !t.IsAbstract()
+                                   select Expression.Constant(
+                                        t.GetDiscriminatorValue(),
+                                        discriminatorProperty.ClrType))));
+                }
+
+                discriminatingType = FindSameTabledPrincipalType(discriminatingType);
+            }
+
+            return new EnumerableRelationalQueryExpression(selectExpression);
+        }
+
+        private EnumerableRelationalQueryExpression CreateMultiTablePolymorphicMaterializer(IEntityType rootType, IEntityType targetType, IEntityType[] hierarchy)
+        {
+            throw new NotImplementedException("TPT/TPC not yet implemented");
+        }
+
+        private static ExtendedNewExpression CreateNewExpression(IEntityType type, Func<IProperty, Expression> makeColumnExpression)
         {
             var instantiationBinding = type.ConstructorBinding;
 
@@ -425,12 +431,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 case ConstructorBinding constructorBinding:
                 {
-                    return CreateNewExpression(type, constructorBinding, table, makeColumnExpression);
+                    return CreateNewExpression(type, constructorBinding, makeColumnExpression);
                 }
 
                 case FactoryMethodBinding factoryMethodBinding:
                 {
-                    return CreateNewExpression(type, factoryMethodBinding, table, makeColumnExpression);
+                    return CreateNewExpression(type, factoryMethodBinding, makeColumnExpression);
                 }
 
                 case null:
@@ -445,7 +451,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
         }
 
-        private static ExtendedNewExpression CreateNewExpression(IEntityType type, ConstructorBinding constructorBinding, BaseTableExpression table, Func<IProperty, Expression> makeColumnExpression)
+        private static ExtendedNewExpression CreateNewExpression(IEntityType type, ConstructorBinding constructorBinding, Func<IProperty, Expression> makeColumnExpression)
         {
             var constructor = constructorBinding.Constructor;
             var arguments = new Expression[constructor.GetParameters().Length];
@@ -468,7 +474,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return new ExtendedNewExpression(constructor, arguments, readableMembers, writableMembers);
         }
 
-        private static EFCoreProxyNewExpression CreateNewExpression(IEntityType type, FactoryMethodBinding factoryMethodBinding, BaseTableExpression table, Func<IProperty, Expression> makeColumnExpression)
+        private static EFCoreProxyNewExpression CreateNewExpression(IEntityType type, FactoryMethodBinding factoryMethodBinding, Func<IProperty, Expression> makeColumnExpression)
         {
             var factoryInstance
                 = typeof(FactoryMethodBinding)
@@ -549,14 +555,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             var navigations
                 = (from n in entityType.GetNavigations()
-                   where n.ForeignKey.IsOwnership && !n.IsOnDependent && !n.IsCollection
+                   where n.ForeignKey.IsOwnership && !n.IsOnDependent && (!n.IsCollection || n.TargetEntityType.IsMappedToJson())
                    select n).ToList();
 
             var services
                 = (from s in entityType.GetServiceProperties()
                    select s).ToList();
 
-            var newExpression = CreateNewExpression(entityType, table, makeColumnExpression);
+            var newExpression = CreateNewExpression(entityType, makeColumnExpression);
 
             if (newExpression.WritableMembers is not null)
             {
@@ -588,7 +594,21 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 var navigation = navigations[i - d];
 
-                arguments[i] = CreateMaterializationExpression(navigation.TargetEntityType, table, makeColumnExpression);
+                if (navigation.TargetEntityType.IsMappedToJson())
+                {
+                    // TODO: properly handle nullability, type mapping, possibly property path names need work?
+                    arguments[i] = new SqlColumnExpression(
+                        table,
+                        navigation.TargetEntityType.GetContainerColumnName(),
+                        navigation.ClrType,
+                        true,
+                        null);
+                }
+                else
+                {
+                    arguments[i] = CreateMaterializationExpression(navigation.TargetEntityType, table, makeColumnExpression);
+                }
+
                 readableMembers[i] = navigation.GetSemanticReadableMemberInfo();
                 writableMembers[i] = navigation.GetWritableMemberInfo();
             }
@@ -684,7 +704,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             foreach (var navigation in type.GetNavigations())
             {
-                if (navigation.ForeignKey.IsOwnership && !navigation.IsOnDependent)
+                if (navigation.ForeignKey.IsOwnership && !navigation.IsOnDependent && !navigation.IsCollection)
                 {
                     var targetType = navigation.TargetEntityType;
 
@@ -763,7 +783,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             // If the property is part of a foreign key within the same table as the principal type,
             // but the principal type is derived, it can be null
 
-            var tableId = GetRelationalId(((IEntityType)property.DeclaringType));
+            var tableId = GetRelationalId((IEntityType)property.DeclaringType);
 
             foreach (var foreignKey in ((IEntityType)property.DeclaringType).GetForeignKeys())
             {
@@ -812,14 +832,19 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private static (string, string) GetRelationalId(IEntityType entityType)
         {
+            // TODO: why would there be more than one, and what does it mean?
+            // var mapping = entityType.GetTableMappings().First();
+
             return (entityType.GetSchema(), entityType.GetTableName());
         }
 
         private static (string, string, string) GetRelationalId(IProperty property)
         {
-            var type = property.DeclaringType;
+            // TODO: why would there be more than one? and in some cases apparently identical?
+            // see test: Collection_projection_on_base_type_split
+            var mapping = property.GetTableColumnMappings().First();
 
-            return (type.GetSchema(), type.GetTableName(), property.GetColumnName());
+            return (mapping.Column.Table.Schema, mapping.Column.Table.Name, mapping.Column.Name);
         }
     }
 }

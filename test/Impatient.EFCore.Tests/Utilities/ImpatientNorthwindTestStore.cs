@@ -5,7 +5,6 @@ using System.Data;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace Impatient.EFCore.Tests.Utilities
@@ -17,7 +16,7 @@ namespace Impatient.EFCore.Tests.Utilities
             ConnectionString =
                 $"Server=.\\sqlexpress; " +
                 $"Database=impatient-efcore-northwind; " +
-                $"Trusted_Connection=True";
+                $"Trusted_Connection=True; TrustServerCertificate=True;";
 
             Connection = new SqlConnection(ConnectionString);
         }
@@ -34,47 +33,42 @@ namespace Impatient.EFCore.Tests.Utilities
 
         protected override void Initialize(Func<DbContext> createContext, Action<DbContext> seed, Action<DbContext> clean)
         {
-            using (var context = createContext())
-            {
-                if (context.Database.EnsureCreated())
-                {
-                    var script 
-                        = File.ReadAllText(
-                            Path.Combine(
-                                Path.GetDirectoryName(GetType().Assembly.Location), 
-                                "Utilities/Northwind.sql"));
+            using var context = createContext();
 
+            if (context.Database.EnsureCreated())
+            {
+                var script
+                    = File.ReadAllText(
+                        Path.Combine(
+                            Path.GetDirectoryName(GetType().Assembly.Location),
+                            "Utilities/Northwind.sql"));
+
+                if (Connection.State != ConnectionState.Closed)
+                {
+                    Connection.Close();
+                }
+
+                try
+                {
+                    Connection.Open();
+
+                    var batchRegex = new Regex("^GO", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+
+                    foreach (var batch in batchRegex.Split(script).Where(b => !string.IsNullOrEmpty(b)))
+                    {
+                        using var command = Connection.CreateCommand();
+                        command.CommandText = batch;
+                        command.ExecuteNonQuery();
+                    }
+                }
+                finally
+                {
                     if (Connection.State != ConnectionState.Closed)
                     {
                         Connection.Close();
                     }
-
-                    try
-                    {
-                        Connection.Open();
-
-                        var batchRegex = new Regex("^GO", RegexOptions.IgnoreCase | RegexOptions.Multiline);
-
-                        foreach (var batch in batchRegex.Split(script).Where(b => !string.IsNullOrEmpty(b)))
-                        {
-                            using var command = Connection.CreateCommand();
-                            command.CommandText = batch;
-                            command.ExecuteNonQuery();
-                        }
-                    }
-                    finally
-                    {
-                        if (Connection.State != ConnectionState.Closed)
-                        {
-                            Connection.Close();
-                        }
-                    }
                 }
             }
-        }
-
-        private void ExecuteScript(string scriptPath)
-        {
         }
     }
 }

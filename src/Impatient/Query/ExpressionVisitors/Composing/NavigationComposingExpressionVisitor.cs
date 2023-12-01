@@ -1646,7 +1646,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
                 findingVisitor.Visit(lambda.Body);
 
-                if (!findingVisitor.FoundNavigations.Any())
+                if (findingVisitor.FoundNavigations.Count == 0)
                 {
                     return false;
                 }
@@ -2307,7 +2307,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 {
                     foreach (var mapping in mappings)
                     {
-                        if (!mapping.OldPath.Any())
+                        if (mapping.OldPath.Count == 0)
                         {
                             return mapping.NewPath.Aggregate(
                                 newParameter as Expression,

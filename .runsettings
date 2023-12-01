@@ -1,0 +1,5 @@
+﻿<RunSettings>
+	<xUnit>
+		<PreEnumerateTheories>false</PreEnumerateTheories>
+	</xUnit>
+</RunSettings>

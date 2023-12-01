@@ -334,7 +334,9 @@ namespace Impatient.Query.Infrastructure
 
             try
             {
-                enumerator = values().GetEnumerator();
+                var valuesInstance = values() ?? Enumerable.Empty<object>();
+
+                enumerator = valuesInstance.GetEnumerator();
 
                 var insertPoint = stringBuilder.Length;
 
