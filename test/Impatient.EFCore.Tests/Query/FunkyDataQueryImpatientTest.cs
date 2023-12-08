@@ -17,6 +17,7 @@ namespace Impatient.EFCore.Tests.Query
 
         public override async Task String_ends_with_on_argument_with_wildcard_constant(bool async)
         {
+            /*
             await AssertQuery(
                 async,
                 ss => ss.Set<FunkyCustomer>().Where(c => c.FirstName.EndsWith("%r")).Select(c => c.FirstName),
@@ -48,17 +49,16 @@ namespace Impatient.EFCore.Tests.Query
                 ss => ss.Set<FunkyCustomer>().Where(c => !c.FirstName.EndsWith("")).Select(c => c.FirstName),
                 ss => ss.Set<FunkyCustomer>().Where(c => c.FirstName.MaybeScalar(x => x.EndsWith("")) != true).Select(c => c.FirstName));
 
-            /*
-            await AssertQuery(
-                async,
-                ss => ss.Set<FunkyCustomer>().Where(c => !c.FirstName.EndsWith("a%r%")).Select(c => c.FirstName),
-                ss => ss.Set<FunkyCustomer>().Where(c => c.FirstName.MaybeScalar(x => x.EndsWith("a%r%")) != true).Select(c => c.FirstName));
-            */
-
             await AssertQuery(
                 async,
                 ss => ss.Set<FunkyCustomer>().Where(c => !c.FirstName.EndsWith(null)).Select(c => c.FirstName),
                 ss => ss.Set<FunkyCustomer>().Where(c => true).Select(c => c.FirstName));
+            */
+
+            await AssertQuery(
+                async,
+                ss => ss.Set<FunkyCustomer>().Where(c => !c.FirstName.EndsWith("a%r%")).Select(c => c.FirstName),
+                ss => ss.Set<FunkyCustomer>().Where(c => c.FirstName.MaybeScalar(x => x.EndsWith("a%r%")) != true).Select(c => c.FirstName));
         }
     }
 

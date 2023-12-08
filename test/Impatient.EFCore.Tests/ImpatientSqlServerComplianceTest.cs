@@ -20,6 +20,7 @@ namespace Impatient.EFCore.Tests
                 typeof(FromSqlQueryTestBase<>),
                 typeof(FromSqlSprocQueryTestBase<>),
                 typeof(GearsOfWarFromSqlQueryTestBase<>),
+                typeof(NorthwindSqlQueryTestBase<>),
                 typeof(SqlQueryTestBase<>),
 
                 // EF specific warnings tests

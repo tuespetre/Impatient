@@ -176,7 +176,9 @@ namespace Impatient.Extensions
             typeof(double), // float
             typeof(float), // real
             typeof(TimeSpan), // time
+            typeof(TimeOnly),
             typeof(DateTime), // datetime2, datetime, date, smalldatetime
+            typeof(DateOnly),
             typeof(DateTimeOffset), // datetimeoffset
             typeof(Guid), // uniqueidentifer
 
@@ -209,8 +211,10 @@ namespace Impatient.Extensions
             type = type.UnwrapNullableType();
 
             return type == typeof(DateTime)
+                || type == typeof(DateOnly)
                 || type == typeof(DateTimeOffset)
-                || type == typeof(TimeSpan);
+                || type == typeof(TimeSpan)
+                || type == typeof(TimeOnly);
         }
 
         public static bool IsTextType(this Type type)

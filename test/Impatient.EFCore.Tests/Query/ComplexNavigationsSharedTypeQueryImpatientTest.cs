@@ -12,10 +12,17 @@ namespace Impatient.EFCore.Tests.Query
         {
         }
 
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override Task Include1(bool async)
+        {
+            return base.Include1(async);
+        }
+
         protected override QueryAsserter CreateQueryAsserter(Fixture fixture) =>
             new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
 
-        public class Fixture : ComplexNavigationsSharedTypeQueryRelationalFixtureBase
+        public new class Fixture : ComplexNavigationsSharedTypeQueryRelationalFixtureBase
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
         }

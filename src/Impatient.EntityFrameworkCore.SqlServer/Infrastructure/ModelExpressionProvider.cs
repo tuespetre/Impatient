@@ -211,21 +211,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
         }
 
-        public Expression CreateQueryExpression(Type elementType, DbContext context)
-        {
-            var targetTypes = context.Model.GetEntityTypes().Where(t => t.ClrType == elementType).ToArray();
-            var targetType = targetTypes.SingleOrDefault();
-
-            return CreateQueryExpression(targetType, context);
-        }
-
-        private Expression CreateQueryExpression(IEntityType targetType, DbContext context)
+        public Expression CreateQueryExpression(IEntityType targetType, DbContext context)
         {
             Expression queryExpression;
 
-            if (targetType.GetDefiningQuery() is not null)
+            if (targetType.GetDefiningQuery() is LambdaExpression definingQueryLambda)
             {
-                queryExpression = targetType.GetDefiningQuery().Body;
+                queryExpression = definingQueryLambda.Body;
 
                 goto ApplyQueryFilters;
             }
@@ -299,6 +291,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private EnumerableRelationalQueryExpression CreateSingleTableMonomorphicQueryExpression(IEntityType targetType)
         {
+            var mappings = targetType.GetViewOrTableMappings();
             var schemaName = targetType.GetSchema() ?? targetType.GetDefaultSchema() ?? targetType.GetDefaultViewSchema();
             var tableName = targetType.GetTableName() ?? targetType.GetViewName();
 
@@ -742,9 +735,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             var nullable = GetColumnNullability(property);
 
+            // TODO: why would there be more than one?
+            // TODO: why would there be zero?
+            var column = property.GetTableColumnMappings().FirstOrDefault()?.Column?.Name ?? property.GetColumnName();
+
             return new SqlColumnExpression(
                 table,
-                property.GetColumnName(),
+                column,
                 property.ClrType,
                 nullable,
                 typeMapping);
@@ -832,8 +829,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private static (string, string) GetRelationalId(IEntityType entityType)
         {
-            // TODO: why would there be more than one, and what does it mean?
-            // var mapping = entityType.GetTableMappings().First();
+            // TODO: why would there be more than one?
+            // TODO: why would there be zero?
+            var mapping = entityType.GetTableMappings().FirstOrDefault();
+
+            if (mapping is not null)
+            {
+                return (mapping.Table.Schema, mapping.Table.Name);
+            }
 
             return (entityType.GetSchema(), entityType.GetTableName());
         }
@@ -841,6 +844,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         private static (string, string, string) GetRelationalId(IProperty property)
         {
             // TODO: why would there be more than one? and in some cases apparently identical?
+            // TODO: why would there be zero?
             // see test: Collection_projection_on_base_type_split
             var mapping = property.GetTableColumnMappings().First();
 

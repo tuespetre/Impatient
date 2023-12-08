@@ -56,6 +56,8 @@ namespace Impatient.Query.Infrastructure
 
             yield return new NullableMemberRewritingExpressionVisitor();
 
+            yield return new DateOnlyMemberRewritingExpressionVisitor();
+
             yield return new DateTimeMemberRewritingExpressionVisitor();
 
             yield return new StringMemberRewritingExpressionVisitor();

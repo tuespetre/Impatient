@@ -1,5 +1,4 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
-using Impatient.Extensions;
 using Impatient.Query.Expressions;
 using Impatient.Query.ExpressionVisitors.Optimizing;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -46,19 +45,20 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     throw new NotSupportedException("Impatient for EF Core does not support ad-hoc SQL query building.");
                 }
 
-                case QueryRootExpression queryRoot:
+                case EntityQueryRootExpression entityQueryRoot:
                 {
-                    var elementType = queryRoot.Type.GetSequenceType();
+                    var entityType = entityQueryRoot.EntityType;
+                    var elementType = entityQueryRoot.ElementType;
                     var key = elementType.TypeHandle.Value;
 
                     var query
                         = modelQueryExpressionCache.Lookup.GetOrAdd(
-                            key,
-                            (k, arg) =>
+                            entityType,
+                            (entityType, arg) =>
                                 arg.modelExpressionProvider.CreateQueryExpression(
-                                    arg.elementType,
+                                    entityType,
                                     arg.currentDbContext.Context),
-                            (modelExpressionProvider, elementType, currentDbContext));
+                            (modelExpressionProvider, currentDbContext));
 
                     // This block is moreso for types with defining queries than types that
                     // just happen to have query filters. The defining queries need to be inlined.
@@ -75,6 +75,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                     return query;
                 }
 
+                case QueryRootExpression queryRoot:
+                {
+                    throw new NotSupportedException($"Impatient for EF Core does not support QueryRootExpression of type {queryRoot.GetType().Name}");
+                }
+
                 default:
                 {
                     return node;
@@ -82,46 +87,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
         }
 
-        protected override Expression InlineQueryable(IQueryable queryable)
-        {
-            if (queryable.Expression.Type.IsGenericType(typeof(EntityQueryable<>)))
-            {
-                var key = queryable.ElementType.TypeHandle.Value;
-
-                var query
-                    = modelQueryExpressionCache.Lookup.GetOrAdd(
-                        key,
-                        (k, arg) => 
-                            arg.modelExpressionProvider.CreateQueryExpression(
-                                arg.queryable.ElementType,
-                                arg.currentDbContext.Context),
-                        (modelExpressionProvider, queryable, currentDbContext));
-
-                // This block is moreso for types with defining queries than types that
-                // just happen to have query filters. The defining queries need to be inlined.
-
-                if (query is not RelationalQueryExpression)
-                {
-                    var repointer = new QueryFilterRepointingExpressionVisitor(dbContextParameter);
-
-                    var repointed = repointer.Visit(query);
-
-                    query = Visit(Reparameterize(repointed));
-                }
-
-                return query;
-            }
-
-            return base.InlineQueryable(queryable);
-        }
-
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            if (node.Value is IQueryable queryable && queryable.Provider is IAsyncQueryProvider)
+            if (node.Value is IQueryable queryable)
             {
                 if (ReferenceEquals(queryable.Provider, queryProvider))
                 {
-                    return InlineQueryable(queryable);
+                    return Visit(queryable.Expression);
                 }
 
                 throw new InvalidOperationException(CoreStrings.ErrorInvalidQueryable);

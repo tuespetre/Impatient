@@ -6,7 +6,7 @@ namespace Impatient.EFCore.Tests.Query
 {
     public class TPHFiltersInheritanceQueryImpatientTest(TPHFiltersInheritanceQueryImpatientTest.Fixture fixture) : FiltersInheritanceQueryTestBase<TPHFiltersInheritanceQueryImpatientTest.Fixture>(fixture)
     {
-        public new class Fixture : InheritanceQueryFixtureBase
+        public new class Fixture : TPHInheritanceQueryFixture
         {
             public override bool EnableFilters => true;
 

@@ -210,7 +210,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 
                     case nameof(Enumerable.ToArray):
                     case nameof(Enumerable.ToDictionary):
-                    //case nameof(Enumerable.ToHashSet):
+                    case nameof(Enumerable.ToHashSet):
                     case nameof(Enumerable.ToList):
                     case nameof(Enumerable.ToLookup):
                     default:

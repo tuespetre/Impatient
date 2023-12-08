@@ -23,26 +23,27 @@ namespace Impatient.Query.Infrastructure
             return null;
         }
 
-        private static readonly List<ITypeMapping> defaultMappings 
-            = new List<ITypeMapping>
-            {
-                // Types that are more or less native (for SQL Server)
-                new BooleanTypeMapping(),
-                new ByteTypeMapping(),
-                new ShortTypeMapping(),
-                new Int32TypeMapping(),
-                new Int64TypeMapping(),
-                new SingleTypeMapping(),
-                new DoubleTypeMapping(),
-                new DecimalTypeMapping(),
-                new DateTimeTypeMapping(),
-                new DateTimeOffsetTypeMapping(),
-                new TimeSpanTypeMapping(),
-                new GuidTypeMapping(),
-                new StringTypeMapping(),
-                new ByteArrayTypeMapping(),
-                // Other types
-            };
+        private static readonly List<ITypeMapping> defaultMappings =
+        [
+            // Types that are more or less native (for SQL Server)
+            new BooleanTypeMapping(),
+            new ByteTypeMapping(),
+            new ShortTypeMapping(),
+            new Int32TypeMapping(),
+            new Int64TypeMapping(),
+            new SingleTypeMapping(),
+            new DoubleTypeMapping(),
+            new DecimalTypeMapping(),
+            new DateTimeTypeMapping(),
+            new DateOnlyTypeMapping(),
+            new DateTimeOffsetTypeMapping(),
+            new TimeOnlyTypeMapping(),
+            new TimeSpanTypeMapping(),
+            new GuidTypeMapping(),
+            new StringTypeMapping(),
+            new ByteArrayTypeMapping(),
+            // Other types
+        ];
 
         #region default mappings
 
@@ -181,6 +182,21 @@ namespace Impatient.Query.Infrastructure
             public LambdaExpression SourceConversion => null;
         }
 
+        private class DateOnlyTypeMapping : ITypeMapping
+        {
+            public Type TargetType => typeof(DateOnly);
+
+            public Type SourceType => typeof(DateTime);
+
+            public DbType? DbType => System.Data.DbType.Date;
+
+            public string DbTypeName => "date";
+
+            public LambdaExpression TargetConversion => null;
+
+            public LambdaExpression SourceConversion => null;
+        }
+
         private class DateTimeOffsetTypeMapping : ITypeMapping
         {
             public Type TargetType => typeof(DateTimeOffset);
@@ -190,6 +206,21 @@ namespace Impatient.Query.Infrastructure
             public DbType? DbType => System.Data.DbType.DateTimeOffset;
 
             public string DbTypeName => "datetimeoffset";
+
+            public LambdaExpression TargetConversion => null;
+
+            public LambdaExpression SourceConversion => null;
+        }
+
+        private class TimeOnlyTypeMapping : ITypeMapping
+        {
+            public Type TargetType => typeof(TimeOnly);
+
+            public Type SourceType => typeof(TimeSpan);
+
+            public DbType? DbType => System.Data.DbType.Time;
+
+            public string DbTypeName => "time";
 
             public LambdaExpression TargetConversion => null;
 

@@ -16,8 +16,8 @@ namespace Impatient.Query.ExpressionVisitors.Generating
     {
         private readonly ITypeMappingProvider typeMappingProvider;
         private readonly IQueryFormattingProvider queryFormattingProvider;
-        private readonly HashSet<string> tableAliases = new HashSet<string>();
-        private readonly IDictionary<AliasedTableExpression, string> aliasLookup = new Dictionary<AliasedTableExpression, string>();
+        private readonly HashSet<string> tableAliases = [];
+        private readonly Dictionary<AliasedTableExpression, string> aliasLookup = [];
 
         public QueryTranslatingExpressionVisitor(
             IDbCommandExpressionBuilder dbCommandExpressionBuilder,
@@ -407,6 +407,13 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                     return node;
                 }
 
+                case DateOnly value:
+                {
+                    Builder.Append($"'{value:yyyy-MM-dd}'");
+
+                    return node;
+                }
+
                 case DateTime value:
                 {
                     Builder.Append($"'{value:yyyy-MM-ddTHH:mm:ss.fffK}'");
@@ -415,6 +422,13 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 }
 
                 case DateTimeOffset value:
+                {
+                    Builder.Append($"'{value}'");
+
+                    return node;
+                }
+
+                case TimeOnly value:
                 {
                     Builder.Append($"'{value}'");
 
@@ -445,6 +459,13 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                     {
                         Builder.Append(@byte.ToString("X2", CultureInfo.InvariantCulture));
                     }
+
+                    return node;
+                }
+
+                case Guid value:
+                {
+                    Builder.Append($"'{value}'");
 
                     return node;
                 }

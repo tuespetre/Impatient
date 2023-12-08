@@ -13,7 +13,7 @@ namespace Impatient.Query.Infrastructure
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TValue ReadNonNullable<TValue>(DbDataReader reader, int index)
         {
-            return (TValue)reader.GetValue(index);
+            return reader.GetFieldValue<TValue>(index);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

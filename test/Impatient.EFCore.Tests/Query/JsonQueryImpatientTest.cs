@@ -70,9 +70,9 @@ namespace Impatient.EFCore.Tests.Query
 
         [ConditionalTheory]
         [MemberData(nameof(IsAsyncData))]
-        public override Task Json_all_types_entity_projection(bool async)
+        public override Task Json_predicate_on_single(bool async)
         {
-            return base.Json_all_types_entity_projection(async);
+            return base.Json_predicate_on_single(async);
         }
 
         public new class Fixture : JsonQueryFixtureBase
