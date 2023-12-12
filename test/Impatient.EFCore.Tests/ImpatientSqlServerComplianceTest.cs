@@ -65,6 +65,9 @@ namespace Impatient.EFCore.Tests
                 typeof(JsonTypesRelationalTestBase),
                 typeof(ModelBuilding101TestBase),
                 typeof(ModelBuilding101RelationalTestBase),
+
+                // Miscellaneous
+                typeof(ApiConsistencyTestBase<>),
             };
     }
 }

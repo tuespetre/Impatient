@@ -2395,6 +2395,15 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     return fallbackToEnumerable();
                 }
             }
+            
+            if (outerProjection.Type.IsScalarType())
+            {
+                outerProjection = new SubqueryAliasDecoratingExpressionVisitor().Visit(outerProjection);
+
+                outerSelectExpression
+                    = outerSelectExpression.UpdateProjection(
+                        new ServerProjectionExpression(outerProjection));
+            }
 
             var typesMatch = outerProjection.Type == innerProjection.Type;
 

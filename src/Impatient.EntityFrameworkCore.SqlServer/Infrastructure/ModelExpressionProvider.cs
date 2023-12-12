@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -34,7 +35,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             this.relationalTypeMappingSource = relationalTypeMappingSource ?? throw new ArgumentNullException(nameof(relationalTypeMappingSource));
         }
 
-        private LambdaExpression CreateNavigationKeySelector(Type type, IReadOnlyList<IProperty> properties)
+        private static LambdaExpression CreateNavigationKeySelector(Type type, IReadOnlyList<IProperty> properties)
         {
             var entityParameter = Expression.Parameter(type, type.Name.ToLowerInvariant().Substring(0, 1));
 
@@ -100,22 +101,22 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 entityParameter);
         }
 
-        private LambdaExpression CreateMaterializationKeySelector(IEntityType type)
+        private static LambdaExpression CreateMaterializationKeySelector(IEntityType targetType)
         {
-            var primaryKey = type.FindPrimaryKey();
+            var primaryKey = targetType.FindPrimaryKey();
 
             if (primaryKey is null)
             {
                 return null;
             }
 
-            var entityParameter = Expression.Parameter(type.ClrType, "entity");
+            var entityParameter = Expression.Parameter(targetType.ClrType, "entity");
             var shadowPropertiesParameter = Expression.Parameter(typeof(object[]), "shadow");
 
             return Expression.Lambda(
                 Expression.NewArrayInit(
                     typeof(object),
-                    type.FindPrimaryKey().Properties.Select(p => 
+                    targetType.FindPrimaryKey().Properties.Select(p => 
                     {
                         if (p.IsShadowProperty())
                         {
@@ -218,32 +219,27 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             if (targetType.GetDefiningQuery() is LambdaExpression definingQueryLambda)
             {
                 queryExpression = definingQueryLambda.Body;
-
-                goto ApplyQueryFilters;
             }
-
-            var rootType = targetType.GetRootType();
-            var hierarchy = rootType.GetDerivedTypesInclusive().ToArray();
-
-            if (hierarchy.Length == 1)
+            else
             {
-                queryExpression = CreateSingleTableMonomorphicQueryExpression(rootType);
-            }
-            else 
-            {
-                var tables = hierarchy.Select(GetRelationalId).Distinct().ToArray();
-
-                if (tables.Length == 1)
+                switch (targetType.GetMappingStrategy())
                 {
-                    queryExpression = CreateSingleTablePolymorphicQueryExpression(rootType, targetType, hierarchy);
-                }
-                else
-                {
-                    queryExpression = CreateMultiTablePolymorphicMaterializer(rootType, targetType, hierarchy);
+                    case null:
+                        queryExpression = CreateNonPolymorphicQueryExpression(targetType);
+                        break;
+                    case "TPH":
+                        queryExpression = CreateTPHQueryExpression(targetType);
+                        break;
+                    case "TPC":
+                        queryExpression = CreateTPCQueryExpression(targetType);
+                        break;
+                    case "TPT":
+                        queryExpression = CreateTPTQueryExpression(targetType);
+                        break;
+                    default:
+                        throw new NotSupportedException($"Impatient does not support \"{targetType.GetMappingStrategy()}\" mapping strategy");
                 }
             }
-
-            ApplyQueryFilters:
 
             var currentType = targetType;
             var recast = false;
@@ -289,66 +285,214 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return queryExpression;
         }
 
-        private EnumerableRelationalQueryExpression CreateSingleTableMonomorphicQueryExpression(IEntityType targetType)
+        private EnumerableRelationalQueryExpression CreateNonPolymorphicQueryExpression(IEntityType targetType)
         {
-            var mappings = targetType.GetViewOrTableMappings();
-            var schemaName = targetType.GetSchema() ?? targetType.GetDefaultSchema() ?? targetType.GetDefaultViewSchema();
-            var tableName = targetType.GetTableName() ?? targetType.GetViewName();
+            var tableMappings = targetType.GetTableMappings().ToArray();
 
-            var table
+            if (tableMappings.Length != 0)
+            {
+                return CreateNonPolymorphicQueryExpressionFromTableMappings(targetType);
+            }
+
+            var viewMappings = targetType.GetViewMappings().ToArray();
+
+            if (viewMappings.Length != 0)
+            {
+                return CreateNonPolymorphicQueryExpressionFromViewMappings(targetType, viewMappings);
+            }
+
+            var udfMappings = targetType.GetFunctionMappings().ToArray();
+
+            if (udfMappings.Length != 0)
+            {
+                throw new NotImplementedException("Impatient does not yet implement entities mapped to functions");
+            }
+
+            var sqlMappings = targetType.GetSqlQueryMappings().ToArray();
+
+            if (sqlMappings.Length != 0)
+            {
+                throw new NotSupportedException("Impatient does not support querying entities mapped to SQL strings");
+            }
+
+            throw new InvalidOperationException("Could not find appropriate mappings for the entity type");
+        }
+
+        private EnumerableRelationalQueryExpression CreateNonPolymorphicQueryExpressionFromTableMappings(IEntityType targetType)
+        {
+            var mappings 
+                = IterateTableMappings(targetType)
+                    .OrderByDescending(m => m.IsSharedTablePrincipal)
+                    .ThenByDescending(m => m.IsSplitEntityTypePrincipal)
+                    .GroupBy(m => m.Table, (t, m) => m.First())
+                    .ToArray();
+
+            var principalTable
                 = new BaseTableExpression(
-                    schemaName,
-                    tableName,
-                    tableName.Substring(0, 1).ToLower(),
-                    targetType.ClrType);
+                    mappings[0].Table.Schema,
+                    mappings[0].Table.Name,
+                    mappings[0].Table.Name[..1].ToLower(),
+                    mappings[0].TypeBase.ClrType);
 
-            var materializer = CreateMaterializationExpression(targetType, table, p => MakeColumnExpression(table, p));
+            var tableLookup = new Dictionary<ITableBase, AliasedTableExpression> { [mappings[0].Table] = principalTable };
+
+            TableExpression queryTable = principalTable;
+
+            foreach (var mapping in mappings.Skip(1))
+            {
+                var nonPrincipalTable
+                    = new BaseTableExpression(
+                        mapping.Table.Schema,
+                        mapping.Table.Name,
+                        mapping.Table.Name[..1].ToLower(),
+                        mapping.TypeBase.ClrType);
+
+                tableLookup[mapping.Table] = nonPrincipalTable;
+
+                var predicate =
+                    mappings[0].Table.PrimaryKey.Columns
+                        .Zip(mapping.Table.PrimaryKey.Columns)
+                        .Select(t => Expression.Equal(
+                            new SqlColumnExpression(principalTable, t.First.Name, t.First.ProviderClrType, false, null),
+                            new SqlColumnExpression(nonPrincipalTable, t.Second.Name, t.Second.ProviderClrType, false, null)))
+                        .Aggregate(Expression.AndAlso);
+
+                queryTable = new InnerJoinTableExpression(queryTable, nonPrincipalTable, predicate, targetType.ClrType);
+            }
+
+            var propertyExpressions
+                = (from p in IterateProperties(targetType)
+                   from m in p.GetTableColumnMappings()
+                   group m.Column by p into g
+                   let p = g.Key
+                   let c = g.First()
+                   let t = tableLookup[c.Table]
+                   let x = MakeColumnExpression(t, c.Name, p)
+                   select (p, x)).ToDictionary(t => t.p, t => (Expression)t.x);
+
+            var materializer
+                = CreateMaterializationExpression(
+                    targetType,
+                    tableLookup,
+                    propertyExpressions);
 
             var projection = new ServerProjectionExpression(materializer);
 
-            var selectExpression = new SelectExpression(projection, table);
+            var selectExpression = new SelectExpression(projection, queryTable);
 
             return new EnumerableRelationalQueryExpression(selectExpression);
         }
 
-        private EnumerableRelationalQueryExpression CreateSingleTablePolymorphicQueryExpression(IEntityType rootType, IEntityType targetType, IEntityType[] hierarchy)
+        private EnumerableRelationalQueryExpression CreateNonPolymorphicQueryExpressionFromViewMappings(IEntityType targetType, IViewMapping[] viewMappings)
         {
-            var schemaName = rootType.GetSchema() ?? rootType.GetDefaultSchema() ?? rootType.GetDefaultViewSchema();
-            var tableName = rootType.GetTableName() ?? rootType.GetViewName();
-
-            var table
+            var queryTable
                 = new BaseTableExpression(
-                    schemaName,
-                    tableName,
-                    tableName.Substring(0, 1).ToLower(),
-                    rootType.ClrType);
+                    viewMappings[0].View.Schema,
+                    viewMappings[0].View.Name,
+                    viewMappings[0].View.Name[..1].ToLower(),
+                    viewMappings[0].TypeBase.ClrType);
 
-            var properties
+            var viewLookup = new Dictionary<ITableBase, AliasedTableExpression> { [viewMappings[0].View] = queryTable };
+
+            var propertyExpressions
+                = (from p in IterateProperties(targetType)
+                   from m in p.GetViewColumnMappings()
+                   group m.Column by p into g
+                   let p = g.Key
+                   let c = g.First()
+                   let t = viewLookup[c.View]
+                   let x = MakeColumnExpression(t, c.Name, p)
+                   select (p, x)).ToDictionary(t => t.p, t => (Expression)t.x);
+
+            var materializer
+                = CreateMaterializationExpression(
+                    targetType,
+                    viewLookup,
+                    propertyExpressions);
+
+            var projection = new ServerProjectionExpression(materializer);
+
+            var selectExpression = new SelectExpression(projection, queryTable);
+
+            return new EnumerableRelationalQueryExpression(selectExpression);
+        }
+
+        private EnumerableRelationalQueryExpression CreateTPHQueryExpression(IEntityType targetType)
+        {
+            var tableMappings
+                = IterateTableMappings(targetType)
+                    .OrderByDescending(m => m.IsSharedTablePrincipal)
+                    .ThenByDescending(m => m.IsSplitEntityTypePrincipal)
+                    .GroupBy(m => m.Table, (t, m) => m.First())
+                    .ToArray();
+
+            Debug.Assert(tableMappings.Count(m => m.IsSharedTablePrincipal == true) < 2);
+
+            var principalTable
+                = new BaseTableExpression(
+                    tableMappings[0].Table.Schema,
+                    tableMappings[0].Table.Name,
+                    tableMappings[0].Table.Name[..1].ToLower(),
+                    targetType.ClrType);
+
+            var tableLookup = new Dictionary<ITableBase, AliasedTableExpression> { [tableMappings[0].Table] = principalTable };
+
+            TableExpression queryTable = principalTable;
+
+            foreach (var mapping in tableMappings.Skip(1))
+            {
+                var nonPrincipalTable
+                    = new BaseTableExpression(
+                        mapping.Table.Schema,
+                        mapping.Table.Name,
+                        mapping.Table.Name[..1].ToLower(),
+                        mapping.TypeBase.ClrType);
+
+                tableLookup[mapping.Table] = nonPrincipalTable;
+
+                var predicate =
+                    tableMappings[0].Table.PrimaryKey.Columns
+                        .Zip(mapping.Table.PrimaryKey.Columns)
+                        .Select(t => Expression.Equal(
+                            new SqlColumnExpression(principalTable, t.First.Name, t.First.ProviderClrType, false, null),
+                            new SqlColumnExpression(nonPrincipalTable, t.Second.Name, t.Second.ProviderClrType, false, null)))
+                        .Aggregate(Expression.AndAlso);
+
+                queryTable = new InnerJoinTableExpression(queryTable, nonPrincipalTable, predicate, targetType.ClrType);
+            }
+
+            var hierarchy = targetType.GetDerivedTypesInclusive();
+
+            var propertyMappings
                 = (from t in hierarchy
-                   from p in IterateAllProperties(t)
-                   group p by GetRelationalId(p) into g
-                   select (id: g.Key, property: g.First())).ToArray();
+                   from p in IterateProperties(t)
+                   from m in p.GetTableColumnMappings()
+                   select (Property: p, Mapping: m)).ToArray();
 
-            var columns
-                = (from p in properties.Select(p => p.property)
-                   select MakeColumnExpression(table, p)).ToArray();
+            var columnExpressions
+                = (from p in propertyMappings
+                   group p.Property by p.Mapping.Column into properties
+                   let column = properties.Key
+                   let table = tableLookup[column.Table]
+                   let expression = MakeColumnExpression(table, column.Name, properties.First())
+                   select (expression, properties)).ToArray();
 
-            var tupleType = ValueTupleHelper.CreateTupleType(columns.Select(c => c.Type));
+            var tupleType = ValueTupleHelper.CreateTupleType(columnExpressions.Select(c => c.expression.Type));
             var tupleParameter = Expression.Parameter(tupleType);
 
-            Expression MakeTupleColumnExpression(IProperty property)
-            {
-                var propertyRelationalId = GetRelationalId(property);
+            var propertyExpressions
+                = (from p in propertyMappings
+                   group p by p.Property into g
+                   let p = g.Key
+                   let expr = Expression.Convert(
+                       ValueTupleHelper.CreateMemberExpression(
+                           tupleType,
+                           tupleParameter,
+                           Array.FindIndex(columnExpressions, c => c.properties.Contains(p))),
+                       p.ClrType)
+                   select (p, expr)).ToDictionary(x => x.p, x => (Expression)x.expr);
 
-                return Expression.Convert(
-                    ValueTupleHelper.CreateMemberExpression(
-                        tupleType,
-                        tupleParameter,
-                        Array.FindIndex(properties, q => q.id.Equals(propertyRelationalId))),
-                    property.ClrType);
-            };
-
-            var concreteTypes = hierarchy.Where(t => !t.ClrType.IsAbstract).ToArray();
+            var concreteTypes = hierarchy.Where(t => !t.IsAbstract()).ToArray();
             var descriptors = new PolymorphicTypeDescriptor[concreteTypes.Length];
 
             for (var i = 0; i < concreteTypes.Length; i++)
@@ -361,13 +505,13 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                             ValueTupleHelper.CreateMemberExpression(
                                 tupleType,
                                 tupleParameter,
-                                Array.FindIndex(properties, p => p.property == concreteType.FindDiscriminatorProperty())),
+                                Array.FindIndex(columnExpressions, c => c.properties.Contains(concreteType.FindDiscriminatorProperty()))),
                             Expression.Constant(concreteType.GetDiscriminatorValue())),
                         tupleParameter);
 
                 var descriptorMaterializer
                     = Expression.Lambda(
-                        CreateMaterializationExpression(concreteType, table, MakeTupleColumnExpression),
+                        CreateMaterializationExpression(concreteType, tableLookup, propertyExpressions),
                         tupleParameter);
 
                 descriptors[i] = new PolymorphicTypeDescriptor(concreteType.ClrType, test, descriptorMaterializer);
@@ -375,12 +519,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             var materializer = new PolymorphicExpression(
                 targetType.ClrType,
-                ValueTupleHelper.CreateNewExpression(tupleType, columns),
+                ValueTupleHelper.CreateNewExpression(tupleType, columnExpressions.Select(c => c.expression)),
                 descriptors).Filter(targetType.ClrType);
 
             var projection = new ServerProjectionExpression(materializer);
 
-            var selectExpression = new SelectExpression(projection, table);
+            var selectExpression = new SelectExpression(projection, queryTable);
 
             var discriminatingType = targetType;
 
@@ -394,7 +538,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                        = selectExpression.AddToPredicate(
                            new SqlInExpression(
                                MakeColumnExpression(
-                                   table,
+                                   principalTable,
+                                   discriminatorProperty.GetColumnName(),
                                    discriminatorProperty),
                                Expression.NewArrayInit(
                                    discriminatorProperty.ClrType,
@@ -411,12 +556,24 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return new EnumerableRelationalQueryExpression(selectExpression);
         }
 
-        private EnumerableRelationalQueryExpression CreateMultiTablePolymorphicMaterializer(IEntityType rootType, IEntityType targetType, IEntityType[] hierarchy)
+        private EnumerableRelationalQueryExpression CreateTPCQueryExpression(IEntityType targetType)
         {
-            throw new NotImplementedException("TPT/TPC not yet implemented");
+            var concreteTypes = targetType.GetConcreteDerivedTypesInclusive();
+
+            var properties = IterateProperties(targetType).ToArray();
+
+            properties.ToString();
+            
+
+            throw new NotImplementedException("TPC not yet implemented");
         }
 
-        private static ExtendedNewExpression CreateNewExpression(IEntityType type, Func<IProperty, Expression> makeColumnExpression)
+        private EnumerableRelationalQueryExpression CreateTPTQueryExpression(IEntityType targetType)
+        {
+            throw new NotImplementedException("TPT not yet implemented");
+        }
+
+        private static ExtendedNewExpression CreateNewExpression(IEntityType type, Dictionary<IProperty, Expression> propertyExpressions)
         {
             var instantiationBinding = type.ConstructorBinding;
 
@@ -424,12 +581,12 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 case ConstructorBinding constructorBinding:
                 {
-                    return CreateNewExpression(type, constructorBinding, makeColumnExpression);
+                    return CreateNewExpression(type, constructorBinding, propertyExpressions);
                 }
 
                 case FactoryMethodBinding factoryMethodBinding:
                 {
-                    return CreateNewExpression(type, factoryMethodBinding, makeColumnExpression);
+                    return CreateNewExpression(type, factoryMethodBinding, propertyExpressions);
                 }
 
                 case null:
@@ -444,7 +601,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
         }
 
-        private static ExtendedNewExpression CreateNewExpression(IEntityType type, ConstructorBinding constructorBinding, Func<IProperty, Expression> makeColumnExpression)
+        private static ExtendedNewExpression CreateNewExpression(IEntityType type, ConstructorBinding constructorBinding, Dictionary<IProperty, Expression> propertyExpressions)
         {
             var constructor = constructorBinding.Constructor;
             var arguments = new Expression[constructor.GetParameters().Length];
@@ -455,7 +612,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 var binding = constructorBinding.ParameterBindings[i];
 
-                arguments[i] = GetBindingExpression(type, binding, makeColumnExpression);
+                arguments[i] = GetBindingExpression(type, binding, propertyExpressions);
 
                 if (binding.ConsumedProperties.ElementAtOrDefault(0) is IPropertyBase property)
                 {
@@ -467,7 +624,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return new ExtendedNewExpression(constructor, arguments, readableMembers, writableMembers);
         }
 
-        private static EFCoreProxyNewExpression CreateNewExpression(IEntityType type, FactoryMethodBinding factoryMethodBinding, Func<IProperty, Expression> makeColumnExpression)
+        private static EFCoreProxyNewExpression CreateNewExpression(IEntityType type, FactoryMethodBinding factoryMethodBinding, Dictionary<IProperty, Expression> propertyExpressions)
         {
             var factoryInstance
                 = typeof(FactoryMethodBinding)
@@ -516,7 +673,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 var binding = innerBindings[i];
 
-                arguments[i] = GetBindingExpression(type, binding, makeColumnExpression);
+                arguments[i] = GetBindingExpression(type, binding, propertyExpressions);
 
                 if (binding.ConsumedProperties.ElementAtOrDefault(0) is IPropertyBase property)
                 {
@@ -530,8 +687,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 factoryMethod,
                 new[]
                 {
-                    GetBindingExpression(type, entityTypeParameterBinding, makeColumnExpression),
-                    GetBindingExpression(type, serviceParameterBinding, makeColumnExpression)
+                    GetBindingExpression(type, entityTypeParameterBinding, propertyExpressions),
+                    GetBindingExpression(type, serviceParameterBinding, propertyExpressions)
                 },
                 constructor,
                 arguments,
@@ -539,7 +696,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 writableMembers);
         }
 
-        private Expression CreateMaterializationExpression(IEntityType entityType, BaseTableExpression table, Func<IProperty, Expression> makeColumnExpression)
+        private Expression CreateMaterializationExpression(IEntityType entityType, Dictionary<ITableBase, AliasedTableExpression> tableLookup, Dictionary<IProperty, Expression> propertyExpressions)
         {
             var properties
                 = (from p in entityType.GetProperties()
@@ -555,7 +712,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 = (from s in entityType.GetServiceProperties()
                    select s).ToList();
 
-            var newExpression = CreateNewExpression(entityType, makeColumnExpression);
+            var newExpression = CreateNewExpression(entityType, propertyExpressions);
 
             if (newExpression.WritableMembers is not null)
             {
@@ -575,7 +732,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 var property = properties[i - d];
 
-                arguments[i] = makeColumnExpression(property);
+                arguments[i] = propertyExpressions[property];
                 readableMembers[i] = property.GetSemanticReadableMemberInfo();
                 writableMembers[i] = property.GetWritableMemberInfo();
             }
@@ -591,7 +748,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 {
                     // TODO: properly handle nullability, type mapping, possibly property path names need work?
                     arguments[i] = new SqlColumnExpression(
-                        table,
+                        tableLookup[entityType.GetTableMappings().Single().Table],
                         navigation.TargetEntityType.GetContainerColumnName(),
                         navigation.ClrType,
                         true,
@@ -599,7 +756,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 }
                 else
                 {
-                    arguments[i] = CreateMaterializationExpression(navigation.TargetEntityType, table, makeColumnExpression);
+                    arguments[i] = CreateMaterializationExpression(navigation.TargetEntityType, tableLookup, propertyExpressions);
                 }
 
                 readableMembers[i] = navigation.GetSemanticReadableMemberInfo();
@@ -613,7 +770,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 var service = services[i - d];
 
-                arguments[i] = GetBindingExpression(entityType, service.ParameterBinding, makeColumnExpression);
+                arguments[i] = GetBindingExpression(entityType, service.ParameterBinding, propertyExpressions);
                 readableMembers[i] = service.GetSemanticReadableMemberInfo();
                 writableMembers[i] = service.GetWritableMemberInfo();
             }
@@ -634,21 +791,21 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 var shadowProperties
                     = from p in entityType.GetProperties()
                       where p.IsShadowProperty()
-                      select (property: p, expression: makeColumnExpression(p));
+                      select p;
 
                 return new EntityMaterializationExpression(
                     entityType,
                     QueryTrackingBehavior.NoTracking,
                     keySelector,
-                    shadowProperties.Select(s => s.property),
-                    shadowProperties.Select(s => s.expression),
+                    shadowProperties,
+                    shadowProperties.Select(s => propertyExpressions[s]),
                     materializer);
             }
 
             return materializer;
         }
 
-        private static Expression GetBindingExpression(IEntityType type, ParameterBinding binding, Func<IProperty, Expression> makeColumnExpression)
+        private static Expression GetBindingExpression(IEntityType type, ParameterBinding binding, Dictionary<IProperty, Expression> propertyExpressions)
         {
             switch (binding)
             {
@@ -668,7 +825,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 case PropertyParameterBinding _
                 when binding.ConsumedProperties[0] is IProperty property:
                 {
-                    return makeColumnExpression(property);
+                    return propertyExpressions[property];
                 }
 
                 case EntityTypeParameterBinding _:
@@ -688,7 +845,34 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
         }
 
-        private static IEnumerable<IProperty> IterateAllProperties(IEntityType type)
+        private static IEnumerable<ITableMapping> IterateTableMappings(IEntityType type)
+        {
+            foreach (var mapping in type.GetTableMappings())
+            {
+                yield return mapping;
+            }
+
+            foreach (var navigation in type.GetNavigations())
+            {
+                if (navigation.ForeignKey.IsOwnership && !navigation.IsOnDependent && !navigation.IsCollection && !navigation.TargetEntityType.IsMappedToJson())
+                {
+                    foreach (var mapping in IterateTableMappings(navigation.TargetEntityType))
+                    {
+                        yield return mapping;
+                    }
+                }
+            }
+
+            foreach (var derived in type.GetDirectlyDerivedTypes())
+            {
+                foreach (var mapping in IterateTableMappings(derived))
+                {
+                    yield return mapping;
+                }
+            }
+        }
+
+        private static IEnumerable<IProperty> IterateProperties(IEntityType type)
         {
             foreach (var property in type.GetProperties())
             {
@@ -697,25 +881,27 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             foreach (var navigation in type.GetNavigations())
             {
-                if (navigation.ForeignKey.IsOwnership && !navigation.IsOnDependent && !navigation.IsCollection)
+                if (navigation.ForeignKey.IsOwnership && !navigation.IsOnDependent && !navigation.IsCollection && !navigation.TargetEntityType.IsMappedToJson())
                 {
                     var targetType = navigation.TargetEntityType;
 
-                    if (targetType.GetSchema() != type.GetSchema()
-                        || targetType.GetTableName() != type.GetTableName())
-                    {
-                        continue;
-                    }
-
-                    foreach (var property in IterateAllProperties(navigation.TargetEntityType))
+                    foreach (var property in IterateProperties(navigation.TargetEntityType))
                     {
                         yield return property;
                     }
                 }
             }
+
+            foreach (var derived in type.GetDirectlyDerivedTypes())
+            {
+                foreach (var property in IterateProperties(derived))
+                {
+                    yield return property;
+                }
+            }
         }
 
-        private SqlColumnExpression MakeColumnExpression(AliasedTableExpression table, IProperty property)
+        private SqlColumnExpression MakeColumnExpression(AliasedTableExpression table, string columnName, IProperty property)
         {
             ITypeMapping typeMapping = default;
 
@@ -735,13 +921,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             var nullable = GetColumnNullability(property);
 
-            // TODO: why would there be more than one?
-            // TODO: why would there be zero?
-            var column = property.GetTableColumnMappings().FirstOrDefault()?.Column?.Name ?? property.GetColumnName();
-
             return new SqlColumnExpression(
                 table,
-                column,
+                columnName,
                 property.ClrType,
                 nullable,
                 typeMapping);

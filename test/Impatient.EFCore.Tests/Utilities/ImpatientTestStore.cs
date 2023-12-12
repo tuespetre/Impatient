@@ -30,7 +30,7 @@ namespace Impatient.EFCore.Tests.Utilities
         {
             // had to add this try/catch block since updating efcore refs to 5.x,
             // looks like they handle this in latest source tho, packages not up to date yet?
-            try
+            /*try
             {
                 context.Database.EnsureCreated();
             }
@@ -40,7 +40,7 @@ namespace Impatient.EFCore.Tests.Utilities
 
                 creator.Create();
                 creator.CreateTables();
-            }
+            }*/
 
             new ImpatientDatabaseCleaner().Clean(context.Database);
         }
