@@ -396,7 +396,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             public int GetHashCode(object[] obj)
             {
-                return obj[0].GetHashCode();
+                var hash = new HashCode();
+                hash.Add(obj[0]);
+                return hash.ToHashCode();
             }
         }
 
@@ -411,22 +413,15 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             public int GetHashCode(object[] values)
             {
-                unchecked
-                {
-                    var hash = KeyValuesComparer.InitialHashCode;
-
-                    hash = (hash * 16777619) ^ values[0].GetHashCode();
-                    hash = (hash * 16777619) ^ values[1].GetHashCode();
-
-                    return hash;
-                }
+                var hash = new HashCode();
+                hash.Add(values[0]);
+                hash.Add(values[1]);
+                return hash.ToHashCode();
             }
         }
 
         private class KeyValuesComparer : IEqualityComparer<object[]>
         {
-            public const int InitialHashCode = -2128831035;
-
             private readonly Func<object[], object[], bool> compiled;
 
             private KeyValuesComparer(Func<object[], object[], bool> compiled)
@@ -461,18 +456,14 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             public int GetHashCode(object[] values)
             {
-                unchecked
+                var hash = new HashCode();
+
+                for (var i = 0; i < values.Length; i++)
                 {
-                    var hash = InitialHashCode;
-
-                    for (var i = 0; i < values.Length; i++)
-                    {
-                        hash = (hash * 16777619) ^ values[0].GetHashCode();
-                        hash = (hash * 16777619) ^ values[1].GetHashCode();
-                    }
-
-                    return hash;
+                    hash.Add(values[i]);
                 }
+
+                return hash.ToHashCode();
             }
         }
     }

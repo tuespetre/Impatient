@@ -41,6 +41,7 @@ namespace Impatient.EFCore.Tests
                 typeof(TPTInheritanceBulkUpdatesTestBase<>),
 
                 // Migrations - not our concern
+                typeof(MigrationsInfrastructureTestBase<>),
                 typeof(MigrationsTestBase<>),
                 typeof(MigrationsSqlGeneratorTestBase),
 
@@ -68,8 +69,10 @@ namespace Impatient.EFCore.Tests
 
                 // Miscellaneous
                 typeof(ApiConsistencyTestBase<>),
+                typeof(DesignTimeTestBase<>),
                 typeof(LoggingTestBase),
                 typeof(LoggingRelationalTestBase<,>),
+                typeof(SeedingTestBase),
             };
     }
 }

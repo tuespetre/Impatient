@@ -78,11 +78,11 @@ namespace Impatient.EFCore.Tests
 
             public override bool SupportsDecimalComparisons => true;
 
-            public override DateTime DefaultDateTime => new DateTime();
+            public override DateTime DefaultDateTime => new();
 
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 
-            public override bool PreservesDateTimeKind => throw new NotImplementedException();
+            public override bool PreservesDateTimeKind => false;
 
             protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
             {

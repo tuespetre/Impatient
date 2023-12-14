@@ -762,6 +762,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 }
             }
 
+            // Construct the projection / materializer
+
             var hierarchy = targetType.GetDerivedTypesInclusive();
 
             var propertyMappings

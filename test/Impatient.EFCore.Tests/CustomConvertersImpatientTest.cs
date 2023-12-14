@@ -27,11 +27,11 @@ namespace Impatient.EFCore.Tests
 
             public override bool SupportsBinaryKeys => true;
 
-            public override DateTime DefaultDateTime => new DateTime();
+            public override DateTime DefaultDateTime => new();
 
             public override bool SupportsDecimalComparisons => true;
 
-            public override bool PreservesDateTimeKind => throw new NotImplementedException();
+            public override bool PreservesDateTimeKind => false;
 
             public override DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder)
                 => base

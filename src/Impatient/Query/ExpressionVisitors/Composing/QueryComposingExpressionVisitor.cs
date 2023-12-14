@@ -2452,8 +2452,19 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 return fallbackToEnumerable();
             }
 
-            var outerSelectExpression = outerQuery.SelectExpression.UpdateOrderBy(null);
-            var innerSelectExpression = innerQuery.SelectExpression.UpdateOrderBy(null);
+            var outerSelectExpression = outerQuery.SelectExpression;
+
+            if (outerSelectExpression.HasOrdering && !outerSelectExpression.HasOffsetOrLimit)
+            {
+                outerSelectExpression = outerSelectExpression.UpdateOrderBy(null);
+            }
+
+            var innerSelectExpression = innerQuery.SelectExpression;
+
+            if (innerSelectExpression.HasOrdering && !innerSelectExpression.HasOffsetOrLimit)
+            {
+                innerSelectExpression = innerSelectExpression.UpdateOrderBy(null);
+            }
 
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var innerProjection = innerSelectExpression.Projection.Flatten().Body;
@@ -2476,9 +2487,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 {
                     shapesMatch = true;
 
-                    var zippedPairs
-                        = outerGatherer.GatheredExpressions
-                            .Zip(innerGatherer.GatheredExpressions, ValueTuple.Create);
+                    var zippedPairs = outerGatherer.GatheredExpressions.Zip(innerGatherer.GatheredExpressions);
 
                     foreach (var (pair1, pair2) in zippedPairs)
                     {

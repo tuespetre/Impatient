@@ -1,5 +1,7 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 
 namespace Impatient.EFCore.Tests
@@ -8,8 +10,11 @@ namespace Impatient.EFCore.Tests
     {
         public ConferencePlannerImpatientTest(ConferencePlannerFixture fixture) : base(fixture)
         {
-            fixture.ListLoggerFactory.Clear();
         }
+
+        // had to add this override for the tests to work...
+        protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
+            => facade.UseTransaction(transaction.GetDbTransaction());
 
         public class ConferencePlannerFixture : ConferencePlannerFixtureBase
         {

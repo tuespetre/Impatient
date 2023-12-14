@@ -55,6 +55,8 @@ namespace Impatient.EFCore.Tests
 
         public class ConvertToProviderTypesImpatientFixture : ConvertToProviderTypesFixtureBase
         {
+            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
+
             public override bool StrictEquality => true;
 
             public override bool SupportsAnsi => true;
@@ -67,11 +69,9 @@ namespace Impatient.EFCore.Tests
 
             public override bool SupportsBinaryKeys => true;
 
-            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
+            public override DateTime DefaultDateTime => new();
 
-            public override DateTime DefaultDateTime => new DateTime();
-
-            public override bool PreservesDateTimeKind => throw new NotImplementedException();
+            public override bool PreservesDateTimeKind => false;
 
             public override DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder)
                 => base
