@@ -23,7 +23,7 @@ namespace Impatient.EFCore.Tests.Query
         protected override QueryAsserter CreateQueryAsserter(Fixture fixture) =>
             new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
 
-        public class Fixture : GearsOfWarQueryRelationalFixture
+        public new class Fixture : GearsOfWarQueryRelationalFixture
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
         }

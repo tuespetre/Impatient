@@ -33,7 +33,9 @@ namespace Impatient.Query.ExpressionVisitors.Generating
 
         public LambdaExpression Translate(SelectExpression selectExpression)
         {
-            Visit(selectExpression);
+            var expression = ContainsQueryUnwrappingExpressionVisitor.Instance.Visit(selectExpression);
+
+            Visit(expression);
 
             return Builder.Build();
         }
@@ -1864,6 +1866,21 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                 {
                     return null;
                 }
+            }
+        }
+
+        private class ContainsQueryUnwrappingExpressionVisitor : ExpressionVisitor
+        {
+            public static ContainsQueryUnwrappingExpressionVisitor Instance { get; } = new();
+
+            public override Expression Visit(Expression node)
+            {
+                if (node is ContainsRelationalQueryExpression contains)
+                {
+                    return Visit(contains.SelectExpression.Projection.ResultLambda.Body);
+                }
+
+                return base.Visit(node);
             }
         }
     }

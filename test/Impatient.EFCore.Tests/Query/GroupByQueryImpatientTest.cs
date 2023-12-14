@@ -1673,7 +1673,8 @@ SELECT [c].[CustomerID] AS [$outer.CustomerID], [c].[Address] AS [$outer.Address
     FOR JSON PATH
 ) AS [$inner]
 FROM [Customers] AS [c]
-WHERE LEFT([c].[CustomerID], LEN(N'A')) = N'A'
+WHERE LEFT([c].[CustomerID], LEN(N'F')) = N'F'
+ORDER BY [c].[CustomerID] ASC
 ");
         }
 

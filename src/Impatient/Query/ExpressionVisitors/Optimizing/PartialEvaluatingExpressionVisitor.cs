@@ -541,23 +541,23 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
             }
         }
 
-        private static readonly List<MemberInfo> unevaluableMembers = new List<MemberInfo>
-        {
+        private static readonly List<MemberInfo> unevaluableMembers =
+        [
             typeof(DateTime).GetRuntimeProperty(nameof(DateTime.Now)),
             typeof(DateTime).GetRuntimeProperty(nameof(DateTime.UtcNow)),
             typeof(DateTimeOffset).GetRuntimeProperty(nameof(DateTimeOffset.Now)),
             typeof(DateTimeOffset).GetRuntimeProperty(nameof(DateTimeOffset.UtcNow)),
             typeof(Environment).GetRuntimeProperty(nameof(Environment.TickCount)),
-        };
+        ];
 
-        private static readonly List<MethodInfo> unevaluableMethods = new List<MethodInfo>
-        {
-            typeof(Guid).GetRuntimeMethod(nameof(Guid.NewGuid), new Type[0]),
-            typeof(Random).GetRuntimeMethod(nameof(Random.Next), new Type[0]),
+        private static readonly List<MethodInfo> unevaluableMethods =
+        [
+            typeof(Guid).GetRuntimeMethod(nameof(Guid.NewGuid), []),
+            typeof(Random).GetRuntimeMethod(nameof(Random.Next), []),
             typeof(Random).GetRuntimeMethod(nameof(Random.Next), new[]{ typeof(int) }),
             typeof(Random).GetRuntimeMethod(nameof(Random.Next), new[]{ typeof(int), typeof(int) }),
             typeof(Random).GetRuntimeMethod(nameof(Random.NextBytes), new[] { typeof(byte[]) }),
-            typeof(Random).GetRuntimeMethod(nameof(Random.NextDouble), new Type[0]),
-        };
+            typeof(Random).GetRuntimeMethod(nameof(Random.NextDouble), []),
+        ];
     }
 }

@@ -50,8 +50,6 @@ namespace Impatient.Query.Infrastructure
 
             yield return new KeyEqualityRewritingExpressionVisitor(context.DescriptorSet);
 
-            yield return new GroupingAggregationRewritingExpressionVisitor(translatabilityAnalyzingExpressionVisitor);
-
             yield return new TypeBinaryExpressionRewritingExpressionVisitor();
 
             yield return new NullableMemberRewritingExpressionVisitor();

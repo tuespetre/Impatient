@@ -28,7 +28,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             this.currentDbContext = currentDbContext;
         }
 
-        public TResult Execute<TResult>(Expression query)
+        TResult IQueryCompiler.Execute<TResult>(Expression query)
         {
             var processor = GetQueryProcessor();
 

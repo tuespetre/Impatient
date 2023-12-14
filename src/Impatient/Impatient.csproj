@@ -1,60 +1,57 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <LangVersion>preview</LangVersion>
-  </PropertyGroup>
-  
-  <PropertyGroup>
-    <VersionPrefix>0.3.1</VersionPrefix>
-    <Authors>tuespetre</Authors>
-    <PackageProjectUrl>https://tuespetre.github.io/Impatient</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/tuespetre/Impatient</RepositoryUrl>
-    <Description>A library that provides the infrastructure needed to build powerful LINQ query providers for SQL databases.</Description>
-    <PackageTags>LINQ;ORM;SQL</PackageTags>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<LangVersion>preview</LangVersion>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="System.Buffers" Version="4.5.1" />
-    <PackageReference Include="System.Data.Common" Version="4.3.0" />
-    <PackageReference Include="System.Diagnostics.StackTrace" Version="4.3.0" />
-    <PackageReference Include="System.Dynamic.Runtime" Version="4.3.0" />
-    <PackageReference Include="System.Linq.Queryable" Version="4.3.0" />
-    <PackageReference Include="System.Reflection.TypeExtensions" Version="4.7.0" />
-    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
-  </ItemGroup>
+	<PropertyGroup>
+		<VersionPrefix>0.3.1</VersionPrefix>
+		<Authors>tuespetre</Authors>
+		<PackageProjectUrl>https://tuespetre.github.io/Impatient</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/tuespetre/Impatient</RepositoryUrl>
+		<Description>A library that provides the infrastructure needed to build powerful LINQ query providers for SQL databases.</Description>
+		<PackageTags>LINQ;ORM;SQL</PackageTags>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Tables Include="**/*TableExpression.cs" Exclude="**/TableExpression.cs; **/TranslatableExpression.cs" />
-    <Compile Update="@(Tables)">
-      <DependentUpon>TableExpression.cs</DependentUpon>
-    </Compile>
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="System.Buffers" Version="4.5.1" />
+		<PackageReference Include="System.Data.Common" Version="4.3.0" />
+		<PackageReference Include="System.Diagnostics.StackTrace" Version="4.3.0" />
+		<PackageReference Include="System.Dynamic.Runtime" Version="4.3.0" />
+		<PackageReference Include="System.Linq.Queryable" Version="4.3.0" />
+		<PackageReference Include="System.Reflection.TypeExtensions" Version="4.7.0" />
+		<PackageReference Include="System.ValueTuple" Version="4.5.0" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <SqlExpressions Include="**/Sql*Expression.cs" Exclude="**/SqlExpression.cs" />
-    <Compile Update="@(SqlExpressions)">
-      <DependentUpon>SqlExpression.cs</DependentUpon>
-    </Compile>
-  </ItemGroup>
+	<ItemGroup>
+		<Tables Include="**/*TableExpression.cs" Exclude="**/TableExpression.cs; **/TranslatableExpression.cs" />
+		<Compile Update="@(Tables)">
+			<DependentUpon>TableExpression.cs</DependentUpon>
+		</Compile>
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectionExpressions Include="**/*ProjectionExpression.cs" Exclude="**/ProjectionExpression.cs" />
-    <Compile Update="@(ProjectionExpressions)">
-      <DependentUpon>ProjectionExpression.cs</DependentUpon>
-    </Compile>
-  </ItemGroup>
+	<ItemGroup>
+		<SqlExpressions Include="**/Sql*Expression.cs" Exclude="**/SqlExpression.cs" />
+		<Compile Update="@(SqlExpressions)">
+			<DependentUpon>SqlExpression.cs</DependentUpon>
+		</Compile>
+	</ItemGroup>
 
-  <ItemGroup>
-    <QueryExpressions Include="**/*QueryExpression.cs; **/GroupByResultExpression.cs" Exclude="**/RelationalQueryExpression.cs" />
-    <SqlExpressions Remove="Query\Expressions\SqlCaseExpression.cs" />
-    <SqlExpressions Remove="Query\Expressions\SqlLikeExpression.cs" />
-    <None Include="..\..\.editorconfig" Link=".editorconfig" />
-    <Compile Update="@(QueryExpressions)">
-      <DependentUpon>RelationalQueryExpression.cs</DependentUpon>
-    </Compile>
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectionExpressions Include="**/*ProjectionExpression.cs" Exclude="**/ProjectionExpression.cs" />
+		<Compile Update="@(ProjectionExpressions)">
+			<DependentUpon>ProjectionExpression.cs</DependentUpon>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+		<QueryExpressions Include="**/*QueryExpression.cs; **/GroupByResultExpression.cs" Exclude="**/RelationalQueryExpression.cs" />
+		<Compile Update="@(QueryExpressions)">
+			<DependentUpon>RelationalQueryExpression.cs</DependentUpon>
+		</Compile>
+	</ItemGroup>
 
 </Project>

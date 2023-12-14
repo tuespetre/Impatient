@@ -35,10 +35,31 @@ namespace Impatient.Query.ExpressionVisitors.Composing
         }
 
         private IEnumerable<ExpressionVisitor> ServerPostExpansionVisitors
-            => rewritingExpressionVisitors
-                .Append(this)
-                .Concat(providerSpecificRewritingExpressionVisitors)
-                .Concat(ClientPostExpansionVisitors);
+        {
+            get
+            {
+                yield return new GroupingAggregationRewritingExpressionVisitor(translatabilityVisitor);
+                
+                yield return this;
+
+                foreach (var visitor in rewritingExpressionVisitors)
+                {
+                    yield return visitor;
+                }
+
+                yield return this;
+
+                foreach (var visitor in providerSpecificRewritingExpressionVisitors)
+                {
+                    yield return visitor;
+                }
+
+                foreach (var visitor in ClientPostExpansionVisitors)
+                {
+                    yield return visitor;
+                }
+            }
+        }
 
         private IEnumerable<ExpressionVisitor> ClientPostExpansionVisitors
         {
@@ -2940,15 +2961,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             }
 
             // TODO: Test with a scalar subquery as the value e.g. (SELECT 1) IN (SELECT 1)
-            return new SingleValueRelationalQueryExpression(
-                new SelectExpression(
-                    new ServerProjectionExpression(
-                        new SqlCastExpression(
-                            Expression.Condition(
-                                new SqlInExpression(valueExpression, outerSelectExpression),
-                                Expression.Constant(true),
-                                Expression.Constant(false)),
-                            typeof(bool)))));
+            return new ContainsRelationalQueryExpression(new SqlInExpression(valueExpression, outerSelectExpression));
         }
 
         protected Expression HandlePredefinedAggregate(
