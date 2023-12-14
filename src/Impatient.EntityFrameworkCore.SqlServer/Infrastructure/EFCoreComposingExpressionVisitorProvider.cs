@@ -32,7 +32,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         public virtual IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
         {
             // Before any composition, extract the 'query options' 
-            // (AsTracking, AsNoTracking, IgnoreQueryFilters)
+            // (AsTracking, AsNoTracking, AsNoTrackingWithIdentityResolution, IgnoreQueryFilters)
 
             yield return new QueryOptionsAnnotatingExpressionVisitor();
 

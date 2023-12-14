@@ -11,6 +11,9 @@ namespace Impatient.EFCore.Tests.Query
             fixture.TestSqlLoggerFactory.Clear();
         }
 
+        protected override QueryAsserter CreateQueryAsserter(Fixture fixture)
+            => new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
+
         public class Fixture : TPTGearsOfWarQueryRelationalFixture
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;

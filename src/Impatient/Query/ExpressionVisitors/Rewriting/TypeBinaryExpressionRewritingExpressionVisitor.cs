@@ -25,12 +25,17 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                                 .Aggregate(Expression.OrElse));
                     }
 
+                    if (node.TypeOperand.IsAssignableFrom(node.Expression.Type))
+                    {
+                        return Expression.Constant(true);
+                    }
+
                     goto default;
                 }
 
                 default:
                 {
-                    throw new NotSupportedException();
+                    return base.VisitTypeBinary(node);
                 }
             }
         }

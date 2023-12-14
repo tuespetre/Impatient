@@ -1,4 +1,5 @@
-﻿using Impatient.Query.Expressions;
+﻿using Impatient.Extensions;
+using Impatient.Query.Expressions;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Utility
@@ -35,6 +36,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                 }
 
                 case AnnotationExpression _:
+                case UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked }:
                 {
                     return base.Visit(node);
                 }

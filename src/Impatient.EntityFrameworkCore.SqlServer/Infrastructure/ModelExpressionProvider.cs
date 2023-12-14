@@ -3,6 +3,7 @@ using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 using Impatient.Extensions;
 using Impatient.Metadata;
 using Impatient.Query.Expressions;
+using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -116,7 +117,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return Expression.Lambda(
                 Expression.NewArrayInit(
                     typeof(object),
-                    targetType.FindPrimaryKey().Properties.Select(p => 
+                    targetType.FindPrimaryKey().Properties.Select(p =>
                     {
                         if (p.IsShadowProperty())
                         {
@@ -249,8 +250,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 if (currentType.GetQueryFilter() is not null)
                 {
                     var filterBody = currentType.GetQueryFilter().Body;
-                    
-                    var repointer 
+
+                    var repointer
                         = new QueryFilterRepointingExpressionVisitor(
                             DbContextParameter.GetInstance(context.GetType()));
 
@@ -320,38 +321,42 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private EnumerableRelationalQueryExpression CreateNonPolymorphicQueryExpressionFromTableMappings(IEntityType targetType)
         {
-            var mappings 
+            var properties = IterateProperties(targetType).Distinct().ToArray();
+
+            var tableMappings
                 = IterateTableMappings(targetType)
                     .OrderByDescending(m => m.IsSharedTablePrincipal)
                     .ThenByDescending(m => m.IsSplitEntityTypePrincipal)
                     .GroupBy(m => m.Table, (t, m) => m.First())
                     .ToArray();
 
+            var tables = tableMappings.Select(m => m.Table).Distinct().ToArray();
+
             var principalTable
                 = new BaseTableExpression(
-                    mappings[0].Table.Schema,
-                    mappings[0].Table.Name,
-                    mappings[0].Table.Name[..1].ToLower(),
-                    mappings[0].TypeBase.ClrType);
+                    tableMappings[0].Table.Schema,
+                    tableMappings[0].Table.Name,
+                    tableMappings[0].Table.Name[..1].ToLower(),
+                    tableMappings[0].TypeBase.ClrType);
 
-            var tableLookup = new Dictionary<ITableBase, AliasedTableExpression> { [mappings[0].Table] = principalTable };
+            var tableLookup = new Dictionary<ITableBase, AliasedTableExpression> { [tableMappings[0].Table] = principalTable };
 
             TableExpression queryTable = principalTable;
 
-            foreach (var mapping in mappings.Skip(1))
+            foreach (var tableMapping in tableMappings.Skip(1))
             {
                 var nonPrincipalTable
                     = new BaseTableExpression(
-                        mapping.Table.Schema,
-                        mapping.Table.Name,
-                        mapping.Table.Name[..1].ToLower(),
-                        mapping.TypeBase.ClrType);
+                        tableMapping.Table.Schema,
+                        tableMapping.Table.Name,
+                        tableMapping.Table.Name[..1].ToLower(),
+                        tableMapping.TypeBase.ClrType);
 
-                tableLookup[mapping.Table] = nonPrincipalTable;
+                tableLookup[tableMapping.Table] = nonPrincipalTable;
 
                 var predicate =
-                    mappings[0].Table.PrimaryKey.Columns
-                        .Zip(mapping.Table.PrimaryKey.Columns)
+                    tableMappings[0].Table.PrimaryKey.Columns
+                        .Zip(tableMapping.Table.PrimaryKey.Columns)
                         .Select(t => Expression.Equal(
                             new SqlColumnExpression(principalTable, t.First.Name, t.First.ProviderClrType, false, null),
                             new SqlColumnExpression(nonPrincipalTable, t.Second.Name, t.Second.ProviderClrType, false, null)))
@@ -361,8 +366,9 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
 
             var propertyExpressions
-                = (from p in IterateProperties(targetType)
+                = (from p in properties
                    from m in p.GetTableColumnMappings()
+                   where tables.Contains(m.Column.Table)
                    group m.Column by p into g
                    let p = g.Key
                    let c = g.First()
@@ -395,7 +401,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             var viewLookup = new Dictionary<ITableBase, AliasedTableExpression> { [viewMappings[0].View] = queryTable };
 
             var propertyExpressions
-                = (from p in IterateProperties(targetType)
+                = (from p in IterateProperties(targetType).Distinct()
                    from m in p.GetViewColumnMappings()
                    group m.Column by p into g
                    let p = g.Key
@@ -465,7 +471,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             var propertyMappings
                 = (from t in hierarchy
-                   from p in IterateProperties(t)
+                   from p in IterateProperties(t).Distinct()
                    from m in p.GetTableColumnMappings()
                    select (Property: p, Mapping: m)).ToArray();
 
@@ -526,6 +532,8 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
             var selectExpression = new SelectExpression(projection, queryTable);
 
+            // for TPH, add a predicate to constrain discriminator values.
+
             var discriminatingType = targetType;
 
             while (discriminatingType is not null)
@@ -558,19 +566,287 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private EnumerableRelationalQueryExpression CreateTPCQueryExpression(IEntityType targetType)
         {
-            var concreteTypes = targetType.GetConcreteDerivedTypesInclusive();
+            var concreteTypes = targetType.GetConcreteDerivedTypesInclusive().ToArray();
 
-            var properties = IterateProperties(targetType).ToArray();
+            if (concreteTypes.Length == 1)
+            {
+                return CreateNonPolymorphicQueryExpressionFromTableMappings(concreteTypes[0]);
+            }
 
-            properties.ToString();
-            
+            var targetProperties = IterateProperties(targetType).Distinct().ToArray();
 
-            throw new NotImplementedException("TPC not yet implemented");
+            var tupleType = ValueTupleHelper.CreateTupleType(targetProperties.Select(p => p.ClrType.AsNullableType()).Append(typeof(string)));
+            var tupleParameter = Expression.Parameter(tupleType);
+
+            var selectExpressions = new List<SelectExpression>();
+
+            foreach (var concreteType in concreteTypes)
+            {
+                var tableMapping = concreteType.GetTableMappings().Single();
+
+                // TODO: we need to build joins for owned/split entities.
+                var tableExpression
+                    = new BaseTableExpression(
+                        tableMapping.Table.Schema,
+                        tableMapping.Table.Name,
+                        tableMapping.Table.Name[..1].ToLowerInvariant(),
+                        targetType.ClrType);
+
+                var concreteProperties = IterateNonDerivedProperties(concreteType).Distinct().ToArray();
+
+                var columnExpressions =
+                    from p1 in targetProperties
+                    join p2 in concreteProperties on p1 equals p2 into lp2
+                    from p2 in lp2.DefaultIfEmpty()
+                    select p2 is null
+                        ? (Expression)Expression.Constant(null, p1.ClrType.AsNullableType())
+                        : Expression.Convert(
+                            MakeColumnExpression(tableExpression, p2.GetColumnName(), p2),
+                            p2.ClrType.AsNullableType());
+
+                selectExpressions.Add(
+                    new SelectExpression(
+                        new ServerProjectionExpression(
+                            ValueTupleHelper.CreateNewExpression(
+                                tupleType, 
+                                columnExpressions.Append(Expression.Constant(concreteType.GetDiscriminatorValue())))), 
+                        tableExpression));
+            }
+
+            // TODO: rewrite UnionTableExpression and UnionAllTableExpression to accept more than two SelectExpressions
+
+            var unionAllExpression = new UnionAllTableExpression(selectExpressions[0], selectExpressions[1]);
+            var selectExpression
+                = new SelectExpression(
+                    new ServerProjectionExpression(
+                        new ProjectionReferenceRewritingExpressionVisitor(unionAllExpression)
+                            .Visit(selectExpressions[0].Projection.Flatten().Body)),
+                    unionAllExpression);
+
+            for (var i = 2; i < selectExpressions.Count; i++)
+            {
+                unionAllExpression = new UnionAllTableExpression(selectExpression, selectExpressions[i]);
+                selectExpression
+                    = new SelectExpression(
+                        new ServerProjectionExpression(
+                            new ProjectionReferenceRewritingExpressionVisitor(unionAllExpression)
+                                .Visit(selectExpression.Projection.Flatten().Body)),
+                        unionAllExpression);
+            }
+
+            var propertyExpressions
+                = (from x in targetProperties.Select((p, i) => (p, i))
+                   let p = x.p
+                   let expr = Expression.Convert(
+                       ValueTupleHelper.CreateMemberExpression(
+                           tupleType,
+                           tupleParameter,
+                           x.i),
+                       p.ClrType)
+                   select (p, expr)).ToDictionary(x => x.p, x => (Expression)x.expr);
+
+            var descriptors = new PolymorphicTypeDescriptor[concreteTypes.Length];
+
+            for (var i = 0; i < concreteTypes.Length; i++)
+            {
+                var concreteType = concreteTypes[i];
+
+                var test
+                    = Expression.Lambda(
+                        Expression.Equal(
+                            ValueTupleHelper.CreateMemberExpression(tupleType, tupleParameter, targetProperties.Length),
+                            Expression.Constant(concreteType.GetDiscriminatorValue())),
+                        tupleParameter);
+
+                var descriptorMaterializer
+                    = Expression.Lambda(
+                        CreateMaterializationExpression(concreteType, null, propertyExpressions),
+                        tupleParameter);
+
+                descriptors[i] = new PolymorphicTypeDescriptor(concreteType.ClrType, test, descriptorMaterializer);
+            }
+
+            var materializer 
+                = new PolymorphicExpression(
+                    targetType.ClrType,
+                    selectExpression.Projection.Flatten().Body, 
+                    descriptors)
+                    .Filter(targetType.ClrType);
+
+            var projection = new ServerProjectionExpression(materializer);
+
+            return new EnumerableRelationalQueryExpression(new SelectExpression(projection, unionAllExpression));
         }
 
         private EnumerableRelationalQueryExpression CreateTPTQueryExpression(IEntityType targetType)
         {
-            throw new NotImplementedException("TPT not yet implemented");
+            // Construct an inner join for the target type without any derived types 
+
+            var targetTableMappings = targetType.GetTableMappings().ToArray();
+
+            var tableLookup = new Dictionary<ITableBase, AliasedTableExpression>();
+
+            var outerTable = targetTableMappings[0].Table;
+
+            var outerTableExpression
+                = new BaseTableExpression(
+                    outerTable.Schema,
+                    outerTable.Name,
+                    outerTable.Name[..1].ToLower(),
+                    targetType.ClrType);
+
+            tableLookup[outerTable] = outerTableExpression;
+
+            TableExpression queryTable = outerTableExpression;
+
+            foreach (var innerMapping in targetTableMappings.Skip(1))
+            {
+                var innerTableExpression
+                    = new BaseTableExpression(
+                        innerMapping.Table.Schema,
+                        innerMapping.Table.Name,
+                        innerMapping.Table.Name[..1].ToLower(),
+                        innerMapping.TypeBase.ClrType);
+
+                tableLookup[innerMapping.Table] = innerTableExpression;
+
+                var predicate =
+                    outerTable.PrimaryKey.Columns
+                        .Zip(innerMapping.Table.PrimaryKey.Columns)
+                        .Select(t => Expression.Equal(
+                            new SqlColumnExpression(outerTableExpression, t.First.Name, t.First.ProviderClrType, false, null),
+                            new SqlColumnExpression(innerTableExpression, t.Second.Name, t.Second.ProviderClrType, false, null)))
+                        .Aggregate(Expression.AndAlso);
+
+                queryTable = new InnerJoinTableExpression(queryTable, innerTableExpression, predicate, targetType.ClrType);
+
+                outerTable = innerMapping.Table;
+                outerTableExpression = innerTableExpression;
+            }
+
+            // Construct left joins for concrete derived types of the target type
+
+            foreach (var concreteType in targetType.GetDerivedTypes().Where(t => !t.IsAbstract()))
+            {
+                var derivedOuterTable = outerTable;
+                var derivedOuterTableExpression = outerTableExpression;
+
+                foreach (var innerMapping in concreteType.GetTableMappings())
+                {
+                    if (tableLookup.ContainsKey(innerMapping.Table))
+                    {
+                        continue;
+                    }
+
+                    var innerTableExpression
+                        = new BaseTableExpression(
+                            innerMapping.Table.Schema,
+                            innerMapping.Table.Name,
+                            innerMapping.Table.Name[..1].ToLower(),
+                            innerMapping.TypeBase.ClrType);
+
+                    tableLookup[innerMapping.Table] = innerTableExpression;
+
+                    var predicate =
+                        derivedOuterTable.PrimaryKey.Columns
+                            .Zip(innerMapping.Table.PrimaryKey.Columns)
+                            .Select(t => Expression.Equal(
+                                new SqlColumnExpression(derivedOuterTableExpression, t.First.Name, t.First.ProviderClrType, false, null),
+                                new SqlColumnExpression(innerTableExpression, t.Second.Name, t.Second.ProviderClrType, false, null)))
+                            .Aggregate(Expression.AndAlso);
+
+                    queryTable = new LeftJoinTableExpression(queryTable, innerTableExpression, predicate, targetType.ClrType);
+
+                    derivedOuterTable = innerMapping.Table;
+                    derivedOuterTableExpression = innerTableExpression;
+                }
+            }
+
+            var hierarchy = targetType.GetDerivedTypesInclusive();
+
+            var propertyMappings
+                = (from t in hierarchy
+                   from p in IterateProperties(t).Distinct()
+                   from m in p.GetTableColumnMappings()
+                   select (Property: p, Mapping: m)).ToArray();
+
+            var columnExpressions
+                = (from p in propertyMappings
+                   group p.Property by p.Mapping.Column into properties
+                   let property = properties.First()
+                   let column = properties.Key
+                   let table = tableLookup[column.Table]
+                   let expression = new SqlColumnExpression(table, column.Name, property.ClrType.AsNullableType(), true, GetColumnTypeMapping(property))
+                   select (expression, properties)).ToArray();
+
+            var tupleType = ValueTupleHelper.CreateTupleType(columnExpressions.Select(c => c.expression.Type.AsNullableType()).Append(typeof(string)));
+            var tupleParameter = Expression.Parameter(tupleType);
+
+            var propertyExpressions
+                = (from p in propertyMappings
+                   group p by p.Property into g
+                   let p = g.Key
+                   let expr = Expression.Convert(
+                       ValueTupleHelper.CreateMemberExpression(
+                           tupleType,
+                           tupleParameter,
+                           Array.FindIndex(columnExpressions, c => c.properties.Contains(p))),
+                       p.ClrType)
+                   select (p, expr)).ToDictionary(x => x.p, x => (Expression)x.expr);
+
+            var concreteTypes = hierarchy.Where(t => !t.IsAbstract()).ToArray();
+            var descriptors = new PolymorphicTypeDescriptor[concreteTypes.Length];
+
+            for (var i = 0; i < concreteTypes.Length; i++)
+            {
+                var concreteType = concreteTypes[i];
+
+                var test
+                    = Expression.Lambda(
+                        Expression.Equal(
+                            ValueTupleHelper.CreateMemberExpression(
+                                tupleType,
+                                tupleParameter,
+                                columnExpressions.Length),
+                            Expression.Constant(concreteType.GetDiscriminatorValue())),
+                        tupleParameter);
+
+                var descriptorMaterializer
+                    = Expression.Lambda(
+                        CreateMaterializationExpression(concreteType, tableLookup, propertyExpressions),
+                        tupleParameter);
+
+                descriptors[i] = new PolymorphicTypeDescriptor(concreteType.ClrType, test, descriptorMaterializer);
+            }
+
+            var discriminatorExpression
+                = new SqlCaseExpression(
+                    from t in concreteTypes.Reverse()
+                    from m in t.GetTableMappings().TakeLast(1)
+                    let c = m.Table.PrimaryKey.Columns[0]
+                    select Expression.NotEqual(
+                        new SqlColumnExpression(
+                            tableLookup[m.Table],
+                            c.Name,
+                            c.ProviderClrType.AsNullableType(),
+                            true,
+                            null),
+                        Expression.Constant(null, c.ProviderClrType.AsNullableType())),
+                    from t in concreteTypes.Reverse()
+                    select Expression.Constant(t.GetDiscriminatorValue()),
+                    null,
+                    typeof(string));
+
+            var materializer = new PolymorphicExpression(
+                targetType.ClrType,
+                ValueTupleHelper.CreateNewExpression(tupleType, columnExpressions.Select(c => c.expression).Cast<Expression>().Append(discriminatorExpression)),
+                descriptors).Filter(targetType.ClrType);
+
+            var projection = new ServerProjectionExpression(materializer);
+
+            var selectExpression = new SelectExpression(projection, queryTable);
+
+            return new EnumerableRelationalQueryExpression(selectExpression);
         }
 
         private static ExtendedNewExpression CreateNewExpression(IEntityType type, Dictionary<IProperty, Expression> propertyExpressions)
@@ -661,7 +937,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                 throw new NotSupportedException();
             }
 
-            var constructor 
+            var constructor
                 = factoryMethodBinding.RuntimeType
                     .GetConstructor(innerBindings.Select(b => b.ParameterType).ToArray());
 
@@ -845,6 +1121,25 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
         }
 
+        private static IEnumerable<ITableMapping> IterateNonDerivedTableMappings(IEntityType type)
+        {
+            foreach (var mapping in type.GetTableMappings())
+            {
+                yield return mapping;
+            }
+
+            foreach (var navigation in type.GetNavigations())
+            {
+                if (navigation.ForeignKey.IsOwnership && !navigation.IsOnDependent && !navigation.IsCollection && !navigation.TargetEntityType.IsMappedToJson())
+                {
+                    foreach (var mapping in IterateTableMappings(navigation.TargetEntityType))
+                    {
+                        yield return mapping;
+                    }
+                }
+            }
+        }
+
         private static IEnumerable<ITableMapping> IterateTableMappings(IEntityType type)
         {
             foreach (var mapping in type.GetTableMappings())
@@ -872,6 +1167,25 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             }
         }
 
+        private static IEnumerable<IProperty> IterateNonDerivedProperties(IEntityType type)
+        {
+            foreach (var property in type.GetProperties())
+            {
+                yield return property;
+            }
+
+            foreach (var navigation in type.GetNavigations())
+            {
+                if (navigation.ForeignKey.IsOwnership && !navigation.IsOnDependent && !navigation.IsCollection && !navigation.TargetEntityType.IsMappedToJson())
+                {
+                    foreach (var property in IterateNonDerivedProperties(navigation.TargetEntityType))
+                    {
+                        yield return property;
+                    }
+                }
+            }
+        }
+
         private static IEnumerable<IProperty> IterateProperties(IEntityType type)
         {
             foreach (var property in type.GetProperties())
@@ -883,8 +1197,6 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             {
                 if (navigation.ForeignKey.IsOwnership && !navigation.IsOnDependent && !navigation.IsCollection && !navigation.TargetEntityType.IsMappedToJson())
                 {
-                    var targetType = navigation.TargetEntityType;
-
                     foreach (var property in IterateProperties(navigation.TargetEntityType))
                     {
                         yield return property;
@@ -903,6 +1215,20 @@ namespace Impatient.EntityFrameworkCore.SqlServer
 
         private SqlColumnExpression MakeColumnExpression(AliasedTableExpression table, string columnName, IProperty property)
         {
+            var typeMapping = GetColumnTypeMapping(property);
+
+            var nullable = GetColumnNullability(property);
+
+            return new SqlColumnExpression(
+                table,
+                columnName,
+                property.ClrType,
+                nullable,
+                typeMapping);
+        }
+
+        private ITypeMapping GetColumnTypeMapping(IProperty property)
+        {
             ITypeMapping typeMapping = default;
 
             var sourceMapping = relationalTypeMappingSource.FindMapping(property);
@@ -919,14 +1245,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
                         sourceMapping.Converter?.ConvertToProviderExpression);
             }
 
-            var nullable = GetColumnNullability(property);
-
-            return new SqlColumnExpression(
-                table,
-                columnName,
-                property.ClrType,
-                nullable,
-                typeMapping);
+            return typeMapping;
         }
 
         private static bool GetColumnNullability(IProperty property)

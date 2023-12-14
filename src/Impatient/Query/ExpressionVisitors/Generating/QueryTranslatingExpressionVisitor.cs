@@ -570,6 +570,11 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                     return VisitSqlAlias(sqlAliasExpression);
                 }
 
+                case SqlCaseExpression sqlCaseExpression:
+                {
+                    return VisitSqlCase(sqlCaseExpression);
+                }
+
                 case SqlCastExpression sqlCastExpression:
                 {
                     return VisitSqlCast(sqlCastExpression);
@@ -1085,6 +1090,34 @@ namespace Impatient.Query.ExpressionVisitors.Generating
             Builder.Append(FormatIdentifier(sqlAliasExpression.Alias));
 
             return sqlAliasExpression;
+        }
+
+        protected virtual Expression VisitSqlCase(SqlCaseExpression sqlCaseExpression)
+        {
+            Builder.Append("CASE");
+            Builder.IncreaseIndent();
+
+            foreach (var (when, then) in sqlCaseExpression.Whens.Zip(sqlCaseExpression.Thens))
+            {
+                Builder.AppendLine();
+                Builder.Append("WHEN ");
+                Visit(when);
+                Builder.Append(" THEN ");
+                Visit(then);
+            }
+
+            if (sqlCaseExpression.Else is not null)
+            {
+                Builder.AppendLine();
+                Builder.Append("ELSE ");
+                Visit(sqlCaseExpression.Else);
+            }
+
+            Builder.DecreaseIndent();
+            Builder.AppendLine();
+            Builder.Append("END");
+
+            return sqlCaseExpression;
         }
 
         protected virtual Expression VisitSqlCast(SqlCastExpression sqlCastExpression)

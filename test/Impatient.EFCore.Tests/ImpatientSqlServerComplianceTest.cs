@@ -68,6 +68,8 @@ namespace Impatient.EFCore.Tests
 
                 // Miscellaneous
                 typeof(ApiConsistencyTestBase<>),
+                typeof(LoggingTestBase),
+                typeof(LoggingRelationalTestBase<,>),
             };
     }
 }

@@ -54,6 +54,15 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                 {
                     switch (node.Method.Name)
                     {
+                        case nameof(EntityFrameworkQueryableExtensions.AsNoTrackingWithIdentityResolution):
+                        {
+                            var visited = base.Visit(node.Arguments[0]);
+
+                            QueryTrackingBehavior = Microsoft.EntityFrameworkCore.QueryTrackingBehavior.NoTrackingWithIdentityResolution;
+
+                            return visited;
+                        }
+
                         case nameof(EntityFrameworkQueryableExtensions.AsNoTracking):
                         {
                             var visited = base.Visit(node.Arguments[0]);

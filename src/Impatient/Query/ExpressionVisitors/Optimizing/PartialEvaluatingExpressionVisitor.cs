@@ -40,6 +40,34 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                 {
                     visitedRight = Expression.Convert(visitedRight, visitedLeft.Type);
                 }
+                else
+                {
+                    switch (node.NodeType)
+                    {
+                        case ExpressionType.Add:
+                        case ExpressionType.AddChecked:
+                        case ExpressionType.Subtract:
+                        case ExpressionType.SubtractChecked:
+                        case ExpressionType.Multiply:
+                        case ExpressionType.MultiplyChecked:
+                        case ExpressionType.GreaterThan:
+                        case ExpressionType.GreaterThanOrEqual:
+                        case ExpressionType.LessThan:
+                        case ExpressionType.LessThanOrEqual:
+                        {
+                            if (visitedLeft.Type.IsNullableType())
+                            {
+                                visitedRight = Expression.Convert(visitedRight, visitedLeft.Type);
+                            }
+                            else if (visitedRight.Type.IsNullableType())
+                            {
+                                visitedLeft = Expression.Convert(visitedLeft, visitedRight.Type);
+                            }
+
+                            break;
+                        }
+                    }
+                }
             }
 
             return node.Update(visitedLeft, node.Conversion, visitedRight);
@@ -216,7 +244,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                     }
                 }
             }
-            
+
             return node.Update(expression);
         }
 
@@ -358,7 +386,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                 }
             }
 
-            Finish:
+        Finish:
             return node.Update(@object, arguments);
         }
 

@@ -49,6 +49,7 @@
 
   <ItemGroup>
     <QueryExpressions Include="**/*QueryExpression.cs; **/GroupByResultExpression.cs" Exclude="**/RelationalQueryExpression.cs" />
+    <SqlExpressions Remove="Query\Expressions\SqlCaseExpression.cs" />
     <SqlExpressions Remove="Query\Expressions\SqlLikeExpression.cs" />
     <None Include="..\..\.editorconfig" Link=".editorconfig" />
     <Compile Update="@(QueryExpressions)">

@@ -28,6 +28,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer
         {
             if (node is QueryOptionsExpression queryOptionsExpression)
             {
+                // TODO: why not also NoTrackingWithIdentityResolution?
                 if (queryOptionsExpression.QueryTrackingBehavior == QueryTrackingBehavior.NoTracking)
                 {
                     // remove shadow properties from materialization expressions

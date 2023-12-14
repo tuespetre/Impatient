@@ -10,6 +10,9 @@ namespace Impatient.EFCore.Tests.Query
         {
         }
 
+        protected override QueryAsserter CreateQueryAsserter(Fixture fixture)
+            => new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
+
         public new class Fixture : TPCManyToManyQueryRelationalFixture
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;

@@ -301,6 +301,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     return HandleReverse(outerQuery, node, visitedArguments, FallbackToEnumerable);
                 }
 
+                case nameof(Queryable.Order):
+                case nameof(Queryable.OrderDescending):
+                {
+                    return HandleOrder(outerQuery, node, visitedArguments, FallbackToEnumerable);
+                }    
+
                 // Partitioning operations
 
                 case nameof(Queryable.Take):
@@ -347,12 +353,24 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     return HandleDistinct(outerQuery, node, visitedArguments, FallbackToEnumerable);
                 }
 
+                case nameof(Queryable.DistinctBy):
+                {
+                    return HandleDistinctBy(outerQuery, node, visitedArguments, FallbackToEnumerable);
+                }
+
                 case nameof(Queryable.Concat):
                 case nameof(Queryable.Except):
                 case nameof(Queryable.Intersect):
                 case nameof(Queryable.Union):
                 {
                     return HandleSetOperator(outerQuery, node, visitedArguments, FallbackToEnumerable);
+                }
+
+                case nameof(Queryable.ExceptBy):
+                case nameof(Queryable.IntersectBy):
+                case nameof(Queryable.UnionBy):
+                {
+                    return HandleKeyedSetOperator(outerQuery, node, visitedArguments, FallbackToEnumerable);
                 }
 
                 case nameof(Queryable.Append):
@@ -404,6 +422,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     return HandlePredefinedAggregate(outerQuery, node, visitedArguments, FallbackToEnumerable);
                 }
 
+                case nameof(Queryable.MaxBy):
+                case nameof(Queryable.MinBy):
+                {
+                    return HandleKeyedAggregate(outerQuery, node, visitedArguments, FallbackToEnumerable);
+                }
+
                 case nameof(Queryable.Count):
                 case nameof(Queryable.LongCount):
                 {
@@ -415,6 +439,11 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     return HandleAggregate(outerQuery, node, visitedArguments, FallbackToEnumerable);
                 }
 
+                // Whatever else.
+                // I mean... what are we going to do with Chunk, lol
+
+                case nameof(Queryable.Chunk):
+                case nameof(Enumerable.TryGetNonEnumeratedCount):
                 default:
                 {
                     return FallbackToEnumerable();
@@ -1028,6 +1057,11 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     = (outerProjection.UnwrapInnerExpression() as PolymorphicExpression)
                         .Filter(outType);
 
+                if (!polymorphicExpression.Descriptors.Any())
+                {
+                    return fallbackToEnumerable();
+                }
+
                 var predicate
                     = polymorphicExpression
                         .Descriptors
@@ -1388,6 +1422,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             Expression[] visitedArguments,
             Func<Expression> fallbackToEnumerable)
         {
+            // TODO: handle defaultValue overloads
+            if (node.Method.GetParameters().Last().Name == "defaultValue")
+            {
+                return fallbackToEnumerable();
+            }
+
             var outerSelectExpression = outerQuery.SelectExpression;
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var predicateLambda = node.Arguments.ElementAtOrDefault(1)?.UnwrapLambda();
@@ -1520,6 +1560,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             Expression[] visitedArguments,
             Func<Expression> fallbackToEnumerable)
         {
+            // TODO: handle defaultValue overloads
+            if (node.Method.GetParameters().Last().Name == "defaultValue")
+            {
+                return fallbackToEnumerable();
+            }
+
             var outerSelectExpression = outerQuery.SelectExpression;
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var predicateLambda = node.Arguments.ElementAtOrDefault(1)?.UnwrapLambda();
@@ -1651,6 +1697,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             Expression[] visitedArguments,
             Func<Expression> fallbackToEnumerable)
         {
+            // TODO: handle defaultValue overloads
+            if (node.Method.GetParameters().Last().Name == "defaultValue")
+            {
+                return fallbackToEnumerable();
+            }
+
             var outerSelectExpression = outerQuery.SelectExpression;
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var predicateLambda = node.Arguments.ElementAtOrDefault(1)?.UnwrapLambda();
@@ -1704,6 +1756,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             Expression[] visitedArguments,
             Func<Expression> fallbackToEnumerable)
         {
+            // TODO: handle index argument
+            if (node.Arguments[1].Type == typeof(Index))
+            {
+                return fallbackToEnumerable();
+            }
+
             var outerSelectExpression = outerQuery.SelectExpression;
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
 
@@ -1756,6 +1814,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             Expression[] visitedArguments,
             Func<Expression> fallbackToEnumerable)
         {
+            // TODO: handle index argument
+            if (node.Arguments[1].Type == typeof(Index))
+            {
+                return fallbackToEnumerable();
+            }
+
             var outerSelectExpression = outerQuery.SelectExpression;
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
 
@@ -1800,6 +1864,16 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                         .UpdateOffset(index)
                         .UpdateLimit(Expression.Constant(1))),
                 Expression.Constant(0));
+        }
+
+        protected Expression HandleOrder(
+            EnumerableRelationalQueryExpression outerQuery,
+            MethodCallExpression node,
+            Expression[] visitedArguments,
+            Func<Expression> fallbackToEnumerable)
+        {
+            // TODO: Handle Order
+            return fallbackToEnumerable();
         }
 
         protected Expression HandleOrderBy(
@@ -1908,6 +1982,16 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             return fallbackToEnumerable();
         }
 
+        protected Expression HandleOrderDescending(
+            EnumerableRelationalQueryExpression outerQuery,
+            MethodCallExpression node,
+            Expression[] visitedArguments,
+            Func<Expression> fallbackToEnumerable)
+        {
+            // TODO: Handle OrderDescending
+            return fallbackToEnumerable();
+        }
+
         protected Expression HandleReverse(
             EnumerableRelationalQueryExpression outerQuery,
             MethodCallExpression node,
@@ -1953,6 +2037,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             Expression[] visitedArguments,
             Func<Expression> fallbackToEnumerable)
         {
+            // TODO: handle range argument
+            if (node.Arguments[1].Type == typeof(Range))
+            {
+                return fallbackToEnumerable();
+            }
+
             var outerSelectExpression = outerQuery.SelectExpression;
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
 
@@ -2339,6 +2429,16 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     .AsDistinct());
         }
 
+        protected Expression HandleDistinctBy(
+            EnumerableRelationalQueryExpression outerQuery,
+            MethodCallExpression node,
+            Expression[] visitedArguments,
+            Func<Expression> fallbackToEnumerable)
+        {
+            // TODO: Handle DistinctBy
+            return fallbackToEnumerable();
+        }
+
         protected Expression HandleSetOperator(
             EnumerableRelationalQueryExpression outerQuery,
             MethodCallExpression node,
@@ -2481,6 +2581,16 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     setOperatorExpression));
         }
 
+        protected Expression HandleKeyedSetOperator(
+            EnumerableRelationalQueryExpression outerQuery,
+            MethodCallExpression node,
+            Expression[] visitedArguments,
+            Func<Expression> fallbackToEnumerable)
+        {
+            // TODO: Handle ExceptBy/IntersectBy/UnionBy
+            return fallbackToEnumerable();
+        }
+
         protected Expression HandleAppend(
             EnumerableRelationalQueryExpression outerQuery,
             MethodCallExpression node,
@@ -2507,6 +2617,12 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             Expression[] visitedArguments,
             Func<Expression> fallbackToEnumerable)
         {
+            // TODO: handle newer Zip overloads
+            if (node.Method.GetParameters().Last().Name != "resultSelector")
+            {
+                return fallbackToEnumerable();
+            }
+
             var innerSource = visitedArguments[1] = ProcessQuerySource(Visit(node.Arguments[1]));
 
             if (innerSource is not EnumerableRelationalQueryExpression innerQuery)
@@ -2925,6 +3041,16 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     .UpdateOrderBy(null)
                     .UpdateProjection(new ServerProjectionExpression(
                         aggregateExpression.VisitWith(ServerPostExpansionVisitors))));
+        }
+
+        protected Expression HandleKeyedAggregate(
+            EnumerableRelationalQueryExpression outerQuery,
+            MethodCallExpression node,
+            Expression[] visitedArguments,
+            Func<Expression> fallbackToEnumerable)
+        {
+            // TODO: Handle MaxBy/MinBy
+            return fallbackToEnumerable();
         }
 
         protected Expression HandleCount(

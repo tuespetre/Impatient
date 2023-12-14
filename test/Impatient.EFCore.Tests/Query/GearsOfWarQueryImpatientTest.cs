@@ -15,9 +15,9 @@ namespace Impatient.EFCore.Tests.Query
 
         [ConditionalTheory]
         [MemberData(nameof(IsAsyncData))]
-        public override Task Where_DateOnly_DayOfWeek(bool async)
+        public override Task GroupBy_Select_sum(bool async)
         {
-            return base.Where_DateOnly_DayOfWeek(async);
+            return base.GroupBy_Select_sum(async);
         }
 
         protected override QueryAsserter CreateQueryAsserter(Fixture fixture) =>

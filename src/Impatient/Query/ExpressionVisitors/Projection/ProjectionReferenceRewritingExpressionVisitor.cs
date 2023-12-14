@@ -10,7 +10,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
 {
     public class ProjectionReferenceRewritingExpressionVisitor : ExpressionVisitor
     {
-        private readonly Stack<string> nameStack = new Stack<string>();
+        private readonly Stack<string> nameStack = new();
         private readonly AliasedTableExpression targetTable;
 
         public ProjectionReferenceRewritingExpressionVisitor(AliasedTableExpression targetTable)
@@ -248,7 +248,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                 default:
                 {
                     var parts = GetNameParts();
-                    var isNullable = node.Type.IsNullableType();
+                    var isNullable = node.Type.IsNullableType() || node.Type.IsClass;
                     var typeMapping = default(ITypeMapping);
 
                     switch (node)
