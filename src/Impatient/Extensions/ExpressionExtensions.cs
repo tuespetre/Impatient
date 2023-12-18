@@ -85,9 +85,14 @@ namespace Impatient.Extensions
                         expression)));
         }
 
-        public static MethodCallExpression AsQueryable(this Expression expression)
+        public static Expression AsQueryable(this Expression expression)
         {
             Debug.Assert(expression.Type.IsSequenceType());
+
+            if (expression.Type.IsQueryableType())
+            {
+                return expression;
+            }
 
             return Expression.Call(
                 ReflectionExtensions
@@ -96,9 +101,14 @@ namespace Impatient.Extensions
                 expression);
         }
 
-        public static MethodCallExpression AsOrderedQueryable(this Expression expression)
+        public static Expression AsOrderedQueryable(this Expression expression)
         {
             Debug.Assert(expression.Type.IsSequenceType());
+
+            if (expression.Type.IsOrderedQueryableType())
+            {
+                return expression;
+            }
 
             return Expression.Call(
                 typeof(ImpatientExtensions)

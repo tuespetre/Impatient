@@ -66,7 +66,10 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                             result = Expression.Convert(result, node.Type);
                         }
 
-                        return result;
+                        if (node.Type.IsAssignableFrom(result.Type))
+                        {
+                            return result;
+                        }
                     }
                 }
             }

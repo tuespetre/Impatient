@@ -63,6 +63,11 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                         return base.Visit(binaryExpression.Left);
                     }
 
+                    case QueryFilterExpression queryFilterExpression:
+                    {
+                        return base.Visit(queryFilterExpression.Expression);
+                    }
+
                     case MethodCallExpression methodCallExpression
                     when ignoreQueryFilters
                         && methodCallExpression.Method.Name == nameof(Queryable.Where)

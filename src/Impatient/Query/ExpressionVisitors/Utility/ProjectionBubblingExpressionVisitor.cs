@@ -225,8 +225,7 @@ namespace Impatient.Query.ExpressionVisitors.Utility
                 }
             }
 
-            if (node.Method.DeclaringType == typeof(ImpatientExtensions)
-                && node.Method.Name == nameof(ImpatientExtensions.AsOrderedQueryable))
+            if (node.Method.IsAsOrderedQueryableMethod())
             {
                 var arguments = Visit(node.Arguments);
 

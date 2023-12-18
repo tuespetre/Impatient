@@ -9,7 +9,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using static Impatient.Extensions.ReflectionExtensions;
-using static System.Linq.Enumerable;
 
 namespace Impatient.Query.ExpressionVisitors.Composing
 {
@@ -95,31 +94,21 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
         protected override Expression VisitLambda<T>(Expression<T> node)
         {
-            if (node.ReturnType.IsGenericType(typeof(IQueryable<>)))
+            if (node.ReturnType.IsQueryableType())
             {
                 var parameters = node.Parameters.Select(p => VisitAndConvert(p, nameof(VisitLambda))).ToArray();
                 var body = Visit(node.Body);
 
-                if (!body.Type.IsGenericType(typeof(IQueryable<>)))
+                if (node.ReturnType.IsOrderedQueryableType())
                 {
-                    body
-                        = Expression.Call(
-                            GetGenericMethodDefinition((IEnumerable<object> o) => o.AsQueryable())
-                                .MakeGenericMethod(body.Type.GetSequenceType()),
-                            body);
+                    if (!body.Type.IsOrderedQueryableType())
+                    {
+                        body = body.AsOrderedQueryable();
+                    }
                 }
-
-                if (node.ReturnType.IsGenericType(typeof(IOrderedQueryable<>))
-                    && !body.Type.IsGenericType(typeof(IOrderedQueryable<>)))
+                else if (!body.Type.IsQueryableType())
                 {
-                    body
-                        = Expression.New(
-                            typeof(StubOrderedQueryableEnumerable<>)
-                                .MakeGenericType(body.Type.GetSequenceType())
-                                .GetTypeInfo()
-                                .DeclaredConstructors
-                                .Single(),
-                            body);
+                    body = body.AsQueryable();
                 }
 
                 return node.Update(body, parameters);
@@ -130,8 +119,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            if (node.Method.DeclaringType == typeof(ImpatientExtensions)
-                && node.Method.Name == nameof(ImpatientExtensions.AsOrderedQueryable))
+            if (node.Method.IsAsOrderedQueryableMethod())
             {
                 var inner = Visit(node.Arguments.Single());
 
@@ -140,7 +128,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     return ordered.AsOrdered();
                 }
 
-                return node.Update(node.Object, new[] { inner });
+                return node.Update(node.Object, new[] { inner.AsQueryable() });
             }
 
             if (!node.Method.IsQueryableOrEnumerableMethod())
@@ -150,15 +138,19 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
             var visitedArguments = new Expression[node.Arguments.Count];
 
-            MethodCallExpression FallbackToEnumerable()
+            Expression FallbackToEnumerable()
             {
-                return Expression.Call(
-                    node.ContainsNonLambdaExpressions()
-                        ? node.Method
-                        : MatchQueryableMethod(node.Method),
-                    node.Arguments
+                var fallbackArguments
+                    = node.Arguments
                         .Zip(visitedArguments, (original, visited) => visited ?? Visit(original))
-                        .Select(a => node.ContainsNonLambdaExpressions() ? a : a.UnwrapLambda() ?? a));
+                        .Select(a => node.ContainsNonLambdaExpressions() ? a : a.UnwrapLambda() ?? a);
+
+                if (node.ContainsNonLambdaExpressions())
+                {
+                    return Expression.Call(node.Method, fallbackArguments);
+                }
+
+                return Expression.Call(MatchQueryableMethod(node.Method), fallbackArguments);
             }
 
             if (node.Method.HasComparerArgument()

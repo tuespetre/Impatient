@@ -80,6 +80,27 @@ namespace Impatient.Extensions
             return type.IsGenericType(typeof(ICollection<>)) || type.IsGenericType(typeof(IReadOnlyCollection<>));
         }
 
+        public static bool IsQueryableType(this Type type)
+        {
+            return type.IsGenericType(typeof(IQueryable<>)) || type == typeof(IQueryable);
+        }
+
+        public static bool IsOrderedQueryableType(this Type type)
+        {
+            return type.IsGenericType(typeof(IOrderedQueryable<>)) || type == typeof(IOrderedQueryable);
+        }
+
+        public static bool IsOrderedEnumerableType(this Type type)
+        {
+            return type.IsGenericType(typeof(IOrderedEnumerable<>));
+        }
+
+        public static bool IsAsOrderedQueryableMethod(this MethodInfo method)
+        {
+            return method.DeclaringType == typeof(ImpatientExtensions)
+                && method.Name == nameof(ImpatientExtensions.AsOrderedQueryable);
+        }
+
         public static bool IsSequenceType(this Type type)
         {
             return type != typeof(string) && type.IsGenericType(typeof(IEnumerable<>));

@@ -69,8 +69,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
 
             protected override Expression VisitMethodCall(MethodCallExpression node)
             {
-                if (node.Method.DeclaringType == typeof(ImpatientExtensions)
-                    && node.Method.Name == nameof(ImpatientExtensions.AsOrderedQueryable))
+                if (node.Method.IsAsOrderedQueryableMethod())
                 {
                     return HandlePassthroughMethod(node);
                 }
@@ -1077,9 +1076,9 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                                 keySelector.ReturnType,
                                 node.Method.GetGenericArguments()[0],
                             }),
-                        new[]
+                        new Expression[]
                         {
-                            source,
+                            source.AsQueryable(),
                             keySelector,
                             context.OuterTerminalSelector,
                         }.Concat(node.Arguments.Skip(2)));

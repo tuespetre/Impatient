@@ -6,7 +6,7 @@ namespace Impatient.Extensions
 {
     internal static class ImpatientExtensions
     {
-        public static IOrderedQueryable<TSource> AsOrderedQueryable<TSource>(this IQueryable<TSource> source)
+        public static IOrderedQueryableEnumerable<TSource> AsOrderedQueryable<TSource>(this IQueryable<TSource> source)
         {
             return new StubOrderedQueryableEnumerable<TSource>(source);
         }

@@ -1,5 +1,7 @@
 ﻿using Impatient.Extensions;
 using Impatient.Query.ExpressionVisitors.Utility;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Optimizing
@@ -60,10 +62,30 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
         // x != !y -> x == y
         private class BinaryExpressionReducingExpressionVisitor : ExpressionVisitor
         {
+            public override Expression Visit(Expression node)
+            {
+                if (node is null)
+                {
+                    return node;
+                }
+
+                var visited = base.Visit(node);
+
+                if (visited.Type != node.Type)
+                {
+                    Debugger.Break();
+                }
+
+                return visited;
+            }
+
             protected override Expression VisitBinary(BinaryExpression node)
             {
-                var left = Visit(node.Left).UnwrapInnerExpression();
-                var right = Visit(node.Right).UnwrapInnerExpression();
+                var visitedLeft = Visit(node.Left);
+                var visitedRight = Visit(node.Right);
+
+                var left = visitedLeft.UnwrapInnerExpression();
+                var right = visitedRight.UnwrapInnerExpression();
 
                 var leftConstant = left as ConstantExpression;
                 var rightConstant = right as ConstantExpression;
@@ -106,7 +128,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                             }
                         }
 
-                        break;
+                        return node.UpdateWithConversion(visitedLeft, visitedRight);
                     }
 
                     case ExpressionType.OrElse:
@@ -145,7 +167,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                             }
                         }
 
-                        break;
+                        return node.UpdateWithConversion(visitedLeft, visitedRight);
                     }
 
                     case ExpressionType.Equal:
@@ -212,7 +234,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                             return Visit(Expression.NotEqual(left, right));
                         }
 
-                        break;
+                        return node.UpdateWithConversion(left, right);
                     }
 
                     case ExpressionType.NotEqual:
@@ -279,7 +301,7 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing
                             return Visit(Expression.Equal(left, right));
                         }
 
-                        break;
+                        return node.UpdateWithConversion(left, right);
                     }
                 }
 

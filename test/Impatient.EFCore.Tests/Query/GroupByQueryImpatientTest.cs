@@ -1,4 +1,5 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using Microsoft.EntityFrameworkCore.TestUtilities;
@@ -157,6 +158,30 @@ FROM (
 ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
 OFFSET 4 ROWS
 ");
+        }
+
+        [Trait("Category", "Rewritten")]
+        public override async Task GroupBy_aggregate_SelectMany(bool async)
+        {
+            await AssertQuery(
+                async,
+                ss => from o in ss.Set<Order>()
+                      group o by o.CustomerID
+                      into g
+                      let id = g.Min(x => x.OrderID)
+                      from o in ss.Set<Order>()
+                      where o.OrderID == id
+                      select o);
+
+            AssertSql(@"
+SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
+FROM (
+    SELECT [g].[CustomerID] AS [g.Key], MIN([g].[OrderID]) AS [id]
+    FROM [Orders] AS [g]
+    GROUP BY [g].[CustomerID]
+) AS [t]
+CROSS JOIN [Orders] AS [o]
+WHERE [o].[OrderID] = [t].[id]");
         }
 
         [ConditionalTheory]
@@ -497,11 +522,12 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
         }
 
-        [ConditionalTheory]
-        [MemberData(nameof(IsAsyncData))]
+        [Trait("Category", "Rewritten")]
         public override async Task GroupBy_Distinct(bool async)
         {
-            await base.GroupBy_Distinct(async);
+            await AssertQuery(
+                async,
+                ss => ss.Set<Order>().GroupBy(o => o.CustomerID).Distinct().Select(g => g.Key));
 
             AssertSql(@"
 SELECT [g].[Key]
@@ -629,6 +655,25 @@ WHERE [o].[Key] = N'ALFKI'
 ");
         }
 
+        [Trait("Translation", "Exceeds")]
+        public override async Task GroupBy_let_orderby_projection_with_coalesce_operation(bool async)
+        {
+            await AssertQuery(
+                async,
+                ss => ss.Set<Customer>()
+                    .GroupBy(c => c.City)
+                    .Select(g => new { citiesCount = g.Count(), g })
+                    .OrderByDescending(x => x.citiesCount)
+                    .ThenBy(x => x.g.Key)
+                    .Select(x => new { Locality = x.g.Key ?? "Unknown", Count = x.citiesCount }));
+
+            AssertSql(@"
+SELECT COALESCE([g].[City], N'Unknown') AS [Locality], COUNT(*) AS [Count]
+FROM [Customers] AS [g]
+GROUP BY [g].[City]
+ORDER BY COUNT(*) DESC, [g].[City] ASC");
+        }
+
         [ConditionalTheory]
         [MemberData(nameof(IsAsyncData))]
         public override async Task GroupBy_multi_navigation_members_Aggregate(bool async)
@@ -701,6 +746,26 @@ FROM [Orders] AS [o]
 GROUP BY [o].[CustomerID]
 ORDER BY [o].[CustomerID] ASC
 ");
+        }
+
+        [Trait("Translation", "Exceeds")]
+        public override async Task GroupBy_OrderBy_with_grouping_result(bool async)
+        {
+            await AssertQuery(
+                async,
+                ss => ss.Set<Customer>().GroupBy(c => c.City).OrderBy(e => e.Key),
+                assertOrder: true);
+
+            AssertSql(@"
+SELECT [e].[City] AS [Key], (
+    SELECT [e_0].[CustomerID] AS [CustomerID], [e_0].[Address] AS [Address], [e_0].[City] AS [City], [e_0].[CompanyName] AS [CompanyName], [e_0].[ContactName] AS [ContactName], [e_0].[ContactTitle] AS [ContactTitle], [e_0].[Country] AS [Country], [e_0].[Fax] AS [Fax], [e_0].[Phone] AS [Phone], [e_0].[PostalCode] AS [PostalCode], [e_0].[Region] AS [Region]
+    FROM [Customers] AS [e_0]
+    WHERE (([e].[City] IS NULL AND [e_0].[City] IS NULL) OR ([e].[City] = [e_0].[City]))
+    FOR JSON PATH
+) AS [Elements]
+FROM [Customers] AS [e]
+GROUP BY [e].[City]
+ORDER BY [e].[City] ASC");
         }
 
         [ConditionalTheory]
@@ -896,6 +961,26 @@ SELECT AVG(CAST([g].[OrderID] AS float))
 FROM [Orders] AS [g]
 GROUP BY [g].[CustomerID]
 ");
+        }
+
+        [Trait("Translation", "Exceeds")]
+        public override async Task GroupBy_Property_Select_Average_with_group_enumerable_projected(bool async)
+        {
+            await AssertQueryScalar(
+                    async,
+                    ss => ss.Set<Order>().Where(o => o.Customer.City != "London")
+                        .GroupBy(o => o.CustomerID, (k, es) => new { k, es })
+                        .Select(g => g.es.Average(o => o.OrderID)));
+
+            AssertSql(@"
+SELECT AVG(CAST([o].[OrderID] AS float))
+FROM [Orders] AS [o]
+LEFT JOIN (
+    SELECT 0 AS [$empty], [c].[CustomerID] AS [CustomerID], [c].[Address] AS [Address], [c].[City] AS [City], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Country] AS [Country], [c].[Fax] AS [Fax], [c].[Phone] AS [Phone], [c].[PostalCode] AS [PostalCode], [c].[Region] AS [Region]
+    FROM [Customers] AS [c]
+) AS [c_0] ON [o].[CustomerID] = [c_0].[CustomerID]
+WHERE ([c_0].[City] IS NULL OR ([c_0].[City] <> N'London'))
+GROUP BY [o].[CustomerID]");
         }
 
         [ConditionalTheory]
@@ -1103,11 +1188,12 @@ GROUP BY [o].[CustomerID]
             return base.GroupBy_scalar_subquery(async);
         }
 
-        [ConditionalTheory]
-        [MemberData(nameof(IsAsyncData))]
+        [Trait("Category", "Rewritten")]
         public override async Task GroupBy_SelectMany(bool async)
         {
-            await base.GroupBy_SelectMany(async);
+            await AssertQuery(
+                async,
+                ss => ss.Set<Customer>().GroupBy(c => c.City).SelectMany(g => g));
 
             AssertSql(@"
 SELECT [g].[CustomerID] AS [CustomerID], [g].[Address] AS [Address], [g].[City] AS [City], [g].[CompanyName] AS [CompanyName], [g].[ContactName] AS [ContactName], [g].[ContactTitle] AS [ContactTitle], [g].[Country] AS [Country], [g].[Fax] AS [Fax], [g].[Phone] AS [Phone], [g].[PostalCode] AS [PostalCode], [g].[Region] AS [Region]
@@ -1188,6 +1274,33 @@ GROUP BY [g].[CustomerID]
 ");
         }
 
+        // TODO: this test was rewritten because we translate beyond EF,
+        // but it did expose another issue: equality semantics with strings
+        // in SQL are different wrt casing
+        [Trait("Translation", "Exceeds")]
+        public override async Task GroupBy_Where_with_grouping_result(bool async)
+        {
+            await AssertQuery(
+                async,
+                ss => ss.Set<Customer>().GroupBy(c => c.City).Where(e => e.Key.StartsWith("S")),
+                elementAsserter: (a, b) => { },
+                elementSorter: _ => null);
+
+            AssertSql(@"
+SELECT [e].[Key] AS [Key], (
+    SELECT [e_0].[CustomerID] AS [CustomerID], [e_0].[Address] AS [Address], [e_0].[City] AS [City], [e_0].[CompanyName] AS [CompanyName], [e_0].[ContactName] AS [ContactName], [e_0].[ContactTitle] AS [ContactTitle], [e_0].[Country] AS [Country], [e_0].[Fax] AS [Fax], [e_0].[Phone] AS [Phone], [e_0].[PostalCode] AS [PostalCode], [e_0].[Region] AS [Region]
+    FROM [Customers] AS [e_0]
+    WHERE (([e].[Key] IS NULL AND [e_0].[City] IS NULL) OR ([e].[Key] = [e_0].[City]))
+    FOR JSON PATH
+) AS [Elements]
+FROM (
+    SELECT [e_1].[City] AS [Key]
+    FROM [Customers] AS [e_1]
+    GROUP BY [e_1].[City]
+) AS [e]
+WHERE LEFT([e].[Key], LEN(N'S')) = N'S'");
+        }
+
         [ConditionalTheory]
         [MemberData(nameof(IsAsyncData))]
         public override async Task GroupBy_with_aggregate_through_navigation_property(bool async)
@@ -1207,6 +1320,32 @@ SELECT (
 FROM [Orders] AS [g_0]
 GROUP BY [g_0].[EmployeeID]
 ");
+        }
+
+        [Trait("Translation", "Exceeds")]
+        public override async Task GroupBy_with_orderby_take_skip_distinct_followed_by_group_key_projection(bool async)
+        {
+            await AssertQuery(
+                async,
+                ss => ss.Set<Order>().GroupBy(o => o.CustomerID).OrderBy(g => g.Key).Take(5).Skip(3).Distinct().Select(g => g.Key),
+                assertOrder: true);
+
+            AssertSql(@"
+SELECT [g].[Key]
+FROM (
+    SELECT DISTINCT [t].[Key] AS [Key]
+    FROM (
+        SELECT [t_0].[Key] AS [Key]
+        FROM (
+            SELECT TOP (5) [g_0].[CustomerID] AS [Key]
+            FROM [Orders] AS [g_0]
+            GROUP BY [g_0].[CustomerID]
+            ORDER BY [g_0].[CustomerID] ASC
+        ) AS [t_0]
+        ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) ASC
+        OFFSET 3 ROWS
+    ) AS [t]
+) AS [g]");
         }
 
         [ConditionalTheory]
@@ -1525,11 +1664,15 @@ INNER JOIN [Orders] AS [o] ON [g].[Key] = [o].[CustomerID]
 ");
         }
 
-        [ConditionalTheory]
-        [MemberData(nameof(IsAsyncData))]
+        [Trait("Translation", "Exceeds")]
         public override async Task OrderBy_GroupBy_SelectMany_shadow(bool async)
         {
-            await base.OrderBy_GroupBy_SelectMany_shadow(async);
+            await AssertQuery(
+                async,
+                ss => ss.Set<Employee>().OrderBy(e => e.EmployeeID)
+                    .GroupBy(e => e.EmployeeID)
+                    .SelectMany(g => g)
+                    .Select(g => EF.Property<string>(g, "Title")));
 
             AssertSql(@"
 SELECT [e].[Title]
@@ -1642,11 +1785,16 @@ SELECT CAST((CASE WHEN EXISTS (
 ");
         }
 
-        [ConditionalTheory]
-        [MemberData(nameof(IsAsyncData))]
+        [Trait("Category", "Rewritten")]
         public override async Task Select_GroupBy_SelectMany(bool async)
         {
-            await base.Select_GroupBy_SelectMany(async);
+            await AssertQuery(
+                async,
+                ss => ss.Set<Order>().Select(
+                        o => new { Order = o.OrderID, Customer = o.CustomerID })
+                    .GroupBy(p => p.Customer)
+                    .SelectMany(g => g),
+                elementSorter: g => g.Order);
 
             AssertSql(@"
 SELECT [o].[OrderID] AS [Order], [o].[CustomerID] AS [Customer]
