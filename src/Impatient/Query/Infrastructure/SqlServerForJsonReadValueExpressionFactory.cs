@@ -259,11 +259,11 @@ public class SqlServerForJsonReadValueExpressionFactory : IReadValueExpressionFa
                 result
                     = Expression.Block(
                         variables: new[] { mappingParameter },
-                        expressions: new Expression[]
-                        {
+                        expressions:
+                        [
                             Expression.Assign(mappingParameter, result),
                             Expression.Convert(typeMapping.TargetConversion.Body, node.Type),
-                        });
+                        ]);
 
                 return result;
             }

@@ -15,7 +15,7 @@ internal static class KeyPlaceholderGrouping
         var typeArguments
             = expression.Type.IsGenericType(typeof(IGrouping<,>))
                 ? expression.Type.GenericTypeArguments
-                : new[] { keySelector.Type, expression.Type.GetSequenceType() };
+                : [keySelector.Type, expression.Type.GetSequenceType()];
 
         var groupingType
             = typeof(KeyPlaceholderGrouping<,>)

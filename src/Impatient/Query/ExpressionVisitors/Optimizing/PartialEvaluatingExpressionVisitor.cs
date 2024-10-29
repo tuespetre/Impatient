@@ -554,9 +554,9 @@ public class PartialEvaluatingExpressionVisitor : ExpressionVisitor
     [
         typeof(Guid).GetRuntimeMethod(nameof(Guid.NewGuid), []),
         typeof(Random).GetRuntimeMethod(nameof(Random.Next), []),
-        typeof(Random).GetRuntimeMethod(nameof(Random.Next), new[]{ typeof(int) }),
-        typeof(Random).GetRuntimeMethod(nameof(Random.Next), new[]{ typeof(int), typeof(int) }),
-        typeof(Random).GetRuntimeMethod(nameof(Random.NextBytes), new[] { typeof(byte[]) }),
+        typeof(Random).GetRuntimeMethod(nameof(Random.Next), [typeof(int)]),
+        typeof(Random).GetRuntimeMethod(nameof(Random.Next), [typeof(int), typeof(int)]),
+        typeof(Random).GetRuntimeMethod(nameof(Random.NextBytes), [typeof(byte[])]),
         typeof(Random).GetRuntimeMethod(nameof(Random.NextDouble), []),
     ];
 }

@@ -3150,7 +3150,7 @@ INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Key] = [m2].[Prop2]",
 
         var materializer
             = Expression.New(
-                constructor: typeof(MyClass1).GetConstructor(new[] { typeof(string), typeof(int) }),
+                constructor: typeof(MyClass1).GetConstructor([typeof(string), typeof(int)]),
                 arguments: from p in properties select new SqlColumnExpression(table, p.Name, p.PropertyType, false, null),
                 members: properties);
 

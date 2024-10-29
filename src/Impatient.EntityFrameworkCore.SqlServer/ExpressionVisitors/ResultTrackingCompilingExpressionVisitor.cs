@@ -191,7 +191,7 @@ public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
             body
                 = Expression.Call(
                     Expression.Constant(field),
-                    typeof(FieldInfo).GetRuntimeMethod(nameof(FieldInfo.SetValue), new[] { typeof(object), typeof(object) }),
+                    typeof(FieldInfo).GetRuntimeMethod(nameof(FieldInfo.SetValue), [typeof(object), typeof(object)]),
                     (currentExpression as MemberExpression).Expression,
                     Expression.Convert(valueParameter, currentExpression.Type));
         }
@@ -206,7 +206,7 @@ public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
         return Expression
             .Lambda<Action<object, object>>(
                 body,
-                new[] { targetParameter, valueParameter })
+                [targetParameter, valueParameter])
             .Compile();
     }
 

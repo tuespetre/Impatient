@@ -444,11 +444,11 @@ public class NullOrDefaultEqualityOptimizingExpressionVisitorTests
             Constant(true));
 
         AssertTransformation(
-            Equal(Constant(null), New(typeof(int?).GetConstructor(new[] { typeof(int) }), Constant(0))),
+            Equal(Constant(null), New(typeof(int?).GetConstructor([typeof(int)]), Constant(0))),
             Constant(false));
 
         AssertTransformation(
-            Equal(New(typeof(int?).GetConstructor(new[] { typeof(int) }), Constant(0)), Constant(null)),
+            Equal(New(typeof(int?).GetConstructor([typeof(int)]), Constant(0)), Constant(null)),
             Constant(false));
     }
 
@@ -464,11 +464,11 @@ public class NullOrDefaultEqualityOptimizingExpressionVisitorTests
             Constant(false));
 
         AssertTransformation(
-            NotEqual(Constant(null), New(typeof(int?).GetConstructor(new[] { typeof(int) }), Constant(0))),
+            NotEqual(Constant(null), New(typeof(int?).GetConstructor([typeof(int)]), Constant(0))),
             Constant(true));
 
         AssertTransformation(
-            NotEqual(New(typeof(int?).GetConstructor(new[] { typeof(int) }), Constant(0)), Constant(null)),
+            NotEqual(New(typeof(int?).GetConstructor([typeof(int)]), Constant(0)), Constant(null)),
             Constant(true));
     }
 
@@ -532,11 +532,11 @@ public class NullOrDefaultEqualityOptimizingExpressionVisitorTests
             Constant(true));
 
         AssertTransformation(
-            Equal(Constant(null), MemberInit(New(typeof(int?).GetConstructor(new[] { typeof(int) }), Constant(0)))),
+            Equal(Constant(null), MemberInit(New(typeof(int?).GetConstructor([typeof(int)]), Constant(0)))),
             Constant(false));
 
         AssertTransformation(
-            Equal(MemberInit(New(typeof(int?).GetConstructor(new[] { typeof(int) }), Constant(0))), Constant(null)),
+            Equal(MemberInit(New(typeof(int?).GetConstructor([typeof(int)]), Constant(0))), Constant(null)),
             Constant(false));
     }
 
@@ -552,11 +552,11 @@ public class NullOrDefaultEqualityOptimizingExpressionVisitorTests
             Constant(false));
 
         AssertTransformation(
-            NotEqual(Constant(null), MemberInit(New(typeof(int?).GetConstructor(new[] { typeof(int) }), Constant(0)))),
+            NotEqual(Constant(null), MemberInit(New(typeof(int?).GetConstructor([typeof(int)]), Constant(0)))),
             Constant(true));
 
         AssertTransformation(
-            NotEqual(MemberInit(New(typeof(int?).GetConstructor(new[] { typeof(int) }), Constant(0))), Constant(null)),
+            NotEqual(MemberInit(New(typeof(int?).GetConstructor([typeof(int)]), Constant(0))), Constant(null)),
             Constant(true));
     }
 

@@ -65,7 +65,7 @@ public static class ExpressionExtensions
         var enumerableQueryConstructor
             = typeof(EnumerableQuery<>)
                 .MakeGenericType(sequenceType)
-                .GetConstructor(new[] { typeof(Expression) });
+                .GetConstructor([typeof(Expression)]);
 
         var expressionCallMethodInfo
             = ReflectionExtensions.GetMethodInfo(() => Expression.Call(default, default(Expression)));
@@ -81,7 +81,7 @@ public static class ExpressionExtensions
                 expressionCallMethodInfo,
                 Expression.Constant(asQueryableMethodInfo.MakeGenericMethod(sequenceType)),
                 Expression.Call(
-                    typeof(Expression).GetRuntimeMethod(nameof(Expression.Constant), new[] { typeof(object) }),
+                    typeof(Expression).GetRuntimeMethod(nameof(Expression.Constant), [typeof(object)]),
                     expression)));
     }
 

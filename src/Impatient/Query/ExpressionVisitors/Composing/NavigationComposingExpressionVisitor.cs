@@ -734,19 +734,19 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                         intermediateResultType.GetTypeInfo().DeclaredConstructors.Single(),
                         new[] { resultKeyParameter, resultElementsParameter },
                         new[] { resultOuterField, resultInnerField }),
-                    new[] { resultKeyParameter, resultElementsParameter });
+                    [resultKeyParameter, resultElementsParameter]);
 
             var newSource
                 = CreateCall(
                     node.Method
                         .GetGenericMethodDefinition()
-                        .MakeGenericMethod(new[]
-                        {
+                        .MakeGenericMethod(
+                        [
                             source.Type.GetSequenceType(),
                             keySelector.ReturnType,
                             elementSelector.ReturnType,
                             intermediateResultType,
-                        }),
+                        ]),
                     new[]
                     {
                         source,
@@ -809,13 +809,13 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                 return CreateCall(
                     node.Method
                         .GetGenericMethodDefinition()
-                        .MakeGenericMethod(new[]
-                        {
+                        .MakeGenericMethod(
+                        [
                             source.Type.GetSequenceType(),
                             keySelector.ReturnType,
                             elementSelector.ReturnType,
                             resultSelector.ReturnType,
-                        }),
+                        ]),
                     new[]
                     {
                         source,
@@ -932,7 +932,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                         intermediateResultType.GetTypeInfo().DeclaredConstructors.Single(),
                         new[] { resultKeyParameter, resultElementsParameter },
                         new[] { resultOuterField, resultInnerField }),
-                    new[] { resultKeyParameter, resultElementsParameter });
+                    [resultKeyParameter, resultElementsParameter]);
 
             var groupByMethod
                 = node.Method.HasComparerArgument()
@@ -944,13 +944,13 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
             var newSource
                 = CreateCall(
                     groupByMethod
-                        .MakeGenericMethod(new[]
-                        {
+                        .MakeGenericMethod(
+                        [
                             source.Type.GetSequenceType(),
                             keySelector.ReturnType,
                             node.Method.GetGenericArguments()[0],
                             intermediateResultType,
-                        }),
+                        ]),
                     new[]
                     {
                         source,
@@ -1012,13 +1012,13 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
             {
                 return CreateCall(
                     groupByMethod
-                        .MakeGenericMethod(new[]
-                        {
+                        .MakeGenericMethod(
+                        [
                             keyParameter.Type,
                             keySelector.ReturnType,
                             node.Method.GetGenericArguments()[0],
                             node.Method.GetGenericArguments()[2],
-                        }),
+                        ]),
                     new[]
                     {
                         source,
@@ -1070,12 +1070,12 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
 
                 return CreateCall(
                     groupByMethod
-                        .MakeGenericMethod(new[]
-                        {
+                        .MakeGenericMethod(
+                        [
                             keyParameter.Type,
                             keySelector.ReturnType,
                             node.Method.GetGenericArguments()[0],
-                        }),
+                        ]),
                     new Expression[]
                     {
                         source.AsQueryable(),
@@ -1751,7 +1751,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                                 scopeType.GetTypeInfo().DeclaredConstructors.Single(),
                                 new[] { currentParameter, innerParameter },
                                 new[] { outerField, innerField }),
-                            new[] { currentParameter, innerParameter });
+                            [currentParameter, innerParameter]);
 
                     source
                         = Expression.Call(
@@ -1865,7 +1865,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                                 scopeType.GetTypeInfo().DeclaredConstructors.Single(),
                                 new[] { currentParameter, innerParameter },
                                 new[] { outerField, innerField }),
-                            new[] { currentParameter, innerParameter });
+                            [currentParameter, innerParameter]);
 
                     source
                         = Expression.Call(

@@ -78,7 +78,7 @@ N'{{""RootName"":""e4"",""Collection"":[{{""BranchName"":""e4 c1"",""Nested"":{{
             Id = 1,
             Reference = new MyJsonEntityArrayOfPrimitives
             {
-                IntArray = new[] { 1, 2, 3 },
+                IntArray = [1, 2, 3],
                 ListOfString = new List<string>
             {
                 "Foo",
@@ -88,8 +88,8 @@ N'{{""RootName"":""e4"",""Collection"":[{{""BranchName"":""e4 c1"",""Nested"":{{
             },
             Collection = new List<MyJsonEntityArrayOfPrimitives>
         {
-            new() { IntArray = new[] { 111, 112, 113 }, ListOfString = new List<string> { "Foo11", "Bar11" } },
-            new() { IntArray = new[] { 211, 212, 213 }, ListOfString = new List<string> { "Foo12", "Bar12" } },
+            new() { IntArray = [111, 112, 113], ListOfString = new List<string> { "Foo11", "Bar11" } },
+            new() { IntArray = [211, 212, 213], ListOfString = new List<string> { "Foo12", "Bar12" } },
         }
         };
 
@@ -98,7 +98,7 @@ N'{{""RootName"":""e4"",""Collection"":[{{""BranchName"":""e4 c1"",""Nested"":{{
             Id = 2,
             Reference = new MyJsonEntityArrayOfPrimitives
             {
-                IntArray = new[] { 10, 20, 30 },
+                IntArray = [10, 20, 30],
                 ListOfString = new List<string>
             {
                 "A",
@@ -108,8 +108,8 @@ N'{{""RootName"":""e4"",""Collection"":[{{""BranchName"":""e4 c1"",""Nested"":{{
             },
             Collection = new List<MyJsonEntityArrayOfPrimitives>
         {
-            new() { IntArray = new[] { 110, 120, 130 }, ListOfString = new List<string> { "A1", "Z1" } },
-            new() { IntArray = new[] { 210, 220, 230 }, ListOfString = new List<string> { "A2", "Z2" } },
+            new() { IntArray = [110, 120, 130], ListOfString = new List<string> { "A1", "Z1" } },
+            new() { IntArray = [210, 220, 230], ListOfString = new List<string> { "A2", "Z2" } },
         }
         };
 

@@ -99,8 +99,8 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
                             entityVariable,
                             shadowPropertiesVariable,
                         },
-                        expressions: new Expression[]
-                        {
+                        expressions:
+                        [
                             // TODO:
                             // the ordering of expressions here is kind of a leaked concern,
                             // because the query translating visitor spits out the columns
@@ -122,7 +122,7 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
                                     shadowPropertiesVariable,
                                     Constant(entityMaterializationExpression.IncludedNavigations.ToList())),
                                 node.Type)
-                        });
+                        ]);
 
                 return MaterializationUtilities.Invoke(result, identifier);
             }

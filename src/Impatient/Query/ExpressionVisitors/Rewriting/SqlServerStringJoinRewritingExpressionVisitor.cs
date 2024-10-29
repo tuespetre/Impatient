@@ -11,12 +11,12 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting;
 
 public class SqlServerStringJoinRewritingExpressionVisitor : ExpressionVisitor
 {
-    private static readonly MethodInfo[] supportedMethods = new[]
-    {
+    private static readonly MethodInfo[] supportedMethods =
+    [
         ReflectionExtensions.GetMethodInfo(() => string.Join(default(string), new string[0])),
         ReflectionExtensions.GetMethodInfo(() => string.Join(default(string), default(IEnumerable<string>))),
         ReflectionExtensions.GetMethodInfo(() => string.Join(default(string), default(IEnumerable<object>))).GetGenericMethodDefinition(),
-    };
+    ];
 
     private readonly QueryProcessingContext context;
 

@@ -8,7 +8,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Expressions;
 public class ContextServiceDelegateInjectionExpression : LateBoundProjectionLeafExpression
 {
     private static readonly MethodInfo createDelegateMethodInfo
-        = typeof(MethodInfo).GetRuntimeMethod(nameof(MethodInfo.CreateDelegate), new[] { typeof(Type), typeof(object) });
+        = typeof(MethodInfo).GetRuntimeMethod(nameof(MethodInfo.CreateDelegate), [typeof(Type), typeof(object)]);
 
     private readonly Type serviceType;
     private readonly MethodInfo methodInfo;

@@ -444,7 +444,7 @@ public class EFCoreDbCommandExecutor : IDbCommandExecutor
             return new KeyValuesComparer(
                 (Func<object[], object[], bool>)Expression.Lambda(
                     comparisons.Aggregate(Expression.AndAlso),
-                    new[] { p1, p2 }).Compile());
+                    [p1, p2]).Compile());
         }
 
         public bool Equals(object[] x, object[] y)

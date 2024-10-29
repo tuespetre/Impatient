@@ -29,7 +29,7 @@ public class DefaultDbCommandExpressionBuilder : IDbCommandExpressionBuilder
     private readonly Dictionary<int, int> parameterCache = [];
 
     private static readonly MethodInfo stringBuilderAppendMethodInfo
-        = typeof(StringBuilder).GetRuntimeMethod(nameof(StringBuilder.Append), new[] { typeof(string) });
+        = typeof(StringBuilder).GetRuntimeMethod(nameof(StringBuilder.Append), [typeof(string)]);
 
     private static readonly MethodInfo stringBuilderToStringMethodInfo
         = typeof(StringBuilder).GetRuntimeMethod(nameof(StringBuilder.ToString), []);

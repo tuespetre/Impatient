@@ -13,12 +13,12 @@ public class DbFunctionRewritingExpressionVisitor : ExpressionVisitor
     private static readonly MethodInfo likeMethodInfo
         = typeof(DbFunctionsExtensions).GetRuntimeMethod(
             nameof(DbFunctionsExtensions.Like),
-            new[] { typeof(DbFunctions), typeof(string), typeof(string) });
+            [typeof(DbFunctions), typeof(string), typeof(string)]);
 
     private static readonly MethodInfo likeWithEscapeMethodInfo
         = typeof(DbFunctionsExtensions).GetRuntimeMethod(
             nameof(DbFunctionsExtensions.Like),
-            new[] { typeof(DbFunctions), typeof(string), typeof(string), typeof(string) });
+            [typeof(DbFunctions), typeof(string), typeof(string), typeof(string)]);
 
     private readonly IModel model;
 

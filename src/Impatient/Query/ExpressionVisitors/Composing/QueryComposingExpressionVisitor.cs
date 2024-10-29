@@ -642,7 +642,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
                     .UpdateProjection(new ServerProjectionExpression(
                         outerProjection));
 
-            expansionParameters = new[] { outerProjection, liftedRowNumberTuple.Arguments[1] };
+            expansionParameters = [outerProjection, liftedRowNumberTuple.Arguments[1]];
         }
 
         var innerSource = collectionSelectorLambda.ExpandParameters(expansionParameters);
@@ -1003,7 +1003,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
                 = outerSelectExpression
                     .UpdateProjection(new ServerProjectionExpression(outerProjection));
 
-            expansionParameters = new[] { outerProjection, liftedRowNumberTuple.Arguments[1] };
+            expansionParameters = [outerProjection, liftedRowNumberTuple.Arguments[1]];
         }
 
         var predicateBody

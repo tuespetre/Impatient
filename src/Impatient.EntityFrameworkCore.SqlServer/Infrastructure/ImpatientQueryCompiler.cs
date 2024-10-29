@@ -54,7 +54,7 @@ public partial class ImpatientQueryCompiler : IQueryCompiler
             return (TResult)GetType()
                 .GetMethod(nameof(ReturnAsyncEnumerable), BindingFlags.NonPublic | BindingFlags.Static)
                 .MakeGenericMethod(typeof(TResult).GetSequenceType())
-                .Invoke(null, new object[] { result });
+                .Invoke(null, [result]);
         }
 
         if (typeof(TResult).IsGenericType(typeof(ValueTask<>)))
@@ -67,7 +67,7 @@ public partial class ImpatientQueryCompiler : IQueryCompiler
             return (TResult)typeof(Task)
                 .GetMethod(nameof(Task<object>.FromResult))
                 .MakeGenericMethod(typeof(TResult).GenericTypeArguments[0])
-                .Invoke(null, new[] { result });
+                .Invoke(null, [result]);
         }
 
         throw new NotSupportedException("lol");

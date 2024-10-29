@@ -34,7 +34,7 @@ public class ConvertToProviderTypesImpatientTest : ConvertToProviderTypesTestBas
                 new BinaryForeignKeyDataType
                 {
                     Id = 77,
-                    BinaryKeyDataTypeId = new byte[] { 1, 2, 3 }
+                    BinaryKeyDataTypeId = [1, 2, 3]
                 });
 
             Assert.Equal(2, context.SaveChanges());
