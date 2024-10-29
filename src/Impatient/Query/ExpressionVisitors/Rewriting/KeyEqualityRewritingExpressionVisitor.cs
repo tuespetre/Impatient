@@ -9,315 +9,314 @@ using System.Linq.Expressions;
 using System.Reflection;
 using static Impatient.Extensions.ReflectionExtensions;
 
-namespace Impatient.Query.ExpressionVisitors.Rewriting
+namespace Impatient.Query.ExpressionVisitors.Rewriting;
+
+public class KeyEqualityRewritingExpressionVisitor : ExpressionVisitor
 {
-    public class KeyEqualityRewritingExpressionVisitor : ExpressionVisitor
+    private static readonly MethodInfo enumerableSelect
+        = GetGenericMethodDefinition((IEnumerable<object> e) => e.Select(x => x));
+
+    private static readonly MethodInfo queryableSelect
+        = GetGenericMethodDefinition((IQueryable<object> e) => e.Select(x => x));
+
+    private readonly DescriptorSet descriptorSet;
+
+    public KeyEqualityRewritingExpressionVisitor(DescriptorSet descriptorSet)
     {
-        private static readonly MethodInfo enumerableSelect
-            = GetGenericMethodDefinition((IEnumerable<object> e) => e.Select(x => x));
+        this.descriptorSet = descriptorSet ?? throw new ArgumentNullException(nameof(descriptorSet));
+    }
 
-        private static readonly MethodInfo queryableSelect
-            = GetGenericMethodDefinition((IQueryable<object> e) => e.Select(x => x));
-
-        private readonly DescriptorSet descriptorSet;
-
-        public KeyEqualityRewritingExpressionVisitor(DescriptorSet descriptorSet)
+    protected override Expression VisitBinary(BinaryExpression node)
+    {
+        // TODO: Write an explicit test case for PolymorphicExpression key comparison
+        if (node.NodeType != ExpressionType.Equal && node.NodeType != ExpressionType.NotEqual)
         {
-            this.descriptorSet = descriptorSet ?? throw new ArgumentNullException(nameof(descriptorSet));
+            return base.VisitBinary(node);
         }
 
-        protected override Expression VisitBinary(BinaryExpression node)
+        var visitedLeft = Visit(node.Left);
+        var visitedRight = Visit(node.Right);
+
+        var left = visitedLeft.UnwrapInnerExpression();
+        var right = visitedRight.UnwrapInnerExpression();
+        var leftIsNullConstant = left is ConstantExpression leftConstant && leftConstant.Value is null;
+        var rightIsNullConstant = right is ConstantExpression rightConstant && rightConstant.Value is null;
+        var canRewriteLeft = CanRewrite(left);
+        var canRewriteRight = CanRewrite(right);
+
+        if ((leftIsNullConstant && rightIsNullConstant)
+            || (!canRewriteLeft && !leftIsNullConstant)
+            || (!canRewriteRight && !rightIsNullConstant))
         {
-            // TODO: Write an explicit test case for PolymorphicExpression key comparison
-            if (node.NodeType != ExpressionType.Equal && node.NodeType != ExpressionType.NotEqual)
+            if (left.Type != node.Left.Type)
             {
-                return base.VisitBinary(node);
+                left = Expression.Convert(left, node.Left.Type);
             }
 
-            var visitedLeft = Visit(node.Left);
-            var visitedRight = Visit(node.Right);
-
-            var left = visitedLeft.UnwrapInnerExpression();
-            var right = visitedRight.UnwrapInnerExpression();
-            var leftIsNullConstant = left is ConstantExpression leftConstant && leftConstant.Value is null;
-            var rightIsNullConstant = right is ConstantExpression rightConstant && rightConstant.Value is null;
-            var canRewriteLeft = CanRewrite(left);
-            var canRewriteRight = CanRewrite(right);
-
-            if ((leftIsNullConstant && rightIsNullConstant)
-                || (!canRewriteLeft && !leftIsNullConstant)
-                || (!canRewriteRight && !rightIsNullConstant))
+            if (right.Type != node.Right.Type)
             {
-                if (left.Type != node.Left.Type)
-                {
-                    left = Expression.Convert(left, node.Left.Type);
-                }
-
-                if (right.Type != node.Right.Type)
-                {
-                    right = Expression.Convert(right, node.Right.Type);
-                }
-
-                return node.Update(left, node.Conversion, right);
+                right = Expression.Convert(right, node.Right.Type);
             }
 
-            left = TryReduceNavigationKey(left, out var rewroteLeft);
-            right = TryReduceNavigationKey(right, out var rewroteRight);
+            return node.Update(left, node.Conversion, right);
+        }
 
-            if (rewroteLeft && rewroteRight)
-            {
-                return node.UpdateWithConversion(left, right);
-            }
+        left = TryReduceNavigationKey(left, out var rewroteLeft);
+        right = TryReduceNavigationKey(right, out var rewroteRight);
 
-            var targetType = leftIsNullConstant ? right.Type : left.Type;
-
-            var primaryKeyDescriptor
-                = descriptorSet
-                    .PrimaryKeyDescriptors
-                    .FirstOrDefault(d => d.TargetType.IsAssignableFrom(targetType));
-
-            if (primaryKeyDescriptor is null)
-            {
-                return node.Update(visitedLeft, node.Conversion, visitedRight);
-            }
-
-            if (!rewroteLeft && canRewriteLeft)
-            {
-                left = primaryKeyDescriptor.KeySelector.ExpandParameters(left);
-            }
-
-            if (!rewroteRight && canRewriteRight)
-            {
-                right = primaryKeyDescriptor.KeySelector.ExpandParameters(right);
-            }
-
-            if (leftIsNullConstant || rightIsNullConstant)
-            {
-                var nonNullExpression = leftIsNullConstant ? right : left;
-
-                switch (nonNullExpression)
-                {
-                    case NewExpression newExpression:
-                    {
-                        nonNullExpression
-                            = newExpression.Arguments
-                                .Select(a => a.UnwrapInnerExpression())
-                                .First(a => a.Type.IsScalarType());
-                        break;
-                    }
-
-                    case NewArrayExpression newArrayExpression:
-                    {
-                        nonNullExpression
-                            = newArrayExpression.Expressions
-                                .Select(a => a.UnwrapInnerExpression())
-                                .First(a => a.Type.IsScalarType());
-                        break;
-                    }
-                }
-
-                nonNullExpression = nonNullExpression.AsNullable();
-
-                if (leftIsNullConstant)
-                {
-                    left = Expression.Constant(null, nonNullExpression.Type);
-                    right = nonNullExpression;
-                }
-                else
-                {
-                    left = nonNullExpression;
-                    right = Expression.Constant(null, nonNullExpression.Type);
-                }
-            }
-
+        if (rewroteLeft && rewroteRight)
+        {
             return node.UpdateWithConversion(left, right);
         }
 
-        protected override Expression VisitMethodCall(MethodCallExpression node)
+        var targetType = leftIsNullConstant ? right.Type : left.Type;
+
+        var primaryKeyDescriptor
+            = descriptorSet
+                .PrimaryKeyDescriptors
+                .FirstOrDefault(d => d.TargetType.IsAssignableFrom(targetType));
+
+        if (primaryKeyDescriptor is null)
         {
-            if (node.Method.IsQueryableOrEnumerableMethod() && !node.ContainsNonLambdaDelegates())
+            return node.Update(visitedLeft, node.Conversion, visitedRight);
+        }
+
+        if (!rewroteLeft && canRewriteLeft)
+        {
+            left = primaryKeyDescriptor.KeySelector.ExpandParameters(left);
+        }
+
+        if (!rewroteRight && canRewriteRight)
+        {
+            right = primaryKeyDescriptor.KeySelector.ExpandParameters(right);
+        }
+
+        if (leftIsNullConstant || rightIsNullConstant)
+        {
+            var nonNullExpression = leftIsNullConstant ? right : left;
+
+            switch (nonNullExpression)
             {
-                switch (node.Method.Name)
+                case NewExpression newExpression:
                 {
-                    case nameof(Queryable.GroupJoin):
-                    case nameof(Queryable.Join):
+                    nonNullExpression
+                        = newExpression.Arguments
+                            .Select(a => a.UnwrapInnerExpression())
+                            .First(a => a.Type.IsScalarType());
+                    break;
+                }
+
+                case NewArrayExpression newArrayExpression:
+                {
+                    nonNullExpression
+                        = newArrayExpression.Expressions
+                            .Select(a => a.UnwrapInnerExpression())
+                            .First(a => a.Type.IsScalarType());
+                    break;
+                }
+            }
+
+            nonNullExpression = nonNullExpression.AsNullable();
+
+            if (leftIsNullConstant)
+            {
+                left = Expression.Constant(null, nonNullExpression.Type);
+                right = nonNullExpression;
+            }
+            else
+            {
+                left = nonNullExpression;
+                right = Expression.Constant(null, nonNullExpression.Type);
+            }
+        }
+
+        return node.UpdateWithConversion(left, right);
+    }
+
+    protected override Expression VisitMethodCall(MethodCallExpression node)
+    {
+        if (node.Method.IsQueryableOrEnumerableMethod() && !node.ContainsNonLambdaDelegates())
+        {
+            switch (node.Method.Name)
+            {
+                case nameof(Queryable.GroupJoin):
+                case nameof(Queryable.Join):
+                {
+                    var arguments = Visit(node.Arguments).ToArray();
+                    var genericArguments = node.Method.GetGenericArguments();
+                    var outerKeySelector = arguments[2].UnwrapLambda();
+                    var innerKeySelector = arguments[3].UnwrapLambda();
+
+                    if (CanRewrite(outerKeySelector?.Body) && CanRewrite(innerKeySelector?.Body))
                     {
-                        var arguments = Visit(node.Arguments).ToArray();
-                        var genericArguments = node.Method.GetGenericArguments();
-                        var outerKeySelector = arguments[2].UnwrapLambda();
-                        var innerKeySelector = arguments[3].UnwrapLambda();
+                        outerKeySelector =
+                            Expression.Lambda(
+                                TryReduceNavigationKey(outerKeySelector.Body, out var rewroteOuter),
+                                outerKeySelector.Parameters[0]);
 
-                        if (CanRewrite(outerKeySelector?.Body) && CanRewrite(innerKeySelector?.Body))
+                        innerKeySelector =
+                            Expression.Lambda(
+                                TryReduceNavigationKey(innerKeySelector.Body, out var rewroteInner),
+                                innerKeySelector.Parameters[0]);
+
+                        if (!rewroteOuter || !rewroteInner)
                         {
-                            outerKeySelector =
-                                Expression.Lambda(
-                                    TryReduceNavigationKey(outerKeySelector.Body, out var rewroteOuter),
-                                    outerKeySelector.Parameters[0]);
+                            var primaryKeyDescriptor
+                                = descriptorSet
+                                    .PrimaryKeyDescriptors
+                                    .FirstOrDefault(d => d.TargetType.IsAssignableFrom(genericArguments[2]));
 
-                            innerKeySelector =
-                                Expression.Lambda(
-                                    TryReduceNavigationKey(innerKeySelector.Body, out var rewroteInner),
-                                    innerKeySelector.Parameters[0]);
-
-                            if (!rewroteOuter || !rewroteInner)
+                            if (primaryKeyDescriptor is not null)
                             {
-                                var primaryKeyDescriptor
-                                    = descriptorSet
-                                        .PrimaryKeyDescriptors
-                                        .FirstOrDefault(d => d.TargetType.IsAssignableFrom(genericArguments[2]));
-
-                                if (primaryKeyDescriptor is not null)
-                                {
-                                    if (!rewroteOuter)
-                                    {
-                                        outerKeySelector
-                                            = Expression.Lambda(
-                                                primaryKeyDescriptor.KeySelector.ExpandParameters(outerKeySelector.Body),
-                                                outerKeySelector.Parameters[0]);
-                                    }
-
-                                    if (!rewroteInner)
-                                    {
-                                        innerKeySelector
-                                            = Expression.Lambda(
-                                                primaryKeyDescriptor.KeySelector.ExpandParameters(innerKeySelector.Body),
-                                                innerKeySelector.Parameters[0]);
-                                    }
-                                }
-                            }
-
-                            if (outerKeySelector.ReturnType != innerKeySelector.ReturnType)
-                            {
-                                if (outerKeySelector.ReturnType.IsNullableType())
-                                {
-                                    innerKeySelector
-                                        = Expression.Lambda(
-                                            Expression.Convert(innerKeySelector.Body, outerKeySelector.ReturnType),
-                                            innerKeySelector.Parameters);
-                                }
-                                else
+                                if (!rewroteOuter)
                                 {
                                     outerKeySelector
                                         = Expression.Lambda(
-                                            Expression.Convert(outerKeySelector.Body, innerKeySelector.ReturnType),
-                                            outerKeySelector.Parameters);
+                                            primaryKeyDescriptor.KeySelector.ExpandParameters(outerKeySelector.Body),
+                                            outerKeySelector.Parameters[0]);
+                                }
+
+                                if (!rewroteInner)
+                                {
+                                    innerKeySelector
+                                        = Expression.Lambda(
+                                            primaryKeyDescriptor.KeySelector.ExpandParameters(innerKeySelector.Body),
+                                            innerKeySelector.Parameters[0]);
                                 }
                             }
+                        }
 
-                            genericArguments[2] = outerKeySelector.ReturnType;
-
-                            if (node.Method.IsQueryableMethod())
+                        if (outerKeySelector.ReturnType != innerKeySelector.ReturnType)
+                        {
+                            if (outerKeySelector.ReturnType.IsNullableType())
                             {
-                                arguments[2] = Expression.Quote(outerKeySelector);
-                                arguments[3] = Expression.Quote(innerKeySelector);
+                                innerKeySelector
+                                    = Expression.Lambda(
+                                        Expression.Convert(innerKeySelector.Body, outerKeySelector.ReturnType),
+                                        innerKeySelector.Parameters);
                             }
                             else
                             {
-                                arguments[2] = outerKeySelector;
-                                arguments[3] = innerKeySelector;
+                                outerKeySelector
+                                    = Expression.Lambda(
+                                        Expression.Convert(outerKeySelector.Body, innerKeySelector.ReturnType),
+                                        outerKeySelector.Parameters);
                             }
-
-                            return Expression.Call(
-                                node.Method.GetGenericMethodDefinition().MakeGenericMethod(genericArguments),
-                                arguments);
                         }
 
-                        break;
-                    }
-
-                    case nameof(Queryable.Contains):
-                    {
-                        var sequenceType = node.Arguments[0].Type.GetSequenceType();
-
-                        var primaryKeyDescriptor
-                            = descriptorSet
-                                .PrimaryKeyDescriptors
-                                .FirstOrDefault(d => d.TargetType.IsAssignableFrom(sequenceType));
-
-                        if (primaryKeyDescriptor is null || !primaryKeyDescriptor.KeySelector.ReturnType.IsScalarType())
-                        {
-                            break;
-                        }
-
-                        var keyType = primaryKeyDescriptor.KeySelector.ReturnType;
-                        var arguments = Visit(node.Arguments).ToArray();
-
-                        var setSelector = (Expression)primaryKeyDescriptor.KeySelector;
-                        var selectMethod = enumerableSelect.MakeGenericMethod(sequenceType, keyType);
+                        genericArguments[2] = outerKeySelector.ReturnType;
 
                         if (node.Method.IsQueryableMethod())
                         {
-                            setSelector = Expression.Quote(setSelector);
-                            selectMethod = queryableSelect.MakeGenericMethod(sequenceType, keyType);
+                            arguments[2] = Expression.Quote(outerKeySelector);
+                            arguments[3] = Expression.Quote(innerKeySelector);
+                        }
+                        else
+                        {
+                            arguments[2] = outerKeySelector;
+                            arguments[3] = innerKeySelector;
                         }
 
                         return Expression.Call(
-                            node.Method.GetGenericMethodDefinition().MakeGenericMethod(keyType),
-                            Expression.Call(selectMethod, arguments[0], setSelector),
-                            primaryKeyDescriptor.KeySelector.ExpandParameters(arguments[1]));
+                            node.Method.GetGenericMethodDefinition().MakeGenericMethod(genericArguments),
+                            arguments);
                     }
+
+                    break;
+                }
+
+                case nameof(Queryable.Contains):
+                {
+                    var sequenceType = node.Arguments[0].Type.GetSequenceType();
+
+                    var primaryKeyDescriptor
+                        = descriptorSet
+                            .PrimaryKeyDescriptors
+                            .FirstOrDefault(d => d.TargetType.IsAssignableFrom(sequenceType));
+
+                    if (primaryKeyDescriptor is null || !primaryKeyDescriptor.KeySelector.ReturnType.IsScalarType())
+                    {
+                        break;
+                    }
+
+                    var keyType = primaryKeyDescriptor.KeySelector.ReturnType;
+                    var arguments = Visit(node.Arguments).ToArray();
+
+                    var setSelector = (Expression)primaryKeyDescriptor.KeySelector;
+                    var selectMethod = enumerableSelect.MakeGenericMethod(sequenceType, keyType);
+
+                    if (node.Method.IsQueryableMethod())
+                    {
+                        setSelector = Expression.Quote(setSelector);
+                        selectMethod = queryableSelect.MakeGenericMethod(sequenceType, keyType);
+                    }
+
+                    return Expression.Call(
+                        node.Method.GetGenericMethodDefinition().MakeGenericMethod(keyType),
+                        Expression.Call(selectMethod, arguments[0], setSelector),
+                        primaryKeyDescriptor.KeySelector.ExpandParameters(arguments[1]));
                 }
             }
-
-            return base.VisitMethodCall(node);
         }
 
-        private bool CanRewrite(Expression expression)
+        return base.VisitMethodCall(node);
+    }
+
+    private bool CanRewrite(Expression expression)
+    {
+        switch (expression)
         {
-            switch (expression)
+            case NewExpression _:
+            case MemberInitExpression _:
+            case ExtendedNewExpression _:
+            case ExtendedMemberInitExpression _:
+            case ParameterExpression _:
+            case PolymorphicExpression _:
+            case ExtraPropertiesExpression _:
             {
-                case NewExpression _:
-                case MemberInitExpression _:
-                case ExtendedNewExpression _:
-                case ExtendedMemberInitExpression _:
-                case ParameterExpression _:
-                case PolymorphicExpression _:
-                case ExtraPropertiesExpression _:
+                return true;
+            }
+
+            default:
+            {
+                while (expression is MemberExpression memberExpression)
                 {
-                    return true;
+                    expression = memberExpression.Expression;
                 }
 
-                default:
-                {
-                    while (expression is MemberExpression memberExpression)
-                    {
-                        expression = memberExpression.Expression;
-                    }
-
-                    return expression is ParameterExpression;
-                }
+                return expression is ParameterExpression;
             }
         }
+    }
 
-        private Expression TryReduceNavigationKey(Expression expression, out bool reduced)
+    private Expression TryReduceNavigationKey(Expression expression, out bool reduced)
+    {
+        if (expression is MemberExpression memberExpression)
         {
-            if (expression is MemberExpression memberExpression)
+            var navigationDescriptor
+                = descriptorSet
+                    .NavigationDescriptors
+                    .FirstOrDefault(n => n.Member == memberExpression.Member);
+
+            if (navigationDescriptor is not null)
             {
-                var navigationDescriptor
-                    = descriptorSet
-                        .NavigationDescriptors
-                        .FirstOrDefault(n => n.Member == memberExpression.Member);
+                reduced = true;
 
-                if (navigationDescriptor is not null)
+                if (memberExpression.Member.GetMemberType().IsSequenceType())
                 {
-                    reduced = true;
-
-                    if (memberExpression.Member.GetMemberType().IsSequenceType())
-                    {
-                        return new SqlColumnNullabilityExpressionVisitor(true)
-                            .Visit(navigationDescriptor.OuterKeySelector.ExpandParameters(memberExpression.Expression));
-                    }
-                    /*else
-                    {
-                        return new SqlColumnNullabilityExpressionVisitor(true)
-                            .Visit(navigationDescriptor.InnerKeySelector.ExpandParameters(memberExpression));
-                    }*/
+                    return new SqlColumnNullabilityExpressionVisitor(true)
+                        .Visit(navigationDescriptor.OuterKeySelector.ExpandParameters(memberExpression.Expression));
                 }
+                /*else
+                {
+                    return new SqlColumnNullabilityExpressionVisitor(true)
+                        .Visit(navigationDescriptor.InnerKeySelector.ExpandParameters(memberExpression));
+                }*/
             }
-
-            reduced = false;
-
-            return expression;
         }
+
+        reduced = false;
+
+        return expression;
     }
 }

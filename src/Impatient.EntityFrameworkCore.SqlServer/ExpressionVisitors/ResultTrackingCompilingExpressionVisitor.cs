@@ -13,212 +13,232 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.EntityFrameworkCore.SqlServer
-{
-    public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
-    {
-        private readonly IModel model;
+namespace Impatient.EntityFrameworkCore.SqlServer;
 
-        public ResultTrackingCompilingExpressionVisitor(IModel model)
+public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
+{
+    private readonly IModel model;
+
+    public ResultTrackingCompilingExpressionVisitor(IModel model)
+    {
+        this.model = model ?? throw new ArgumentNullException(nameof(model));
+    }
+
+    public override Expression Visit(Expression node)
+    {
+        if (node is QueryOptionsExpression queryOptionsExpression)
         {
-            this.model = model ?? throw new ArgumentNullException(nameof(model));
+            // TODO: why not also NoTrackingWithIdentityResolution?
+            if (queryOptionsExpression.QueryTrackingBehavior == QueryTrackingBehavior.NoTracking)
+            {
+                // remove shadow properties from materialization expressions
+                // so they are not pulled from the server.
+
+                return new ShadowPropertyRemovingExpressionVisitor().Visit(node);
+            }
         }
 
-        public override Expression Visit(Expression node)
+        var unwrapped = node.UnwrapInnerExpression();
+
+        if (unwrapped is RelationalQueryExpression relationalQueryExpression
+            && relationalQueryExpression.SelectExpression.Projection is ServerProjectionExpression)
         {
-            if (node is QueryOptionsExpression queryOptionsExpression)
-            {
-                // TODO: why not also NoTrackingWithIdentityResolution?
-                if (queryOptionsExpression.QueryTrackingBehavior == QueryTrackingBehavior.NoTracking)
-                {
-                    // remove shadow properties from materialization expressions
-                    // so they are not pulled from the server.
-
-                    return new ShadowPropertyRemovingExpressionVisitor().Visit(node);
-                }
-            }
-
-            var unwrapped = node.UnwrapInnerExpression();
-
-            if (unwrapped is RelationalQueryExpression relationalQueryExpression
-                && relationalQueryExpression.SelectExpression.Projection is ServerProjectionExpression)
-            {
-                return node;
-            }
-
-            var visitor = new ProjectionBubblingExpressionVisitor();
-
-            if (visitor.Visit(unwrapped) is ProjectionExpression projection)
-            {
-                var extraCallStack = new Stack<MethodCallExpression>();
-
-                var call = unwrapped as MethodCallExpression;
-                var returnType = unwrapped.Type;
-
-                // TODO: Strip predicates and push down into calls to Where
-                while (call != null && call.Method.IsQueryableOrEnumerableMethod())
-                {
-                    if (!call.Method.ReturnType.IsSequenceType()
-                        || call.Method.ReturnType.IsGenericType(typeof(IGrouping<,>))
-                        || call.Method.Name == nameof(Queryable.Cast))
-                    {
-                        node = call.Arguments[0];
-                        extraCallStack.Push(call);
-                        call = node as MethodCallExpression;
-                        returnType = node.Type;
-                    }
-                    else
-                    {
-                        call = null;
-                    }
-                }
-
-                var result = new UntrackingExpressionVisitor().Visit(node);
-
-                var body = projection.Flatten().Body;
-
-                var pathFinder = new PathFindingExpressionVisitor();
-
-                pathFinder.Visit(body);
-
-                if (pathFinder.FoundPaths.Count != 0)
-                {
-                    // The ProjectionBubblingExpressionVisitor might give us some
-                    // ExpandedGroupings to reference even though the actual result
-                    // of the query will not be an ExpandedGrouping. 
-
-                    result
-                        = Expression.Call(
-                            typeof(Enumerable)
-                                .GetMethod(nameof(Enumerable.Cast))
-                                .MakeGenericMethod(returnType.GetSequenceType()),
-                            Expression.Call(
-                                EntityTrackingHelper.TrackEntitiesMethodInfo,
-                                result,
-                                Expression.Convert(ExecutionContextParameters.DbCommandExecutor, typeof(EFCoreDbCommandExecutor)),
-                                Expression.Constant(GenerateAccessors(pathFinder.FoundPaths.Values.ToArray()))));
-                }
-
-                while (extraCallStack.TryPop(out call))
-                {
-                    result = call.Update(call.Object, call.Arguments.Skip(1).Prepend(result));
-                }
-
-                return result;
-            }
-
             return node;
         }
 
-        private Func<object, object> GenerateGetter(MaterializerPathInfo pathInfo)
+        var visitor = new ProjectionBubblingExpressionVisitor();
+
+        if (visitor.Visit(unwrapped) is ProjectionExpression projection)
         {
-            var blockVariables = new List<ParameterExpression>();
-            var blockExpressions = new List<Expression>();
-            var parameter = Expression.Parameter(typeof(object));
-            var currentExpression = (Expression)parameter;
-            var returnLabel = Expression.Label(typeof(object), "Return");
-            var nullConstantExpression = Expression.Constant(null, typeof(object));
+            var extraCallStack = new Stack<MethodCallExpression>();
 
-            for (var i = 0; i < pathInfo.Path.Length; i++)
+            var call = unwrapped as MethodCallExpression;
+            var returnType = unwrapped.Type;
+
+            // TODO: Strip predicates and push down into calls to Where
+            while (call != null && call.Method.IsQueryableOrEnumerableMethod())
             {
-                var member = pathInfo.Path[i];
-
-                var memberType = member.GetMemberType();
-
-                var memberVariable = Expression.Variable(memberType, member.Name);
-
-                blockVariables.Add(memberVariable);
-
-                if (!member.DeclaringType.IsAssignableFrom(currentExpression.Type))
+                if (!call.Method.ReturnType.IsSequenceType()
+                    || call.Method.ReturnType.IsGenericType(typeof(IGrouping<,>))
+                    || call.Method.Name == nameof(Queryable.Cast))
                 {
-                    currentExpression = Expression.TypeAs(currentExpression, member.DeclaringType);
-                }
-
-                blockExpressions.Add(
-                    Expression.IfThen(
-                        Expression.Equal(nullConstantExpression, currentExpression),
-                        Expression.Return(returnLabel, Expression.Default(memberType))));
-
-                blockExpressions.Add(
-                    Expression.Assign(
-                        memberVariable,
-                        Expression.MakeMemberAccess(currentExpression, GetMemberForRead(member))));
-
-                currentExpression = memberVariable;
-            }
-
-            blockExpressions.Add(Expression.Label(returnLabel, currentExpression));
-
-            return Expression
-                .Lambda<Func<object, object>>(
-                    Expression.Block(blockVariables, blockExpressions),
-                    parameter)
-                .Compile();
-        }
-
-        private Action<object, object> GenerateSetter(MaterializerPathInfo pathInfo)
-        {
-            var targetParameter = Expression.Parameter(typeof(object));
-            var valueParameter = Expression.Parameter(typeof(object));
-            var currentExpression = (Expression)targetParameter;
-            var lastMember = default(MemberInfo);
-
-            for (var i = 0; i < pathInfo.Path.Length; i++)
-            {
-                var member = pathInfo.Path[i];
-
-                if (!member.DeclaringType.IsAssignableFrom(currentExpression.Type))
-                {
-                    currentExpression = Expression.Convert(currentExpression, member.DeclaringType);
-                }
-
-                if (i + 1 == pathInfo.Path.Length)
-                {
-                    currentExpression = Expression.MakeMemberAccess(currentExpression, member = GetMemberForWrite(member));
+                    node = call.Arguments[0];
+                    extraCallStack.Push(call);
+                    call = node as MethodCallExpression;
+                    returnType = node.Type;
                 }
                 else
                 {
-                    currentExpression = Expression.MakeMemberAccess(currentExpression, member = GetMemberForRead(member));
+                    call = null;
                 }
-
-                lastMember = member;
             }
 
-            Expression body = default;
+            var result = new UntrackingExpressionVisitor().Visit(node);
 
-            if (lastMember is FieldInfo field && field.IsInitOnly)
+            var body = projection.Flatten().Body;
+
+            var pathFinder = new PathFindingExpressionVisitor();
+
+            pathFinder.Visit(body);
+
+            if (pathFinder.FoundPaths.Count != 0)
             {
-                body
+                // The ProjectionBubblingExpressionVisitor might give us some
+                // ExpandedGroupings to reference even though the actual result
+                // of the query will not be an ExpandedGrouping. 
+
+                result
                     = Expression.Call(
-                        Expression.Constant(field),
-                        typeof(FieldInfo).GetRuntimeMethod(nameof(FieldInfo.SetValue), new[] { typeof(object), typeof(object) }),
-                        (currentExpression as MemberExpression).Expression,
-                        Expression.Convert(valueParameter, currentExpression.Type));
+                        typeof(Enumerable)
+                            .GetMethod(nameof(Enumerable.Cast))
+                            .MakeGenericMethod(returnType.GetSequenceType()),
+                        Expression.Call(
+                            EntityTrackingHelper.TrackEntitiesMethodInfo,
+                            result,
+                            Expression.Convert(ExecutionContextParameters.DbCommandExecutor, typeof(EFCoreDbCommandExecutor)),
+                            Expression.Constant(GenerateAccessors(pathFinder.FoundPaths.Values.ToArray()))));
+            }
+
+            while (extraCallStack.TryPop(out call))
+            {
+                result = call.Update(call.Object, call.Arguments.Skip(1).Prepend(result));
+            }
+
+            return result;
+        }
+
+        return node;
+    }
+
+    private Func<object, object> GenerateGetter(MaterializerPathInfo pathInfo)
+    {
+        var blockVariables = new List<ParameterExpression>();
+        var blockExpressions = new List<Expression>();
+        var parameter = Expression.Parameter(typeof(object));
+        var currentExpression = (Expression)parameter;
+        var returnLabel = Expression.Label(typeof(object), "Return");
+        var nullConstantExpression = Expression.Constant(null, typeof(object));
+
+        for (var i = 0; i < pathInfo.Path.Length; i++)
+        {
+            var member = pathInfo.Path[i];
+
+            var memberType = member.GetMemberType();
+
+            var memberVariable = Expression.Variable(memberType, member.Name);
+
+            blockVariables.Add(memberVariable);
+
+            if (!member.DeclaringType.IsAssignableFrom(currentExpression.Type))
+            {
+                currentExpression = Expression.TypeAs(currentExpression, member.DeclaringType);
+            }
+
+            blockExpressions.Add(
+                Expression.IfThen(
+                    Expression.Equal(nullConstantExpression, currentExpression),
+                    Expression.Return(returnLabel, Expression.Default(memberType))));
+
+            blockExpressions.Add(
+                Expression.Assign(
+                    memberVariable,
+                    Expression.MakeMemberAccess(currentExpression, GetMemberForRead(member))));
+
+            currentExpression = memberVariable;
+        }
+
+        blockExpressions.Add(Expression.Label(returnLabel, currentExpression));
+
+        return Expression
+            .Lambda<Func<object, object>>(
+                Expression.Block(blockVariables, blockExpressions),
+                parameter)
+            .Compile();
+    }
+
+    private Action<object, object> GenerateSetter(MaterializerPathInfo pathInfo)
+    {
+        var targetParameter = Expression.Parameter(typeof(object));
+        var valueParameter = Expression.Parameter(typeof(object));
+        var currentExpression = (Expression)targetParameter;
+        var lastMember = default(MemberInfo);
+
+        for (var i = 0; i < pathInfo.Path.Length; i++)
+        {
+            var member = pathInfo.Path[i];
+
+            if (!member.DeclaringType.IsAssignableFrom(currentExpression.Type))
+            {
+                currentExpression = Expression.Convert(currentExpression, member.DeclaringType);
+            }
+
+            if (i + 1 == pathInfo.Path.Length)
+            {
+                currentExpression = Expression.MakeMemberAccess(currentExpression, member = GetMemberForWrite(member));
             }
             else
             {
-                body
-                    = Expression.Assign(
-                        currentExpression,
-                        Expression.Convert(valueParameter, currentExpression.Type));
+                currentExpression = Expression.MakeMemberAccess(currentExpression, member = GetMemberForRead(member));
             }
 
-            return Expression
-                .Lambda<Action<object, object>>(
-                    body,
-                    new[] { targetParameter, valueParameter })
-                .Compile();
+            lastMember = member;
         }
 
-        private MemberInfo GetMemberForRead(MemberInfo memberInfo)
+        Expression body = default;
+
+        if (lastMember is FieldInfo field && field.IsInitOnly)
         {
-            if (memberInfo.MemberType != MemberTypes.Property)
-            {
-                return memberInfo;
-            }
+            body
+                = Expression.Call(
+                    Expression.Constant(field),
+                    typeof(FieldInfo).GetRuntimeMethod(nameof(FieldInfo.SetValue), new[] { typeof(object), typeof(object) }),
+                    (currentExpression as MemberExpression).Expression,
+                    Expression.Convert(valueParameter, currentExpression.Type));
+        }
+        else
+        {
+            body
+                = Expression.Assign(
+                    currentExpression,
+                    Expression.Convert(valueParameter, currentExpression.Type));
+        }
 
-            var propertyInfo = (PropertyInfo)memberInfo;
+        return Expression
+            .Lambda<Action<object, object>>(
+                body,
+                new[] { targetParameter, valueParameter })
+            .Compile();
+    }
 
+    private MemberInfo GetMemberForRead(MemberInfo memberInfo)
+    {
+        if (memberInfo.MemberType != MemberTypes.Property)
+        {
+            return memberInfo;
+        }
+
+        var propertyInfo = (PropertyInfo)memberInfo;
+
+        var configuredField
+            = model.GetEntityTypes()
+                .Where(e => e.ClrType == propertyInfo.DeclaringType)
+                .FirstOrDefault()
+                ?.FindNavigation(propertyInfo).FieldInfo;
+
+        return configuredField ?? propertyInfo.FindBackingField() ?? memberInfo;
+    }
+
+    private MemberInfo GetMemberForWrite(MemberInfo memberInfo)
+    {
+        if (memberInfo.MemberType != MemberTypes.Property)
+        {
+            return memberInfo;
+        }
+
+        var propertyInfo = (PropertyInfo)memberInfo;
+
+        if (!propertyInfo.CanWrite)
+        {
             var configuredField
                 = model.GetEntityTypes()
                     .Where(e => e.ClrType == propertyInfo.DeclaringType)
@@ -228,275 +248,254 @@ namespace Impatient.EntityFrameworkCore.SqlServer
             return configuredField ?? propertyInfo.FindBackingField() ?? memberInfo;
         }
 
-        private MemberInfo GetMemberForWrite(MemberInfo memberInfo)
+        return memberInfo;
+    }
+
+    private MaterializerAccessorInfo[] GenerateAccessors(MaterializerPathInfo[] pathInfos)
+    {
+        var accessorInfos = new List<MaterializerAccessorInfo>();
+
+        foreach (var pathInfo in pathInfos)
         {
-            if (memberInfo.MemberType != MemberTypes.Property)
+            var getter = GenerateGetter(pathInfo);
+
+            var setter = GenerateSetter(pathInfo);
+
+            var subAccessors = default(MaterializerAccessorInfo[]);
+
+            if (pathInfo.SubPaths != null)
             {
-                return memberInfo;
+                subAccessors = GenerateAccessors(pathInfo.SubPaths);
             }
 
-            var propertyInfo = (PropertyInfo)memberInfo;
+            var type = pathInfo.Type;
 
-            if (!propertyInfo.CanWrite)
+            var entityTypes = model.GetEntityTypes().Where(t => t.ClrType == type).ToArray();
+            var entityType = entityTypes.FirstOrDefault();
+
+            if (entityTypes.Length > 1)
             {
-                var configuredField
-                    = model.GetEntityTypes()
-                        .Where(e => e.ClrType == propertyInfo.DeclaringType)
-                        .FirstOrDefault()
-                        ?.FindNavigation(propertyInfo).FieldInfo;
+                var targetMember = pathInfo.Path.Last();
+                var resolvedEntityType = default(IEntityType);
 
-                return configuredField ?? propertyInfo.FindBackingField() ?? memberInfo;
-            }
-
-            return memberInfo;
-        }
-
-        private MaterializerAccessorInfo[] GenerateAccessors(MaterializerPathInfo[] pathInfos)
-        {
-            var accessorInfos = new List<MaterializerAccessorInfo>();
-
-            foreach (var pathInfo in pathInfos)
-            {
-                var getter = GenerateGetter(pathInfo);
-
-                var setter = GenerateSetter(pathInfo);
-
-                var subAccessors = default(MaterializerAccessorInfo[]);
-
-                if (pathInfo.SubPaths != null)
+                foreach (var candidateType in entityTypes)
                 {
-                    subAccessors = GenerateAccessors(pathInfo.SubPaths);
+                    foreach (var foreignKey in candidateType.GetForeignKeys())
+                    {
+                        if (foreignKey.IsOwnership
+                            && foreignKey.PrincipalToDependent.GetSemanticReadableMemberInfo() == targetMember)
+                        {
+                            resolvedEntityType = candidateType;
+                            goto Resolved;
+                        }
+                    }
                 }
 
-                var type = pathInfo.Type;
-
-                var entityTypes = model.GetEntityTypes().Where(t => t.ClrType == type).ToArray();
-                var entityType = entityTypes.FirstOrDefault();
-
-                if (entityTypes.Length > 1)
+                if (resolvedEntityType is null)
                 {
-                    var targetMember = pathInfo.Path.Last();
-                    var resolvedEntityType = default(IEntityType);
+                    throw new InvalidOperationException();
+                }
 
-                    foreach (var candidateType in entityTypes)
+            Resolved:
+                entityType = resolvedEntityType;
+            }
+
+            accessorInfos.Add(new MaterializerAccessorInfo
+            {
+                EntityType = entityType,
+                GetValue = getter,
+                SetValue = setter,
+                SubAccessors = subAccessors,
+            });
+        }
+
+        return accessorInfos.ToArray();
+    }
+
+    private class UntrackingExpressionVisitor : ExpressionVisitor
+    {
+        public override Expression Visit(Expression node)
+        {
+            switch (node)
+            {
+                case EntityMaterializationExpression entityMaterializationExpression:
+                {
+                    return base.Visit(
+                        entityMaterializationExpression
+                            .UpdateQueryTrackingBehavior(QueryTrackingBehavior.NoTrackingWithIdentityResolution));
+                }
+
+                default:
+                {
+                    return base.Visit(node);
+                }
+            }
+        }
+    }
+
+    private class PathFindingExpressionVisitor : ProjectionExpressionVisitor
+    {
+        public Dictionary<string, MaterializerPathInfo> FoundPaths = [];
+
+        private void AddPath(Type type, MaterializerPathInfo[] subpaths = null)
+        {
+            var name = string.Join('.', GetNameParts());
+
+            if (FoundPaths.TryGetValue(name, out _))
+            {
+                Debug.Assert(FoundPaths[name].Type.IsAssignableFrom(type));
+
+                return;
+            }
+
+            FoundPaths[name] = new MaterializerPathInfo
+            {
+                Type = type,
+                Path = CurrentPath.ToArray(),
+                SubPaths = subpaths,
+            };
+        }
+
+        public override Expression Visit(Expression node)
+        {
+            switch (node)
+            {
+                case EntityMaterializationExpression entityMaterializationExpression:
+                {
+                    AddPath(node.Type);
+
+                    return base.Visit(node);
+                }
+
+                case PolymorphicExpression polymorphicExpression:
+                {
+                    AddPath(node.Type);
+
+                    foreach (var descriptor in polymorphicExpression.Descriptors)
                     {
-                        foreach (var foreignKey in candidateType.GetForeignKeys())
+                        Visit(descriptor.Materializer.ExpandParameters(polymorphicExpression.Row));
+                    }
+
+                    return node;
+                }
+
+                case EnumerableRelationalQueryExpression queryExpression:
+                {
+                    var projection = queryExpression.SelectExpression.Projection;
+
+                    var selectorVisitor = new ProjectionBubblingExpressionVisitor();
+
+                    var result = selectorVisitor.VisitAndConvert(projection, nameof(Visit));
+
+                    var pathFinder = new PathFindingExpressionVisitor();
+
+                    pathFinder.Visit(result.Flatten().Body);
+
+                    AddPath(node.Type, pathFinder.FoundPaths.Values.ToArray());
+
+                    return node;
+                }
+
+                case SqlColumnExpression sqlColumnExpression:
+                {
+                    if (sqlColumnExpression.Table is SubqueryTableExpression subqueryTableExpression)
+                    {
+                        var projection = subqueryTableExpression.Subquery.Projection.Flatten().Body;
+
+                        if (projection.TryResolvePath(sqlColumnExpression.ColumnName, out var resolved))
                         {
-                            if (foreignKey.IsOwnership
-                                && foreignKey.PrincipalToDependent.GetSemanticReadableMemberInfo() == targetMember)
-                            {
-                                resolvedEntityType = candidateType;
-                                goto Resolved;
-                            }
+                            Visit(resolved);
                         }
                     }
 
-                    if (resolvedEntityType is null)
-                    {
-                        throw new InvalidOperationException();
-                    }
-
-                Resolved:
-                    entityType = resolvedEntityType;
+                    return node;
                 }
 
-                accessorInfos.Add(new MaterializerAccessorInfo
+                case MethodCallExpression methodCallExpression
+                when methodCallExpression.Method.IsQueryableOrEnumerableMethod():
                 {
-                    EntityType = entityType,
-                    GetValue = getter,
-                    SetValue = setter,
-                    SubAccessors = subAccessors,
-                });
-            }
+                    var selectorVisitor = new ProjectionBubblingExpressionVisitor();
 
-            return accessorInfos.ToArray();
-        }
-
-        private class UntrackingExpressionVisitor : ExpressionVisitor
-        {
-            public override Expression Visit(Expression node)
-            {
-                switch (node)
-                {
-                    case EntityMaterializationExpression entityMaterializationExpression:
+                    if (selectorVisitor.Visit(methodCallExpression) is ProjectionExpression projection)
                     {
-                        return base.Visit(
-                            entityMaterializationExpression
-                                .UpdateQueryTrackingBehavior(QueryTrackingBehavior.NoTrackingWithIdentityResolution));
-                    }
-
-                    default:
-                    {
-                        return base.Visit(node);
-                    }
-                }
-            }
-        }
-
-        private class PathFindingExpressionVisitor : ProjectionExpressionVisitor
-        {
-            public Dictionary<string, MaterializerPathInfo> FoundPaths = [];
-
-            private void AddPath(Type type, MaterializerPathInfo[] subpaths = null)
-            {
-                var name = string.Join('.', GetNameParts());
-
-                if (FoundPaths.TryGetValue(name, out _))
-                {
-                    Debug.Assert(FoundPaths[name].Type.IsAssignableFrom(type));
-
-                    return;
-                }
-
-                FoundPaths[name] = new MaterializerPathInfo
-                {
-                    Type = type,
-                    Path = CurrentPath.ToArray(),
-                    SubPaths = subpaths,
-                };
-            }
-
-            public override Expression Visit(Expression node)
-            {
-                switch (node)
-                {
-                    case EntityMaterializationExpression entityMaterializationExpression:
-                    {
-                        AddPath(node.Type);
-
-                        return base.Visit(node);
-                    }
-
-                    case PolymorphicExpression polymorphicExpression:
-                    {
-                        AddPath(node.Type);
-
-                        foreach (var descriptor in polymorphicExpression.Descriptors)
-                        {
-                            Visit(descriptor.Materializer.ExpandParameters(polymorphicExpression.Row));
-                        }
-
-                        return node;
-                    }
-
-                    case EnumerableRelationalQueryExpression queryExpression:
-                    {
-                        var projection = queryExpression.SelectExpression.Projection;
-
-                        var selectorVisitor = new ProjectionBubblingExpressionVisitor();
-
-                        var result = selectorVisitor.VisitAndConvert(projection, nameof(Visit));
-
                         var pathFinder = new PathFindingExpressionVisitor();
 
-                        pathFinder.Visit(result.Flatten().Body);
+                        pathFinder.Visit(projection.Flatten().Body);
 
-                        AddPath(node.Type, pathFinder.FoundPaths.Values.ToArray());
-
-                        return node;
-                    }
-
-                    case SqlColumnExpression sqlColumnExpression:
-                    {
-                        if (sqlColumnExpression.Table is SubqueryTableExpression subqueryTableExpression)
+                        if (methodCallExpression.Type.IsSequenceType())
                         {
-                            var projection = subqueryTableExpression.Subquery.Projection.Flatten().Body;
-
-                            if (projection.TryResolvePath(sqlColumnExpression.ColumnName, out var resolved))
+                            AddPath(node.Type, pathFinder.FoundPaths.Values.ToArray());
+                        }
+                        else
+                        {
+                            foreach (var (key, value) in pathFinder.FoundPaths)
                             {
-                                Visit(resolved);
+                                FoundPaths.Add(string.Join('.', GetNameParts().Append(key)), value);
                             }
                         }
-
-                        return node;
                     }
 
-                    case MethodCallExpression methodCallExpression
-                    when methodCallExpression.Method.IsQueryableOrEnumerableMethod():
-                    {
-                        var selectorVisitor = new ProjectionBubblingExpressionVisitor();
-
-                        if (selectorVisitor.Visit(methodCallExpression) is ProjectionExpression projection)
-                        {
-                            var pathFinder = new PathFindingExpressionVisitor();
-
-                            pathFinder.Visit(projection.Flatten().Body);
-
-                            if (methodCallExpression.Type.IsSequenceType())
-                            {
-                                AddPath(node.Type, pathFinder.FoundPaths.Values.ToArray());
-                            }
-                            else
-                            {
-                                foreach (var (key, value) in pathFinder.FoundPaths)
-                                {
-                                    FoundPaths.Add(string.Join('.', GetNameParts().Append(key)), value);
-                                }
-                            }
-                        }
-
-                        return node;
-                    }
-
-                    case IncludeExpression includeExpression:
-                    {
-                        Visit(includeExpression.Expression);
-
-                        for (var i = 0; i < includeExpression.Paths.Length; i++)
-                        {
-                            var include = includeExpression.Includes[i];
-                            var path = includeExpression.Paths[i];
-
-                            FoundPaths.Add(
-                                string.Join('.', GetNameParts().Concat(path.Select(p => p.Name))),
-                                new MaterializerPathInfo
-                                {
-                                    Type = include.Type,
-                                    Path = CurrentPath.Concat(path.Select(p => p.GetSemanticReadableMemberInfo())).ToArray()
-                                });
-                        }
-
-                        return includeExpression;
-                    }
+                    return node;
                 }
 
-                return base.Visit(node);
-            }
-        }
-
-        private class MaterializerPathInfo
-        {
-            public Type Type;
-            public MemberInfo[] Path;
-            public MaterializerPathInfo[] SubPaths;
-        }
-
-        private class ShadowPropertyRemovingExpressionVisitor : ExpressionVisitor
-        {
-            protected override Expression VisitExtension(Expression node)
-            {
-                switch (node)
+                case IncludeExpression includeExpression:
                 {
-                    case SelectExpression select:
+                    Visit(includeExpression.Expression);
+
+                    for (var i = 0; i < includeExpression.Paths.Length; i++)
                     {
-                        return select.UpdateProjection(VisitAndConvert(select.Projection, nameof(VisitExtension)));
+                        var include = includeExpression.Includes[i];
+                        var path = includeExpression.Paths[i];
+
+                        FoundPaths.Add(
+                            string.Join('.', GetNameParts().Concat(path.Select(p => p.Name))),
+                            new MaterializerPathInfo
+                            {
+                                Type = include.Type,
+                                Path = CurrentPath.Concat(path.Select(p => p.GetSemanticReadableMemberInfo())).ToArray()
+                            });
                     }
 
-                    case EntityMaterializationExpression entity:
-                    {
-                        return new EntityMaterializationExpression(
-                            entity.EntityType,
-                            entity.QueryTrackingBehavior,
-                            Visit(entity.KeyExpression),
-                            Enumerable.Empty<IProperty>(),
-                            Enumerable.Empty<Expression>(),
-                            Visit(entity.Expression),
-                            entity.IncludedNavigations);
-                    }
-                    default:
-                    {
-                        return base.VisitExtension(node);
-                    }
+                    return includeExpression;
+                }
+            }
+
+            return base.Visit(node);
+        }
+    }
+
+    private class MaterializerPathInfo
+    {
+        public Type Type;
+        public MemberInfo[] Path;
+        public MaterializerPathInfo[] SubPaths;
+    }
+
+    private class ShadowPropertyRemovingExpressionVisitor : ExpressionVisitor
+    {
+        protected override Expression VisitExtension(Expression node)
+        {
+            switch (node)
+            {
+                case SelectExpression select:
+                {
+                    return select.UpdateProjection(VisitAndConvert(select.Projection, nameof(VisitExtension)));
+                }
+
+                case EntityMaterializationExpression entity:
+                {
+                    return new EntityMaterializationExpression(
+                        entity.EntityType,
+                        entity.QueryTrackingBehavior,
+                        Visit(entity.KeyExpression),
+                        Enumerable.Empty<IProperty>(),
+                        Enumerable.Empty<Expression>(),
+                        Visit(entity.Expression),
+                        entity.IncludedNavigations);
+                }
+                default:
+                {
+                    return base.VisitExtension(node);
                 }
             }
         }

@@ -1,80 +1,78 @@
 ﻿using Impatient.Extensions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
+namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
+
+public class ShadowPropertyRewritingExpressionVisitor : ExpressionVisitor
 {
-    public class ShadowPropertyRewritingExpressionVisitor : ExpressionVisitor
+    private readonly IModel model;
+
+    public ShadowPropertyRewritingExpressionVisitor(IModel model)
     {
-        private readonly IModel model;
+        this.model = model ?? throw new ArgumentNullException(nameof(model));
+    }
 
-        public ShadowPropertyRewritingExpressionVisitor(IModel model)
+    protected override Expression VisitMethodCall(MethodCallExpression node)
+    {
+        var @object = Visit(node.Object);
+        var arguments = Visit(node.Arguments);
+
+        if (node.Method.IsEFPropertyMethod() 
+            && arguments[1] is ConstantExpression constantExpression)
         {
-            this.model = model ?? throw new ArgumentNullException(nameof(model));
-        }
+            var propertyName = (string)constantExpression.Value;
 
-        protected override Expression VisitMethodCall(MethodCallExpression node)
-        {
-            var @object = Visit(node.Object);
-            var arguments = Visit(node.Arguments);
-
-            if (node.Method.IsEFPropertyMethod() 
-                && arguments[1] is ConstantExpression constantExpression)
+            if (arguments[0].TryResolvePath(propertyName, out var resolved))
             {
-                var propertyName = (string)constantExpression.Value;
-
-                if (arguments[0].TryResolvePath(propertyName, out var resolved))
+                if (resolved.Type != node.Type)
                 {
-                    if (resolved.Type != node.Type)
-                    {
-                        resolved = Expression.Convert(resolved, node.Type);
-                    }
-
-                    return resolved;
+                    resolved = Expression.Convert(resolved, node.Type);
                 }
 
-                // TODO: used to be SingleOrDefault. something is probably wrong here (as in, with using FirstOrDefault)
-                var entityType = model.GetEntityTypes().FirstOrDefault(t => t.ClrType == arguments[0].Type);
+                return resolved;
+            }
 
-                if (entityType is not null)
+            // TODO: used to be SingleOrDefault. something is probably wrong here (as in, with using FirstOrDefault)
+            var entityType = model.GetEntityTypes().FirstOrDefault(t => t.ClrType == arguments[0].Type);
+
+            if (entityType is not null)
+            {
+                var result = default(Expression);
+
+                var property = entityType.FindProperty(propertyName);
+
+                if (property is not null && !property.IsShadowProperty())
                 {
-                    var result = default(Expression);
+                    result = Expression.MakeMemberAccess(arguments[0], property.GetSemanticReadableMemberInfo());
+                }
 
-                    var property = entityType.FindProperty(propertyName);
+                var navigation = entityType.FindNavigation(propertyName);
 
-                    if (property is not null && !property.IsShadowProperty())
+                if (navigation is not null && !navigation.IsShadowProperty())
+                {
+                    result = Expression.MakeMemberAccess(arguments[0], navigation.GetSemanticReadableMemberInfo());
+                }
+
+                if (result is not null)
+                {
+                    if (result.Type != node.Type 
+                        && result.Type.UnwrapNullableType() == node.Type.UnwrapNullableType())
                     {
-                        result = Expression.MakeMemberAccess(arguments[0], property.GetSemanticReadableMemberInfo());
+                        result = Expression.Convert(result, node.Type);
                     }
 
-                    var navigation = entityType.FindNavigation(propertyName);
-
-                    if (navigation is not null && !navigation.IsShadowProperty())
+                    if (node.Type.IsAssignableFrom(result.Type))
                     {
-                        result = Expression.MakeMemberAccess(arguments[0], navigation.GetSemanticReadableMemberInfo());
-                    }
-
-                    if (result is not null)
-                    {
-                        if (result.Type != node.Type 
-                            && result.Type.UnwrapNullableType() == node.Type.UnwrapNullableType())
-                        {
-                            result = Expression.Convert(result, node.Type);
-                        }
-
-                        if (node.Type.IsAssignableFrom(result.Type))
-                        {
-                            return result;
-                        }
+                        return result;
                     }
                 }
             }
-
-            return node.Update(@object, arguments);
         }
+
+        return node.Update(@object, arguments);
     }
 }

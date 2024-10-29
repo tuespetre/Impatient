@@ -1,50 +1,48 @@
-﻿using Impatient.Extensions;
-using Impatient.Query.Expressions;
+﻿using Impatient.Query.Expressions;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.ExpressionVisitors.Utility
+namespace Impatient.Query.ExpressionVisitors.Utility;
+
+/// <summary>
+/// An <see cref="ExpressionVisitor"/> that can be used to ensure that
+/// a projection expression has some referenceable alias before being
+/// pushed down into a subquery. For example, a select expression with 
+/// a projection expression consisting of a single subquery 'column' with 
+/// no alias is not valid for pushing down into a subquery until that 
+/// single subquery 'column' is given an alias, allowing it to be referred
+/// to outside of the subquery.
+/// </summary>
+public class SubqueryAliasDecoratingExpressionVisitor : ExpressionVisitor
 {
-    /// <summary>
-    /// An <see cref="ExpressionVisitor"/> that can be used to ensure that
-    /// a projection expression has some referenceable alias before being
-    /// pushed down into a subquery. For example, a select expression with 
-    /// a projection expression consisting of a single subquery 'column' with 
-    /// no alias is not valid for pushing down into a subquery until that 
-    /// single subquery 'column' is given an alias, allowing it to be referred
-    /// to outside of the subquery.
-    /// </summary>
-    public class SubqueryAliasDecoratingExpressionVisitor : ExpressionVisitor
+    public override Expression Visit(Expression node)
     {
-        public override Expression Visit(Expression node)
+        switch (node)
         {
-            switch (node)
+            case null:
+            case NewExpression _:
+            case MemberInitExpression _:
+            case ExtendedNewExpression _:
+            case ExtendedMemberInitExpression _:
+            case PolymorphicExpression _:
+            case SqlColumnExpression _:
+            case SqlAliasExpression _:
+            case ExtraPropertiesExpression _:
+            // TODO: Can these two cases be eliminated?
+            case GroupByResultExpression _:
+            case GroupedRelationalQueryExpression _:
             {
-                case null:
-                case NewExpression _:
-                case MemberInitExpression _:
-                case ExtendedNewExpression _:
-                case ExtendedMemberInitExpression _:
-                case PolymorphicExpression _:
-                case SqlColumnExpression _:
-                case SqlAliasExpression _:
-                case ExtraPropertiesExpression _:
-                // TODO: Can these two cases be eliminated?
-                case GroupByResultExpression _:
-                case GroupedRelationalQueryExpression _:
-                {
-                    return node;
-                }
+                return node;
+            }
 
-                case AnnotationExpression _:
-                case UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked }:
-                {
-                    return base.Visit(node);
-                }
+            case AnnotationExpression _:
+            case UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked }:
+            {
+                return base.Visit(node);
+            }
 
-                default:
-                {
-                    return new SqlAliasExpression(node, "$c");
-                }
+            default:
+            {
+                return new SqlAliasExpression(node, "$c");
             }
         }
     }

@@ -4,44 +4,43 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.Infrastructure
+namespace Impatient.Query.Infrastructure;
+
+public class QueryProcessingContext
 {
-    public class QueryProcessingContext
+    private readonly IDictionary<Type, object> extensions = new Dictionary<Type, object>();
+
+    public QueryProcessingContext(
+        IQueryProvider queryProvider,
+        DescriptorSet descriptorSet,
+        ImpatientCompatibility compatibility)
     {
-        private readonly IDictionary<Type, object> extensions = new Dictionary<Type, object>();
+        QueryProvider = queryProvider;
+        DescriptorSet = descriptorSet;
+        Compatibility = compatibility;
+        ParameterMapping = new Dictionary<object, ParameterExpression>();
+    }
 
-        public QueryProcessingContext(
-            IQueryProvider queryProvider,
-            DescriptorSet descriptorSet,
-            ImpatientCompatibility compatibility)
+    public IQueryProvider QueryProvider { get; }
+
+    public DescriptorSet DescriptorSet { get; }
+
+    public ImpatientCompatibility Compatibility { get; }
+
+    public IDictionary<object, ParameterExpression> ParameterMapping { get; }
+
+    public TExtension GetExtension<TExtension>() where TExtension : class
+    {
+        if (extensions.TryGetValue(typeof(TExtension), out var result))
         {
-            QueryProvider = queryProvider;
-            DescriptorSet = descriptorSet;
-            Compatibility = compatibility;
-            ParameterMapping = new Dictionary<object, ParameterExpression>();
+            return (TExtension)result;
         }
 
-        public IQueryProvider QueryProvider { get; }
+        return default;
+    }
 
-        public DescriptorSet DescriptorSet { get; }
-
-        public ImpatientCompatibility Compatibility { get; }
-
-        public IDictionary<object, ParameterExpression> ParameterMapping { get; }
-
-        public TExtension GetExtension<TExtension>() where TExtension : class
-        {
-            if (extensions.TryGetValue(typeof(TExtension), out var result))
-            {
-                return (TExtension)result;
-            }
-
-            return default;
-        }
-
-        public void SetExtension<TExtension>(TExtension extension) where TExtension : class
-        {
-            extensions[typeof(TExtension)] = extension;
-        }
+    public void SetExtension<TExtension>(TExtension extension) where TExtension : class
+    {
+        extensions[typeof(TExtension)] = extension;
     }
 }

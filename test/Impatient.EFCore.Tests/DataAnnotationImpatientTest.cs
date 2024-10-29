@@ -4,22 +4,21 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 
-namespace Impatient.EFCore.Tests
+namespace Impatient.EFCore.Tests;
+
+public class DataAnnotationImpatientTest : DataAnnotationRelationalTestBase<DataAnnotationImpatientTest.Fixture>
 {
-    public class DataAnnotationImpatientTest : DataAnnotationRelationalTestBase<DataAnnotationImpatientTest.Fixture>
+    public DataAnnotationImpatientTest(Fixture fixture) : base(fixture)
     {
-        public DataAnnotationImpatientTest(Fixture fixture) : base(fixture)
-        {
-        }
+    }
 
-        protected override TestHelpers TestHelpers => ImpatientTestHelpers.Instance;
+    protected override TestHelpers TestHelpers => ImpatientTestHelpers.Instance;
 
-        protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
-            => facade.UseTransaction(transaction.GetDbTransaction());
+    protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
+        => facade.UseTransaction(transaction.GetDbTransaction());
 
-        public new class Fixture : DataAnnotationRelationalFixtureBase
-        {
-            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
-        }
+    public new class Fixture : DataAnnotationRelationalFixtureBase
+    {
+        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 }

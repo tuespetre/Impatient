@@ -2,10 +2,9 @@
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 
-namespace Impatient.EFCore.Tests.Query
+namespace Impatient.EFCore.Tests.Query;
+
+public class ManyToManyHeterogeneousQueryImpatientTest : ManyToManyHeterogeneousQueryRelationalTestBase
 {
-    public class ManyToManyHeterogeneousQueryImpatientTest : ManyToManyHeterogeneousQueryRelationalTestBase
-    {
-        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
-    }
+    protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 }

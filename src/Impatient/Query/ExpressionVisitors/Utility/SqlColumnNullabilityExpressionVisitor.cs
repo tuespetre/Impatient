@@ -1,35 +1,34 @@
 ﻿using Impatient.Query.Expressions;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.ExpressionVisitors.Utility
+namespace Impatient.Query.ExpressionVisitors.Utility;
+
+public class SqlColumnNullabilityExpressionVisitor : ProjectionExpressionVisitor
 {
-    public class SqlColumnNullabilityExpressionVisitor : ProjectionExpressionVisitor
+    private readonly bool nullable;
+
+    public SqlColumnNullabilityExpressionVisitor(bool nullable)
     {
-        private readonly bool nullable;
+        this.nullable = nullable;
+    }
 
-        public SqlColumnNullabilityExpressionVisitor(bool nullable)
+    protected override Expression VisitLeaf(Expression node)
+    {
+        switch (node)
         {
-            this.nullable = nullable;
-        }
-
-        protected override Expression VisitLeaf(Expression node)
-        {
-            switch (node)
+            case SqlColumnExpression sqlColumnExpression:
             {
-                case SqlColumnExpression sqlColumnExpression:
-                {
-                    return new SqlColumnExpression(
-                        sqlColumnExpression.Table,
-                        sqlColumnExpression.ColumnName,
-                        sqlColumnExpression.Type,
-                        isNullable: nullable,
-                        typeMapping: sqlColumnExpression.TypeMapping);
-                }
+                return new SqlColumnExpression(
+                    sqlColumnExpression.Table,
+                    sqlColumnExpression.ColumnName,
+                    sqlColumnExpression.Type,
+                    isNullable: nullable,
+                    typeMapping: sqlColumnExpression.TypeMapping);
+            }
 
-                default:
-                {
-                    return node;
-                }
+            default:
+            {
+                return node;
             }
         }
     }

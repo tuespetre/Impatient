@@ -1,10 +1,8 @@
-﻿using Impatient.Metadata;
-using System.Linq;
+﻿using System.Linq;
 
-namespace Impatient.Query.Infrastructure
+namespace Impatient.Query.Infrastructure;
+
+public interface IQueryProcessingContextFactory
 {
-    public interface IQueryProcessingContextFactory
-    {
-        QueryProcessingContext CreateQueryProcessingContext(IQueryProvider queryProvider);
-    }
+    QueryProcessingContext CreateQueryProcessingContext(IQueryProvider queryProvider);
 }

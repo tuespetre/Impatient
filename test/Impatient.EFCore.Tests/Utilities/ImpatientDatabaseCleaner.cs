@@ -1,44 +1,37 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics.Internal;
-using Microsoft.EntityFrameworkCore.Internal;
-using Microsoft.EntityFrameworkCore.Scaffolding;
+﻿using Microsoft.EntityFrameworkCore.Scaffolding;
 using Microsoft.EntityFrameworkCore.Scaffolding.Metadata;
 using Microsoft.EntityFrameworkCore.SqlServer.Design.Internal;
-using Microsoft.EntityFrameworkCore.SqlServer.Diagnostics.Internal;
-using Microsoft.EntityFrameworkCore.SqlServer.Scaffolding.Internal;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 
-namespace Impatient.EFCore.Tests.Utilities
+namespace Impatient.EFCore.Tests.Utilities;
+
+public class ImpatientDatabaseCleaner : RelationalDatabaseCleaner
 {
-    public class ImpatientDatabaseCleaner : RelationalDatabaseCleaner
+    /*protected override IDatabaseModelFactory CreateDatabaseModelFactory(ILoggerFactory loggerFactory)
+        => new SqlServerDatabaseModelFactory(
+            new DiagnosticsLogger<DbLoggerCategory.Scaffolding>(
+                loggerFactory,
+                new LoggingOptions(),
+                new DiagnosticListener("Fake"),
+                new SqlServerLoggingDefinitions(),
+                new NullDbContextLogger()),
+            default);*/
+    protected override IDatabaseModelFactory CreateDatabaseModelFactory(ILoggerFactory loggerFactory)
     {
-        /*protected override IDatabaseModelFactory CreateDatabaseModelFactory(ILoggerFactory loggerFactory)
-            => new SqlServerDatabaseModelFactory(
-                new DiagnosticsLogger<DbLoggerCategory.Scaffolding>(
-                    loggerFactory,
-                    new LoggingOptions(),
-                    new DiagnosticListener("Fake"),
-                    new SqlServerLoggingDefinitions(),
-                    new NullDbContextLogger()),
-                default);*/
-        protected override IDatabaseModelFactory CreateDatabaseModelFactory(ILoggerFactory loggerFactory)
-        {
-            var services = new ServiceCollection();
-            services.AddEntityFrameworkSqlServer();
+        var services = new ServiceCollection();
+        services.AddEntityFrameworkSqlServer();
 
-            new SqlServerDesignTimeServices().ConfigureDesignTimeServices(services);
+        new SqlServerDesignTimeServices().ConfigureDesignTimeServices(services);
 
-            return services
-                .BuildServiceProvider() // No scope validation; cleaner violates scopes, but only resolve services once.
-                .GetRequiredService<IDatabaseModelFactory>();
-        }
+        return services
+            .BuildServiceProvider() // No scope validation; cleaner violates scopes, but only resolve services once.
+            .GetRequiredService<IDatabaseModelFactory>();
+    }
 
-        protected override string BuildCustomEndingSql(DatabaseModel databaseModel)
-            => @"
+    protected override string BuildCustomEndingSql(DatabaseModel databaseModel)
+        => @"
 DECLARE @SQL VARCHAR(MAX) = '';
 SELECT @SQL = @SQL + 'DROP FUNCTION ' + QUOTENAME(ROUTINE_SCHEMA) + '.' + QUOTENAME(ROUTINE_NAME) + ';'
   FROM [INFORMATION_SCHEMA].[ROUTINES] WHERE ROUTINE_TYPE = 'FUNCTION' AND ROUTINE_BODY = 'SQL';
@@ -60,5 +53,4 @@ EXEC (@SQL);
 SET @SQL ='';
 SELECT @SQL = @SQL + 'DROP SCHEMA ' + QUOTENAME(name) + ';' FROM sys.schemas WHERE principal_id <> schema_id;
 EXEC (@SQL);";
-    }
 }

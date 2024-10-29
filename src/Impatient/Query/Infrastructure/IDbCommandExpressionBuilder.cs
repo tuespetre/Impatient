@@ -1,27 +1,25 @@
 ﻿using Impatient.Query.Expressions;
-using System;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.Infrastructure
+namespace Impatient.Query.Infrastructure;
+
+public interface IDbCommandExpressionBuilder
 {
-    public interface IDbCommandExpressionBuilder
-    {
-        void Append(string commandText);
+    void Append(string commandText);
 
-        void AppendLine();
+    void AppendLine();
 
-        void IncreaseIndent();
+    void IncreaseIndent();
 
-        void DecreaseIndent();
+    void DecreaseIndent();
 
-        void StartCapture();
+    void StartCapture();
 
-        string StopCapture();
+    string StopCapture();
 
-        void AddParameter(SqlParameterExpression expression);
+    void AddParameter(SqlParameterExpression expression);
 
-        void AddDynamicParameters(string fragment, Expression expression);
+    void AddDynamicParameters(string fragment, Expression expression);
 
-        LambdaExpression Build();
-    }
+    LambdaExpression Build();
 }

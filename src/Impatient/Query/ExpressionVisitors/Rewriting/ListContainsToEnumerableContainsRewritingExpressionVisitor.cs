@@ -5,28 +5,27 @@ using System.Linq.Expressions;
 using System.Reflection;
 using static Impatient.Extensions.ReflectionExtensions;
 
-namespace Impatient.Query.ExpressionVisitors.Rewriting
+namespace Impatient.Query.ExpressionVisitors.Rewriting;
+
+public class ListContainsToEnumerableContainsRewritingExpressionVisitor : ExpressionVisitor
 {
-    public class ListContainsToEnumerableContainsRewritingExpressionVisitor : ExpressionVisitor
+    private static readonly MethodInfo enumerableContainsMethodInfo
+        = GetGenericMethodDefinition((IEnumerable<object> e) => e.Contains(null));
+
+    protected override Expression VisitMethodCall(MethodCallExpression node)
     {
-        private static readonly MethodInfo enumerableContainsMethodInfo
-            = GetGenericMethodDefinition((IEnumerable<object> e) => e.Contains(null));
+        var @object = Visit(node.Object);
+        var arguments = Visit(node.Arguments);
 
-        protected override Expression VisitMethodCall(MethodCallExpression node)
+        var listType = node.Method.DeclaringType.FindGenericType(typeof(List<>));
+
+        if (listType is not null && node.Method.Equals(listType.GetMethod(nameof(List<object>.Contains))))
         {
-            var @object = Visit(node.Object);
-            var arguments = Visit(node.Arguments);
-
-            var listType = node.Method.DeclaringType.FindGenericType(typeof(List<>));
-
-            if (listType is not null && node.Method.Equals(listType.GetMethod(nameof(List<object>.Contains))))
-            {
-                return Expression.Call(
-                    enumerableContainsMethodInfo.MakeGenericMethod(listType.GetGenericArguments().Single()),
-                    arguments.Prepend(@object));
-            }
-
-            return node.Update(@object, arguments);
+            return Expression.Call(
+                enumerableContainsMethodInfo.MakeGenericMethod(listType.GetGenericArguments().Single()),
+                arguments.Prepend(@object));
         }
+
+        return node.Update(@object, arguments);
     }
 }

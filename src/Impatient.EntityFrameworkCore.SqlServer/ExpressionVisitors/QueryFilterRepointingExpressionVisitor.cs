@@ -1,45 +1,44 @@
 ﻿using Impatient.Extensions;
 using System.Linq.Expressions;
 
-namespace Impatient.EntityFrameworkCore.SqlServer
+namespace Impatient.EntityFrameworkCore.SqlServer;
+
+public class QueryFilterRepointingExpressionVisitor : ExpressionVisitor
 {
-    public class QueryFilterRepointingExpressionVisitor : ExpressionVisitor
+    private readonly ParameterExpression dbContextParameter;
+
+    public QueryFilterRepointingExpressionVisitor(ParameterExpression dbContextParameter)
     {
-        private readonly ParameterExpression dbContextParameter;
+        this.dbContextParameter = dbContextParameter;
+    }
 
-        public QueryFilterRepointingExpressionVisitor(ParameterExpression dbContextParameter)
+    protected override Expression VisitMember(MemberExpression node)
+    {
+        if (node.Type.IsAssignableFrom(dbContextParameter.Type))
         {
-            this.dbContextParameter = dbContextParameter;
-        }
+            var inner = node.Expression;
 
-        protected override Expression VisitMember(MemberExpression node)
-        {
-            if (node.Type.IsAssignableFrom(dbContextParameter.Type))
+            while (inner is MemberExpression memberExpression)
             {
-                var inner = node.Expression;
-
-                while (inner is MemberExpression memberExpression)
-                {
-                    inner = memberExpression.Expression;
-                }
-
-                if (inner is ConstantExpression)
-                {
-                    return dbContextParameter;
-                }
+                inner = memberExpression.Expression;
             }
 
-            return base.VisitMember(node);
-        }
-
-        protected override Expression VisitConstant(ConstantExpression node)
-        {
-            if (node.Type.IsAssignableFrom(dbContextParameter.Type) && !node.IsNullConstant())
+            if (inner is ConstantExpression)
             {
                 return dbContextParameter;
             }
-
-            return base.VisitConstant(node);
         }
+
+        return base.VisitMember(node);
+    }
+
+    protected override Expression VisitConstant(ConstantExpression node)
+    {
+        if (node.Type.IsAssignableFrom(dbContextParameter.Type) && !node.IsNullConstant())
+        {
+            return dbContextParameter;
+        }
+
+        return base.VisitConstant(node);
     }
 }

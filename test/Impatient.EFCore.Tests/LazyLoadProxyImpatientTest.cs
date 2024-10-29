@@ -2,17 +2,16 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 
-namespace Impatient.EFCore.Tests
-{
-    public class LazyLoadProxyImpatientTest : LazyLoadProxyTestBase<LazyLoadProxyImpatientTest.Fixture>
-    {
-        public LazyLoadProxyImpatientTest(Fixture fixture) : base(fixture)
-        {
-        }
+namespace Impatient.EFCore.Tests;
 
-        public class Fixture : LoadFixtureBase
-        {
-            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
-        }
+public class LazyLoadProxyImpatientTest : LazyLoadProxyTestBase<LazyLoadProxyImpatientTest.Fixture>
+{
+    public LazyLoadProxyImpatientTest(Fixture fixture) : base(fixture)
+    {
+    }
+
+    public class Fixture : LoadFixtureBase
+    {
+        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 }

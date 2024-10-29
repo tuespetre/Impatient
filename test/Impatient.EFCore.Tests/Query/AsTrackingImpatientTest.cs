@@ -1,11 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore.Query;
 
-namespace Impatient.EFCore.Tests.Query
+namespace Impatient.EFCore.Tests.Query;
+
+public class AsTrackingImpatientTest : NorthwindAsTrackingQueryTestBase<NorthwindQueryImpatientFixture>
 {
-    public class AsTrackingImpatientTest : NorthwindAsTrackingQueryTestBase<NorthwindQueryImpatientFixture>
+    public AsTrackingImpatientTest(NorthwindQueryImpatientFixture fixture) : base(fixture)
     {
-        public AsTrackingImpatientTest(NorthwindQueryImpatientFixture fixture) : base(fixture)
-        {
-        }
     }
 }

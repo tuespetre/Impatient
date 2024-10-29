@@ -2,25 +2,46 @@
 using Impatient.Query.Expressions;
 using System.Linq.Expressions;
 
-namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
+namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
+
+public class RelationalNullSemanticsComposingExpressionVisitor : ExpressionVisitor
 {
-    public class RelationalNullSemanticsComposingExpressionVisitor : ExpressionVisitor
+    private readonly RelationalNullSemanticsTargetingExpressionVisitor targetingExpressionVisitor
+        = new RelationalNullSemanticsTargetingExpressionVisitor();
+
+    public override Expression Visit(Expression node)
     {
-        private readonly RelationalNullSemanticsTargetingExpressionVisitor targetingExpressionVisitor
-            = new RelationalNullSemanticsTargetingExpressionVisitor();
+        switch (node)
+        {
+            case QueryOptionsExpression queryOptionsExpression:
+            {
+                if (queryOptionsExpression.UseRelationalNullSemantics)
+                {
+                    return targetingExpressionVisitor.Visit(node);
+                }
+
+                return node;
+            }
+
+            default:
+            {
+                return base.Visit(node);
+            }
+        }
+    }
+
+    private class RelationalNullSemanticsTargetingExpressionVisitor : ExpressionVisitor
+    {
+        private readonly RelationalNullSemanticsApplyingExpressionVisitor applyingExpressionVisitor
+            = new RelationalNullSemanticsApplyingExpressionVisitor();
 
         public override Expression Visit(Expression node)
         {
             switch (node)
             {
-                case QueryOptionsExpression queryOptionsExpression:
+                case RelationalQueryExpression relationalQueryExpression:
                 {
-                    if (queryOptionsExpression.UseRelationalNullSemantics)
-                    {
-                        return targetingExpressionVisitor.Visit(node);
-                    }
-
-                    return node;
+                    return applyingExpressionVisitor.Visit(relationalQueryExpression);
                 }
 
                 default:
@@ -29,82 +50,60 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
                 }
             }
         }
+    }
 
-        private class RelationalNullSemanticsTargetingExpressionVisitor : ExpressionVisitor
+    private class RelationalNullSemanticsApplyingExpressionVisitor : ExpressionVisitor
+    {
+        public override Expression Visit(Expression node)
         {
-            private readonly RelationalNullSemanticsApplyingExpressionVisitor applyingExpressionVisitor
-                = new RelationalNullSemanticsApplyingExpressionVisitor();
-
-            public override Expression Visit(Expression node)
+            switch (node.NodeType)
             {
-                switch (node)
+                case ExpressionType.Equal:
+                case ExpressionType.NotEqual:
                 {
-                    case RelationalQueryExpression relationalQueryExpression:
-                    {
-                        return applyingExpressionVisitor.Visit(relationalQueryExpression);
-                    }
+                    return new SqlColumnAndParameterNullabilityExpressionVisitor()
+                        .Visit(base.Visit(node));
+                }
 
-                    default:
-                    {
-                        return base.Visit(node);
-                    }
+                default:
+                {
+                    return base.Visit(node);
                 }
             }
         }
+    }
 
-        private class RelationalNullSemanticsApplyingExpressionVisitor : ExpressionVisitor
+    private class SqlColumnAndParameterNullabilityExpressionVisitor : ExpressionVisitor
+    {
+        public override Expression Visit(Expression node)
         {
-            public override Expression Visit(Expression node)
+            switch (node)
             {
-                switch (node.NodeType)
+                case SqlColumnExpression sqlColumnExpression:
                 {
-                    case ExpressionType.Equal:
-                    case ExpressionType.NotEqual:
-                    {
-                        return new SqlColumnAndParameterNullabilityExpressionVisitor()
-                            .Visit(base.Visit(node));
-                    }
-
-                    default:
-                    {
-                        return base.Visit(node);
-                    }
+                    return new SqlColumnExpression(
+                        sqlColumnExpression.Table,
+                        sqlColumnExpression.ColumnName,
+                        sqlColumnExpression.Type,
+                        isNullable: false,
+                        typeMapping: sqlColumnExpression.TypeMapping);
                 }
-            }
-        }
 
-        private class SqlColumnAndParameterNullabilityExpressionVisitor : ExpressionVisitor
-        {
-            public override Expression Visit(Expression node)
-            {
-                switch (node)
+                case SqlParameterExpression sqlParameterExpression:
                 {
-                    case SqlColumnExpression sqlColumnExpression:
-                    {
-                        return new SqlColumnExpression(
-                            sqlColumnExpression.Table,
-                            sqlColumnExpression.ColumnName,
-                            sqlColumnExpression.Type,
-                            isNullable: false,
-                            typeMapping: sqlColumnExpression.TypeMapping);
-                    }
+                    return new SqlParameterExpression(
+                        sqlParameterExpression.Expression,
+                        isNullable: false);
+                }
 
-                    case SqlParameterExpression sqlParameterExpression:
-                    {
-                        return new SqlParameterExpression(
-                            sqlParameterExpression.Expression,
-                            isNullable: false);
-                    }
+                case RelationalQueryExpression relationalQueryExpression:
+                {
+                    return relationalQueryExpression;
+                }
 
-                    case RelationalQueryExpression relationalQueryExpression:
-                    {
-                        return relationalQueryExpression;
-                    }
-
-                    default:
-                    {
-                        return base.Visit(node);
-                    }
+                default:
+                {
+                    return base.Visit(node);
                 }
             }
         }

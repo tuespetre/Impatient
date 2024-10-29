@@ -2,42 +2,41 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Impatient.EntityFrameworkCore.SqlServer
+namespace Impatient.EntityFrameworkCore.SqlServer;
+
+public class ImpatientDbContextOptionsExtension : IDbContextOptionsExtension
 {
-    public class ImpatientDbContextOptionsExtension : IDbContextOptionsExtension
+    private ImpatientCompatibility compatibility;
+
+    public ImpatientDbContextOptionsExtension()
     {
-        private ImpatientCompatibility compatibility;
+        compatibility = ImpatientCompatibility.Default;
+    }
 
-        public ImpatientDbContextOptionsExtension()
+    protected ImpatientDbContextOptionsExtension(ImpatientDbContextOptionsExtension template)
+    {
+        compatibility = template.compatibility;
+    }
+
+    public ImpatientCompatibility Compatibility { get; }
+
+    public DbContextOptionsExtensionInfo Info => new ImpatientDbContextOptionsExtensionInfo(this);
+
+    public ImpatientDbContextOptionsExtension WithCompatibility(ImpatientCompatibility compatibility)
+    {
+        return new ImpatientDbContextOptionsExtension(this)
         {
-            compatibility = ImpatientCompatibility.Default;
-        }
+            compatibility = compatibility
+        };
+    }
 
-        protected ImpatientDbContextOptionsExtension(ImpatientDbContextOptionsExtension template)
-        {
-            compatibility = template.compatibility;
-        }
+    void IDbContextOptionsExtension.ApplyServices(IServiceCollection services)
+    {
+        services.AddImpatientEFCoreQueryCompiler(compatibility);
+    }
 
-        public ImpatientCompatibility Compatibility { get; }
-
-        public DbContextOptionsExtensionInfo Info => new ImpatientDbContextOptionsExtensionInfo(this);
-
-        public ImpatientDbContextOptionsExtension WithCompatibility(ImpatientCompatibility compatibility)
-        {
-            return new ImpatientDbContextOptionsExtension(this)
-            {
-                compatibility = compatibility
-            };
-        }
-
-        void IDbContextOptionsExtension.ApplyServices(IServiceCollection services)
-        {
-            services.AddImpatientEFCoreQueryCompiler(compatibility);
-        }
-
-        public void Validate(IDbContextOptions options)
-        {
-            // TODO: ???
-        }
+    public void Validate(IDbContextOptions options)
+    {
+        // TODO: ???
     }
 }

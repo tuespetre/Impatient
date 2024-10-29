@@ -4,179 +4,179 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Xunit;
 
-namespace Impatient.EFCore.Tests.Query
+namespace Impatient.EFCore.Tests.Query;
+
+public class UdfDbFunctionImpatientTest : UdfDbFunctionTestBase<UdfDbFunctionImpatientTest.SqlServerUDFFixture>
 {
-    public class UdfDbFunctionImpatientTest : UdfDbFunctionTestBase<UdfDbFunctionImpatientTest.SqlServerUDFFixture>
+    public UdfDbFunctionImpatientTest(SqlServerUDFFixture fixture) : base(fixture)
     {
-        public UdfDbFunctionImpatientTest(SqlServerUDFFixture fixture) : base(fixture)
+        Fixture.ListLoggerFactory.Clear();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_CrossApply_Correlated_Select_Anonymous()
+    {
+        base.QF_CrossApply_Correlated_Select_Anonymous();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_CrossApply_Correlated_Select_QF_Type()
+    {
+        base.QF_CrossApply_Correlated_Select_QF_Type();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_CrossApply_Correlated_Select_Result()
+    {
+        base.QF_CrossApply_Correlated_Select_Result();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_CrossJoin_Not_Correlated()
+    {
+        base.QF_CrossJoin_Not_Correlated();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_CrossJoin_Parameter()
+    {
+        base.QF_CrossJoin_Parameter();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_Join()
+    {
+        base.QF_Join();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_LeftJoin_Select_Anonymous()
+    {
+        base.QF_LeftJoin_Select_Anonymous();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_LeftJoin_Select_Result()
+    {
+        base.QF_LeftJoin_Select_Result();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_OuterApply_Correlated_Select_Anonymous()
+    {
+        base.QF_OuterApply_Correlated_Select_Anonymous();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_OuterApply_Correlated_Select_Entity()
+    {
+        base.QF_OuterApply_Correlated_Select_Entity();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_OuterApply_Correlated_Select_QF()
+    {
+        base.QF_OuterApply_Correlated_Select_QF();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_Select_Correlated_Subquery_In_Anonymous_MultipleCollections()
+    {
+        base.QF_Select_Correlated_Subquery_In_Anonymous_MultipleCollections();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_Select_Correlated_Subquery_In_Anonymous_Nested()
+    {
+        base.QF_Select_Correlated_Subquery_In_Anonymous_Nested();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_Select_Direct_In_Anonymous()
+    {
+        base.QF_Select_Direct_In_Anonymous();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_Select_NonCorrelated_Subquery_In_Anonymous()
+    {
+        base.QF_Select_NonCorrelated_Subquery_In_Anonymous();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_Select_NonCorrelated_Subquery_In_Anonymous_Parameter()
+    {
+        base.QF_Select_NonCorrelated_Subquery_In_Anonymous_Parameter();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_Stand_Alone()
+    {
+        base.QF_Stand_Alone();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void QF_Stand_Alone_Parameter()
+    {
+        base.QF_Stand_Alone_Parameter();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void Udf_with_argument_being_comparison_of_nullable_columns()
+    {
+        base.Udf_with_argument_being_comparison_of_nullable_columns();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    public override void Udf_with_argument_being_comparison_to_null_parameter()
+    {
+        base.Udf_with_argument_being_comparison_to_null_parameter();
+    }
+
+    public class SqlServerUDFFixture : UdfFixtureBase
+    {
+        protected override string StoreName { get; } = "UDFDbFunctionSqlServerTests";
+
+        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance; 
+        
+        protected override void Seed(DbContext context)
         {
-            Fixture.ListLoggerFactory.Clear();
-        }
+            base.Seed(context);
 
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_CrossApply_Correlated_Select_Anonymous()
-        {
-            base.QF_CrossApply_Correlated_Select_Anonymous();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_CrossApply_Correlated_Select_QF_Type()
-        {
-            base.QF_CrossApply_Correlated_Select_QF_Type();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_CrossApply_Correlated_Select_Result()
-        {
-            base.QF_CrossApply_Correlated_Select_Result();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_CrossJoin_Not_Correlated()
-        {
-            base.QF_CrossJoin_Not_Correlated();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_CrossJoin_Parameter()
-        {
-            base.QF_CrossJoin_Parameter();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_Join()
-        {
-            base.QF_Join();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_LeftJoin_Select_Anonymous()
-        {
-            base.QF_LeftJoin_Select_Anonymous();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_LeftJoin_Select_Result()
-        {
-            base.QF_LeftJoin_Select_Result();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_OuterApply_Correlated_Select_Anonymous()
-        {
-            base.QF_OuterApply_Correlated_Select_Anonymous();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_OuterApply_Correlated_Select_Entity()
-        {
-            base.QF_OuterApply_Correlated_Select_Entity();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_OuterApply_Correlated_Select_QF()
-        {
-            base.QF_OuterApply_Correlated_Select_QF();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_Select_Correlated_Subquery_In_Anonymous_MultipleCollections()
-        {
-            base.QF_Select_Correlated_Subquery_In_Anonymous_MultipleCollections();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_Select_Correlated_Subquery_In_Anonymous_Nested()
-        {
-            base.QF_Select_Correlated_Subquery_In_Anonymous_Nested();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_Select_Direct_In_Anonymous()
-        {
-            base.QF_Select_Direct_In_Anonymous();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_Select_NonCorrelated_Subquery_In_Anonymous()
-        {
-            base.QF_Select_NonCorrelated_Subquery_In_Anonymous();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_Select_NonCorrelated_Subquery_In_Anonymous_Parameter()
-        {
-            base.QF_Select_NonCorrelated_Subquery_In_Anonymous_Parameter();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_Stand_Alone()
-        {
-            base.QF_Stand_Alone();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void QF_Stand_Alone_Parameter()
-        {
-            base.QF_Stand_Alone_Parameter();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void Udf_with_argument_being_comparison_of_nullable_columns()
-        {
-            base.Udf_with_argument_being_comparison_of_nullable_columns();
-        }
-
-        [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
-        public override void Udf_with_argument_being_comparison_to_null_parameter()
-        {
-            base.Udf_with_argument_being_comparison_to_null_parameter();
-        }
-
-        public class SqlServerUDFFixture : UdfFixtureBase
-        {
-            protected override string StoreName { get; } = "UDFDbFunctionSqlServerTests";
-
-            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance; 
-            
-            protected override void Seed(DbContext context)
-            {
-                base.Seed(context);
-
-                context.Database.ExecuteSqlRaw(
-                    @"create function [dbo].[CustomerOrderCount] (@customerId int)
+            context.Database.ExecuteSqlRaw(
+                @"create function [dbo].[CustomerOrderCount] (@customerId int)
                                                     returns int
                                                     as
                                                     begin
                                                         return (select count(id) from orders where customerId = @customerId);
                                                     end");
 
-                context.Database.ExecuteSqlRaw(
-                    @"create function[dbo].[StarValue] (@starCount int, @value nvarchar(max))
+            context.Database.ExecuteSqlRaw(
+                @"create function[dbo].[StarValue] (@starCount int, @value nvarchar(max))
                                                     returns nvarchar(max)
                                                         as
                                                         begin
                                                     return replicate('*', @starCount) + @value
                                                     end");
 
-                context.Database.ExecuteSqlRaw(
-                    @"create function[dbo].[DollarValue] (@starCount int, @value nvarchar(max))
+            context.Database.ExecuteSqlRaw(
+                @"create function[dbo].[DollarValue] (@starCount int, @value nvarchar(max))
                                                     returns nvarchar(max)
                                                         as
                                                         begin
                                                     return replicate('$', @starCount) + @value
                                                     end");
 
-                context.Database.ExecuteSqlRaw(
-                    @"create function [dbo].[GetReportingPeriodStartDate] (@period int)
+            context.Database.ExecuteSqlRaw(
+                @"create function [dbo].[GetReportingPeriodStartDate] (@period int)
                                                     returns DateTime
                                                     as
                                                     begin
                                                         return '1998-01-01'
                                                     end");
 
-                context.Database.ExecuteSqlRaw(
-                    @"create function [dbo].[GetCustomerWithMostOrdersAfterDate] (@searchDate Date)
+            context.Database.ExecuteSqlRaw(
+                @"create function [dbo].[GetCustomerWithMostOrdersAfterDate] (@searchDate Date)
                                                     returns int
                                                     as
                                                     begin
@@ -187,8 +187,8 @@ namespace Impatient.EFCore.Tests.Query
                                                                 order by count(id) desc)
                                                     end");
 
-                context.Database.ExecuteSqlRaw(
-                    @"create function [dbo].[IsTopCustomer] (@customerId int)
+            context.Database.ExecuteSqlRaw(
+                @"create function [dbo].[IsTopCustomer] (@customerId int)
                                                     returns bit
                                                     as
                                                     begin
@@ -198,48 +198,48 @@ namespace Impatient.EFCore.Tests.Query
                                                         return 0
                                                     end");
 
-                context.Database.ExecuteSqlRaw(
-                    @"create function [dbo].[IdentityString] (@s nvarchar(max))
+            context.Database.ExecuteSqlRaw(
+                @"create function [dbo].[IdentityString] (@s nvarchar(max))
                                                     returns nvarchar(max)
                                                     as
                                                     begin
                                                         return @s;
                                                     end");
 
-                context.Database.ExecuteSqlRaw(
-                    @"create function [dbo].[IdentityStringPropagatesNull] (@s nvarchar(max))
+            context.Database.ExecuteSqlRaw(
+                @"create function [dbo].[IdentityStringPropagatesNull] (@s nvarchar(max))
                                                     returns nvarchar(max)
                                                     as
                                                     begin
                                                         return @s;
                                                     end");
 
-                context.Database.ExecuteSqlRaw(
-                    @"create function [dbo].[IdentityStringNonNullable] (@s nvarchar(max))
+            context.Database.ExecuteSqlRaw(
+                @"create function [dbo].[IdentityStringNonNullable] (@s nvarchar(max))
                                                     returns nvarchar(max)
                                                     as
                                                     begin
                                                         return COALESCE(@s, 'NULL');
                                                     end");
 
-                context.Database.ExecuteSqlRaw(
-                    @"create function [dbo].[IdentityStringNonNullableFluent] (@s nvarchar(max))
+            context.Database.ExecuteSqlRaw(
+                @"create function [dbo].[IdentityStringNonNullableFluent] (@s nvarchar(max))
                                                     returns nvarchar(max)
                                                     as
                                                     begin
                                                         return COALESCE(@s, 'NULL');
                                                     end");
 
-                context.Database.ExecuteSqlRaw(
-                    @"create function [dbo].[StringLength] (@s nvarchar(max))
+            context.Database.ExecuteSqlRaw(
+                @"create function [dbo].[StringLength] (@s nvarchar(max))
                                                     returns int
                                                     as
                                                     begin
                                                         return LEN(@s);
                                                     end");
 
-                context.Database.ExecuteSqlRaw(
-                    @"create function [dbo].GetCustomerOrderCountByYear(@customerId int)
+            context.Database.ExecuteSqlRaw(
+                @"create function [dbo].GetCustomerOrderCountByYear(@customerId int)
                                                     returns @reports table
                                                     (
                                                         CustomerId int not null,
@@ -258,8 +258,8 @@ namespace Impatient.EFCore.Tests.Query
                                                         return
                                                     end");
 
-                context.Database.ExecuteSqlRaw(
-                    @"create function [dbo].GetCustomerOrderCountByYearOnlyFrom2000(@customerId int, @onlyFrom2000 bit)
+            context.Database.ExecuteSqlRaw(
+                @"create function [dbo].GetCustomerOrderCountByYearOnlyFrom2000(@customerId int, @onlyFrom2000 bit)
                                                     returns @reports table
                                                     (
                                                         CustomerId int not null,
@@ -278,8 +278,8 @@ namespace Impatient.EFCore.Tests.Query
                                                         return
                                                     end");
 
-                context.Database.ExecuteSqlRaw(
-                    @"create function [dbo].GetTopTwoSellingProducts()
+            context.Database.ExecuteSqlRaw(
+                @"create function [dbo].GetTopTwoSellingProducts()
                                                     returns @products table
                                                     (
                                                         ProductId int not null,
@@ -296,8 +296,8 @@ namespace Impatient.EFCore.Tests.Query
                                                         return
                                                     end");
 
-                context.Database.ExecuteSqlRaw(
-                    @"create function [dbo].GetTopSellingProductsForCustomer(@customerId int)
+            context.Database.ExecuteSqlRaw(
+                @"create function [dbo].GetTopSellingProductsForCustomer(@customerId int)
                                                     returns @products table
                                                     (
                                                         ProductId int not null,
@@ -315,8 +315,8 @@ namespace Impatient.EFCore.Tests.Query
                                                         return
                                                     end");
 
-                context.Database.ExecuteSqlRaw(
-                    @"create function [dbo].GetOrdersWithMultipleProducts(@customerId int)
+            context.Database.ExecuteSqlRaw(
+                @"create function [dbo].GetOrdersWithMultipleProducts(@customerId int)
                                                     returns @orders table
                                                     (
                                                         OrderId int not null,
@@ -336,16 +336,15 @@ namespace Impatient.EFCore.Tests.Query
                                                         return
                                                     end");
 
-                context.Database.ExecuteSqlRaw(
-                    @"create function [dbo].[AddValues] (@a int, @b int)
+            context.Database.ExecuteSqlRaw(
+                @"create function [dbo].[AddValues] (@a int, @b int)
                                                     returns int
                                                     as
                                                     begin
                                                         return @a + @b;
                                                     end");
 
-                context.SaveChanges();
-            }
+            context.SaveChanges();
         }
     }
 }

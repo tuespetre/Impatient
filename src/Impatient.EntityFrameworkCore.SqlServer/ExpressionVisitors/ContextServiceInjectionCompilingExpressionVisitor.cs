@@ -5,40 +5,39 @@ using System;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
+namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
+
+public class ContextServiceInjectionCompilingExpressionVisitor(ParameterExpression executionContextParameter) : ExpressionVisitor
 {
-    public class ContextServiceInjectionCompilingExpressionVisitor(ParameterExpression executionContextParameter) : ExpressionVisitor
+    private readonly ParameterExpression executionContextParameter = executionContextParameter ?? throw new ArgumentNullException(nameof(executionContextParameter));
+
+    protected override Expression VisitExtension(Expression node)
     {
-        private readonly ParameterExpression executionContextParameter = executionContextParameter ?? throw new ArgumentNullException(nameof(executionContextParameter));
-
-        protected override Expression VisitExtension(Expression node)
+        if (node is ContextServiceInjectionExpression contextServiceInjection)
         {
-            if (node is ContextServiceInjectionExpression contextServiceInjection)
-            {
-                return Expression.Call(
-                    GetType()
-                        .GetMethod(nameof(GetServiceForInjection), BindingFlags.Static | BindingFlags.NonPublic)
-                        .MakeGenericMethod(node.Type),
-                    Expression.Convert(executionContextParameter, typeof(EFCoreDbCommandExecutor)));
-            }
-
-            return base.VisitExtension(node);
+            return Expression.Call(
+                GetType()
+                    .GetMethod(nameof(GetServiceForInjection), BindingFlags.Static | BindingFlags.NonPublic)
+                    .MakeGenericMethod(node.Type),
+                Expression.Convert(executionContextParameter, typeof(EFCoreDbCommandExecutor)));
         }
 
-        private static TService GetServiceForInjection<TService>(EFCoreDbCommandExecutor executor)
+        return base.VisitExtension(node);
+    }
+
+    private static TService GetServiceForInjection<TService>(EFCoreDbCommandExecutor executor)
+    {
+        var context = executor.CurrentDbContext.Context;
+
+        if (context is TService service)
         {
-            var context = executor.CurrentDbContext.Context;
-
-            if (context is TService service)
-            {
-                return service;
-            }
-
-            var infrastructure = context.GetInfrastructure();
-
-            service = infrastructure.GetRequiredService<TService>();
-
             return service;
         }
+
+        var infrastructure = context.GetInfrastructure();
+
+        service = infrastructure.GetRequiredService<TService>();
+
+        return service;
     }
 }

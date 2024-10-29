@@ -1,12 +1,11 @@
 ﻿using Impatient.Query.ExpressionVisitors.Optimizing;
 
-namespace Impatient.Query.Infrastructure
+namespace Impatient.Query.Infrastructure;
+
+public class DefaultQueryInliningExpressionVisitorFactory : IQueryableInliningExpressionVisitorFactory
 {
-    public class DefaultQueryInliningExpressionVisitorFactory : IQueryableInliningExpressionVisitorFactory
+    public QueryableInliningExpressionVisitor Create(QueryProcessingContext context)
     {
-        public QueryableInliningExpressionVisitor Create(QueryProcessingContext context)
-        {
-            return new QueryableInliningExpressionVisitor(context.QueryProvider, context.ParameterMapping);
-        }
+        return new QueryableInliningExpressionVisitor(context.QueryProvider, context.ParameterMapping);
     }
 }

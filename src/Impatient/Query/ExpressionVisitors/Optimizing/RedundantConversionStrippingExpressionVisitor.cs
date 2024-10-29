@@ -2,35 +2,34 @@
 using Impatient.Query.Expressions;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.ExpressionVisitors.Optimizing
+namespace Impatient.Query.ExpressionVisitors.Optimizing;
+
+public class RedundantConversionStrippingExpressionVisitor : ExpressionVisitor
 {
-    public class RedundantConversionStrippingExpressionVisitor : ExpressionVisitor
+    protected override Expression VisitUnary(UnaryExpression node)
     {
-        protected override Expression VisitUnary(UnaryExpression node)
+        var visited = Visit(node.Operand);
+
+        if (node.NodeType == ExpressionType.Convert 
+            || node.NodeType == ExpressionType.ConvertChecked
+            || node.NodeType == ExpressionType.TypeAs)
         {
-            var visited = Visit(node.Operand);
-
-            if (node.NodeType == ExpressionType.Convert 
-                || node.NodeType == ExpressionType.ConvertChecked
-                || node.NodeType == ExpressionType.TypeAs)
+            if (visited.Type == node.Type)
             {
-                if (visited.Type == node.Type)
-                {
-                    return visited;
-                }
-                else if (visited is SqlColumnExpression sqlColumnExpression
-                    && node.Type.UnwrapNullableType() == sqlColumnExpression.Type)
-                {
-                    return new SqlColumnExpression(
-                        sqlColumnExpression.Table,
-                        sqlColumnExpression.ColumnName,
-                        node.Type,
-                        sqlColumnExpression.IsNullable,
-                        sqlColumnExpression.TypeMapping);
-                }
+                return visited;
             }
-
-            return node.Update(visited);
+            else if (visited is SqlColumnExpression sqlColumnExpression
+                && node.Type.UnwrapNullableType() == sqlColumnExpression.Type)
+            {
+                return new SqlColumnExpression(
+                    sqlColumnExpression.Table,
+                    sqlColumnExpression.ColumnName,
+                    node.Type,
+                    sqlColumnExpression.IsNullable,
+                    sqlColumnExpression.TypeMapping);
+            }
         }
+
+        return node.Update(visited);
     }
 }

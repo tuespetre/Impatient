@@ -4,57 +4,56 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.Query.ExpressionVisitors.Rewriting
+namespace Impatient.Query.ExpressionVisitors.Rewriting;
+
+public class SqlServerJsonMemberRewritingExpressionVisitor : ExpressionVisitor
 {
-    public class SqlServerJsonMemberRewritingExpressionVisitor : ExpressionVisitor
+    protected override Expression VisitMember(MemberExpression node)
     {
-        protected override Expression VisitMember(MemberExpression node)
+        var path = new List<MemberInfo>();
+        var root = default(Expression);
+        var current = node;
+
+        do
         {
-            var path = new List<MemberInfo>();
-            var root = default(Expression);
-            var current = node;
+            path.Insert(0, current.Member);
+            root = current.Expression;
+            current = root as MemberExpression;
+        }
+        while (current is not null);
 
-            do
+        switch (root)
+        {
+            case SqlExpression sqlExpression
+            when !sqlExpression.Type.IsScalarType():
             {
-                path.Insert(0, current.Member);
-                root = current.Expression;
-                current = root as MemberExpression;
-            }
-            while (current is not null);
-
-            switch (root)
-            {
-                case SqlExpression sqlExpression
-                when !sqlExpression.Type.IsScalarType():
+                if (node.Type == typeof(bool))
                 {
-                    if (node.Type == typeof(bool))
-                    {
-                        var jsonValue = new SqlFunctionExpression(
-                            "JSON_VALUE",
-                            typeof(string),
-                            sqlExpression,
-                            Expression.Constant(GetJsonPath(path)));
-
-                        return Expression.Equal(jsonValue, Expression.Constant("true"));
-                    }
-
-                    return new SqlFunctionExpression(
-                        node.Type.IsScalarType() ? "JSON_VALUE" : "JSON_QUERY",
-                        node.Type,
+                    var jsonValue = new SqlFunctionExpression(
+                        "JSON_VALUE",
+                        typeof(string),
                         sqlExpression,
                         Expression.Constant(GetJsonPath(path)));
+
+                    return Expression.Equal(jsonValue, Expression.Constant("true"));
                 }
 
-                default:
-                {
-                    return base.VisitMember(node);
-                }
+                return new SqlFunctionExpression(
+                    node.Type.IsScalarType() ? "JSON_VALUE" : "JSON_QUERY",
+                    node.Type,
+                    sqlExpression,
+                    Expression.Constant(GetJsonPath(path)));
+            }
+
+            default:
+            {
+                return base.VisitMember(node);
             }
         }
+    }
 
-        private static string GetJsonPath(List<MemberInfo> path)
-        {
-            return $"$.{string.Join(".", path.GetPropertyNamesForJson())}";
-        }
+    private static string GetJsonPath(List<MemberInfo> path)
+    {
+        return $"$.{string.Join(".", path.GetPropertyNamesForJson())}";
     }
 }

@@ -7,41 +7,40 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.Tests.Utilities
+namespace Impatient.Tests.Utilities;
+
+public static class QueryExpressionHelper
 {
-    public static class QueryExpressionHelper
+    public static Expression CreateQueryExpression<TElement>()
     {
-        public static Expression CreateQueryExpression<TElement>()
-        {
-            var type = typeof(TElement);
+        var type = typeof(TElement);
 
-            var annotation = type.GetCustomAttribute<TableAttribute>();
+        var annotation = type.GetCustomAttribute<TableAttribute>();
 
-            var table = new BaseTableExpression(
-                annotation?.Schema ?? "dbo",
-                annotation?.Name ?? type.Name,
-                (annotation?.Name ?? type.Name).ToLower().First().ToString(),
-                type);
+        var table = new BaseTableExpression(
+            annotation?.Schema ?? "dbo",
+            annotation?.Name ?? type.Name,
+            (annotation?.Name ?? type.Name).ToLower().First().ToString(),
+            type);
 
-            return new EnumerableRelationalQueryExpression(
-                new SelectExpression(
-                    new ServerProjectionExpression(
-                        Expression.MemberInit(
-                            Expression.New(type),
-                            from property in type.GetRuntimeProperties()
-                            where property.PropertyType.IsScalarType()
-                            let nullable =
-                                (property.PropertyType.IsNullableType())
-                                || (!property.PropertyType.IsValueType
-                                    && property.GetCustomAttribute<RequiredAttribute>() == null)
-                            let column = new SqlColumnExpression(table, property.Name, property.PropertyType, nullable, null)
-                            select Expression.Bind(property, column))),
-                    table));
-        }
+        return new EnumerableRelationalQueryExpression(
+            new SelectExpression(
+                new ServerProjectionExpression(
+                    Expression.MemberInit(
+                        Expression.New(type),
+                        from property in type.GetRuntimeProperties()
+                        where property.PropertyType.IsScalarType()
+                        let nullable =
+                            (property.PropertyType.IsNullableType())
+                            || (!property.PropertyType.IsValueType
+                                && property.GetCustomAttribute<RequiredAttribute>() == null)
+                        let column = new SqlColumnExpression(table, property.Name, property.PropertyType, nullable, null)
+                        select Expression.Bind(property, column))),
+                table));
+    }
 
-        public static LambdaExpression GetExpression<TSource, TResult>(Expression<Func<TSource, TResult>> expression)
-        {
-            return expression;
-        }
+    public static LambdaExpression GetExpression<TSource, TResult>(Expression<Func<TSource, TResult>> expression)
+    {
+        return expression;
     }
 }

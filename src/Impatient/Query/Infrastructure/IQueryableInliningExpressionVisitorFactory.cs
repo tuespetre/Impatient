@@ -1,9 +1,8 @@
 ﻿using Impatient.Query.ExpressionVisitors.Optimizing;
 
-namespace Impatient.Query.Infrastructure
+namespace Impatient.Query.Infrastructure;
+
+public interface IQueryableInliningExpressionVisitorFactory
 {
-    public interface IQueryableInliningExpressionVisitorFactory
-    {
-        QueryableInliningExpressionVisitor Create(QueryProcessingContext context);
-    }
+    QueryableInliningExpressionVisitor Create(QueryProcessingContext context);
 }

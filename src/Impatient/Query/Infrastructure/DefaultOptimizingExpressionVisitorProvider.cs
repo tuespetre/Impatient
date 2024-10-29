@@ -2,29 +2,28 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.Infrastructure
+namespace Impatient.Query.Infrastructure;
+
+/// <summary>
+/// A default implementation of <see cref="IOptimizingExpressionVisitorProvider"/>
+/// that supplies a <see cref="SelectorPushdownExpressionVisitor"/> and a
+/// <see cref="BooleanOptimizingExpressionVisitor"/>. This implementation is
+/// safe to register as a singleton service in a service container.
+/// </summary>
+public class DefaultOptimizingExpressionVisitorProvider : IOptimizingExpressionVisitorProvider
 {
-    /// <summary>
-    /// A default implementation of <see cref="IOptimizingExpressionVisitorProvider"/>
-    /// that supplies a <see cref="SelectorPushdownExpressionVisitor"/> and a
-    /// <see cref="BooleanOptimizingExpressionVisitor"/>. This implementation is
-    /// safe to register as a singleton service in a service container.
-    /// </summary>
-    public class DefaultOptimizingExpressionVisitorProvider : IOptimizingExpressionVisitorProvider
+    public IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
     {
-        public IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
-        {
-            yield return new TypeBinaryOptimizingExpressionVisitor();
+        yield return new TypeBinaryOptimizingExpressionVisitor();
 
-            yield return new ConditionalComparisonOptimizingExpressionVisitor();
+        yield return new ConditionalComparisonOptimizingExpressionVisitor();
 
-            yield return new SelectorPushdownExpressionVisitor();
+        yield return new SelectorPushdownExpressionVisitor();
 
-            yield return new RedundantConversionStrippingExpressionVisitor();
+        yield return new RedundantConversionStrippingExpressionVisitor();
 
-            yield return new NullOrDefaultEqualityOptimizingExpressionVisitor();
+        yield return new NullOrDefaultEqualityOptimizingExpressionVisitor();
 
-            yield return new BooleanOptimizingExpressionVisitor();
-        }
+        yield return new BooleanOptimizingExpressionVisitor();
     }
 }

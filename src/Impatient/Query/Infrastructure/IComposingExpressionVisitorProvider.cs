@@ -1,10 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.Infrastructure
+namespace Impatient.Query.Infrastructure;
+
+public interface IComposingExpressionVisitorProvider
 {
-    public interface IComposingExpressionVisitorProvider
-    {
-        IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context);
-    }
+    IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context);
 }

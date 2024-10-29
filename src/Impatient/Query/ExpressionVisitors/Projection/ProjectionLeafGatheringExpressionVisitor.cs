@@ -1,19 +1,18 @@
 ﻿using System.Collections.Generic;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.ExpressionVisitors.Utility
+namespace Impatient.Query.ExpressionVisitors.Utility;
+
+public class ProjectionLeafGatheringExpressionVisitor : ProjectionExpressionVisitor
 {
-    public class ProjectionLeafGatheringExpressionVisitor : ProjectionExpressionVisitor
+    public IDictionary<string, Expression> GatheredExpressions { get; } = new Dictionary<string, Expression>();
+
+    protected override Expression VisitLeaf(Expression node)
     {
-        public IDictionary<string, Expression> GatheredExpressions { get; } = new Dictionary<string, Expression>();
+        var name = string.Join(".", GetNameParts());
 
-        protected override Expression VisitLeaf(Expression node)
-        {
-            var name = string.Join(".", GetNameParts());
+        GatheredExpressions[name] = node;
 
-            GatheredExpressions[name] = node;
-
-            return node;
-        }
+        return node;
     }
 }

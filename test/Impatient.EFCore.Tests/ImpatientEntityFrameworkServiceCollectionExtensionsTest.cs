@@ -1,31 +1,29 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using System.Data.SqlClient;
 
-namespace Impatient.EFCore.Tests
+namespace Impatient.EFCore.Tests;
+
+public class ImpatientEntityFrameworkServiceCollectionExtensionsTest : RelationalServiceCollectionExtensionsTestBase
 {
-    public class ImpatientEntityFrameworkServiceCollectionExtensionsTest : RelationalServiceCollectionExtensionsTestBase
+    public ImpatientEntityFrameworkServiceCollectionExtensionsTest() 
+        : base(ImpatientTestHelpers.Instance)
     {
-        public ImpatientEntityFrameworkServiceCollectionExtensionsTest() 
-            : base(ImpatientTestHelpers.Instance)
-        {
-        }
+    }
+}
+
+public class ImpatientTestHelpers : TestHelpers
+{
+    protected ImpatientTestHelpers()
+    {
     }
 
-    public class ImpatientTestHelpers : TestHelpers
-    {
-        protected ImpatientTestHelpers()
-        {
-        }
+    public static ImpatientTestHelpers Instance { get; } = new ImpatientTestHelpers();
 
-        public static ImpatientTestHelpers Instance { get; } = new ImpatientTestHelpers();
+    public override IServiceCollection AddProviderServices(IServiceCollection services)
+        => services.AddEntityFrameworkSqlServer();
 
-        public override IServiceCollection AddProviderServices(IServiceCollection services)
-            => services.AddEntityFrameworkSqlServer();
-
-        public override DbContextOptionsBuilder UseProviderOptions(DbContextOptionsBuilder optionsBuilder)
-            => optionsBuilder.UseSqlServer(new SqlConnection("Database=DummyDatabase"));
-    }
+    public override DbContextOptionsBuilder UseProviderOptions(DbContextOptionsBuilder optionsBuilder)
+        => optionsBuilder.UseSqlServer(new SqlConnection("Database=DummyDatabase"));
 }

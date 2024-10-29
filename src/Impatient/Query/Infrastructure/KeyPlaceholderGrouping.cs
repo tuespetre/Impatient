@@ -6,41 +6,40 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.Query.Infrastructure
+namespace Impatient.Query.Infrastructure;
+
+internal static class KeyPlaceholderGrouping
 {
-    internal static class KeyPlaceholderGrouping
+    public static MemberInitExpression Create(Expression expression, Expression keySelector)
     {
-        public static MemberInitExpression Create(Expression expression, Expression keySelector)
-        {
-            var typeArguments
-                = expression.Type.IsGenericType(typeof(IGrouping<,>))
-                    ? expression.Type.GenericTypeArguments
-                    : new[] { keySelector.Type, expression.Type.GetSequenceType() };
+        var typeArguments
+            = expression.Type.IsGenericType(typeof(IGrouping<,>))
+                ? expression.Type.GenericTypeArguments
+                : new[] { keySelector.Type, expression.Type.GetSequenceType() };
 
-            var groupingType
-                = typeof(KeyPlaceholderGrouping<,>)
-                    .MakeGenericType(typeArguments);
+        var groupingType
+            = typeof(KeyPlaceholderGrouping<,>)
+                .MakeGenericType(typeArguments);
 
-            return Expression.MemberInit(
-                Expression.New(groupingType),
-                Expression.Bind(
-                    groupingType.GetRuntimeProperty("Key"),
-                    keySelector));
-        }
+        return Expression.MemberInit(
+            Expression.New(groupingType),
+            Expression.Bind(
+                groupingType.GetRuntimeProperty("Key"),
+                keySelector));
+    }
+}
+
+internal class KeyPlaceholderGrouping<TKey, TElement> : IGrouping<TKey, TElement>
+{
+    public TKey Key { get; set; }
+
+    public IEnumerator<TElement> GetEnumerator()
+    {
+        throw new NotImplementedException();
     }
 
-    internal class KeyPlaceholderGrouping<TKey, TElement> : IGrouping<TKey, TElement>
+    IEnumerator IEnumerable.GetEnumerator()
     {
-        public TKey Key { get; set; }
-
-        public IEnumerator<TElement> GetEnumerator()
-        {
-            throw new NotImplementedException();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            throw new NotImplementedException();
-        }
+        throw new NotImplementedException();
     }
 }

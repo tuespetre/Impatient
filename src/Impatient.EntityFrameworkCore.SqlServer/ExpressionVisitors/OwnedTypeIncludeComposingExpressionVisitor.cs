@@ -8,68 +8,67 @@ using System.Linq.Expressions;
 using System.Reflection;
 using static Impatient.Extensions.ReflectionExtensions;
 
-namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
+namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
+
+public class OwnedTypeIncludeComposingExpressionVisitor : ExpressionVisitor
 {
-    public class OwnedTypeIncludeComposingExpressionVisitor : ExpressionVisitor
+    private static readonly MethodInfo includeStringMethodInfo
+        = GetGenericMethodDefinition<IQueryable<object>, object>(q => q.Include(""));
+
+    private readonly IModel model;
+
+    public OwnedTypeIncludeComposingExpressionVisitor(IModel model)
     {
-        private static readonly MethodInfo includeStringMethodInfo
-            = GetGenericMethodDefinition<IQueryable<object>, object>(q => q.Include(""));
+        this.model = model;
+    }
 
-        private readonly IModel model;
+    protected override Expression VisitExtension(Expression node)
+    {
+        node = base.VisitExtension(node);
 
-        public OwnedTypeIncludeComposingExpressionVisitor(IModel model)
+        if (node is EnumerableRelationalQueryExpression query)
         {
-            this.model = model;
-        }
+            var entityType = model.FindEntityType(query.SelectExpression.Type);
 
-        protected override Expression VisitExtension(Expression node)
-        {
-            node = base.VisitExtension(node);
-
-            if (node is EnumerableRelationalQueryExpression query)
+            if (entityType is not null)
             {
-                var entityType = model.FindEntityType(query.SelectExpression.Type);
+                var method = includeStringMethodInfo.MakeGenericMethod(query.SelectExpression.Type);
 
-                if (entityType is not null)
+                foreach (var (type, path) in GetOwnedTypeIncludePaths(entityType))
                 {
-                    var method = includeStringMethodInfo.MakeGenericMethod(query.SelectExpression.Type);
-
-                    foreach (var (type, path) in GetOwnedTypeIncludePaths(entityType))
-                    {
-                        node = Expression.Call(method, node, Expression.Constant(path));
-                    }
+                    node = Expression.Call(method, node, Expression.Constant(path));
                 }
             }
-
-            return node;
         }
 
-        private static IEnumerable<(Type, string)> GetOwnedTypeIncludePaths(IEntityType entityType)
+        return node;
+    }
+
+    private static IEnumerable<(Type, string)> GetOwnedTypeIncludePaths(IEntityType entityType)
+    {
+        foreach (var navigation in entityType.GetNavigations())
         {
-            foreach (var navigation in entityType.GetNavigations())
+            if (navigation.ForeignKey.IsOwnership && !navigation.IsOnDependent)
             {
-                if (navigation.ForeignKey.IsOwnership && !navigation.IsOnDependent)
+                var targetType = navigation.TargetEntityType;
+
+                if (targetType.GetSchema() == entityType.GetSchema()
+                    && targetType.GetTableName() == entityType.GetTableName())
                 {
-                    var targetType = navigation.TargetEntityType;
+                    continue;
+                }
 
-                    if (targetType.GetSchema() == entityType.GetSchema()
-                        && targetType.GetTableName() == entityType.GetTableName())
-                    {
-                        continue;
-                    }
+                var subpaths = GetOwnedTypeIncludePaths(targetType).ToArray();
 
-                    var subpaths = GetOwnedTypeIncludePaths(targetType).ToArray();
-
-                    if (subpaths.Length == 0)
+                if (subpaths.Length == 0)
+                {
+                    yield return (targetType.ClrType, navigation.Name);
+                }
+                else
+                {
+                    foreach (var (subtype, subpath) in subpaths)
                     {
-                        yield return (targetType.ClrType, navigation.Name);
-                    }
-                    else
-                    {
-                        foreach (var (subtype, subpath) in subpaths)
-                        {
-                            yield return (subtype, $"{navigation.Name}.{subpath}");
-                        }
+                        yield return (subtype, $"{navigation.Name}.{subpath}");
                     }
                 }
             }

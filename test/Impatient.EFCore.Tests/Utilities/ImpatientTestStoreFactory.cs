@@ -5,51 +5,50 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 
-namespace Impatient.EFCore.Tests.Utilities
+namespace Impatient.EFCore.Tests.Utilities;
+
+public class ImpatientTestStoreFactory : ITestStoreFactory
 {
-    public class ImpatientTestStoreFactory : ITestStoreFactory
+    public static ImpatientTestStoreFactory Instance { get; } = new();
+
+    private readonly ImpatientCompatibility compatibility = ImpatientCompatibility.Default;
+
+    private ImpatientTestStoreFactory()
     {
-        public static ImpatientTestStoreFactory Instance { get; } = new();
+    }
 
-        private readonly ImpatientCompatibility compatibility = ImpatientCompatibility.Default;
+    public IServiceCollection AddProviderServices(IServiceCollection serviceCollection)
+        => serviceCollection
+            .AddEntityFrameworkSqlServer()
+            .AddImpatientEFCoreQueryCompiler(compatibility)
+            .AddSingleton<ILoggerFactory>(new TestSqlLoggerFactory());
 
-        private ImpatientTestStoreFactory()
+    public TestStore Create(string storeName)
+    {
+        if (storeName.Equals("Northwind", StringComparison.InvariantCultureIgnoreCase))
         {
+            return new ImpatientNorthwindTestStore();
         }
-
-        public IServiceCollection AddProviderServices(IServiceCollection serviceCollection)
-            => serviceCollection
-                .AddEntityFrameworkSqlServer()
-                .AddImpatientEFCoreQueryCompiler(compatibility)
-                .AddSingleton<ILoggerFactory>(new TestSqlLoggerFactory());
-
-        public TestStore Create(string storeName)
+        else
         {
-            if (storeName.Equals("Northwind", StringComparison.InvariantCultureIgnoreCase))
-            {
-                return new ImpatientNorthwindTestStore();
-            }
-            else
-            {
-                return new ImpatientTestStore(storeName, false);
-            }
+            return new ImpatientTestStore(storeName, false);
         }
+    }
 
-        public TestStore GetOrCreate(string storeName)
+    public TestStore GetOrCreate(string storeName)
+    {
+        if (storeName.Equals("Northwind", StringComparison.InvariantCultureIgnoreCase))
         {
-            if (storeName.Equals("Northwind", StringComparison.InvariantCultureIgnoreCase))
-            {
-                return new ImpatientNorthwindTestStore();
-            }
-            else
-            {
-                return new ImpatientTestStore(storeName, true);
-            }
+            return new ImpatientNorthwindTestStore();
         }
+        else
+        {
+            return new ImpatientTestStore(storeName, true);
+        }
+    }
 
-        public ListLoggerFactory CreateListLoggerFactory(Func<string, bool> shouldLogCategory)
-        {
-            return new TestSqlLoggerFactory(shouldLogCategory);
-        }
+    public ListLoggerFactory CreateListLoggerFactory(Func<string, bool> shouldLogCategory)
+    {
+        return new TestSqlLoggerFactory(shouldLogCategory);
     }
 }

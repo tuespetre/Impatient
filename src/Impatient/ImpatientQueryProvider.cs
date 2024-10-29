@@ -4,91 +4,89 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 
-namespace Impatient
+namespace Impatient;
+
+public class ImpatientQueryProvider : IQueryProvider
 {
-    public class ImpatientQueryProvider : IQueryProvider
+    private readonly IImpatientQueryProcessor queryProcessor;
+
+    public ImpatientQueryProvider(IImpatientQueryProcessor queryProcessor)
     {
-        private readonly IImpatientQueryProcessor queryProcessor;
+        this.queryProcessor = queryProcessor ?? throw new ArgumentNullException(nameof(queryProcessor));
+    }
 
-        public ImpatientQueryProvider(IImpatientQueryProcessor queryProcessor)
+    public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
+    {
+        if (expression is null)
         {
-            this.queryProcessor = queryProcessor ?? throw new ArgumentNullException(nameof(queryProcessor));
+            throw new ArgumentNullException(nameof(expression));
         }
 
-        public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
+        if (!typeof(IEnumerable<TElement>).IsAssignableFrom(expression.Type))
         {
-            if (expression is null)
-            {
-                throw new ArgumentNullException(nameof(expression));
-            }
-
-            if (!typeof(IEnumerable<TElement>).IsAssignableFrom(expression.Type))
-            {
-                throw new ArgumentException("Invalid expression for CreateQuery", nameof(expression));
-            }
-
-            if (typeof(IOrderedQueryable<TElement>).IsAssignableFrom(expression.Type))
-            {
-                return new ImpatientOrderedQueryable<TElement>(expression, this);
-            }
-
-            return new ImpatientQueryable<TElement>(expression, this);
+            throw new ArgumentException("Invalid expression for CreateQuery", nameof(expression));
         }
 
-        IQueryable IQueryProvider.CreateQuery(Expression expression)
+        if (typeof(IOrderedQueryable<TElement>).IsAssignableFrom(expression.Type))
         {
-            if (expression is null)
-            {
-                throw new ArgumentNullException(nameof(expression));
-            }
-
-            var elementType = expression.Type.GetSequenceType();
-
-            if (elementType is null)
-            {
-                throw new ArgumentException("Invalid expression for CreateQuery", nameof(expression));
-            }
-
-            if (typeof(IOrderedQueryable).IsAssignableFrom(expression.Type))
-            {
-                var orderedQueryableType = typeof(ImpatientOrderedQueryable<>).MakeGenericType(elementType);
-
-                return (IQueryable)Activator.CreateInstance(orderedQueryableType, expression, this);
-            }
-
-            var queryableType = typeof(ImpatientQueryable<>).MakeGenericType(elementType);
-
-            return (IQueryable)Activator.CreateInstance(queryableType, expression, this);
+            return new ImpatientOrderedQueryable<TElement>(expression, this);
         }
 
-        object IQueryProvider.Execute(Expression expression)
-        {
-            if (expression is null)
-            {
-                throw new ArgumentNullException(nameof(expression));
-            }
+        return new ImpatientQueryable<TElement>(expression, this);
+    }
 
-            return queryProcessor.Execute(this, expression);
+    IQueryable IQueryProvider.CreateQuery(Expression expression)
+    {
+        if (expression is null)
+        {
+            throw new ArgumentNullException(nameof(expression));
         }
 
-        TResult IQueryProvider.Execute<TResult>(Expression expression)
-        {
-            if (expression is null)
-            {
-                throw new ArgumentNullException(nameof(expression));
-            }
+        var elementType = expression.Type.GetSequenceType();
 
-            return (TResult)queryProcessor.Execute(this, expression);
+        if (elementType is null)
+        {
+            throw new ArgumentException("Invalid expression for CreateQuery", nameof(expression));
         }
 
-        private class ImpatientOrderedQueryable<TElement> : ImpatientQueryable<TElement>, IOrderedQueryable<TElement>
+        if (typeof(IOrderedQueryable).IsAssignableFrom(expression.Type))
         {
-            public ImpatientOrderedQueryable(Expression expression, ImpatientQueryProvider provider)
-                : base(expression, provider)
-            {
-            }
+            var orderedQueryableType = typeof(ImpatientOrderedQueryable<>).MakeGenericType(elementType);
+
+            return (IQueryable)Activator.CreateInstance(orderedQueryableType, expression, this);
+        }
+
+        var queryableType = typeof(ImpatientQueryable<>).MakeGenericType(elementType);
+
+        return (IQueryable)Activator.CreateInstance(queryableType, expression, this);
+    }
+
+    object IQueryProvider.Execute(Expression expression)
+    {
+        if (expression is null)
+        {
+            throw new ArgumentNullException(nameof(expression));
+        }
+
+        return queryProcessor.Execute(this, expression);
+    }
+
+    TResult IQueryProvider.Execute<TResult>(Expression expression)
+    {
+        if (expression is null)
+        {
+            throw new ArgumentNullException(nameof(expression));
+        }
+
+        return (TResult)queryProcessor.Execute(this, expression);
+    }
+
+    private class ImpatientOrderedQueryable<TElement> : ImpatientQueryable<TElement>, IOrderedQueryable<TElement>
+    {
+        public ImpatientOrderedQueryable(Expression expression, ImpatientQueryProvider provider)
+            : base(expression, provider)
+        {
         }
     }
 }

@@ -2,32 +2,31 @@
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
-namespace Impatient.EntityFrameworkCore.SqlServer
+namespace Impatient.EntityFrameworkCore.SqlServer;
+
+public class DescriptorSetCache
 {
-    public class DescriptorSetCache
+    private readonly ModelExpressionProvider modelExpressionProvider;
+    private DescriptorSet cachedDescriptorSet;
+
+    public DescriptorSetCache(ModelExpressionProvider modelExpressionProvider)
     {
-        private readonly ModelExpressionProvider modelExpressionProvider;
-        private DescriptorSet cachedDescriptorSet;
+        this.modelExpressionProvider = modelExpressionProvider ?? throw new System.ArgumentNullException(nameof(modelExpressionProvider));
+    }
 
-        public DescriptorSetCache(ModelExpressionProvider modelExpressionProvider)
+    public DescriptorSet GetDescriptorSet(DbContext context)
+    {
+        // TODO: This is probably broken as hell, doesn't consider that a different model could be passed in at any time.
+
+        // TODO: Parameterize all DbContext references in query filters upfront.
+
+        if (cachedDescriptorSet is null)
         {
-            this.modelExpressionProvider = modelExpressionProvider ?? throw new System.ArgumentNullException(nameof(modelExpressionProvider));
+            cachedDescriptorSet = new DescriptorSet(
+                modelExpressionProvider.CreatePrimaryKeyDescriptors(context).ToArray(),
+                modelExpressionProvider.CreateNavigationDescriptors(context).ToArray());
         }
 
-        public DescriptorSet GetDescriptorSet(DbContext context)
-        {
-            // TODO: This is probably broken as hell, doesn't consider that a different model could be passed in at any time.
-
-            // TODO: Parameterize all DbContext references in query filters upfront.
-
-            if (cachedDescriptorSet is null)
-            {
-                cachedDescriptorSet = new DescriptorSet(
-                    modelExpressionProvider.CreatePrimaryKeyDescriptors(context).ToArray(),
-                    modelExpressionProvider.CreateNavigationDescriptors(context).ToArray());
-            }
-
-            return cachedDescriptorSet;
-        }
+        return cachedDescriptorSet;
     }
 }

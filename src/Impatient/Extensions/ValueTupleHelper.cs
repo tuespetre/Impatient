@@ -6,86 +6,85 @@ using System.Reflection;
 using static System.Linq.Enumerable;
 using static System.Math;
 
-namespace Impatient.Extensions
+namespace Impatient.Extensions;
+
+internal static class ValueTupleHelper
 {
-    internal static class ValueTupleHelper
+    public static Type CreateTupleType(IEnumerable<Type> types)
     {
-        public static Type CreateTupleType(IEnumerable<Type> types)
+        var lastSize = types.Count() % 7;
+
+        if (lastSize == 0)
         {
-            var lastSize = types.Count() % 7;
-
-            if (lastSize == 0)
-            {
-                lastSize = 7;
-            }
-
-            var initialType = lastSize switch
-            {
-                1 => typeof(ValueTuple<>),
-                2 => typeof(ValueTuple<,>),
-                3 => typeof(ValueTuple<,,>),
-                4 => typeof(ValueTuple<,,,>),
-                5 => typeof(ValueTuple<,,,,>),
-                6 => typeof(ValueTuple<,,,,,>),
-                _ => typeof(ValueTuple<,,,,,,>),
-            };
-
-            types = types.Reverse().ToArray().AsEnumerable();
-
-            var resultType
-                = initialType.MakeGenericType(
-                    types.Take(lastSize).Reverse().ToArray());
-
-            types = types.Skip(lastSize);
-
-            while (types.Any())
-            {
-                resultType
-                    = typeof(ValueTuple<,,,,,,,>).MakeGenericType(
-                        types.Take(7).Reverse().Append(resultType).ToArray());
-
-                types = types.Skip(7);
-            }
-
-            return resultType;
+            lastSize = 7;
         }
 
-        public static NewExpression CreateNewExpression(Type type, IEnumerable<Expression> arguments)
+        var initialType = lastSize switch
         {
-            var typeInfo = type.GetTypeInfo();
-            var constructor = typeInfo.DeclaredConstructors.Single();
-            // There is no guarantee of the declaration order of the ValueTuple's fields,
-            // so we need to order them ourselves (Item1, Item2, ..., Rest)
-            var fields = typeInfo.DeclaredFields.OrderBy(f => f.Name).ToArray();
-            var newArguments = new List<Expression>(fields.Length);
+            1 => typeof(ValueTuple<>),
+            2 => typeof(ValueTuple<,>),
+            3 => typeof(ValueTuple<,,>),
+            4 => typeof(ValueTuple<,,,>),
+            5 => typeof(ValueTuple<,,,,>),
+            6 => typeof(ValueTuple<,,,,,>),
+            _ => typeof(ValueTuple<,,,,,,>),
+        };
 
-            foreach (var argument in arguments.Take(Min(7, fields.Length)))
-            {
-                newArguments.Add(argument);
-            }
+        types = types.Reverse().ToArray().AsEnumerable();
 
-            if (fields.Length == 8)
-            {
-                newArguments.Add(CreateNewExpression(fields[7].FieldType, arguments.Skip(7)));
-            }
+        var resultType
+            = initialType.MakeGenericType(
+                types.Take(lastSize).Reverse().ToArray());
 
-            return Expression.New(constructor, newArguments, fields);
+        types = types.Skip(lastSize);
+
+        while (types.Any())
+        {
+            resultType
+                = typeof(ValueTuple<,,,,,,,>).MakeGenericType(
+                    types.Take(7).Reverse().Append(resultType).ToArray());
+
+            types = types.Skip(7);
         }
 
-        public static Expression CreateMemberExpression(Type type, Expression expression, int index)
+        return resultType;
+    }
+
+    public static NewExpression CreateNewExpression(Type type, IEnumerable<Expression> arguments)
+    {
+        var typeInfo = type.GetTypeInfo();
+        var constructor = typeInfo.DeclaredConstructors.Single();
+        // There is no guarantee of the declaration order of the ValueTuple's fields,
+        // so we need to order them ourselves (Item1, Item2, ..., Rest)
+        var fields = typeInfo.DeclaredFields.OrderBy(f => f.Name).ToArray();
+        var newArguments = new List<Expression>(fields.Length);
+
+        foreach (var argument in arguments.Take(Min(7, fields.Length)))
         {
-            for (var i = 0; i < index / 7; i++)
-            {
-                var restField = type.GetRuntimeField("Rest");
-                expression = Expression.MakeMemberAccess(expression, restField);
-                type = restField.FieldType;
-            }
-
-            // There is no guarantee of the declaration order of the ValueTuple's fields,
-            // so we need to access the target field by name.
-            var itemField = type.GetTypeInfo().GetDeclaredField($"Item{(index % 7) + 1}");
-
-            return Expression.MakeMemberAccess(expression, itemField);
+            newArguments.Add(argument);
         }
+
+        if (fields.Length == 8)
+        {
+            newArguments.Add(CreateNewExpression(fields[7].FieldType, arguments.Skip(7)));
+        }
+
+        return Expression.New(constructor, newArguments, fields);
+    }
+
+    public static Expression CreateMemberExpression(Type type, Expression expression, int index)
+    {
+        for (var i = 0; i < index / 7; i++)
+        {
+            var restField = type.GetRuntimeField("Rest");
+            expression = Expression.MakeMemberAccess(expression, restField);
+            type = restField.FieldType;
+        }
+
+        // There is no guarantee of the declaration order of the ValueTuple's fields,
+        // so we need to access the target field by name.
+        var itemField = type.GetTypeInfo().GetDeclaredField($"Item{(index % 7) + 1}");
+
+        return Expression.MakeMemberAccess(expression, itemField);
     }
 }

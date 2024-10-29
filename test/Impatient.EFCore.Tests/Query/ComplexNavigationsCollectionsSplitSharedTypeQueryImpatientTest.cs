@@ -1,23 +1,20 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System.Threading.Tasks;
-using Xunit;
 
-namespace Impatient.EFCore.Tests.Query
+namespace Impatient.EFCore.Tests.Query;
+
+public class ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest : ComplexNavigationsCollectionsSplitSharedTypeQueryRelationalTestBase<ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Fixture>
 {
-    public class ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest : ComplexNavigationsCollectionsSplitSharedTypeQueryRelationalTestBase<ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Fixture>
+    public ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest(Fixture fixture) : base(fixture)
     {
-        public ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest(Fixture fixture) : base(fixture)
-        {
-        }
+    }
 
-        /*protected override QueryAsserter CreateQueryAsserter(Fixture fixture) =>
-            new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);*/
+    /*protected override QueryAsserter CreateQueryAsserter(Fixture fixture) =>
+        new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);*/
 
-        public class Fixture : ComplexNavigationsSharedTypeQueryRelationalFixtureBase
-        {
-            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
-        }
+    public class Fixture : ComplexNavigationsSharedTypeQueryRelationalFixtureBase
+    {
+        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 }

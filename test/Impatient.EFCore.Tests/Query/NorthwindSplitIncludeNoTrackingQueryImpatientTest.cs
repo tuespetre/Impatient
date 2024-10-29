@@ -1,12 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore.Query;
 
-namespace Impatient.EFCore.Tests.Query
+namespace Impatient.EFCore.Tests.Query;
+
+public class NorthwindSplitIncludeNoTrackingQueryImpatientTest : NorthwindSplitIncludeNoTrackingQueryTestBase<NorthwindQueryImpatientFixture>
 {
-    public class NorthwindSplitIncludeNoTrackingQueryImpatientTest : NorthwindSplitIncludeNoTrackingQueryTestBase<NorthwindQueryImpatientFixture>
+    public NorthwindSplitIncludeNoTrackingQueryImpatientTest(NorthwindQueryImpatientFixture fixture) : base(fixture)
     {
-        public NorthwindSplitIncludeNoTrackingQueryImpatientTest(NorthwindQueryImpatientFixture fixture) : base(fixture)
-        {
-            fixture.TestSqlLoggerFactory.Clear();
-        }
+        fixture.TestSqlLoggerFactory.Clear();
     }
 }

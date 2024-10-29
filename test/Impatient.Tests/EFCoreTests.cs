@@ -9,130 +9,130 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Impatient.Tests
+namespace Impatient.Tests;
+
+[TestClass]
+public class EFCoreTests
 {
-    [TestClass]
-    public class EFCoreTests
+    [TestMethod]
+    public void TestEfCore_Basic()
     {
-        [TestMethod]
-        public void TestEfCore_Basic()
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var result = (from o in context.Set<Order>()
-                              select new { o, o.Customer }).FirstOrDefault();
+            var result = (from o in context.Set<Order>()
+                          select new { o, o.Customer }).FirstOrDefault();
 
-                Assert.IsNotNull(result);
-                Assert.IsNotNull(result.o);
-                Assert.IsNotNull(result.Customer);
+            Assert.IsNotNull(result);
+            Assert.IsNotNull(result.o);
+            Assert.IsNotNull(result.Customer);
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT TOP (1) [o].[OrderID] AS [o.OrderID], [o].[CustomerID] AS [o.CustomerID], [o].[EmployeeID] AS [o.EmployeeID], [o].[Freight] AS [o.Freight], [o].[OrderDate] AS [o.OrderDate], [o].[RequiredDate] AS [o.RequiredDate], [o].[ShipAddress] AS [o.ShipAddress], [o].[ShipCity] AS [o.ShipCity], [o].[ShipCountry] AS [o.ShipCountry], [o].[ShipName] AS [o.ShipName], [o].[ShipPostalCode] AS [o.ShipPostalCode], [o].[ShipRegion] AS [o.ShipRegion], [o].[ShipVia] AS [o.ShipVia], [o].[ShippedDate] AS [o.ShippedDate], [c].[CustomerID] AS [Customer.CustomerID], [c].[Address] AS [Customer.Address], [c].[City] AS [Customer.City], [c].[CompanyName] AS [Customer.CompanyName], [c].[ContactName] AS [Customer.ContactName], [c].[ContactTitle] AS [Customer.ContactTitle], [c].[Country] AS [Customer.Country], [c].[Fax] AS [Customer.Fax], [c].[Phone] AS [Customer.Phone], [c].[PostalCode] AS [Customer.PostalCode], [c].[Region] AS [Customer.Region]
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public void Tracking_Basic()
+    [TestMethod]
+    public void Tracking_Basic()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var order1 = context.Set<Order>().FirstOrDefault();
-                var order2 = context.Set<Order>().FirstOrDefault();
+            var order1 = context.Set<Order>().FirstOrDefault();
+            var order2 = context.Set<Order>().FirstOrDefault();
 
-                var entries = context.ChangeTracker.Entries();
+            var entries = context.ChangeTracker.Entries();
 
-                Assert.AreEqual(1, entries.Count());
-                Assert.IsNotNull(order1);
-                Assert.IsNotNull(order2);
-                Assert.AreEqual(order1, order2);
-            });
-        }
+            Assert.AreEqual(1, entries.Count());
+            Assert.IsNotNull(order1);
+            Assert.IsNotNull(order2);
+            Assert.AreEqual(order1, order2);
+        });
+    }
 
-        [TestMethod]
-        public async Task FirstOrDefaultAsync()
+    [TestMethod]
+    public async Task FirstOrDefaultAsync()
+    {
+        await EfCoreTestCaseAsync(async (context, log) =>
         {
-            await EfCoreTestCaseAsync(async (context, log) =>
-            {
-                var order = await context.Set<Order>().FirstOrDefaultAsync();
+            var order = await context.Set<Order>().FirstOrDefaultAsync();
 
-                Assert.IsNotNull(order);
-                Assert.AreEqual(1, context.ChangeTracker.Entries().Count());
+            Assert.IsNotNull(order);
+            Assert.AreEqual(1, context.ChangeTracker.Entries().Count());
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT TOP (1) [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate]
 FROM [dbo].[Orders] AS [o]
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public async Task FirstOrDefaultAsync_Predicate()
+    [TestMethod]
+    public async Task FirstOrDefaultAsync_Predicate()
+    {
+        await EfCoreTestCaseAsync(async (context, log) =>
         {
-            await EfCoreTestCaseAsync(async (context, log) =>
-            {
-                var order = await context.Set<Order>().FirstOrDefaultAsync(o => o.OrderID == 10252);
+            var order = await context.Set<Order>().FirstOrDefaultAsync(o => o.OrderID == 10252);
 
-                Assert.IsNotNull(order);
-                Assert.AreEqual(1, context.ChangeTracker.Entries().Count());
+            Assert.IsNotNull(order);
+            Assert.AreEqual(1, context.ChangeTracker.Entries().Count());
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT TOP (1) [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate]
 FROM [dbo].[Orders] AS [o]
 WHERE [o].[OrderID] = 10252
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public async Task ToListAsync()
+    [TestMethod]
+    public async Task ToListAsync()
+    {
+        await EfCoreTestCaseAsync(async (context, log) =>
         {
-            await EfCoreTestCaseAsync(async (context, log) =>
-            {
-                var orders = await context.Set<Order>().Where(o => o.OrderID == 10252).ToListAsync();
+            var orders = await context.Set<Order>().Where(o => o.OrderID == 10252).ToListAsync();
 
-                Assert.AreEqual(1, orders.Count);
-                Assert.AreEqual(1, context.ChangeTracker.Entries().Count());
+            Assert.AreEqual(1, orders.Count);
+            Assert.AreEqual(1, context.ChangeTracker.Entries().Count());
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate]
 FROM [dbo].[Orders] AS [o]
 WHERE [o].[OrderID] = 10252
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public void Tracking_Nested_Complex()
+    [TestMethod]
+    public void Tracking_Nested_Complex()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var results = (from o in context.Set<Order>()
-                               let cs = context.Set<Customer>().Where(c => c.CustomerID.StartsWith("A")).Take(1).ToArray()
-                               select new { o, cs }).Take(2).ToArray();
+            var results = (from o in context.Set<Order>()
+                           let cs = context.Set<Customer>().Where(c => c.CustomerID.StartsWith("A")).Take(1).ToArray()
+                           select new { o, cs }).Take(2).ToArray();
 
-                Assert.AreEqual(3, context.ChangeTracker.Entries().Count());
-                Assert.AreEqual(results[0].cs.Single(), results[1].cs.Single());
-            });
-        }
+            Assert.AreEqual(3, context.ChangeTracker.Entries().Count());
+            Assert.AreEqual(results[0].cs.Single(), results[1].cs.Single());
+        });
+    }
 
-        [TestMethod]
-        public void Tracking_Basic_AsNoTracking()
+    [TestMethod]
+    public void Tracking_Basic_AsNoTracking()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var details
-                    = (from d in context.Set<OrderDetail>().AsNoTracking()
-                       where d.OrderID == 10252
-                       from d2 in d.Order.OrderDetails
-                       select d2).ToList();
+            var details
+                = (from d in context.Set<OrderDetail>().AsNoTracking()
+                   where d.OrderID == 10252
+                   from d2 in d.Order.OrderDetails
+                   select d2).ToList();
 
-                Assert.AreEqual(0, context.ChangeTracker.Entries().Count());
-                Assert.AreEqual(details.Count, details.Distinct().Count());
+            Assert.AreEqual(0, context.ChangeTracker.Entries().Count());
+            Assert.AreEqual(details.Count, details.Distinct().Count());
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT [d2].[OrderID] AS [OrderID], [d2].[ProductID] AS [ProductID], [d2].[Discount] AS [Discount], [d2].[Quantity] AS [Quantity], [d2].[UnitPrice] AS [UnitPrice]
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
@@ -143,24 +143,24 @@ INNER JOIN (
 ) AS [d2] ON [o].[OrderID] = [d2].[OrderID]
 WHERE ([d].[UnitPrice] >= 5.0) AND ([d].[OrderID] = 10252)
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public void Tracking_Basic_AsNoTrackingWithIdentityResolution()
+    [TestMethod]
+    public void Tracking_Basic_AsNoTrackingWithIdentityResolution()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var details
-                    = (from d in context.Set<OrderDetail>().AsNoTrackingWithIdentityResolution()
-                       where d.OrderID == 10252
-                       from d2 in d.Order.OrderDetails
-                       select d2).ToList();
+            var details
+                = (from d in context.Set<OrderDetail>().AsNoTrackingWithIdentityResolution()
+                   where d.OrderID == 10252
+                   from d2 in d.Order.OrderDetails
+                   select d2).ToList();
 
-                Assert.AreEqual(0, context.ChangeTracker.Entries().Count());
-                Assert.AreNotEqual(details.Count, details.Distinct().Count());
+            Assert.AreEqual(0, context.ChangeTracker.Entries().Count());
+            Assert.AreNotEqual(details.Count, details.Distinct().Count());
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT [d2].[OrderID] AS [OrderID], [d2].[ProductID] AS [ProductID], [d2].[Discount] AS [Discount], [d2].[Quantity] AS [Quantity], [d2].[UnitPrice] AS [UnitPrice]
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
@@ -171,59 +171,59 @@ INNER JOIN (
 ) AS [d2] ON [o].[OrderID] = [d2].[OrderID]
 WHERE ([d].[UnitPrice] >= 5.0) AND ([d].[OrderID] = 10252)
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public void Include_ManyToOne()
+    [TestMethod]
+    public void Include_ManyToOne()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var result = context.Set<Order>().Include(o => o.Customer).FirstOrDefault();
+            var result = context.Set<Order>().Include(o => o.Customer).FirstOrDefault();
 
-                Assert.IsNotNull(result);
-                Assert.IsNotNull(result.Customer);
+            Assert.IsNotNull(result);
+            Assert.IsNotNull(result.Customer);
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT TOP (1) [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate], [c].[CustomerID] AS [Customer.CustomerID], [c].[Address] AS [Customer.Address], [c].[City] AS [Customer.City], [c].[CompanyName] AS [Customer.CompanyName], [c].[ContactName] AS [Customer.ContactName], [c].[ContactTitle] AS [Customer.ContactTitle], [c].[Country] AS [Customer.Country], [c].[Fax] AS [Customer.Fax], [c].[Phone] AS [Customer.Phone], [c].[PostalCode] AS [Customer.PostalCode], [c].[Region] AS [Customer.Region]
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public void Include_ManyToOne_ThenInclude_ManyToOne()
+    [TestMethod]
+    public void Include_ManyToOne_ThenInclude_ManyToOne()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var result = context.Set<OrderDetail>().Include(d => d.Order).ThenInclude(o => o.Customer).FirstOrDefault();
+            var result = context.Set<OrderDetail>().Include(d => d.Order).ThenInclude(o => o.Customer).FirstOrDefault();
 
-                Assert.IsNotNull(result);
-                Assert.IsNotNull(result.Order?.Customer);
+            Assert.IsNotNull(result);
+            Assert.IsNotNull(result.Order?.Customer);
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT TOP (1) [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[Discount] AS [Discount], [d].[Quantity] AS [Quantity], [d].[UnitPrice] AS [UnitPrice], [o].[OrderID] AS [Order.OrderID], [o].[CustomerID] AS [Order.CustomerID], [o].[EmployeeID] AS [Order.EmployeeID], [o].[Freight] AS [Order.Freight], [o].[OrderDate] AS [Order.OrderDate], [o].[RequiredDate] AS [Order.RequiredDate], [o].[ShipAddress] AS [Order.ShipAddress], [o].[ShipCity] AS [Order.ShipCity], [o].[ShipCountry] AS [Order.ShipCountry], [o].[ShipName] AS [Order.ShipName], [o].[ShipPostalCode] AS [Order.ShipPostalCode], [o].[ShipRegion] AS [Order.ShipRegion], [o].[ShipVia] AS [Order.ShipVia], [o].[ShippedDate] AS [Order.ShippedDate], [c].[CustomerID] AS [Order.Customer.CustomerID], [c].[Address] AS [Order.Customer.Address], [c].[City] AS [Order.Customer.City], [c].[CompanyName] AS [Order.Customer.CompanyName], [c].[ContactName] AS [Order.Customer.ContactName], [c].[ContactTitle] AS [Order.Customer.ContactTitle], [c].[Country] AS [Order.Customer.Country], [c].[Fax] AS [Order.Customer.Fax], [c].[Phone] AS [Order.Customer.Phone], [c].[PostalCode] AS [Order.Customer.PostalCode], [c].[Region] AS [Order.Customer.Region]
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
 INNER JOIN [dbo].[Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 WHERE [d].[UnitPrice] >= 5.0
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public void Include_ManyToOne_Include_ManyToOne()
+    [TestMethod]
+    public void Include_ManyToOne_Include_ManyToOne()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var result = context.Set<OrderDetail>().Include(d => d.Order).Include(d => d.Product).FirstOrDefault();
+            var result = context.Set<OrderDetail>().Include(d => d.Order).Include(d => d.Product).FirstOrDefault();
 
-                Assert.IsNotNull(result);
-                Assert.IsNotNull(result.Order);
-                Assert.IsNotNull(result.Product);
+            Assert.IsNotNull(result);
+            Assert.IsNotNull(result.Order);
+            Assert.IsNotNull(result.Product);
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT TOP (1) [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[Discount] AS [Discount], [d].[Quantity] AS [Quantity], [d].[UnitPrice] AS [UnitPrice], [o].[OrderID] AS [Order.OrderID], [o].[CustomerID] AS [Order.CustomerID], [o].[EmployeeID] AS [Order.EmployeeID], [o].[Freight] AS [Order.Freight], [o].[OrderDate] AS [Order.OrderDate], [o].[RequiredDate] AS [Order.RequiredDate], [o].[ShipAddress] AS [Order.ShipAddress], [o].[ShipCity] AS [Order.ShipCity], [o].[ShipCountry] AS [Order.ShipCountry], [o].[ShipName] AS [Order.ShipName], [o].[ShipPostalCode] AS [Order.ShipPostalCode], [o].[ShipRegion] AS [Order.ShipRegion], [o].[ShipVia] AS [Order.ShipVia], [o].[ShippedDate] AS [Order.ShippedDate], [p].[Item1] AS [Product.Item1], [p].[Item2] AS [Product.Item2], [p].[Item3] AS [Product.Item3], [p].[Item4] AS [Product.Item4], [p].[Item5] AS [Product.Item5], [p].[Item6] AS [Product.Item6], [p].[Item7] AS [Product.Item7], [p].[Rest.Item1] AS [Product.Rest.Item1], [p].[Rest.Item2] AS [Product.Rest.Item2], [p].[Rest.Item3] AS [Product.Rest.Item3]
 FROM [dbo].[Order Details] AS [d]
 INNER JOIN [dbo].[Orders] AS [o] ON [d].[OrderID] = [o].[OrderID]
@@ -234,20 +234,20 @@ INNER JOIN (
 ) AS [p] ON [d].[ProductID] = [p].[Item1]
 WHERE [d].[UnitPrice] >= 5.0
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public void Include_OneToMany()
+    [TestMethod]
+    public void Include_OneToMany()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var result = context.Set<Customer>().Include(c => c.Orders).FirstOrDefault();
+            var result = context.Set<Customer>().Include(c => c.Orders).FirstOrDefault();
 
-                Assert.IsNotNull(result);
-                Assert.IsTrue(result.Orders.Any());
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Orders.Any());
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT TOP (1) [c].[CustomerID] AS [CustomerID], [c].[Address] AS [Address], [c].[City] AS [City], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Country] AS [Country], [c].[Fax] AS [Fax], [c].[Phone] AS [Phone], [c].[PostalCode] AS [PostalCode], [c].[Region] AS [Region], (
     SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate]
     FROM [dbo].[Orders] AS [o]
@@ -256,20 +256,20 @@ SELECT TOP (1) [c].[CustomerID] AS [CustomerID], [c].[Address] AS [Address], [c]
 ) AS [Orders]
 FROM [dbo].[Customers] AS [c]
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public void Include_OneToMany_ThenInclude_OneToMany()
+    [TestMethod]
+    public void Include_OneToMany_ThenInclude_OneToMany()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var result = context.Set<Customer>().Include(c => c.Orders).ThenInclude(o => o.OrderDetails).FirstOrDefault();
+            var result = context.Set<Customer>().Include(c => c.Orders).ThenInclude(o => o.OrderDetails).FirstOrDefault();
 
-                Assert.IsNotNull(result);
-                Assert.IsTrue(result.Orders.Any());
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Orders.Any());
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT TOP (1) [c].[CustomerID] AS [CustomerID], [c].[Address] AS [Address], [c].[City] AS [City], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Country] AS [Country], [c].[Fax] AS [Fax], [c].[Phone] AS [Phone], [c].[PostalCode] AS [PostalCode], [c].[Region] AS [Region], (
     SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate], (
         SELECT [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[Discount] AS [Discount], [d].[Quantity] AS [Quantity], [d].[UnitPrice] AS [UnitPrice]
@@ -283,43 +283,43 @@ SELECT TOP (1) [c].[CustomerID] AS [CustomerID], [c].[Address] AS [Address], [c]
 ) AS [Orders]
 FROM [dbo].[Customers] AS [c]
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        private static Customer ForceNonTranslatable(NorthwindDbContext context, Order order)
+    private static Customer ForceNonTranslatable(NorthwindDbContext context, Order order)
+    {
+        return context.Set<Customer>().Single(c => c.CustomerID == order.CustomerID);
+    }
+
+    [TestMethod]
+    public void QueryFilter_Via_TopLevel()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            return context.Set<Customer>().Single(c => c.CustomerID == order.CustomerID);
-        }
+            var results = context.Set<OrderDetail>().Where(d => d.OrderID == 10252).ToList();
 
-        [TestMethod]
-        public void QueryFilter_Via_TopLevel()
-        {
-            EfCoreTestCase((context, log) =>
-            {
-                var results = context.Set<OrderDetail>().Where(d => d.OrderID == 10252).ToList();
+            Assert.IsFalse(results.Any(r => r.UnitPrice < 5.00m));
+            Assert.AreEqual(2, results.Count);
 
-                Assert.IsFalse(results.Any(r => r.UnitPrice < 5.00m));
-                Assert.AreEqual(2, results.Count);
-
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[Discount] AS [Discount], [d].[Quantity] AS [Quantity], [d].[UnitPrice] AS [UnitPrice]
 FROM [dbo].[Order Details] AS [d]
 WHERE ([d].[UnitPrice] >= 5.0) AND ([d].[OrderID] = 10252)
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public void QueryFilter_Via_Navigation()
+    [TestMethod]
+    public void QueryFilter_Via_Navigation()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var results = (from o in context.Set<Order>()
-                               where o.OrderID == 10252
-                               from d in o.OrderDetails
-                               select d).ToList();
+            var results = (from o in context.Set<Order>()
+                           where o.OrderID == 10252
+                           from d in o.OrderDetails
+                           select d).ToList();
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[Discount] AS [Discount], [d].[Quantity] AS [Quantity], [d].[UnitPrice] AS [UnitPrice]
 FROM [dbo].[Orders] AS [o]
 INNER JOIN (
@@ -330,175 +330,175 @@ INNER JOIN (
 WHERE [o].[OrderID] = 10252
 ".Trim(), log.ToString().Trim());
 
-                Assert.IsFalse(results.Any(r => r.UnitPrice < 5.00m));
-                Assert.AreEqual(2, results.Count);
-            });
-        }
+            Assert.IsFalse(results.Any(r => r.UnitPrice < 5.00m));
+            Assert.AreEqual(2, results.Count);
+        });
+    }
 
-        [TestMethod]
-        public void QueryFilter_Via_TopLevel_IgnoreQueryFilters()
+    [TestMethod]
+    public void QueryFilter_Via_TopLevel_IgnoreQueryFilters()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var results = context.Set<OrderDetail>().IgnoreQueryFilters().Where(d => d.OrderID == 10252).ToList();
+            var results = context.Set<OrderDetail>().IgnoreQueryFilters().Where(d => d.OrderID == 10252).ToList();
 
-                Assert.IsTrue(results.Any(r => r.UnitPrice < 5.00m));
-                Assert.AreEqual(3, results.Count);
+            Assert.IsTrue(results.Any(r => r.UnitPrice < 5.00m));
+            Assert.AreEqual(3, results.Count);
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[Discount] AS [Discount], [d].[Quantity] AS [Quantity], [d].[UnitPrice] AS [UnitPrice]
 FROM [dbo].[Order Details] AS [d]
 WHERE [d].[OrderID] = 10252
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public void QueryFilter_Via_Navigation_IgnoreQueryFilters()
+    [TestMethod]
+    public void QueryFilter_Via_Navigation_IgnoreQueryFilters()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var results = (from o in context.Set<Order>()
-                               where o.OrderID == 10252
-                               from d in o.OrderDetails
-                               select d).IgnoreQueryFilters().ToList();
+            var results = (from o in context.Set<Order>()
+                           where o.OrderID == 10252
+                           from d in o.OrderDetails
+                           select d).IgnoreQueryFilters().ToList();
 
-                Assert.IsTrue(results.Any(r => r.UnitPrice < 5.00m));
-                Assert.AreEqual(3, results.Count);
+            Assert.IsTrue(results.Any(r => r.UnitPrice < 5.00m));
+            Assert.AreEqual(3, results.Count);
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT [d].[OrderID] AS [OrderID], [d].[ProductID] AS [ProductID], [d].[Discount] AS [Discount], [d].[Quantity] AS [Quantity], [d].[UnitPrice] AS [UnitPrice]
 FROM [dbo].[Orders] AS [o]
 INNER JOIN [dbo].[Order Details] AS [d] ON [o].[OrderID] = [d].[OrderID]
 WHERE [o].[OrderID] = 10252
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public void Inheritance_TPH_Simple()
+    [TestMethod]
+    public void Inheritance_TPH_Simple()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var results = context.Set<Product>().ToList();
+            var results = context.Set<Product>().ToList();
 
-                Assert.IsTrue(results.Where(r => !r.Discontinued).All(r => r is Product && r is not DiscontinuedProduct));
-                Assert.IsTrue(results.Where(r => r.Discontinued).All(r => r is DiscontinuedProduct));
+            Assert.IsTrue(results.Where(r => !r.Discontinued).All(r => r is Product && r is not DiscontinuedProduct));
+            Assert.IsTrue(results.Where(r => r.Discontinued).All(r => r is DiscontinuedProduct));
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT [p].[ProductID] AS [Item1], [p].[CategoryID] AS [Item2], [p].[Discontinued] AS [Item3], [p].[ProductName] AS [Item4], [p].[SupplierID] AS [Item5], [p].[QuantityPerUnit] AS [Item6], [p].[ReorderLevel] AS [Item7], [p].[UnitPrice] AS [Rest.Item1], [p].[UnitsInStock] AS [Rest.Item2], [p].[UnitsOnOrder] AS [Rest.Item3]
 FROM [dbo].[Products] AS [p]
 WHERE [p].[Discontinued] IN (0, 1)
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public void Inheritance_TPH_OfType()
+    [TestMethod]
+    public void Inheritance_TPH_OfType()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var results = context.Set<Product>().OfType<DiscontinuedProduct>().ToList();
+            var results = context.Set<Product>().OfType<DiscontinuedProduct>().ToList();
 
-                Assert.IsTrue(results.All(r => r is DiscontinuedProduct && r.Discontinued));
+            Assert.IsTrue(results.All(r => r is DiscontinuedProduct && r.Discontinued));
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT [p].[ProductID] AS [Item1], [p].[CategoryID] AS [Item2], [p].[Discontinued] AS [Item3], [p].[ProductName] AS [Item4], [p].[SupplierID] AS [Item5], [p].[QuantityPerUnit] AS [Item6], [p].[ReorderLevel] AS [Item7], [p].[UnitPrice] AS [Rest.Item1], [p].[UnitsInStock] AS [Rest.Item2], [p].[UnitsOnOrder] AS [Rest.Item3]
 FROM [dbo].[Products] AS [p]
 WHERE [p].[Discontinued] IN (0, 1) AND ([p].[Discontinued] = 1)
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public void OwnedEntity_OneLevelDeep()
+    [TestMethod]
+    public void OwnedEntity_OneLevelDeep()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var product = context.Set<Product>().First();
+            var product = context.Set<Product>().First();
 
-                Assert.IsNotNull(product.ProductStats);
+            Assert.IsNotNull(product.ProductStats);
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT TOP (1) [p].[ProductID] AS [Item1], [p].[CategoryID] AS [Item2], [p].[Discontinued] AS [Item3], [p].[ProductName] AS [Item4], [p].[SupplierID] AS [Item5], [p].[QuantityPerUnit] AS [Item6], [p].[ReorderLevel] AS [Item7], [p].[UnitPrice] AS [Rest.Item1], [p].[UnitsInStock] AS [Rest.Item2], [p].[UnitsOnOrder] AS [Rest.Item3]
 FROM [dbo].[Products] AS [p]
 WHERE [p].[Discontinued] IN (0, 1)
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public void EFProperty_translated()
+    [TestMethod]
+    public void EFProperty_translated()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var result = (from p in context.Set<Product>()
-                              select EF.Property<short?>(p.ProductStats, "ReorderLevel")).FirstOrDefault();
+            var result = (from p in context.Set<Product>()
+                          select EF.Property<short?>(p.ProductStats, "ReorderLevel")).FirstOrDefault();
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT TOP (1) [p].[ReorderLevel]
 FROM [dbo].[Products] AS [p]
 WHERE [p].[Discontinued] IN (0, 1)
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        private static bool ClientPredicate<TArg>(TArg arg)
+    private static bool ClientPredicate<TArg>(TArg arg)
+    {
+        return true;
+    }
+
+    [TestMethod]
+    public void EFProperty_at_client()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            return true;
-        }
+            var result = (from p in context.Set<Product>()
+                          where ClientPredicate(p)
+                          select EF.Property<short?>(p.ProductStats, "ReorderLevel")).FirstOrDefault();
 
-        [TestMethod]
-        public void EFProperty_at_client()
-        {
-            EfCoreTestCase((context, log) =>
-            {
-                var result = (from p in context.Set<Product>()
-                              where ClientPredicate(p)
-                              select EF.Property<short?>(p.ProductStats, "ReorderLevel")).FirstOrDefault();
-
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT [p].[ProductID] AS [Item1], [p].[CategoryID] AS [Item2], [p].[Discontinued] AS [Item3], [p].[ProductName] AS [Item4], [p].[SupplierID] AS [Item5], [p].[QuantityPerUnit] AS [Item6], [p].[ReorderLevel] AS [Item7], [p].[UnitPrice] AS [Rest.Item1], [p].[UnitsInStock] AS [Rest.Item2], [p].[UnitsOnOrder] AS [Rest.Item3]
 FROM [dbo].[Products] AS [p]
 WHERE [p].[Discontinued] IN (0, 1)
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public void NestedReaders()
+    [TestMethod]
+    public void NestedReaders()
+    {
+        var services = new ServiceCollection();
+        var loggerProvider = new TestConnectionLoggerProvider();
+
+        services.AddLogging(log =>
         {
-            var services = new ServiceCollection();
-            var loggerProvider = new TestConnectionLoggerProvider();
+            log
+                .AddProvider(loggerProvider)
+                .SetMinimumLevel(LogLevel.Debug)
+                .AddFilter((category, level) => category.StartsWith(DbLoggerCategory.Database.Name));
+        });
 
-            services.AddLogging(log =>
-            {
-                log
-                    .AddProvider(loggerProvider)
-                    .SetMinimumLevel(LogLevel.Debug)
-                    .AddFilter((category, level) => category.StartsWith(DbLoggerCategory.Database.Name));
-            });
+        services.AddDbContext<NorthwindDbContext>(options =>
+        {
+            options
+                .UseSqlServer(@"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=true; TrustServerCertificate=true; MultipleActiveResultSets=true;")
+                .UseImpatient();
+        });
 
-            services.AddDbContext<NorthwindDbContext>(options =>
-            {
-                options
-                    .UseSqlServer(@"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=true; TrustServerCertificate=true; MultipleActiveResultSets=true;")
-                    .UseImpatient();
-            });
+        var provider = services.BuildServiceProvider();
 
-            var provider = services.BuildServiceProvider();
+        using (var scope = provider.CreateScope())
+        using (var context = scope.ServiceProvider.GetRequiredService<NorthwindDbContext>())
+        {
+            var result = (from o in context.Set<Order>()
+                          select new
+                          {
+                              o,
+                              Customer = context.Set<Customer>().Where(ClientPredicate).FirstOrDefault()
+                          }).Take(5).ToArray();
 
-            using (var scope = provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetRequiredService<NorthwindDbContext>())
-            {
-                var result = (from o in context.Set<Order>()
-                              select new
-                              {
-                                  o,
-                                  Customer = context.Set<Customer>().Where(ClientPredicate).FirstOrDefault()
-                              }).Take(5).ToArray();
-
-                Assert.AreEqual(@"Creating DbConnectio
+            Assert.AreEqual(@"Creating DbConnectio
 Created DbConnection
 Opening connection t
 Opened connection to
@@ -517,35 +517,35 @@ Executed DbCommand (
 Closing connection t
 Closed connection to
 ", loggerProvider.LoggerInstance.StringBuilder.ToString());
-            }
         }
+    }
 
-        [TestMethod]
-        public void TrickyJson_ProperChangeTracking()
+    [TestMethod]
+    public void TrickyJson_ProperChangeTracking()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var customers = context.Set<Customer>();
-                var orders = context.Set<Order>();
-                var details = context.Set<OrderDetail>();
+            var customers = context.Set<Customer>();
+            var orders = context.Set<Order>();
+            var details = context.Set<OrderDetail>();
 
-                var query = from t in (from c in customers
-                                       from t in (from o in orders
-                                                  where o.CustomerID == c.CustomerID
-                                                  let d = from d in details
-                                                          where d.OrderID == o.OrderID
-                                                          select d
-                                                  select new { o, d }).Where(x => x.o.Freight == null)
-                                       select new { c, t.o, t.d }).Take(10)
-                            from d in t.d
-                            select new { t.c, t.o, d };
+            var query = from t in (from c in customers
+                                   from t in (from o in orders
+                                              where o.CustomerID == c.CustomerID
+                                              let d = from d in details
+                                                      where d.OrderID == o.OrderID
+                                                      select d
+                                              select new { o, d }).Where(x => x.o.Freight == null)
+                                   select new { c, t.o, t.d }).Take(10)
+                        from d in t.d
+                        select new { t.c, t.o, d };
 
-                var results = query.ToList();
+            var results = query.ToList();
 
-                Assert.IsTrue(results.All(r => r.c == r.o.Customer));
-                Assert.IsTrue(results.All(r => r.o == r.d.Order));
+            Assert.IsTrue(results.All(r => r.c == r.o.Customer));
+            Assert.IsTrue(results.All(r => r.o == r.d.Order));
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT [t].[c.CustomerID] AS [c.CustomerID], [t].[c.Address] AS [c.Address], [t].[c.City] AS [c.City], [t].[c.CompanyName] AS [c.CompanyName], [t].[c.ContactName] AS [c.ContactName], [t].[c.ContactTitle] AS [c.ContactTitle], [t].[c.Country] AS [c.Country], [t].[c.Fax] AS [c.Fax], [t].[c.Phone] AS [c.Phone], [t].[c.PostalCode] AS [c.PostalCode], [t].[c.Region] AS [c.Region], [t].[o.OrderID] AS [o.OrderID], [t].[o.CustomerID] AS [o.CustomerID], [t].[o.EmployeeID] AS [o.EmployeeID], [t].[o.Freight] AS [o.Freight], [t].[o.OrderDate] AS [o.OrderDate], [t].[o.RequiredDate] AS [o.RequiredDate], [t].[o.ShipAddress] AS [o.ShipAddress], [t].[o.ShipCity] AS [o.ShipCity], [t].[o.ShipCountry] AS [o.ShipCountry], [t].[o.ShipName] AS [o.ShipName], [t].[o.ShipPostalCode] AS [o.ShipPostalCode], [t].[o.ShipRegion] AS [o.ShipRegion], [t].[o.ShipVia] AS [o.ShipVia], [t].[o.ShippedDate] AS [o.ShippedDate], [d].[value] AS [d]
 FROM (
     SELECT TOP (10) [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Country] AS [c.Country], [c].[Fax] AS [c.Fax], [c].[Phone] AS [c.Phone], [c].[PostalCode] AS [c.PostalCode], [c].[Region] AS [c.Region], [t_0].[o.OrderID] AS [o.OrderID], [t_0].[o.CustomerID] AS [o.CustomerID], [t_0].[o.EmployeeID] AS [o.EmployeeID], [t_0].[o.Freight] AS [o.Freight], [t_0].[o.OrderDate] AS [o.OrderDate], [t_0].[o.RequiredDate] AS [o.RequiredDate], [t_0].[o.ShipAddress] AS [o.ShipAddress], [t_0].[o.ShipCity] AS [o.ShipCity], [t_0].[o.ShipCountry] AS [o.ShipCountry], [t_0].[o.ShipName] AS [o.ShipName], [t_0].[o.ShipPostalCode] AS [o.ShipPostalCode], [t_0].[o.ShipRegion] AS [o.ShipRegion], [t_0].[o.ShipVia] AS [o.ShipVia], [t_0].[o.ShippedDate] AS [o.ShippedDate], [t_0].[d] AS [d]
@@ -566,46 +566,46 @@ CROSS APPLY (
     FROM OPENJSON([t].[d]) AS [j]
 ) AS [d]
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public void QueryType_AsTracking()
+    [TestMethod]
+    public void QueryType_AsTracking()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                // Load the customers first
-                context.Set<Customer>().AsTracking().ToList();
+            // Load the customers first
+            context.Set<Customer>().AsTracking().ToList();
 
-                // Load the query type with the navigation to customers
-                var qos
-                    = context
-                        .Set<QuarterlyOrders>()
-                        .AsTracking()
-                        .ToList();
-            });
-        }
+            // Load the query type with the navigation to customers
+            var qos
+                = context
+                    .Set<QuarterlyOrders>()
+                    .AsTracking()
+                    .ToList();
+        });
+    }
 
-        [TestMethod]
-        public void OrderedQueryable_LetClause()
+    [TestMethod]
+    public void OrderedQueryable_LetClause()
+    {
+        // The issue was that having an IOrderedQueryable in
+        // a Select, that has an expanded navigation property,
+        // will get rewritten into an IQueryable by the navigation
+        // composing visitor, when it needs to stay an IOrderedQueryable
+        // to satisfy things like anonymous type ctor sigs.
+        EfCoreTestCase((context, log) =>
         {
-            // The issue was that having an IOrderedQueryable in
-            // a Select, that has an expanded navigation property,
-            // will get rewritten into an IQueryable by the navigation
-            // composing visitor, when it needs to stay an IOrderedQueryable
-            // to satisfy things like anonymous type ctor sigs.
-            EfCoreTestCase((context, log) =>
-            {
-                var query = from c in context.Set<Customer>()
-                            let os = (from o in context.Set<Order>()
-                                      where o.Customer == c
-                                      orderby o.OrderDate
-                                      select o)
-                            select new { c, os };
+            var query = from c in context.Set<Customer>()
+                        let os = (from o in context.Set<Order>()
+                                  where o.Customer == c
+                                  orderby o.OrderDate
+                                  select o)
+                        select new { c, os };
 
-                query.ToList();
+            query.ToList();
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Country] AS [c.Country], [c].[Fax] AS [c.Fax], [c].[Phone] AS [c.Phone], [c].[PostalCode] AS [c.PostalCode], [c].[Region] AS [c.Region], (
     SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[Freight] AS [Freight], [o].[OrderDate] AS [OrderDate], [o].[RequiredDate] AS [RequiredDate], [o].[ShipAddress] AS [ShipAddress], [o].[ShipCity] AS [ShipCity], [o].[ShipCountry] AS [ShipCountry], [o].[ShipName] AS [ShipName], [o].[ShipPostalCode] AS [ShipPostalCode], [o].[ShipRegion] AS [ShipRegion], [o].[ShipVia] AS [ShipVia], [o].[ShippedDate] AS [ShippedDate]
     FROM [dbo].[Orders] AS [o]
@@ -616,24 +616,24 @@ SELECT [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[Ci
 ) AS [os]
 FROM [dbo].[Customers] AS [c]
 ".Trim(), log.ToString().Trim());
-            });
-        }
+        });
+    }
 
-        [TestMethod]
-        public void DefaultIfEmpty_NoArg_Max_NoArg()
+    [TestMethod]
+    public void DefaultIfEmpty_NoArg_Max_NoArg()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var query = from c in context.Set<Customer>()
-                            select new
-                            {
-                                c,
-                                o = c.Orders.Select(o => o.OrderDate).DefaultIfEmpty().Max()
-                            };
+            var query = from c in context.Set<Customer>()
+                        select new
+                        {
+                            c,
+                            o = c.Orders.Select(o => o.OrderDate).DefaultIfEmpty().Max()
+                        };
 
-                query.ToList();
+            query.ToList();
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Country] AS [c.Country], [c].[Fax] AS [c.Fax], [c].[Phone] AS [c.Phone], [c].[PostalCode] AS [c.PostalCode], [c].[Region] AS [c.Region], (
     SELECT MAX((CASE WHEN [t].[$empty] IS NULL THEN [t].[OrderDate] ELSE NULL END))
     FROM (
@@ -647,23 +647,23 @@ SELECT [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[Ci
 ) AS [o]
 FROM [dbo].[Customers] AS [c]
 ".Trim(), log.ToString().Trim());
-            });
-        }
-        
-        [TestMethod]
-        public void GroupBy_Aggregate_Subquery()
+        });
+    }
+    
+    [TestMethod]
+    public void GroupBy_Aggregate_Subquery()
+    {
+        EfCoreTestCase((context, log) =>
         {
-            EfCoreTestCase((context, log) =>
-            {
-                var query
-                = from c in context.Set<Customer>()
-                  let agg = c.Orders.Where(e => e.Freight != null).Max(o => o.Freight)
-                  group new { c, agg } by c.CustomerID into g
-                  select new { g.Key, agg = g.Sum(e => e.agg) };
+            var query
+            = from c in context.Set<Customer>()
+              let agg = c.Orders.Where(e => e.Freight != null).Max(o => o.Freight)
+              group new { c, agg } by c.CustomerID into g
+              select new { g.Key, agg = g.Sum(e => e.agg) };
 
-                query.ToList();
+            query.ToList();
 
-                Assert.AreEqual(@"
+            Assert.AreEqual(@"
 SELECT [c].[CustomerID] AS [Key], (
     SELECT [c_0].[CustomerID] AS [c.CustomerID], [c_0].[Address] AS [c.Address], [c_0].[City] AS [c.City], [c_0].[CompanyName] AS [c.CompanyName], [c_0].[ContactName] AS [c.ContactName], [c_0].[ContactTitle] AS [c.ContactTitle], [c_0].[Country] AS [c.Country], [c_0].[Fax] AS [c.Fax], [c_0].[Phone] AS [c.Phone], [c_0].[PostalCode] AS [c.PostalCode], [c_0].[Region] AS [c.Region], (
         SELECT MAX([o].[Freight])
@@ -677,194 +677,193 @@ SELECT [c].[CustomerID] AS [Key], (
 FROM [dbo].[Customers] AS [c]
 GROUP BY [c].[CustomerID]
 ".Trim(), log.ToString().Trim());
-            });
+        });
+    }
+
+    private void EfCoreTestCase(Action<NorthwindDbContext, StringBuilder> action)
+    {
+        var services = new ServiceCollection();
+        var loggerProvider = new TestLoggerProvider();
+
+        services.AddLogging(log =>
+        {
+            log.AddProvider(loggerProvider);
+        });
+
+        services.AddDbContext<NorthwindDbContext>(options =>
+        {
+            options
+                .UseSqlServer(@"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=true; MultipleActiveResultSets=True; TrustServerCertificate=true")
+                .UseImpatient();
+        });
+
+        var provider = services.BuildServiceProvider();
+
+        using (var scope = provider.CreateScope())
+        using (var context = scope.ServiceProvider.GetRequiredService<NorthwindDbContext>())
+        {
+            action(context, loggerProvider.LoggerInstance.StringBuilder);
+        }
+    }
+
+    private async Task EfCoreTestCaseAsync(Func<NorthwindDbContext, StringBuilder, Task> action)
+    {
+        var services = new ServiceCollection();
+        var loggerProvider = new TestLoggerProvider();
+
+        services.AddLogging(log =>
+        {
+            log.AddProvider(loggerProvider);
+        });
+
+        services.AddDbContext<NorthwindDbContext>(options =>
+        {
+            options
+                .UseSqlServer(@"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=true; MultipleActiveResultSets=True; TrustServerCertificate=true")
+                .UseImpatient();
+        });
+
+        var provider = services.BuildServiceProvider();
+
+        using (var scope = provider.CreateScope())
+        using (var context = scope.ServiceProvider.GetRequiredService<NorthwindDbContext>())
+        {
+            await action(context, loggerProvider.LoggerInstance.StringBuilder);
+        }
+    }
+
+    public class TestLoggerProvider : ILoggerProvider
+    {
+        public TestSqlLogger LoggerInstance { get; } = new TestSqlLogger();
+
+        public ILogger CreateLogger(string categoryName)
+        {
+            return LoggerInstance;
         }
 
-        private void EfCoreTestCase(Action<NorthwindDbContext, StringBuilder> action)
+        public void Dispose()
         {
-            var services = new ServiceCollection();
-            var loggerProvider = new TestLoggerProvider();
+        }
+    }
 
-            services.AddLogging(log =>
-            {
-                log.AddProvider(loggerProvider);
-            });
+    public class TestConnectionLoggerProvider : ILoggerProvider
+    {
+        public TestConnectionLogger LoggerInstance { get; } = new TestConnectionLogger();
 
-            services.AddDbContext<NorthwindDbContext>(options =>
-            {
-                options
-                    .UseSqlServer(@"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=true; MultipleActiveResultSets=True; TrustServerCertificate=true")
-                    .UseImpatient();
-            });
-
-            var provider = services.BuildServiceProvider();
-
-            using (var scope = provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetRequiredService<NorthwindDbContext>())
-            {
-                action(context, loggerProvider.LoggerInstance.StringBuilder);
-            }
+        public ILogger CreateLogger(string categoryName)
+        {
+            return LoggerInstance;
         }
 
-        private async Task EfCoreTestCaseAsync(Func<NorthwindDbContext, StringBuilder, Task> action)
+        public void Dispose()
         {
-            var services = new ServiceCollection();
-            var loggerProvider = new TestLoggerProvider();
-
-            services.AddLogging(log =>
-            {
-                log.AddProvider(loggerProvider);
-            });
-
-            services.AddDbContext<NorthwindDbContext>(options =>
-            {
-                options
-                    .UseSqlServer(@"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=true; MultipleActiveResultSets=True; TrustServerCertificate=true")
-                    .UseImpatient();
-            });
-
-            var provider = services.BuildServiceProvider();
-
-            using (var scope = provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetRequiredService<NorthwindDbContext>())
-            {
-                await action(context, loggerProvider.LoggerInstance.StringBuilder);
-            }
         }
+    }
 
-        public class TestLoggerProvider : ILoggerProvider
+    public class TestSqlLogger : ILogger
+    {
+        public StringBuilder StringBuilder { get; } = new StringBuilder();
+
+        public IDisposable BeginScope<TState>(TState state) => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
-            public TestSqlLogger LoggerInstance { get; } = new TestSqlLogger();
-
-            public ILogger CreateLogger(string categoryName)
+            if (state is IReadOnlyList<KeyValuePair<string, object>> dict)
             {
-                return LoggerInstance;
-            }
+                var commandText = dict.FirstOrDefault(i => i.Key == "commandText").Value;
 
-            public void Dispose()
-            {
-            }
-        }
-
-        public class TestConnectionLoggerProvider : ILoggerProvider
-        {
-            public TestConnectionLogger LoggerInstance { get; } = new TestConnectionLogger();
-
-            public ILogger CreateLogger(string categoryName)
-            {
-                return LoggerInstance;
-            }
-
-            public void Dispose()
-            {
-            }
-        }
-
-        public class TestSqlLogger : ILogger
-        {
-            public StringBuilder StringBuilder { get; } = new StringBuilder();
-
-            public IDisposable BeginScope<TState>(TState state) => null;
-
-            public bool IsEnabled(LogLevel logLevel) => true;
-
-            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
-            {
-                if (state is IReadOnlyList<KeyValuePair<string, object>> dict)
+                if (commandText != null)
                 {
-                    var commandText = dict.FirstOrDefault(i => i.Key == "commandText").Value;
-
-                    if (commandText != null)
+                    if (StringBuilder.Length > 0)
                     {
-                        if (StringBuilder.Length > 0)
-                        {
-                            StringBuilder.AppendLine().AppendLine();
-                        }
-
-                        StringBuilder.Append(commandText);
+                        StringBuilder.AppendLine().AppendLine();
                     }
+
+                    StringBuilder.Append(commandText);
                 }
-            }
-        }
-
-        public class TestConnectionLogger : ILogger
-        {
-            public StringBuilder StringBuilder { get; } = new StringBuilder();
-
-            public IDisposable BeginScope<TState>(TState state) => null;
-
-            public bool IsEnabled(LogLevel logLevel) => true;
-
-            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
-            {
-                var message = formatter(state, exception);
-
-                StringBuilder.AppendLine(message.Substring(0, 20));
             }
         }
     }
 
-    internal class NorthwindDbContext : DbContext
+    public class TestConnectionLogger : ILogger
     {
-        public NorthwindDbContext(DbContextOptions options) : base(options)
+        public StringBuilder StringBuilder { get; } = new StringBuilder();
+
+        public IDisposable BeginScope<TState>(TState state) => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
-        }
+            var message = formatter(state, exception);
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+            StringBuilder.AppendLine(message.Substring(0, 20));
+        }
+    }
+}
+
+internal class NorthwindDbContext : DbContext
+{
+    public NorthwindDbContext(DbContextOptions options) : base(options)
+    {
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Customer>(e =>
         {
-            modelBuilder.Entity<Customer>(e =>
+            e.HasKey(d => d.CustomerID);
+        });
+
+        modelBuilder.Entity<Order>(e =>
+        {
+            e.HasKey(d => d.OrderID);
+
+            e.HasOne(o => o.Customer).WithMany(c => c.Orders).IsRequired();
+        });
+
+        modelBuilder.Entity<OrderDetail>(e =>
+        {
+            e.HasKey(d => new { d.OrderID, d.ProductID });
+
+            e.HasOne(d => d.Product).WithMany().HasForeignKey(d => d.ProductID);
+
+            e.HasQueryFilter(d => d.UnitPrice >= 5.00m);
+        });
+
+        modelBuilder.Entity<Product>(e =>
+        {
+            e.HasKey(d => d.ProductID);
+
+            e.OwnsOne(d => d.ProductStats, d =>
             {
-                e.HasKey(d => d.CustomerID);
+                d.Property(f => f.QuantityPerUnit).HasColumnName(nameof(ProductStats.QuantityPerUnit));
+                d.Property(f => f.UnitPrice).HasColumnName(nameof(ProductStats.UnitPrice));
+                d.Property(f => f.UnitsInStock).HasColumnName(nameof(ProductStats.UnitsInStock));
+                d.Property(f => f.UnitsOnOrder).HasColumnName(nameof(ProductStats.UnitsOnOrder));
+
+                d.Property<short?>("ReorderLevel").HasColumnName("ReorderLevel");
             });
 
-            modelBuilder.Entity<Order>(e =>
-            {
-                e.HasKey(d => d.OrderID);
+            e.HasDiscriminator(p => p.Discontinued).HasValue(false);
+        });
 
-                e.HasOne(o => o.Customer).WithMany(c => c.Orders).IsRequired();
-            });
+        modelBuilder.Entity<DiscontinuedProduct>(e =>
+        {
+            e.HasDiscriminator(p => p.Discontinued).HasValue(true);
+        });
 
-            modelBuilder.Entity<OrderDetail>(e =>
-            {
-                e.HasKey(d => new { d.OrderID, d.ProductID });
+        modelBuilder.Entity<QuarterlyOrders>(q =>
+        {
+            q.HasNoKey();
 
-                e.HasOne(d => d.Product).WithMany().HasForeignKey(d => d.ProductID);
+            q.ToView("Quarterly Orders", "dbo");
 
-                e.HasQueryFilter(d => d.UnitPrice >= 5.00m);
-            });
+            q.Property(o => o.Id).HasColumnName("CustomerID");
 
-            modelBuilder.Entity<Product>(e =>
-            {
-                e.HasKey(d => d.ProductID);
-
-                e.OwnsOne(d => d.ProductStats, d =>
-                {
-                    d.Property(f => f.QuantityPerUnit).HasColumnName(nameof(ProductStats.QuantityPerUnit));
-                    d.Property(f => f.UnitPrice).HasColumnName(nameof(ProductStats.UnitPrice));
-                    d.Property(f => f.UnitsInStock).HasColumnName(nameof(ProductStats.UnitsInStock));
-                    d.Property(f => f.UnitsOnOrder).HasColumnName(nameof(ProductStats.UnitsOnOrder));
-
-                    d.Property<short?>("ReorderLevel").HasColumnName("ReorderLevel");
-                });
-
-                e.HasDiscriminator(p => p.Discontinued).HasValue(false);
-            });
-
-            modelBuilder.Entity<DiscontinuedProduct>(e =>
-            {
-                e.HasDiscriminator(p => p.Discontinued).HasValue(true);
-            });
-
-            modelBuilder.Entity<QuarterlyOrders>(q =>
-            {
-                q.HasNoKey();
-
-                q.ToView("Quarterly Orders", "dbo");
-
-                q.Property(o => o.Id).HasColumnName("CustomerID");
-
-                q.HasOne(o => o.Customer).WithMany().HasForeignKey(o => o.Id);
-            });
-        }
+            q.HasOne(o => o.Customer).WithMany().HasForeignKey(o => o.Id);
+        });
     }
 }

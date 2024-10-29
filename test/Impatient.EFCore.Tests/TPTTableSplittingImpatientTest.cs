@@ -3,14 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Xunit.Abstractions;
 
-namespace Impatient.EFCore.Tests
-{
-    public class TPTTableSplittingImpatientTest : TPTTableSplittingTestBase
-    {
-        public TPTTableSplittingImpatientTest(ITestOutputHelper testOutputHelper) : base(testOutputHelper)
-        {
-        }
+namespace Impatient.EFCore.Tests;
 
-        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
+public class TPTTableSplittingImpatientTest : TPTTableSplittingTestBase
+{
+    public TPTTableSplittingImpatientTest(ITestOutputHelper testOutputHelper) : base(testOutputHelper)
+    {
     }
+
+    protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 }

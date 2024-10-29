@@ -1,159 +1,157 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace Impatient.EntityFrameworkCore.SqlServer
+namespace Impatient.EntityFrameworkCore.SqlServer;
+
+internal static class Extensions
 {
-    internal static class Extensions
+    private const BindingFlags bindingFlags =
+        BindingFlags.Instance |
+        BindingFlags.Public |
+        BindingFlags.NonPublic |
+        BindingFlags.DeclaredOnly;
+
+    /// <summary>
+    /// Returns the first matching readable property, or the first matching readable field.
+    /// This should be used for general expression manipulations.
+    /// </summary>
+    public static MemberInfo GetSemanticReadableMemberInfo(this IPropertyBase propertyBase)
     {
-        private const BindingFlags bindingFlags =
-            BindingFlags.Instance |
-            BindingFlags.Public |
-            BindingFlags.NonPublic |
-            BindingFlags.DeclaredOnly;
+        return (MemberInfo)propertyBase.GetReadablePropertyInfo() ?? propertyBase.GetReadableFieldInfo();
+    }
 
-        /// <summary>
-        /// Returns the first matching readable property, or the first matching readable field.
-        /// This should be used for general expression manipulations.
-        /// </summary>
-        public static MemberInfo GetSemanticReadableMemberInfo(this IPropertyBase propertyBase)
+    /// <summary>
+    /// Returns the first matching readable member as determined by <see cref="PropertyAccessMode"/>.
+    /// This should be used only for accessing entity values during materialization, only if necessary.
+    /// </summary>
+    public static MemberInfo GetReadableMemberInfo(this IPropertyBase propertyBase)
+    {
+        if (propertyBase is null)
         {
-            return (MemberInfo)propertyBase.GetReadablePropertyInfo() ?? propertyBase.GetReadableFieldInfo();
+            throw new ArgumentNullException(nameof(propertyBase));
         }
 
-        /// <summary>
-        /// Returns the first matching readable member as determined by <see cref="PropertyAccessMode"/>.
-        /// This should be used only for accessing entity values during materialization, only if necessary.
-        /// </summary>
-        public static MemberInfo GetReadableMemberInfo(this IPropertyBase propertyBase)
+        switch (propertyBase.GetPropertyAccessMode())
         {
-            if (propertyBase is null)
+            case PropertyAccessMode.Field:
+            case PropertyAccessMode.FieldDuringConstruction:
             {
-                throw new ArgumentNullException(nameof(propertyBase));
+                return propertyBase.GetReadableFieldInfo()
+                    ?? throw new InvalidOperationException();
             }
 
-            switch (propertyBase.GetPropertyAccessMode())
+            case PropertyAccessMode.Property:
             {
-                case PropertyAccessMode.Field:
-                case PropertyAccessMode.FieldDuringConstruction:
-                {
-                    return propertyBase.GetReadableFieldInfo()
-                        ?? throw new InvalidOperationException();
-                }
-
-                case PropertyAccessMode.Property:
-                {
-                    return propertyBase.GetReadablePropertyInfo() 
-                        ?? throw new InvalidOperationException();
-                }
-
-                case PropertyAccessMode.PreferField:
-                case PropertyAccessMode.PreferFieldDuringConstruction:
-                {
-                    return (MemberInfo)propertyBase.GetReadableFieldInfo()
-                        ?? propertyBase.GetReadablePropertyInfo()
-                        ?? throw new InvalidOperationException();
-                }
-
-                case PropertyAccessMode.PreferProperty:
-                {
-                    return (MemberInfo)propertyBase.GetReadablePropertyInfo()
-                        ?? propertyBase.GetReadableFieldInfo()
-                        ?? throw new InvalidOperationException();
-                }
-
-                default:
-                {
-                    throw new NotSupportedException();
-                }
-            }
-        }
-
-        public static MemberInfo GetWritableMemberInfo(this IPropertyBase propertyBase)
-        {
-            if (propertyBase is null)
-            {
-                throw new ArgumentNullException(nameof(propertyBase));
+                return propertyBase.GetReadablePropertyInfo() 
+                    ?? throw new InvalidOperationException();
             }
 
-            switch (propertyBase.GetPropertyAccessMode())
+            case PropertyAccessMode.PreferField:
+            case PropertyAccessMode.PreferFieldDuringConstruction:
             {
-                case PropertyAccessMode.Field:
-                case PropertyAccessMode.FieldDuringConstruction:
-                {
-                    return propertyBase.GetWritableFieldInfo()
-                        ?? throw new InvalidOperationException();
-                }
-
-                case PropertyAccessMode.Property:
-                {
-                    return propertyBase.GetWritablePropertyInfo()
-                        ?? throw new InvalidOperationException();
-                }
-
-                case PropertyAccessMode.PreferField:
-                case PropertyAccessMode.PreferFieldDuringConstruction:
-                {
-                    return (MemberInfo)propertyBase.GetWritableFieldInfo()
-                        ?? propertyBase.GetWritablePropertyInfo()
-                        ?? throw new InvalidOperationException();
-                }
-
-                case PropertyAccessMode.PreferProperty:
-                {
-                    return (MemberInfo)propertyBase.GetWritablePropertyInfo()
-                        ?? propertyBase.GetWritableFieldInfo()
-                        ?? throw new InvalidOperationException();
-                }
-
-                default:
-                {
-                    throw new NotSupportedException();
-                }
-            }
-        }
-
-        private static PropertyInfo GetReadablePropertyInfo(this IPropertyBase propertyBase)
-        {
-            if (propertyBase.PropertyInfo?.CanRead is true)
-            {
-                return propertyBase.PropertyInfo.DeclaringType.GetProperty(propertyBase.PropertyInfo.Name, bindingFlags);
+                return (MemberInfo)propertyBase.GetReadableFieldInfo()
+                    ?? propertyBase.GetReadablePropertyInfo()
+                    ?? throw new InvalidOperationException();
             }
 
-            var foundProperty = propertyBase.DeclaringType.ClrType.GetProperty(propertyBase.Name, bindingFlags);
-
-            return foundProperty?.CanRead is true ? foundProperty : null;
-        }
-
-        private static FieldInfo GetReadableFieldInfo(this IPropertyBase propertyBase)
-        {
-            return propertyBase.FieldInfo?.DeclaringType.GetField(propertyBase.FieldInfo.Name, bindingFlags);
-        }
-
-        private static PropertyInfo GetWritablePropertyInfo(this IPropertyBase propertyBase)
-        {
-            if (propertyBase.PropertyInfo?.CanWrite is true)
+            case PropertyAccessMode.PreferProperty:
             {
-                return propertyBase.PropertyInfo.DeclaringType.GetProperty(propertyBase.PropertyInfo.Name, bindingFlags);
+                return (MemberInfo)propertyBase.GetReadablePropertyInfo()
+                    ?? propertyBase.GetReadableFieldInfo()
+                    ?? throw new InvalidOperationException();
             }
 
-            var foundProperty = propertyBase.DeclaringType.ClrType.GetProperty(propertyBase.Name, bindingFlags);
-
-            return foundProperty?.CanWrite is true ? foundProperty : null;
+            default:
+            {
+                throw new NotSupportedException();
+            }
         }
+    }
 
-        private static FieldInfo GetWritableFieldInfo(this IPropertyBase propertyBase)
+    public static MemberInfo GetWritableMemberInfo(this IPropertyBase propertyBase)
+    {
+        if (propertyBase is null)
         {
-            return propertyBase.FieldInfo?.DeclaringType.GetField(propertyBase.FieldInfo.Name, bindingFlags);
+            throw new ArgumentNullException(nameof(propertyBase));
         }
 
-        public static IEnumerable<INavigation> FindDerivedNavigations(this IEntityType entityType, string name)
+        switch (propertyBase.GetPropertyAccessMode())
         {
-            return entityType.GetDerivedTypes().Select(t => t.FindDeclaredNavigation(name)).Where(n => n != null);
+            case PropertyAccessMode.Field:
+            case PropertyAccessMode.FieldDuringConstruction:
+            {
+                return propertyBase.GetWritableFieldInfo()
+                    ?? throw new InvalidOperationException();
+            }
+
+            case PropertyAccessMode.Property:
+            {
+                return propertyBase.GetWritablePropertyInfo()
+                    ?? throw new InvalidOperationException();
+            }
+
+            case PropertyAccessMode.PreferField:
+            case PropertyAccessMode.PreferFieldDuringConstruction:
+            {
+                return (MemberInfo)propertyBase.GetWritableFieldInfo()
+                    ?? propertyBase.GetWritablePropertyInfo()
+                    ?? throw new InvalidOperationException();
+            }
+
+            case PropertyAccessMode.PreferProperty:
+            {
+                return (MemberInfo)propertyBase.GetWritablePropertyInfo()
+                    ?? propertyBase.GetWritableFieldInfo()
+                    ?? throw new InvalidOperationException();
+            }
+
+            default:
+            {
+                throw new NotSupportedException();
+            }
         }
+    }
+
+    private static PropertyInfo GetReadablePropertyInfo(this IPropertyBase propertyBase)
+    {
+        if (propertyBase.PropertyInfo?.CanRead is true)
+        {
+            return propertyBase.PropertyInfo.DeclaringType.GetProperty(propertyBase.PropertyInfo.Name, bindingFlags);
+        }
+
+        var foundProperty = propertyBase.DeclaringType.ClrType.GetProperty(propertyBase.Name, bindingFlags);
+
+        return foundProperty?.CanRead is true ? foundProperty : null;
+    }
+
+    private static FieldInfo GetReadableFieldInfo(this IPropertyBase propertyBase)
+    {
+        return propertyBase.FieldInfo?.DeclaringType.GetField(propertyBase.FieldInfo.Name, bindingFlags);
+    }
+
+    private static PropertyInfo GetWritablePropertyInfo(this IPropertyBase propertyBase)
+    {
+        if (propertyBase.PropertyInfo?.CanWrite is true)
+        {
+            return propertyBase.PropertyInfo.DeclaringType.GetProperty(propertyBase.PropertyInfo.Name, bindingFlags);
+        }
+
+        var foundProperty = propertyBase.DeclaringType.ClrType.GetProperty(propertyBase.Name, bindingFlags);
+
+        return foundProperty?.CanWrite is true ? foundProperty : null;
+    }
+
+    private static FieldInfo GetWritableFieldInfo(this IPropertyBase propertyBase)
+    {
+        return propertyBase.FieldInfo?.DeclaringType.GetField(propertyBase.FieldInfo.Name, bindingFlags);
+    }
+
+    public static IEnumerable<INavigation> FindDerivedNavigations(this IEntityType entityType, string name)
+    {
+        return entityType.GetDerivedTypes().Select(t => t.FindDeclaredNavigation(name)).Where(n => n != null);
     }
 }

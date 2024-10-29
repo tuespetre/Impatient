@@ -4,27 +4,26 @@ using Microsoft.EntityFrameworkCore.TestUtilities;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Impatient.EFCore.Tests.Query
+namespace Impatient.EFCore.Tests.Query;
+
+public class OwnedQueryImpatientTest : OwnedQueryRelationalTestBase<OwnedQueryImpatientTest.Fixture>
 {
-    public class OwnedQueryImpatientTest : OwnedQueryRelationalTestBase<OwnedQueryImpatientTest.Fixture>
+    public OwnedQueryImpatientTest(Fixture fixture) : base(fixture)
     {
-        public OwnedQueryImpatientTest(Fixture fixture) : base(fixture)
-        {
-        }
+    }
 
-        [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
-        [MemberData(nameof(IsAsyncData))]
-        public override Task Using_from_sql_on_owner_generates_join_with_table_for_owned_shared_dependents(bool async)
-        {
-            return base.Using_from_sql_on_owner_generates_join_with_table_for_owned_shared_dependents(async);
-        }
+    [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
+    [MemberData(nameof(IsAsyncData))]
+    public override Task Using_from_sql_on_owner_generates_join_with_table_for_owned_shared_dependents(bool async)
+    {
+        return base.Using_from_sql_on_owner_generates_join_with_table_for_owned_shared_dependents(async);
+    }
 
-        protected override QueryAsserter CreateQueryAsserter(Fixture fixture) =>
-            new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
+    protected override QueryAsserter CreateQueryAsserter(Fixture fixture) =>
+        new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
 
-        public new class Fixture : RelationalOwnedQueryFixture
-        {
-            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
-        }
+    public new class Fixture : RelationalOwnedQueryFixture
+    {
+        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 }

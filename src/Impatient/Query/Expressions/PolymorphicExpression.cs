@@ -5,99 +5,97 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 
-namespace Impatient.Query.Expressions
+namespace Impatient.Query.Expressions;
+
+public class PolymorphicExpression : Expression, ISemanticHashCodeProvider
 {
-    public class PolymorphicExpression : Expression, ISemanticHashCodeProvider
+    public PolymorphicExpression(
+        Type type,
+        Expression row,
+        IEnumerable<PolymorphicTypeDescriptor> descriptors)
     {
-        public PolymorphicExpression(
-            Type type,
-            Expression row,
-            IEnumerable<PolymorphicTypeDescriptor> descriptors)
+        Type = type ?? throw new ArgumentNullException(nameof(type));
+        Row = row ?? throw new ArgumentNullException(nameof(row));
+        Descriptors = descriptors ?? throw new ArgumentNullException(nameof(descriptors));
+    }
+
+    public Expression Row { get; }
+
+    public IEnumerable<PolymorphicTypeDescriptor> Descriptors { get; }
+
+    public override bool CanReduce => true;
+
+    public override Expression Reduce() => Row;
+
+    public PolymorphicExpression Upcast(Type type)
+    {
+        return new PolymorphicExpression(type, Row, Descriptors);
+    }
+
+    public PolymorphicExpression Filter(Type type)
+    {
+        if (!Type.IsAssignableFrom(type))
         {
-            Type = type ?? throw new ArgumentNullException(nameof(type));
-            Row = row ?? throw new ArgumentNullException(nameof(row));
-            Descriptors = descriptors ?? throw new ArgumentNullException(nameof(descriptors));
-        }
-
-        public Expression Row { get; }
-
-        public IEnumerable<PolymorphicTypeDescriptor> Descriptors { get; }
-
-        public override bool CanReduce => true;
-
-        public override Expression Reduce() => Row;
-
-        public PolymorphicExpression Upcast(Type type)
-        {
-            return new PolymorphicExpression(type, Row, Descriptors);
-        }
-
-        public PolymorphicExpression Filter(Type type)
-        {
-            if (!Type.IsAssignableFrom(type))
-            {
-                return new PolymorphicExpression(
-                    type,
-                    Row,
-                    Enumerable.Empty<PolymorphicTypeDescriptor>());
-            }
-
             return new PolymorphicExpression(
                 type,
                 Row,
-                Descriptors
-                    .Where(d => type.IsAssignableFrom(d.Type))
-                    .ToArray());
+                Enumerable.Empty<PolymorphicTypeDescriptor>());
         }
 
-        public Expression Unwrap(Type type)
+        return new PolymorphicExpression(
+            type,
+            Row,
+            Descriptors
+                .Where(d => type.IsAssignableFrom(d.Type))
+                .ToArray());
+    }
+
+    public Expression Unwrap(Type type)
+    {
+        if (!Type.IsAssignableFrom(type))
         {
-            if (!Type.IsAssignableFrom(type))
-            {
-                return Constant(null, type);
-            }
-
-            var descriptor = Descriptors.FirstOrDefault(d => type.IsAssignableFrom(d.Type));
-
-            if (descriptor is not null)
-            {
-                return descriptor.Materializer.ExpandParameters(Row);
-            }
-
             return Constant(null, type);
         }
 
-        protected override Expression VisitChildren(ExpressionVisitor visitor)
+        var descriptor = Descriptors.FirstOrDefault(d => type.IsAssignableFrom(d.Type));
+
+        if (descriptor is not null)
         {
-            var row = visitor.Visit(Row);
-
-            var descriptors = (from d in Descriptors
-                               let test = visitor.VisitAndConvert(d.Test, nameof(VisitChildren))
-                               let materializer = visitor.VisitAndConvert(d.Materializer, nameof(VisitChildren))
-                               select new PolymorphicTypeDescriptor(d.Type, test, materializer)).ToArray();
-
-            return Update(row, descriptors);
+            return descriptor.Materializer.ExpandParameters(Row);
         }
 
-        public PolymorphicExpression Update(Expression row, IEnumerable<PolymorphicTypeDescriptor> descriptors)
-        {
-            if (row != Row || !Descriptors.SequenceEqual(descriptors))
-            {
-                return new PolymorphicExpression(Type, row, descriptors);
-            }
+        return Constant(null, type);
+    }
 
-            return this;
+    protected override Expression VisitChildren(ExpressionVisitor visitor)
+    {
+        var row = visitor.Visit(Row);
+
+        var descriptors = (from d in Descriptors
+                           let test = visitor.VisitAndConvert(d.Test, nameof(VisitChildren))
+                           let materializer = visitor.VisitAndConvert(d.Materializer, nameof(VisitChildren))
+                           select new PolymorphicTypeDescriptor(d.Type, test, materializer)).ToArray();
+
+        return Update(row, descriptors);
+    }
+
+    public PolymorphicExpression Update(Expression row, IEnumerable<PolymorphicTypeDescriptor> descriptors)
+    {
+        if (row != Row || !Descriptors.SequenceEqual(descriptors))
+        {
+            return new PolymorphicExpression(Type, row, descriptors);
         }
 
-        public override Type Type { get; }
+        return this;
+    }
 
-        public override ExpressionType NodeType => ExpressionType.Extension;
+    public override Type Type { get; }
 
-        public int GetSemanticHashCode(ExpressionEqualityComparer comparer)
-        {
-            return comparer.GetHashCode(Row);
-        }
+    public override ExpressionType NodeType => ExpressionType.Extension;
+
+    public int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+    {
+        return comparer.GetHashCode(Row);
     }
 }

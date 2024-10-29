@@ -11,119 +11,118 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
+namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
+
+public class ShadowPropertyCompilingExpressionVisitor : ExpressionVisitor
 {
-    public class ShadowPropertyCompilingExpressionVisitor : ExpressionVisitor
+    private readonly IModel model;
+
+    public ShadowPropertyCompilingExpressionVisitor(IModel model)
     {
-        private readonly IModel model;
+        this.model = model ?? throw new ArgumentNullException(nameof(model));
+    }
 
-        public ShadowPropertyCompilingExpressionVisitor(IModel model)
+    protected override Expression VisitMethodCall(MethodCallExpression node)
+    {
+        var @object = Visit(node.Object);
+        var arguments = Visit(node.Arguments);
+
+        if (node.Method.IsEFPropertyMethod())
         {
-            this.model = model ?? throw new ArgumentNullException(nameof(model));
-        }
+            var expression = arguments[0].UnwrapInnerExpression();
+            var propertyNameArgument = arguments[1];
 
-        protected override Expression VisitMethodCall(MethodCallExpression node)
-        {
-            var @object = Visit(node.Object);
-            var arguments = Visit(node.Arguments);
+            var entityType = model.FindEntityType(expression.Type);
 
-            if (node.Method.IsEFPropertyMethod())
+            if (entityType is not null)
             {
-                var expression = arguments[0].UnwrapInnerExpression();
-                var propertyNameArgument = arguments[1];
+                var innerExpression = arguments[0];
+                var path = new List<MemberInfo>();
+                var currentType = entityType;
 
-                var entityType = model.FindEntityType(expression.Type);
-
-                if (entityType is not null)
+                while (innerExpression is MemberExpression memberExpression
+                    && currentType.IsOwned())
                 {
-                    var innerExpression = arguments[0];
-                    var path = new List<MemberInfo>();
-                    var currentType = entityType;
+                    var definingNavigation = currentType.FindOwnership().GetNavigation(false);
 
-                    while (innerExpression is MemberExpression memberExpression
-                        && currentType.IsOwned())
+                    if (definingNavigation?.GetSemanticReadableMemberInfo() != memberExpression.Member)
                     {
-                        var definingNavigation = currentType.FindOwnership().GetNavigation(false);
-
-                        if (definingNavigation?.GetSemanticReadableMemberInfo() != memberExpression.Member)
-                        {
-                            return node.Update(@object, arguments);
-                        }
-
-                        currentType = definingNavigation.DeclaringEntityType;
-
-                        path.Insert(0, memberExpression.Member);
-
-                        innerExpression = memberExpression.Expression.UnwrapInnerExpression();
+                        return node.Update(@object, arguments);
                     }
 
-                    var entry
-                        = (Expression)Expression.Call(
+                    currentType = definingNavigation.DeclaringEntityType;
+
+                    path.Insert(0, memberExpression.Member);
+
+                    innerExpression = memberExpression.Expression.UnwrapInnerExpression();
+                }
+
+                var entry
+                    = (Expression)Expression.Call(
+                        Expression.MakeMemberAccess(
                             Expression.MakeMemberAccess(
-                                Expression.MakeMemberAccess(
-                                    Expression.Convert(
-                                        ExecutionContextParameters.DbCommandExecutor,
-                                        typeof(EFCoreDbCommandExecutor)),
-                                    typeof(EFCoreDbCommandExecutor).GetProperty(nameof(EFCoreDbCommandExecutor.CurrentDbContext))),
-                                typeof(ICurrentDbContext).GetProperty(nameof(ICurrentDbContext.Context))),
-                            typeof(DbContext).GetMethods().Single(m => !m.IsGenericMethod && m.Name == nameof(DbContext.Entry)),
-                            innerExpression);
+                                Expression.Convert(
+                                    ExecutionContextParameters.DbCommandExecutor,
+                                    typeof(EFCoreDbCommandExecutor)),
+                                typeof(EFCoreDbCommandExecutor).GetProperty(nameof(EFCoreDbCommandExecutor.CurrentDbContext))),
+                            typeof(ICurrentDbContext).GetProperty(nameof(ICurrentDbContext.Context))),
+                        typeof(DbContext).GetMethods().Single(m => !m.IsGenericMethod && m.Name == nameof(DbContext.Entry)),
+                        innerExpression);
 
-                    foreach (var member in path)
-                    {
-                        entry
-                            = Expression.MakeMemberAccess(
-                                Expression.Call(
-                                    entry,
-                                    typeof(EntityEntry).GetMethod(nameof(EntityEntry.Reference), [typeof(string)]),
-                                    Expression.Constant(member.Name)),
-                                typeof(ReferenceEntry).GetProperty(nameof(ReferenceEntry.TargetEntry)));
-                    }
+                foreach (var member in path)
+                {
+                    entry
+                        = Expression.MakeMemberAccess(
+                            Expression.Call(
+                                entry,
+                                typeof(EntityEntry).GetMethod(nameof(EntityEntry.Reference), [typeof(string)]),
+                                Expression.Constant(member.Name)),
+                            typeof(ReferenceEntry).GetProperty(nameof(ReferenceEntry.TargetEntry)));
+                }
 
-                    var finalExpression = default(Expression);
+                var finalExpression = default(Expression);
 
-                    if (model.GetEntityTypes().Any(t => t.ClrType == node.Type))
-                    {
-                        finalExpression =
-                            Expression.MakeMemberAccess(
-                                Expression.Call(
-                                    entry,
-                                    typeof(EntityEntry).GetMethod(nameof(EntityEntry.Reference), [typeof(string)]),
-                                    arguments[1]),
-                                typeof(ReferenceEntry).GetProperty(nameof(ReferenceEntry.CurrentValue)));
-                    }
-                    else if (node.Type.IsSequenceType())
-                    {
-                        finalExpression =
-                            Expression.MakeMemberAccess(
-                                Expression.Call(
-                                    entry,
-                                    typeof(EntityEntry).GetMethod(nameof(EntityEntry.Collection), [typeof(string)]),
-                                    arguments[1]),
-                                typeof(CollectionEntry).GetProperty(nameof(CollectionEntry.CurrentValue), typeof(IEnumerable)));
-                    }
-                    else
-                    {
-                        finalExpression 
-                            = Expression.MakeMemberAccess(
-                                Expression.Call(
-                                    entry,
-                                    typeof(EntityEntry).GetMethod(nameof(EntityEntry.Property), [typeof(string)]),
-                                    arguments[1]),
-                                typeof(PropertyEntry).GetProperty(nameof(PropertyEntry.CurrentValue)));
-                    }
+                if (model.GetEntityTypes().Any(t => t.ClrType == node.Type))
+                {
+                    finalExpression =
+                        Expression.MakeMemberAccess(
+                            Expression.Call(
+                                entry,
+                                typeof(EntityEntry).GetMethod(nameof(EntityEntry.Reference), [typeof(string)]),
+                                arguments[1]),
+                            typeof(ReferenceEntry).GetProperty(nameof(ReferenceEntry.CurrentValue)));
+                }
+                else if (node.Type.IsSequenceType())
+                {
+                    finalExpression =
+                        Expression.MakeMemberAccess(
+                            Expression.Call(
+                                entry,
+                                typeof(EntityEntry).GetMethod(nameof(EntityEntry.Collection), [typeof(string)]),
+                                arguments[1]),
+                            typeof(CollectionEntry).GetProperty(nameof(CollectionEntry.CurrentValue), typeof(IEnumerable)));
+                }
+                else
+                {
+                    finalExpression 
+                        = Expression.MakeMemberAccess(
+                            Expression.Call(
+                                entry,
+                                typeof(EntityEntry).GetMethod(nameof(EntityEntry.Property), [typeof(string)]),
+                                arguments[1]),
+                            typeof(PropertyEntry).GetProperty(nameof(PropertyEntry.CurrentValue)));
+                }
 
-                    if (finalExpression is not null)
-                    {
-                        return Expression.Condition(
-                            Expression.NotEqual(innerExpression, Expression.Default(innerExpression.Type)),
-                            Expression.Convert(finalExpression, node.Type),
-                            Expression.Default(node.Type));
-                    }
+                if (finalExpression is not null)
+                {
+                    return Expression.Condition(
+                        Expression.NotEqual(innerExpression, Expression.Default(innerExpression.Type)),
+                        Expression.Convert(finalExpression, node.Type),
+                        Expression.Default(node.Type));
                 }
             }
-
-            return node.Update(@object, arguments);
         }
+
+        return node.Update(@object, arguments);
     }
 }

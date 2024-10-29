@@ -9,85 +9,84 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.EntityFrameworkCore.SqlServer.Expressions
+namespace Impatient.EntityFrameworkCore.SqlServer.Expressions;
+
+public class IncludeExpression : ExtraPropertiesExpression
 {
-    public class IncludeExpression : ExtraPropertiesExpression
+    public IncludeExpression(
+        Expression expression, 
+        IEnumerable<Expression> includes, 
+        IEnumerable<IEnumerable<INavigation>> paths) 
+        : this(
+              expression, 
+              new ReadOnlyCollection<Expression>(includes.ToArray()), 
+              paths.Select(p => p.ToImmutableArray()).ToImmutableArray())
     {
-        public IncludeExpression(
-            Expression expression, 
-            IEnumerable<Expression> includes, 
-            IEnumerable<IEnumerable<INavigation>> paths) 
-            : this(
-                  expression, 
-                  new ReadOnlyCollection<Expression>(includes.ToArray()), 
-                  paths.Select(p => p.ToImmutableArray()).ToImmutableArray())
+    }
+
+    public IncludeExpression(
+        Expression expression, 
+        ReadOnlyCollection<Expression> includes,
+        ImmutableArray<ImmutableArray<INavigation>> paths) 
+        : base(expression)
+    {
+        if (includes.Count != paths.Length)
         {
+            throw new ArgumentOutOfRangeException(nameof(paths));
         }
 
-        public IncludeExpression(
-            Expression expression, 
-            ReadOnlyCollection<Expression> includes,
-            ImmutableArray<ImmutableArray<INavigation>> paths) 
-            : base(expression)
-        {
-            if (includes.Count != paths.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(paths));
-            }
+        Includes = includes;
+        Paths = paths;
+        Names = new ReadOnlyCollection<string>(Enumerable.Range(0, paths.Length).Select(i => $"Include_{i}").ToArray());
+    }
 
-            Includes = includes;
-            Paths = paths;
-            Names = new ReadOnlyCollection<string>(Enumerable.Range(0, paths.Length).Select(i => $"Include_{i}").ToArray());
+    public ReadOnlyCollection<Expression> Includes { get; }
+
+    public ImmutableArray<ImmutableArray<INavigation>> Paths { get; }
+
+    public override ReadOnlyCollection<string> Names { get; }
+
+    public override ReadOnlyCollection<Expression> Properties => Includes;
+
+    protected override Expression VisitChildren(ExpressionVisitor visitor)
+    {
+        var expression = visitor.Visit(Expression);
+        var includes = visitor.Visit(Includes);
+
+        if (expression != Expression || !includes.SequenceEqual(Includes))
+        {
+            return new IncludeExpression(expression, includes, Paths);
         }
 
-        public ReadOnlyCollection<Expression> Includes { get; }
+        return this;
+    }
 
-        public ImmutableArray<ImmutableArray<INavigation>> Paths { get; }
+    public override IEnumerable<MemberInfo> GetMemberPath(int index)
+    {
+        return Paths[index].Select(p => p.GetSemanticReadableMemberInfo());
+    }
 
-        public override ReadOnlyCollection<string> Names { get; }
+    public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+    {
+        var hash = new HashCode();
 
-        public override ReadOnlyCollection<Expression> Properties => Includes;
+        hash.Add(comparer.GetHashCode(Expression));
 
-        protected override Expression VisitChildren(ExpressionVisitor visitor)
+        for (var i = 0; i < Includes.Count; i++)
         {
-            var expression = visitor.Visit(Expression);
-            var includes = visitor.Visit(Includes);
-
-            if (expression != Expression || !includes.SequenceEqual(Includes))
-            {
-                return new IncludeExpression(expression, includes, Paths);
-            }
-
-            return this;
+            hash.Add(comparer.GetHashCode(Includes[i]));
         }
 
-        public override IEnumerable<MemberInfo> GetMemberPath(int index)
+        return hash.ToHashCode();
+    }
+
+    public override ExtraPropertiesExpression Update(Expression expression, IEnumerable<Expression> properties)
+    {
+        if (expression != Expression || !properties.SequenceEqual(Properties))
         {
-            return Paths[index].Select(p => p.GetSemanticReadableMemberInfo());
+            return new IncludeExpression(expression, new ReadOnlyCollection<Expression>(properties.ToArray()), Paths);
         }
 
-        public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)
-        {
-            var hash = new HashCode();
-
-            hash.Add(comparer.GetHashCode(Expression));
-
-            for (var i = 0; i < Includes.Count; i++)
-            {
-                hash.Add(comparer.GetHashCode(Includes[i]));
-            }
-
-            return hash.ToHashCode();
-        }
-
-        public override ExtraPropertiesExpression Update(Expression expression, IEnumerable<Expression> properties)
-        {
-            if (expression != Expression || !properties.SequenceEqual(Properties))
-            {
-                return new IncludeExpression(expression, new ReadOnlyCollection<Expression>(properties.ToArray()), Paths);
-            }
-
-            return this;
-        }
+        return this;
     }
 }

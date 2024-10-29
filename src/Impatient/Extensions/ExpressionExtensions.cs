@@ -9,779 +9,778 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.Extensions
+namespace Impatient.Extensions;
+
+public static class ExpressionExtensions
 {
-    public static class ExpressionExtensions
+    public static bool IsChecked(this Expression expression)
     {
-        public static bool IsChecked(this Expression expression)
-        {
-            return expression.NodeType.ToString().EndsWith("Checked");
-        }
+        return expression.NodeType.ToString().EndsWith("Checked");
+    }
 
-        public static bool IsAssignment(this Expression expression)
-        {
-            return expression.NodeType.ToString().EndsWith("Assign");
-        }
+    public static bool IsAssignment(this Expression expression)
+    {
+        return expression.NodeType.ToString().EndsWith("Assign");
+    }
 
-        public static bool IsSemanticallyEqualTo(this Expression expression, Expression other)
-        {
-            return ExpressionEqualityComparer.Instance.GetHashCode(expression)
-                == ExpressionEqualityComparer.Instance.GetHashCode(other);
-        }
+    public static bool IsSemanticallyEqualTo(this Expression expression, Expression other)
+    {
+        return ExpressionEqualityComparer.Instance.GetHashCode(expression)
+            == ExpressionEqualityComparer.Instance.GetHashCode(other);
+    }
 
-        public static bool IsNullConstant(this Expression expression)
+    public static bool IsNullConstant(this Expression expression)
+    {
+        switch (expression.UnwrapInnerExpression())
         {
-            switch (expression.UnwrapInnerExpression())
+            case ConstantExpression constantExpression:
             {
-                case ConstantExpression constantExpression:
-                {
-                    return constantExpression.Value is null;
-                }
+                return constantExpression.Value is null;
+            }
 
-                case DefaultExpression defaultExpression:
-                {
-                    return defaultExpression.Type.IsNullableType()
-                        || !defaultExpression.Type.IsValueType;
-                }
+            case DefaultExpression defaultExpression:
+            {
+                return defaultExpression.Type.IsNullableType()
+                    || !defaultExpression.Type.IsValueType;
+            }
 
-                default:
-                {
-                    return false;
-                }
+            default:
+            {
+                return false;
             }
         }
+    }
 
-        public static Expression AsNullable(this Expression expression)
-        {
-            return Expression.Convert(expression, expression.Type.AsNullableType());
-        }
+    public static Expression AsNullable(this Expression expression)
+    {
+        return Expression.Convert(expression, expression.Type.AsNullableType());
+    }
 
-        public static Expression AsEnumerableQuery(this Expression expression)
-        {
-            Debug.Assert(expression.Type.IsSequenceType());
+    public static Expression AsEnumerableQuery(this Expression expression)
+    {
+        Debug.Assert(expression.Type.IsSequenceType());
 
-            var sequenceType = expression.Type.GetSequenceType();
+        var sequenceType = expression.Type.GetSequenceType();
 
-            var enumerableQueryConstructor
-                = typeof(EnumerableQuery<>)
-                    .MakeGenericType(sequenceType)
-                    .GetConstructor(new[] { typeof(Expression) });
+        var enumerableQueryConstructor
+            = typeof(EnumerableQuery<>)
+                .MakeGenericType(sequenceType)
+                .GetConstructor(new[] { typeof(Expression) });
 
-            var expressionCallMethodInfo
-                = ReflectionExtensions.GetMethodInfo(() => Expression.Call(default, default(Expression)));
+        var expressionCallMethodInfo
+            = ReflectionExtensions.GetMethodInfo(() => Expression.Call(default, default(Expression)));
 
-            var asQueryableMethodInfo
-                = ReflectionExtensions.GetGenericMethodDefinition<IEnumerable<object>, object>(o => Queryable.AsQueryable(o));
+        var asQueryableMethodInfo
+            = ReflectionExtensions.GetGenericMethodDefinition<IEnumerable<object>, object>(o => Queryable.AsQueryable(o));
 
-            // I never thought I would write a return statement this abstract.
+        // I never thought I would write a return statement this abstract.
 
-            return Expression.New(
-                enumerableQueryConstructor,
+        return Expression.New(
+            enumerableQueryConstructor,
+            Expression.Call(
+                expressionCallMethodInfo,
+                Expression.Constant(asQueryableMethodInfo.MakeGenericMethod(sequenceType)),
                 Expression.Call(
-                    expressionCallMethodInfo,
-                    Expression.Constant(asQueryableMethodInfo.MakeGenericMethod(sequenceType)),
-                    Expression.Call(
-                        typeof(Expression).GetRuntimeMethod(nameof(Expression.Constant), new[] { typeof(object) }),
-                        expression)));
-        }
+                    typeof(Expression).GetRuntimeMethod(nameof(Expression.Constant), new[] { typeof(object) }),
+                    expression)));
+    }
 
-        public static Expression AsQueryable(this Expression expression)
+    public static Expression AsQueryable(this Expression expression)
+    {
+        Debug.Assert(expression.Type.IsSequenceType());
+
+        if (expression.Type.IsQueryableType())
         {
-            Debug.Assert(expression.Type.IsSequenceType());
-
-            if (expression.Type.IsQueryableType())
-            {
-                return expression;
-            }
-
-            return Expression.Call(
-                ReflectionExtensions
-                    .GetGenericMethodDefinition((IEnumerable<object> o) => o.AsQueryable())
-                    .MakeGenericMethod(expression.Type.GetGenericArguments()[0]),
-                expression);
-        }
-
-        public static Expression AsOrderedQueryable(this Expression expression)
-        {
-            Debug.Assert(expression.Type.IsSequenceType());
-
-            if (expression.Type.IsOrderedQueryableType())
-            {
-                return expression;
-            }
-
-            return Expression.Call(
-                typeof(ImpatientExtensions)
-                    .GetMethod(nameof(ImpatientExtensions.AsOrderedQueryable))
-                    .MakeGenericMethod(expression.Type.GetGenericArguments()[0]),
-                expression.AsQueryable());
-        }
-
-        private static Expression ResolveProperty(Expression expression, string segment)
-        {
-            switch (expression)
-            {
-                case NewExpression newExpression:
-                {
-                    var match = newExpression.Members?.FirstOrDefault(m => m.GetPathSegmentName() == segment);
-
-                    if (match is not null)
-                    {
-                        return newExpression.Arguments[newExpression.Members.IndexOf(match)];
-                    }
-
-                    return null;
-                }
-
-                case MemberInitExpression memberInitExpression:
-                {
-                    var match = ResolveProperty(memberInitExpression.NewExpression, segment);
-
-                    if (match is not null)
-                    {
-                        return match;
-                    }
-
-                    match
-                        = memberInitExpression.Bindings
-                            .OfType<MemberAssignment>()
-                            .Where(a => a.Member.GetPathSegmentName() == segment)
-                            .Select(a => a.Expression)
-                            .FirstOrDefault();
-
-                    if (match is not null)
-                    {
-                        return match;
-                    }
-
-                    return null;
-                }
-
-                case ExtendedNewExpression newExpression:
-                {
-                    var match = newExpression.ReadableMembers.FirstOrDefault(m => m.GetPathSegmentName() == segment);
-
-                    if (match is not null)
-                    {
-                        return newExpression.Arguments[newExpression.ReadableMembers.IndexOf(match)];
-                    }
-
-                    return null;
-                }
-
-                case ExtendedMemberInitExpression memberInitExpression:
-                {
-                    var match = ResolveProperty(memberInitExpression.NewExpression, segment);
-
-                    if (match is not null)
-                    {
-                        return match;
-                    }
-
-                    for (var i = 0; i < memberInitExpression.Arguments.Count; i++)
-                    {
-                        if (memberInitExpression.ReadableMembers[i].GetPathSegmentName() == segment)
-                        {
-                            return memberInitExpression.Arguments[i];
-                        }
-                    }
-
-                    return null;
-                }
-
-                case ExtraPropertiesExpression extraPropertiesExpression:
-                {
-                    for (var i = 0; i < extraPropertiesExpression.Names.Count; i++)
-                    {
-                        var name = extraPropertiesExpression.Names[i];
-
-                        if (name.Equals(segment))
-                        {
-                            return extraPropertiesExpression.Properties[i];
-                        }
-                    }
-
-                    return ResolveProperty(extraPropertiesExpression.Expression, segment);
-                }
-
-                case AnnotationExpression annotationExpression:
-                {
-                    return ResolveProperty(annotationExpression.Expression, segment);
-                }
-
-                case PolymorphicExpression polymorphicExpression:
-                {
-                    foreach (var descriptor in polymorphicExpression.Descriptors)
-                    {
-                        var expanded = descriptor.Materializer.ExpandParameters(polymorphicExpression.Row);
-
-                        var resolved = ResolveProperty(expanded, segment);
-
-                        if (resolved is not null)
-                        {
-                            return resolved;
-                        }
-                    }
-
-                    return null;
-                }
-
-                default:
-                {
-                    return null;
-                }
-            }
-        }
-
-        public static bool TryResolvePath(this Expression expression, string path, out Expression resolved)
-        {
-            resolved = expression;
-
-            foreach (var segment in path.Split('.'))
-            {
-                var next = ResolveProperty(resolved, segment);
-
-                if (next is null)
-                {
-                    resolved = null;
-
-                    return false;
-                }
-
-                resolved = next;
-            }
-
-            return true;
-        }
-
-        public static Expression ReplaceWithConversions(this Expression expression, Func<Expression, Expression> replacer)
-        {
-            var conversionStack = new Stack<UnaryExpression>();
-
-            while (expression is UnaryExpression unaryExpression
-                && expression.NodeType == ExpressionType.Convert)
-            {
-                conversionStack.Push(unaryExpression);
-
-                expression = unaryExpression.Operand;
-            }
-
-            expression = replacer(expression);
-
-            while (conversionStack.Count != 0)
-            {
-                expression = conversionStack.Pop().Update(expression);
-            }
-
             return expression;
         }
 
-        public static void MatchNullableTypes(ref Expression left, ref Expression right)
+        return Expression.Call(
+            ReflectionExtensions
+                .GetGenericMethodDefinition((IEnumerable<object> o) => o.AsQueryable())
+                .MakeGenericMethod(expression.Type.GetGenericArguments()[0]),
+            expression);
+    }
+
+    public static Expression AsOrderedQueryable(this Expression expression)
+    {
+        Debug.Assert(expression.Type.IsSequenceType());
+
+        if (expression.Type.IsOrderedQueryableType())
         {
-            if (left.Type == right.Type)
-            {
-                return;
-            }
-            else if (left.Type.UnwrapNullableType() == right.Type)
-            {
-                right = Expression.Convert(right, left.Type);
-            }
-            else if (right.Type.UnwrapNullableType() == left.Type)
-            {
-                left = Expression.Convert(left, right.Type);
-            }
+            return expression;
         }
 
-        public static BinaryExpression UpdateWithConversion(this BinaryExpression node, Expression left, Expression right)
-        {
-            var isLogical
-                = node.NodeType == ExpressionType.Equal
-                || node.NodeType == ExpressionType.NotEqual
-                || node.NodeType == ExpressionType.GreaterThan
-                || node.NodeType == ExpressionType.GreaterThanOrEqual
-                || node.NodeType == ExpressionType.LessThan
-                || node.NodeType == ExpressionType.LessThanOrEqual
-                || node.NodeType == ExpressionType.AndAlso
-                || node.NodeType == ExpressionType.OrElse;
-            
-            if (isLogical)
-            {
-                if (left.Type != right.Type)
-                {
-                    if (left.Type == right.Type.UnwrapNullableType())
-                    {
-                        left = Expression.Convert(left, right.Type);
-                    }
-                    else if (right.Type == left.Type.UnwrapNullableType())
-                    {
-                        right = Expression.Convert(right, left.Type);
-                    }
-                    else
-                    {
-                        if (left.Type != node.Left.Type)
-                        {
-                            left = Expression.Convert(left, node.Left.Type);
-                        }
+        return Expression.Call(
+            typeof(ImpatientExtensions)
+                .GetMethod(nameof(ImpatientExtensions.AsOrderedQueryable))
+                .MakeGenericMethod(expression.Type.GetGenericArguments()[0]),
+            expression.AsQueryable());
+    }
 
-                        if (right.Type != node.Right.Type)
-                        {
-                            right = Expression.Convert(right, node.Right.Type);
-                        }
+    private static Expression ResolveProperty(Expression expression, string segment)
+    {
+        switch (expression)
+        {
+            case NewExpression newExpression:
+            {
+                var match = newExpression.Members?.FirstOrDefault(m => m.GetPathSegmentName() == segment);
+
+                if (match is not null)
+                {
+                    return newExpression.Arguments[newExpression.Members.IndexOf(match)];
+                }
+
+                return null;
+            }
+
+            case MemberInitExpression memberInitExpression:
+            {
+                var match = ResolveProperty(memberInitExpression.NewExpression, segment);
+
+                if (match is not null)
+                {
+                    return match;
+                }
+
+                match
+                    = memberInitExpression.Bindings
+                        .OfType<MemberAssignment>()
+                        .Where(a => a.Member.GetPathSegmentName() == segment)
+                        .Select(a => a.Expression)
+                        .FirstOrDefault();
+
+                if (match is not null)
+                {
+                    return match;
+                }
+
+                return null;
+            }
+
+            case ExtendedNewExpression newExpression:
+            {
+                var match = newExpression.ReadableMembers.FirstOrDefault(m => m.GetPathSegmentName() == segment);
+
+                if (match is not null)
+                {
+                    return newExpression.Arguments[newExpression.ReadableMembers.IndexOf(match)];
+                }
+
+                return null;
+            }
+
+            case ExtendedMemberInitExpression memberInitExpression:
+            {
+                var match = ResolveProperty(memberInitExpression.NewExpression, segment);
+
+                if (match is not null)
+                {
+                    return match;
+                }
+
+                for (var i = 0; i < memberInitExpression.Arguments.Count; i++)
+                {
+                    if (memberInitExpression.ReadableMembers[i].GetPathSegmentName() == segment)
+                    {
+                        return memberInitExpression.Arguments[i];
                     }
                 }
 
-                return Expression.MakeBinary(node.NodeType, left, right);
+                return null;
             }
-            else
+
+            case ExtraPropertiesExpression extraPropertiesExpression:
             {
-                if (left.Type != node.Left.Type)
+                for (var i = 0; i < extraPropertiesExpression.Names.Count; i++)
                 {
-                    left = Expression.Convert(left, node.Left.Type);
+                    var name = extraPropertiesExpression.Names[i];
+
+                    if (name.Equals(segment))
+                    {
+                        return extraPropertiesExpression.Properties[i];
+                    }
                 }
 
-                if (right.Type != node.Right.Type)
+                return ResolveProperty(extraPropertiesExpression.Expression, segment);
+            }
+
+            case AnnotationExpression annotationExpression:
+            {
+                return ResolveProperty(annotationExpression.Expression, segment);
+            }
+
+            case PolymorphicExpression polymorphicExpression:
+            {
+                foreach (var descriptor in polymorphicExpression.Descriptors)
                 {
-                    right = Expression.Convert(right, node.Right.Type);
+                    var expanded = descriptor.Materializer.ExpandParameters(polymorphicExpression.Row);
+
+                    var resolved = ResolveProperty(expanded, segment);
+
+                    if (resolved is not null)
+                    {
+                        return resolved;
+                    }
                 }
+
+                return null;
             }
 
-            return node.Update(left, node.Conversion, right);
+            default:
+            {
+                return null;
+            }
+        }
+    }
+
+    public static bool TryResolvePath(this Expression expression, string path, out Expression resolved)
+    {
+        resolved = expression;
+
+        foreach (var segment in path.Split('.'))
+        {
+            var next = ResolveProperty(resolved, segment);
+
+            if (next is null)
+            {
+                resolved = null;
+
+                return false;
+            }
+
+            resolved = next;
         }
 
-        /// <summary>
-        /// Ensures that the given expression is a valid expression
-        /// for producing a predicatable boolean value or wraps it otherwise.
-        /// Examples: IN, EXISTS, x = y, a &lt; b
-        /// </summary>
-        public static Expression AsLogicalBooleanSqlExpression(this Expression expression)
+        return true;
+    }
+
+    public static Expression ReplaceWithConversions(this Expression expression, Func<Expression, Expression> replacer)
+    {
+        var conversionStack = new Stack<UnaryExpression>();
+
+        while (expression is UnaryExpression unaryExpression
+            && expression.NodeType == ExpressionType.Convert)
         {
-            if (expression.IsLogicalBooleanSqlExpression())
-            {
-                return expression;
-            }
+            conversionStack.Push(unaryExpression);
 
-            var test = true;
-
-            expression = expression.UnwrapInnerExpression();
-
-            while (expression.NodeType == ExpressionType.Not)
-            {
-                test = !test;
-                expression = ((UnaryExpression)expression).Operand;
-            }
-
-            var testType = expression.Type.IsBooleanType() ? expression.Type : typeof(bool);
-
-            return Expression.Equal(expression, Expression.Constant(test, testType));
+            expression = unaryExpression.Operand;
         }
 
-        /// <summary>
-        /// Ensures that the given expression is a valid expression
-        /// for producing a projected boolean value or wraps it otherwise.
-        /// Examples: [table].[Column], CASE WHEN x = y THEN 1 ELSE 0 END
-        /// </summary>
-        public static Expression AsBooleanValuedSqlExpression(this Expression expression)
+        expression = replacer(expression);
+
+        while (conversionStack.Count != 0)
         {
-            if (expression.IsBooleanValuedSqlExpression())
+            expression = conversionStack.Pop().Update(expression);
+        }
+
+        return expression;
+    }
+
+    public static void MatchNullableTypes(ref Expression left, ref Expression right)
+    {
+        if (left.Type == right.Type)
+        {
+            return;
+        }
+        else if (left.Type.UnwrapNullableType() == right.Type)
+        {
+            right = Expression.Convert(right, left.Type);
+        }
+        else if (right.Type.UnwrapNullableType() == left.Type)
+        {
+            left = Expression.Convert(left, right.Type);
+        }
+    }
+
+    public static BinaryExpression UpdateWithConversion(this BinaryExpression node, Expression left, Expression right)
+    {
+        var isLogical
+            = node.NodeType == ExpressionType.Equal
+            || node.NodeType == ExpressionType.NotEqual
+            || node.NodeType == ExpressionType.GreaterThan
+            || node.NodeType == ExpressionType.GreaterThanOrEqual
+            || node.NodeType == ExpressionType.LessThan
+            || node.NodeType == ExpressionType.LessThanOrEqual
+            || node.NodeType == ExpressionType.AndAlso
+            || node.NodeType == ExpressionType.OrElse;
+        
+        if (isLogical)
+        {
+            if (left.Type != right.Type)
             {
-                return expression;
-            }
-
-            expression = expression.UnwrapInnerExpression();
-
-            var flag = true;
-            var flipped = false;
-            var nullable = expression.Type.IsNullableType();
-
-            while (expression.NodeType == ExpressionType.Not)
-            {
-                flag = !flag;
-                flipped = true;
-                expression = ((UnaryExpression)expression).Operand;
-            }
-
-            if (expression.IsBooleanValuedSqlExpression())
-            {
-                if (nullable)
+                if (left.Type == right.Type.UnwrapNullableType())
                 {
-                    return Expression.Condition(
-                        Expression.Equal(expression, Expression.Constant(null)),
-                        Expression.Constant(null, typeof(bool?)),
-                        flipped
-                            ? Expression.Convert(
-                                Expression.Equal(
-                                    expression,
-                                    Expression.Constant(flag, typeof(bool?))),
-                                typeof(bool?))
-                            : expression);
+                    left = Expression.Convert(left, right.Type);
+                }
+                else if (right.Type == left.Type.UnwrapNullableType())
+                {
+                    right = Expression.Convert(right, left.Type);
                 }
                 else
                 {
-                    return Expression.Condition(
-                        Expression.Equal(expression, Expression.Constant(flag)),
-                        Expression.Constant(true),
-                        Expression.Constant(false));
+                    if (left.Type != node.Left.Type)
+                    {
+                        left = Expression.Convert(left, node.Left.Type);
+                    }
+
+                    if (right.Type != node.Right.Type)
+                    {
+                        right = Expression.Convert(right, node.Right.Type);
+                    }
                 }
             }
 
-            var test = expression;
-
-            if (!test.IsLogicalBooleanSqlExpression())
+            return Expression.MakeBinary(node.NodeType, left, right);
+        }
+        else
+        {
+            if (left.Type != node.Left.Type)
             {
-                if (nullable)
-                {
-                    test
-                        = Expression.AndAlso(
-                            Expression.NotEqual(test, Expression.Constant(null)),
-                            test.AsLogicalBooleanSqlExpression());
-                }
-                else
-                {
-                    test = test.AsLogicalBooleanSqlExpression();
-                }
+                left = Expression.Convert(left, node.Left.Type);
             }
 
-            var ifTrue = (Expression)Expression.Constant(flag);
-            var ifFalse = (Expression)Expression.Constant(!flag);
+            if (right.Type != node.Right.Type)
+            {
+                right = Expression.Convert(right, node.Right.Type);
+            }
+        }
 
+        return node.Update(left, node.Conversion, right);
+    }
+
+    /// <summary>
+    /// Ensures that the given expression is a valid expression
+    /// for producing a predicatable boolean value or wraps it otherwise.
+    /// Examples: IN, EXISTS, x = y, a &lt; b
+    /// </summary>
+    public static Expression AsLogicalBooleanSqlExpression(this Expression expression)
+    {
+        if (expression.IsLogicalBooleanSqlExpression())
+        {
+            return expression;
+        }
+
+        var test = true;
+
+        expression = expression.UnwrapInnerExpression();
+
+        while (expression.NodeType == ExpressionType.Not)
+        {
+            test = !test;
+            expression = ((UnaryExpression)expression).Operand;
+        }
+
+        var testType = expression.Type.IsBooleanType() ? expression.Type : typeof(bool);
+
+        return Expression.Equal(expression, Expression.Constant(test, testType));
+    }
+
+    /// <summary>
+    /// Ensures that the given expression is a valid expression
+    /// for producing a projected boolean value or wraps it otherwise.
+    /// Examples: [table].[Column], CASE WHEN x = y THEN 1 ELSE 0 END
+    /// </summary>
+    public static Expression AsBooleanValuedSqlExpression(this Expression expression)
+    {
+        if (expression.IsBooleanValuedSqlExpression())
+        {
+            return expression;
+        }
+
+        expression = expression.UnwrapInnerExpression();
+
+        var flag = true;
+        var flipped = false;
+        var nullable = expression.Type.IsNullableType();
+
+        while (expression.NodeType == ExpressionType.Not)
+        {
+            flag = !flag;
+            flipped = true;
+            expression = ((UnaryExpression)expression).Operand;
+        }
+
+        if (expression.IsBooleanValuedSqlExpression())
+        {
             if (nullable)
             {
-                if (test.NodeType == ExpressionType.Convert)
-                {
-                    test = ((UnaryExpression)test).Operand;
-                }
-                else
-                {
-                    ifTrue = Expression.Convert(ifTrue, typeof(bool?));
-                    ifFalse = Expression.Constant(null, typeof(bool?));
-                }
-            }
-
-            return Expression.Condition(test, ifTrue, ifFalse);
-        }
-
-        public static bool IsLogicalBooleanSqlExpression(this Expression expression)
-        {
-            if (!expression.Type.IsBooleanType())
-            {
-                return false;
-            }
-
-            var unwrapped = expression.UnwrapInnerExpression();
-
-            switch (unwrapped)
-            {
-                case null:
-                {
-                    return false;
-                }
-
-                case SqlExistsExpression _:
-                case SqlInExpression _:
-                case SqlLikeExpression _:
-                {
-                    return true;
-                }
-
-                case BinaryExpression _:
-                {
-                    switch (unwrapped.NodeType)
-                    {
-                        case ExpressionType.Equal:
-                        case ExpressionType.NotEqual:
-                        case ExpressionType.AndAlso:
-                        case ExpressionType.OrElse:
-                        case ExpressionType.LessThan:
-                        case ExpressionType.LessThanOrEqual:
-                        case ExpressionType.GreaterThan:
-                        case ExpressionType.GreaterThanOrEqual:
-                        case ExpressionType.And:
-                        case ExpressionType.Or:
-                        {
-                            return true;
-                        }
-
-                        default:
-                        {
-                            return false;
-                        }
-                    }
-                }
-
-                case UnaryExpression unaryExpression:
-                {
-                    switch (unwrapped.NodeType)
-                    {
-                        case ExpressionType.Not:
-                        {
-                            return unaryExpression.Operand is SqlInExpression
-                                || unaryExpression.Operand is SqlExistsExpression
-                                || unaryExpression.Operand is SqlLikeExpression;
-                        }
-
-                        default:
-                        {
-                            return false;
-                        }
-                    }
-                }
-
-                default:
-                {
-                    return false;
-                }
-            }
-        }
-
-        public static bool IsBooleanValuedSqlExpression(this Expression expression)
-        {
-            if (!expression.Type.IsBooleanType())
-            {
-                return false;
-            }
-
-            var unwrapped = expression.UnwrapInnerExpression();
-
-            switch (unwrapped)
-            {
-                case SqlInExpression _:
-                case SqlExistsExpression _:
-                case SqlLikeExpression _:
-                {
-                    return false;
-                }
-
-                case BinaryExpression _ when unwrapped.NodeType == ExpressionType.Coalesce:
-                case BinaryExpression _ when unwrapped.NodeType == ExpressionType.ExclusiveOr:
-                case BinaryExpression _ when unwrapped.NodeType == ExpressionType.And:
-                case BinaryExpression _ when unwrapped.NodeType == ExpressionType.Or:
-                case ConditionalExpression _:
-                case ConstantExpression _:
-                case SqlExpression _:
-                case RelationalQueryExpression _:
-                {
-                    return true;
-                }
-
-                default:
-                {
-                    return false;
-                }
-            }
-        }
-
-        public static IEnumerable<MemberBinding> Iterate(this IEnumerable<MemberBinding> bindings)
-        {
-            foreach (var binding in bindings)
-            {
-                switch (binding)
-                {
-                    case MemberAssignment memberAssignment:
-                    {
-                        yield return memberAssignment;
-
-                        break;
-                    }
-
-                    case MemberListBinding memberListBinding:
-                    {
-                        yield return memberListBinding;
-
-                        break;
-                    }
-
-                    case MemberMemberBinding memberMemberBinding:
-                    {
-                        foreach (var yielded in memberMemberBinding.Bindings.Iterate())
-                        {
-                            yield return yielded;
-                        }
-
-                        break;
-                    }
-                }
-            }
-        }
-
-        private static readonly MethodInfo enumerableToListMethodInfo
-            = ReflectionExtensions.GetGenericMethodDefinition((IEnumerable<object> o) => o.ToList());
-
-        public static Expression AsCollectionType(this Expression sequence)
-        {
-            if (!sequence.Type.IsGenericType(typeof(ICollection<>)))
-            {
-                sequence
-                    = Expression.Call(
-                        enumerableToListMethodInfo.MakeGenericMethod(sequence.Type.GetSequenceType()),
-                        sequence);
-            }
-
-            return sequence;
-        }
-
-        public static bool ContainsNonLambdaDelegates(this MethodCallExpression methodCallExpression)
-        {
-            return methodCallExpression.Arguments
-                .Where(a => typeof(Delegate).IsAssignableFrom(a.Type))
-                .Any(a => a.NodeType != ExpressionType.Lambda);
-        }
-
-        public static bool ContainsNonLambdaExpressions(this MethodCallExpression methodCallExpression)
-        {
-            return methodCallExpression.Arguments
-                .Where(a => typeof(Expression).IsAssignableFrom(a.Type))
-                .Any(a => a.NodeType != ExpressionType.Quote);
-        }
-
-        public static BinaryExpression Balance(this BinaryExpression binaryExpression)
-        {
-            return BinaryBalancingExpressionVisitor.Instance.VisitAndConvert(binaryExpression, nameof(Balance));
-        }
-
-        public static IEnumerable<Expression> SplitNodes(this Expression expression, ExpressionType splitOn)
-        {
-            switch (expression)
-            {
-                case BinaryExpression binaryExpression
-                when binaryExpression.NodeType == splitOn:
-                {
-                    foreach (var left in SplitNodes(binaryExpression.Left, splitOn))
-                    {
-                        yield return left;
-                    }
-
-                    foreach (var right in SplitNodes(binaryExpression.Right, splitOn))
-                    {
-                        yield return right;
-                    }
-
-                    yield break;
-                }
-
-                default:
-                {
-                    yield return expression;
-                    yield break;
-                }
-            }
-        }
-
-        public static Expression VisitWith(this Expression expression, IEnumerable<ExpressionVisitor> visitors)
-        {
-            return visitors.Aggregate(expression, (e, v) => v.Visit(e));
-        }
-
-        public static LambdaExpression UnwrapLambda(this Expression expression)
-        {
-            switch (expression?.NodeType)
-            {
-                case ExpressionType.Quote:
-                {
-                    return ((UnaryExpression)expression).Operand as LambdaExpression;
-                }
-
-                default:
-                {
-                    return expression as LambdaExpression;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Removes any wrapping <see cref="AnnotationExpression"/>s, <see cref="ExtraPropertiesExpression"/>s,
-        /// and <see cref="UnaryExpression"/>s with type <see cref="ExpressionType.Convert"/> or
-        /// <see cref="ExpressionType.ConvertChecked"/> and returns the inner expression.
-        /// </summary>
-        public static Expression UnwrapInnerExpression(this Expression expression)
-        {
-            if (expression is null)
-            {
-                return expression;
-            }
-            else if (expression is AnnotationExpression annotationExpression)
-            {
-                return annotationExpression.Expression.UnwrapInnerExpression();
-            }
-            else if (expression is ExtraPropertiesExpression extraPropertiesExpression)
-            {
-                return extraPropertiesExpression.Expression.UnwrapInnerExpression();
-            }
-            else if (expression.NodeType == ExpressionType.Convert || expression.NodeType == ExpressionType.ConvertChecked)
-            {
-                return ((UnaryExpression)expression).Operand.UnwrapInnerExpression();
+                return Expression.Condition(
+                    Expression.Equal(expression, Expression.Constant(null)),
+                    Expression.Constant(null, typeof(bool?)),
+                    flipped
+                        ? Expression.Convert(
+                            Expression.Equal(
+                                expression,
+                                Expression.Constant(flag, typeof(bool?))),
+                            typeof(bool?))
+                        : expression);
             }
             else
             {
-                return expression;
+                return Expression.Condition(
+                    Expression.Equal(expression, Expression.Constant(flag)),
+                    Expression.Constant(true),
+                    Expression.Constant(false));
             }
         }
 
-        public static Expression Replace(this Expression expression, Expression target, Expression replacement)
-        {
-            return new ExpressionReplacingExpressionVisitor(target, replacement).Visit(expression);
-        }
+        var test = expression;
 
-        public static Expression ExpandParameters(this LambdaExpression lambdaExpression, params Expression[] expansions)
+        if (!test.IsLogicalBooleanSqlExpression())
         {
-            var lambdaBody = lambdaExpression.Body;
-
-            for (var i = 0; i < expansions.Length; i++)
+            if (nullable)
             {
-                lambdaBody = lambdaBody.Replace(lambdaExpression.Parameters[i], expansions[i]);
+                test
+                    = Expression.AndAlso(
+                        Expression.NotEqual(test, Expression.Constant(null)),
+                        test.AsLogicalBooleanSqlExpression());
             }
-
-            return new MemberAccessReducingExpressionVisitor().Visit(lambdaBody);
-        }
-
-        public static bool References(this Expression expression, Expression targetExpression)
-        {
-            var referenceCountingVisitor = new ReferenceCountingExpressionVisitor(targetExpression);
-
-            referenceCountingVisitor.Visit(expression);
-
-            return referenceCountingVisitor.ReferenceCount > 0;
-        }
-
-        public static bool ContainsAggregateOrSubquery(this Expression expression)
-        {
-            var visitor = new AggregateOrSubqueryFindingExpressionVisitor();
-
-            visitor.Visit(expression);
-
-            return visitor.FoundAggregateOrSubquery;
-        }
-
-        private class AggregateOrSubqueryFindingExpressionVisitor : ExpressionVisitor
-        {
-            public bool FoundAggregateOrSubquery { get; private set; }
-
-            public override Expression Visit(Expression node)
+            else
             {
-                if (FoundAggregateOrSubquery || node is SqlColumnExpression)
-                {
-                    return node;
-                }
-                else if (node is SqlAggregateExpression || node is SelectExpression)
-                {
-                    FoundAggregateOrSubquery = true;
-
-                    return node;
-                }
-                else
-                {
-                    return base.Visit(node);
-                }
+                test = test.AsLogicalBooleanSqlExpression();
             }
         }
 
-        public static bool IsValidGroupingKey(this Expression keySelector, SelectExpression selectExpression)
-        {
-            var leafGatherer = new ProjectionLeafGatheringExpressionVisitor();
-            leafGatherer.Visit(keySelector);
-            var leafExpressions = leafGatherer.GatheredExpressions.Values;
-            var outerTables = selectExpression.Table.Flatten().ToArray();
+        var ifTrue = (Expression)Expression.Constant(flag);
+        var ifFalse = (Expression)Expression.Constant(!flag);
 
-            return leafExpressions.All(e => outerTables.Any(t => e.References(t)));
+        if (nullable)
+        {
+            if (test.NodeType == ExpressionType.Convert)
+            {
+                test = ((UnaryExpression)test).Operand;
+            }
+            else
+            {
+                ifTrue = Expression.Convert(ifTrue, typeof(bool?));
+                ifFalse = Expression.Constant(null, typeof(bool?));
+            }
         }
+
+        return Expression.Condition(test, ifTrue, ifFalse);
+    }
+
+    public static bool IsLogicalBooleanSqlExpression(this Expression expression)
+    {
+        if (!expression.Type.IsBooleanType())
+        {
+            return false;
+        }
+
+        var unwrapped = expression.UnwrapInnerExpression();
+
+        switch (unwrapped)
+        {
+            case null:
+            {
+                return false;
+            }
+
+            case SqlExistsExpression _:
+            case SqlInExpression _:
+            case SqlLikeExpression _:
+            {
+                return true;
+            }
+
+            case BinaryExpression _:
+            {
+                switch (unwrapped.NodeType)
+                {
+                    case ExpressionType.Equal:
+                    case ExpressionType.NotEqual:
+                    case ExpressionType.AndAlso:
+                    case ExpressionType.OrElse:
+                    case ExpressionType.LessThan:
+                    case ExpressionType.LessThanOrEqual:
+                    case ExpressionType.GreaterThan:
+                    case ExpressionType.GreaterThanOrEqual:
+                    case ExpressionType.And:
+                    case ExpressionType.Or:
+                    {
+                        return true;
+                    }
+
+                    default:
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            case UnaryExpression unaryExpression:
+            {
+                switch (unwrapped.NodeType)
+                {
+                    case ExpressionType.Not:
+                    {
+                        return unaryExpression.Operand is SqlInExpression
+                            || unaryExpression.Operand is SqlExistsExpression
+                            || unaryExpression.Operand is SqlLikeExpression;
+                    }
+
+                    default:
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            default:
+            {
+                return false;
+            }
+        }
+    }
+
+    public static bool IsBooleanValuedSqlExpression(this Expression expression)
+    {
+        if (!expression.Type.IsBooleanType())
+        {
+            return false;
+        }
+
+        var unwrapped = expression.UnwrapInnerExpression();
+
+        switch (unwrapped)
+        {
+            case SqlInExpression _:
+            case SqlExistsExpression _:
+            case SqlLikeExpression _:
+            {
+                return false;
+            }
+
+            case BinaryExpression _ when unwrapped.NodeType == ExpressionType.Coalesce:
+            case BinaryExpression _ when unwrapped.NodeType == ExpressionType.ExclusiveOr:
+            case BinaryExpression _ when unwrapped.NodeType == ExpressionType.And:
+            case BinaryExpression _ when unwrapped.NodeType == ExpressionType.Or:
+            case ConditionalExpression _:
+            case ConstantExpression _:
+            case SqlExpression _:
+            case RelationalQueryExpression _:
+            {
+                return true;
+            }
+
+            default:
+            {
+                return false;
+            }
+        }
+    }
+
+    public static IEnumerable<MemberBinding> Iterate(this IEnumerable<MemberBinding> bindings)
+    {
+        foreach (var binding in bindings)
+        {
+            switch (binding)
+            {
+                case MemberAssignment memberAssignment:
+                {
+                    yield return memberAssignment;
+
+                    break;
+                }
+
+                case MemberListBinding memberListBinding:
+                {
+                    yield return memberListBinding;
+
+                    break;
+                }
+
+                case MemberMemberBinding memberMemberBinding:
+                {
+                    foreach (var yielded in memberMemberBinding.Bindings.Iterate())
+                    {
+                        yield return yielded;
+                    }
+
+                    break;
+                }
+            }
+        }
+    }
+
+    private static readonly MethodInfo enumerableToListMethodInfo
+        = ReflectionExtensions.GetGenericMethodDefinition((IEnumerable<object> o) => o.ToList());
+
+    public static Expression AsCollectionType(this Expression sequence)
+    {
+        if (!sequence.Type.IsGenericType(typeof(ICollection<>)))
+        {
+            sequence
+                = Expression.Call(
+                    enumerableToListMethodInfo.MakeGenericMethod(sequence.Type.GetSequenceType()),
+                    sequence);
+        }
+
+        return sequence;
+    }
+
+    public static bool ContainsNonLambdaDelegates(this MethodCallExpression methodCallExpression)
+    {
+        return methodCallExpression.Arguments
+            .Where(a => typeof(Delegate).IsAssignableFrom(a.Type))
+            .Any(a => a.NodeType != ExpressionType.Lambda);
+    }
+
+    public static bool ContainsNonLambdaExpressions(this MethodCallExpression methodCallExpression)
+    {
+        return methodCallExpression.Arguments
+            .Where(a => typeof(Expression).IsAssignableFrom(a.Type))
+            .Any(a => a.NodeType != ExpressionType.Quote);
+    }
+
+    public static BinaryExpression Balance(this BinaryExpression binaryExpression)
+    {
+        return BinaryBalancingExpressionVisitor.Instance.VisitAndConvert(binaryExpression, nameof(Balance));
+    }
+
+    public static IEnumerable<Expression> SplitNodes(this Expression expression, ExpressionType splitOn)
+    {
+        switch (expression)
+        {
+            case BinaryExpression binaryExpression
+            when binaryExpression.NodeType == splitOn:
+            {
+                foreach (var left in SplitNodes(binaryExpression.Left, splitOn))
+                {
+                    yield return left;
+                }
+
+                foreach (var right in SplitNodes(binaryExpression.Right, splitOn))
+                {
+                    yield return right;
+                }
+
+                yield break;
+            }
+
+            default:
+            {
+                yield return expression;
+                yield break;
+            }
+        }
+    }
+
+    public static Expression VisitWith(this Expression expression, IEnumerable<ExpressionVisitor> visitors)
+    {
+        return visitors.Aggregate(expression, (e, v) => v.Visit(e));
+    }
+
+    public static LambdaExpression UnwrapLambda(this Expression expression)
+    {
+        switch (expression?.NodeType)
+        {
+            case ExpressionType.Quote:
+            {
+                return ((UnaryExpression)expression).Operand as LambdaExpression;
+            }
+
+            default:
+            {
+                return expression as LambdaExpression;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Removes any wrapping <see cref="AnnotationExpression"/>s, <see cref="ExtraPropertiesExpression"/>s,
+    /// and <see cref="UnaryExpression"/>s with type <see cref="ExpressionType.Convert"/> or
+    /// <see cref="ExpressionType.ConvertChecked"/> and returns the inner expression.
+    /// </summary>
+    public static Expression UnwrapInnerExpression(this Expression expression)
+    {
+        if (expression is null)
+        {
+            return expression;
+        }
+        else if (expression is AnnotationExpression annotationExpression)
+        {
+            return annotationExpression.Expression.UnwrapInnerExpression();
+        }
+        else if (expression is ExtraPropertiesExpression extraPropertiesExpression)
+        {
+            return extraPropertiesExpression.Expression.UnwrapInnerExpression();
+        }
+        else if (expression.NodeType == ExpressionType.Convert || expression.NodeType == ExpressionType.ConvertChecked)
+        {
+            return ((UnaryExpression)expression).Operand.UnwrapInnerExpression();
+        }
+        else
+        {
+            return expression;
+        }
+    }
+
+    public static Expression Replace(this Expression expression, Expression target, Expression replacement)
+    {
+        return new ExpressionReplacingExpressionVisitor(target, replacement).Visit(expression);
+    }
+
+    public static Expression ExpandParameters(this LambdaExpression lambdaExpression, params Expression[] expansions)
+    {
+        var lambdaBody = lambdaExpression.Body;
+
+        for (var i = 0; i < expansions.Length; i++)
+        {
+            lambdaBody = lambdaBody.Replace(lambdaExpression.Parameters[i], expansions[i]);
+        }
+
+        return new MemberAccessReducingExpressionVisitor().Visit(lambdaBody);
+    }
+
+    public static bool References(this Expression expression, Expression targetExpression)
+    {
+        var referenceCountingVisitor = new ReferenceCountingExpressionVisitor(targetExpression);
+
+        referenceCountingVisitor.Visit(expression);
+
+        return referenceCountingVisitor.ReferenceCount > 0;
+    }
+
+    public static bool ContainsAggregateOrSubquery(this Expression expression)
+    {
+        var visitor = new AggregateOrSubqueryFindingExpressionVisitor();
+
+        visitor.Visit(expression);
+
+        return visitor.FoundAggregateOrSubquery;
+    }
+
+    private class AggregateOrSubqueryFindingExpressionVisitor : ExpressionVisitor
+    {
+        public bool FoundAggregateOrSubquery { get; private set; }
+
+        public override Expression Visit(Expression node)
+        {
+            if (FoundAggregateOrSubquery || node is SqlColumnExpression)
+            {
+                return node;
+            }
+            else if (node is SqlAggregateExpression || node is SelectExpression)
+            {
+                FoundAggregateOrSubquery = true;
+
+                return node;
+            }
+            else
+            {
+                return base.Visit(node);
+            }
+        }
+    }
+
+    public static bool IsValidGroupingKey(this Expression keySelector, SelectExpression selectExpression)
+    {
+        var leafGatherer = new ProjectionLeafGatheringExpressionVisitor();
+        leafGatherer.Visit(keySelector);
+        var leafExpressions = leafGatherer.GatheredExpressions.Values;
+        var outerTables = selectExpression.Table.Flatten().ToArray();
+
+        return leafExpressions.All(e => outerTables.Any(t => e.References(t)));
     }
 }

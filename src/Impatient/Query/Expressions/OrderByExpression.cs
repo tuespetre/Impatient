@@ -4,73 +4,72 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.Expressions
+namespace Impatient.Query.Expressions;
+
+public class OrderByExpression : Expression, ISemanticHashCodeProvider
 {
-    public class OrderByExpression : Expression, ISemanticHashCodeProvider
+    public OrderByExpression(Expression expression, bool descending)
     {
-        public OrderByExpression(Expression expression, bool descending)
+        Expression = expression ?? throw new ArgumentNullException(nameof(expression));
+        Descending = descending;
+    }
+
+    public Expression Expression { get; }
+
+    public bool Descending { get; }
+
+    public override Type Type => Expression.Type;
+
+    public override ExpressionType NodeType => ExpressionType.Extension;
+
+    protected override Expression VisitChildren(ExpressionVisitor visitor)
+    {
+        var expression = visitor.VisitAndConvert(Expression, nameof(VisitChildren));
+
+        if (expression != Expression)
         {
-            Expression = expression ?? throw new ArgumentNullException(nameof(expression));
-            Descending = descending;
+            return new OrderByExpression(expression, Descending);
         }
 
-        public Expression Expression { get; }
+        return this;
+    }
 
-        public bool Descending { get; }
+    public virtual OrderByExpression Reverse()
+    {
+        return new OrderByExpression(Expression, !Descending);
+    }
 
-        public override Type Type => Expression.Type;
+    public virtual IEnumerable<OrderByExpression> Iterate()
+    {
+        yield return this;
+    }
 
-        public override ExpressionType NodeType => ExpressionType.Extension;
-
-        protected override Expression VisitChildren(ExpressionVisitor visitor)
+    public virtual OrderByExpression Combine(OrderByExpression other)
+    {
+        if (other is null)
         {
-            var expression = visitor.VisitAndConvert(Expression, nameof(VisitChildren));
-
-            if (expression != Expression)
-            {
-                return new OrderByExpression(expression, Descending);
-            }
-
             return this;
         }
 
-        public virtual OrderByExpression Reverse()
+        var result = this;
+
+        foreach (var orderByExpression in other.Iterate().Reverse())
         {
-            return new OrderByExpression(Expression, !Descending);
+            result = new ThenOrderByExpression(result, orderByExpression.Expression, orderByExpression.Descending);
         }
 
-        public virtual IEnumerable<OrderByExpression> Iterate()
+        return result;
+    }
+
+    public virtual int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+    {
+        unchecked
         {
-            yield return this;
-        }
+            var hash = comparer.GetHashCode(Expression);
 
-        public virtual OrderByExpression Combine(OrderByExpression other)
-        {
-            if (other is null)
-            {
-                return this;
-            }
+            hash = (hash * 16777619) ^ Descending.GetHashCode();
 
-            var result = this;
-
-            foreach (var orderByExpression in other.Iterate().Reverse())
-            {
-                result = new ThenOrderByExpression(result, orderByExpression.Expression, orderByExpression.Descending);
-            }
-
-            return result;
-        }
-
-        public virtual int GetSemanticHashCode(ExpressionEqualityComparer comparer)
-        {
-            unchecked
-            {
-                var hash = comparer.GetHashCode(Expression);
-
-                hash = (hash * 16777619) ^ Descending.GetHashCode();
-
-                return hash;
-            }
+            return hash;
         }
     }
 }

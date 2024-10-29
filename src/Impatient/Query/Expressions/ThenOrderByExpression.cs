@@ -3,61 +3,60 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.Expressions
+namespace Impatient.Query.Expressions;
+
+public class ThenOrderByExpression : OrderByExpression
 {
-    public class ThenOrderByExpression : OrderByExpression
+    public ThenOrderByExpression(OrderByExpression previous, Expression expression, bool descending)
+        : base(expression, descending)
     {
-        public ThenOrderByExpression(OrderByExpression previous, Expression expression, bool descending)
-            : base(expression, descending)
+        Previous = previous ?? throw new ArgumentNullException(nameof(previous));
+    }
+
+    public OrderByExpression Previous { get; }
+
+    protected override Expression VisitChildren(ExpressionVisitor visitor)
+    {
+        var previous = visitor.VisitAndConvert(Previous, nameof(VisitChildren));
+        var expression = visitor.VisitAndConvert(Expression, nameof(VisitChildren));
+
+        if (previous != Previous || expression != Expression)
         {
-            Previous = previous ?? throw new ArgumentNullException(nameof(previous));
+            return new ThenOrderByExpression(previous, expression, Descending);
         }
 
-        public OrderByExpression Previous { get; }
+        return this;
+    }
 
-        protected override Expression VisitChildren(ExpressionVisitor visitor)
+    public override OrderByExpression Reverse()
+    {
+        return new ThenOrderByExpression(Previous.Reverse(), Expression, !Descending);
+    }
+
+    public override IEnumerable<OrderByExpression> Iterate()
+    {
+        var current = this as OrderByExpression;
+
+        while (current is ThenOrderByExpression thenOrderByExpression)
         {
-            var previous = visitor.VisitAndConvert(Previous, nameof(VisitChildren));
-            var expression = visitor.VisitAndConvert(Expression, nameof(VisitChildren));
+            yield return thenOrderByExpression;
 
-            if (previous != Previous || expression != Expression)
-            {
-                return new ThenOrderByExpression(previous, expression, Descending);
-            }
-
-            return this;
+            current = thenOrderByExpression.Previous;
         }
 
-        public override OrderByExpression Reverse()
+        yield return current;
+    }
+
+    public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+    {
+        unchecked
         {
-            return new ThenOrderByExpression(Previous.Reverse(), Expression, !Descending);
-        }
+            var hash = comparer.GetHashCode(Previous);
 
-        public override IEnumerable<OrderByExpression> Iterate()
-        {
-            var current = this as OrderByExpression;
+            hash = (hash * 16777619) ^ comparer.GetHashCode(Expression);
+            hash = (hash * 16777619) ^ Descending.GetHashCode();
 
-            while (current is ThenOrderByExpression thenOrderByExpression)
-            {
-                yield return thenOrderByExpression;
-
-                current = thenOrderByExpression.Previous;
-            }
-
-            yield return current;
-        }
-
-        public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)
-        {
-            unchecked
-            {
-                var hash = comparer.GetHashCode(Previous);
-
-                hash = (hash * 16777619) ^ comparer.GetHashCode(Expression);
-                hash = (hash * 16777619) ^ Descending.GetHashCode();
-
-                return hash;
-            }
+            return hash;
         }
     }
 }

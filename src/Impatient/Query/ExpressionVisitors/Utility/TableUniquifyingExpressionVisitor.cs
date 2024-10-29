@@ -1,28 +1,27 @@
 ﻿using Impatient.Query.Expressions;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.ExpressionVisitors.Utility
+namespace Impatient.Query.ExpressionVisitors.Utility;
+
+public class TableUniquifyingExpressionVisitor : ExpressionVisitor
 {
-    public class TableUniquifyingExpressionVisitor : ExpressionVisitor
+    public override Expression Visit(Expression node)
     {
-        public override Expression Visit(Expression node)
+        switch (node)
         {
-            switch (node)
+            case SqlColumnExpression sqlColumnExpression:
             {
-                case SqlColumnExpression sqlColumnExpression:
-                {
-                    return sqlColumnExpression;
-                }
+                return sqlColumnExpression;
+            }
 
-                case BaseTableExpression baseTableExpression:
-                {
-                    return baseTableExpression.Clone();
-                }
+            case BaseTableExpression baseTableExpression:
+            {
+                return baseTableExpression.Clone();
+            }
 
-                default:
-                {
-                    return base.Visit(node);
-                }
+            default:
+            {
+                return base.Visit(node);
             }
         }
     }

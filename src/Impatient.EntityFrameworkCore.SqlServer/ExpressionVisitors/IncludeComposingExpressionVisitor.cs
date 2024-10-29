@@ -11,432 +11,431 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.EntityFrameworkCore.SqlServer
+namespace Impatient.EntityFrameworkCore.SqlServer;
+
+public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descriptorSet) : ExpressionVisitor
 {
-    public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descriptorSet) : ExpressionVisitor
+    private static readonly MethodInfo queryableSelectMethodInfo
+        = ReflectionExtensions.GetGenericMethodDefinition((IQueryable<object> o) => o.Select(x => x));
+
+    private static readonly MethodInfo enumerableSelectMethodInfo
+        = ReflectionExtensions.GetGenericMethodDefinition((IEnumerable<object> o) => o.Select(x => x));
+
+    private static readonly MethodInfo queryableCastMethodInfo
+        = ReflectionExtensions.GetGenericMethodDefinition((IQueryable o) => o.Cast<object>());
+
+    private static readonly MethodInfo queryableOfTypeMethodInfo
+        = ReflectionExtensions.GetGenericMethodDefinition((IQueryable o) => o.OfType<object>());
+
+    private readonly IModel model = model;
+    private readonly DescriptorSet descriptorSet = descriptorSet;
+
+    protected override Expression VisitMethodCall(MethodCallExpression node)
     {
-        private static readonly MethodInfo queryableSelectMethodInfo
-            = ReflectionExtensions.GetGenericMethodDefinition((IQueryable<object> o) => o.Select(x => x));
-
-        private static readonly MethodInfo enumerableSelectMethodInfo
-            = ReflectionExtensions.GetGenericMethodDefinition((IEnumerable<object> o) => o.Select(x => x));
-
-        private static readonly MethodInfo queryableCastMethodInfo
-            = ReflectionExtensions.GetGenericMethodDefinition((IQueryable o) => o.Cast<object>());
-
-        private static readonly MethodInfo queryableOfTypeMethodInfo
-            = ReflectionExtensions.GetGenericMethodDefinition((IQueryable o) => o.OfType<object>());
-
-        private readonly IModel model = model;
-        private readonly DescriptorSet descriptorSet = descriptorSet;
-
-        protected override Expression VisitMethodCall(MethodCallExpression node)
+        if (!IsIncludeOrThenIncludeMethod(node.Method))
         {
-            if (!IsIncludeOrThenIncludeMethod(node.Method))
+            return base.VisitMethodCall(node);
+        }
+
+        /*
+            var filteredBlogs = context.Blogs
+                .Include(blog => blog.Posts.Where(post => post.BlogId == 1))
+                .ThenInclude(post => post.Author)
+                .Include(blog => blog.Posts.Where(post => post.BlogId == 1))
+                .ThenInclude(post => post.Tags.OrderBy(postTag => postTag.TagId).Skip(3))
+                .ToList();
+        */
+
+        // Where, OrderBy, OrderByDescending, ThenBy, ThenByDescending, Skip, Take
+
+        var currentSet = new List<List<MemberInfo>> { new() };
+        var paths = new List<List<MemberInfo>>();
+        var inner = node.Arguments[0];
+        var type = inner.Type.GetSequenceType();
+
+        do
+        {
+            switch (node.Arguments[1].UnwrapLambda() ?? node.Arguments[1])
             {
-                return base.VisitMethodCall(node);
-            }
-
-            /*
-                var filteredBlogs = context.Blogs
-                    .Include(blog => blog.Posts.Where(post => post.BlogId == 1))
-                    .ThenInclude(post => post.Author)
-                    .Include(blog => blog.Posts.Where(post => post.BlogId == 1))
-                    .ThenInclude(post => post.Tags.OrderBy(postTag => postTag.TagId).Skip(3))
-                    .ToList();
-            */
-
-            // Where, OrderBy, OrderByDescending, ThenBy, ThenByDescending, Skip, Take
-
-            var currentSet = new List<List<MemberInfo>> { new() };
-            var paths = new List<List<MemberInfo>>();
-            var inner = node.Arguments[0];
-            var type = inner.Type.GetSequenceType();
-
-            do
-            {
-                switch (node.Arguments[1].UnwrapLambda() ?? node.Arguments[1])
+                case LambdaExpression lambdaExpression:
                 {
-                    case LambdaExpression lambdaExpression:
+                    foreach (var path in currentSet)
                     {
-                        foreach (var path in currentSet)
-                        {
-                            path.InsertRange(0, ProcessIncludeLambda(lambdaExpression));
-                        }
-
-                        break;
+                        path.InsertRange(0, ProcessIncludeLambda(lambdaExpression));
                     }
 
-                    case ConstantExpression constantExpression:
-                    {
-                        var argument = (string)((ConstantExpression)node.Arguments[1]).Value;
-                        var names = argument.Split('.').Select(p => p.Trim()).ToArray();
-                        var startCount = currentSet.Count;
-                        var resolvedPaths = ResolveIncludePaths(type, names);
-
-                        for (var i = 0; i < startCount; i++)
-                        {
-                            foreach (var resolvedPath in resolvedPaths)
-                            {
-                                currentSet.Add([.. resolvedPath, .. currentSet[i]]);
-                            }
-                        }
-
-                        currentSet.RemoveRange(0, startCount);
-
-                        break;
-                    }
-
-                    default:
-                    {
-                        throw new NotSupportedException($"Include argument expression of type {node.Arguments[1].NodeType} not supported");
-                    }
+                    break;
                 }
 
-                if (IsIncludeOrThenIncludeMethod(node.Method) && !IsThenIncludeMethod(node.Method))
+                case ConstantExpression constantExpression:
                 {
-                    // Paths are inserted at the beginning to preserve the 
-                    // semantic order of includes defined by the query.
-                    paths.InsertRange(0, currentSet);
-                    currentSet = [[]];
+                    var argument = (string)((ConstantExpression)node.Arguments[1]).Value;
+                    var names = argument.Split('.').Select(p => p.Trim()).ToArray();
+                    var startCount = currentSet.Count;
+                    var resolvedPaths = ResolveIncludePaths(type, names);
+
+                    for (var i = 0; i < startCount; i++)
+                    {
+                        foreach (var resolvedPath in resolvedPaths)
+                        {
+                            currentSet.Add([.. resolvedPath, .. currentSet[i]]);
+                        }
+                    }
+
+                    currentSet.RemoveRange(0, startCount);
+
+                    break;
                 }
 
-                inner = node.Arguments[0];
-                type = inner.Type.GetSequenceType();
-                node = inner as MethodCallExpression;
+                default:
+                {
+                    throw new NotSupportedException($"Include argument expression of type {node.Arguments[1].NodeType} not supported");
+                }
             }
-            while (IsIncludeOrThenIncludeMethod(node?.Method));
 
-            if (currentSet.Any(p => p.Count != 0))
+            if (IsIncludeOrThenIncludeMethod(node.Method) && !IsThenIncludeMethod(node.Method))
             {
+                // Paths are inserted at the beginning to preserve the 
+                // semantic order of includes defined by the query.
                 paths.InsertRange(0, currentSet);
+                currentSet = [[]];
             }
 
-            var innerSequenceType = inner.Type.GetSequenceType();
+            inner = node.Arguments[0];
+            type = inner.Type.GetSequenceType();
+            node = inner as MethodCallExpression;
+        }
+        while (IsIncludeOrThenIncludeMethod(node?.Method));
 
-            var entityType = GetEntityTypeForInclude(innerSequenceType);
-
-            var parameter
-                = Expression.Parameter(
-                    innerSequenceType,
-                    entityType.GetTableName()[..1].ToLower());
-
-            var includeAccessors
-                = BuildIncludeAccessors(
-                    entityType,
-                    parameter,
-                    paths.AsEnumerable(),
-                    Array.Empty<INavigation>()).ToArray();
-
-            var includeExpression
-                = new IncludeExpression(
-                    parameter,
-                    includeAccessors.Select(i => i.expression),
-                    includeAccessors.Select(i => i.path));
-
-            return Expression.Call(
-                queryableSelectMethodInfo.MakeGenericMethod(parameter.Type, parameter.Type),
-                Visit(inner),
-                Expression.Lambda(includeExpression, parameter));
+        if (currentSet.Any(p => p.Count != 0))
+        {
+            paths.InsertRange(0, currentSet);
         }
 
-        private List<List<MemberInfo>> ResolveIncludePaths(Type type, string[] names)
+        var innerSequenceType = inner.Type.GetSequenceType();
+
+        var entityType = GetEntityTypeForInclude(innerSequenceType);
+
+        var parameter
+            = Expression.Parameter(
+                innerSequenceType,
+                entityType.GetTableName()[..1].ToLower());
+
+        var includeAccessors
+            = BuildIncludeAccessors(
+                entityType,
+                parameter,
+                paths.AsEnumerable(),
+                Array.Empty<INavigation>()).ToArray();
+
+        var includeExpression
+            = new IncludeExpression(
+                parameter,
+                includeAccessors.Select(i => i.expression),
+                includeAccessors.Select(i => i.path));
+
+        return Expression.Call(
+            queryableSelectMethodInfo.MakeGenericMethod(parameter.Type, parameter.Type),
+            Visit(inner),
+            Expression.Lambda(includeExpression, parameter));
+    }
+
+    private List<List<MemberInfo>> ResolveIncludePaths(Type type, string[] names)
+    {
+        var entityType = GetEntityTypeForInclude(type);
+
+        int depth = 0;
+
+        var paths = ResolveIncludePaths(names, ref depth, ref entityType).Select(p => p.ToList()).ToList();
+
+        if (!paths.Any(p => p.Count == names.Length))
         {
-            var entityType = GetEntityTypeForInclude(type);
-
-            int depth = 0;
-
-            var paths = ResolveIncludePaths(names, ref depth, ref entityType).Select(p => p.ToList()).ToList();
-
-            if (!paths.Any(p => p.Count == names.Length))
-            {
-                throw new InvalidOperationException("Include error");
-            }
-
-            return paths;
+            throw new InvalidOperationException("Include error");
         }
 
-        private List<List<MemberInfo>> ResolveIncludePaths(string[] names, ref int depth, ref IEntityType entityType)
+        return paths;
+    }
+
+    private List<List<MemberInfo>> ResolveIncludePaths(string[] names, ref int depth, ref IEntityType entityType)
+    {
+        var navigations = entityType.FindDerivedNavigations(names[depth]);
+
+        if (entityType.FindNavigation(names[depth]) is INavigation nonderived)
         {
-            var navigations = entityType.FindDerivedNavigations(names[depth]);
+            navigations = navigations.Prepend(nonderived);
+        }
 
-            if (entityType.FindNavigation(names[depth]) is INavigation nonderived)
-            {
-                navigations = navigations.Prepend(nonderived);
-            }
+        var result = new List<List<MemberInfo>>();
 
-            var result = new List<List<MemberInfo>>();
+        if (!navigations.Any())
+        {
+            return result;
+        }
 
-            if (!navigations.Any())
-            {
-                return result;
-            }
+        navigations = navigations.Distinct();
 
-            navigations = navigations.Distinct();
+        depth++;
 
-            depth++;
+        if (depth == names.Length)
+        {
+            depth--;
 
-            if (depth == names.Length)
-            {
-                depth--;
-
-                result.AddRange(navigations.Select(n => new List<MemberInfo> { n.GetIdentifyingMemberInfo() }));
-
-                return result;
-            }
-
-            foreach (var navigation in navigations)
-            {
-                var subtype = navigation.TargetEntityType;
-                var success = false;
-                var resolvedSubpaths = ResolveIncludePaths(names, ref depth, ref subtype);
-
-                foreach (var subpath in resolvedSubpaths)
-                {
-                    success |= subpath.Count != 0;
-
-                    subpath.Insert(0, navigation.GetIdentifyingMemberInfo());
-
-                    result.Add(subpath);
-                }
-
-                if (!success)
-                {
-                    entityType = subtype;
-                }
-
-                if (resolvedSubpaths.Count == 0)
-                {
-                    result.Add([navigation.GetIdentifyingMemberInfo()]);
-                }
-            }
+            result.AddRange(navigations.Select(n => new List<MemberInfo> { n.GetIdentifyingMemberInfo() }));
 
             return result;
         }
 
-        private IEnumerable<MemberInfo> ProcessIncludeLambda(LambdaExpression lambdaExpression)
+        foreach (var navigation in navigations)
         {
-            if (!lambdaExpression.TryGetComplexPropertyAccess(out var properties))
+            var subtype = navigation.TargetEntityType;
+            var success = false;
+            var resolvedSubpaths = ResolveIncludePaths(names, ref depth, ref subtype);
+
+            foreach (var subpath in resolvedSubpaths)
             {
-                throw new InvalidOperationException("The specified include expression is not supported.");
+                success |= subpath.Count != 0;
+
+                subpath.Insert(0, navigation.GetIdentifyingMemberInfo());
+
+                result.Add(subpath);
             }
 
-            var clrType
-                = lambdaExpression.Parameters[0].Type.IsSequenceType()
-                    ? lambdaExpression.Parameters[0].Type.GetSequenceType()
-                    : lambdaExpression.Parameters[0].Type;
-
-            var entityType = GetEntityTypeForInclude(clrType);
-
-            foreach (var property in properties)
+            if (!success)
             {
-                var navigation = entityType.FindNavigation(property);
+                entityType = subtype;
+            }
 
-                if (navigation is null)
-                {
-                    navigation
-                        = entityType
-                            .FindDerivedNavigations(property.Name)
-                            .SingleOrDefault(n => n.PropertyInfo == property);
-                }
-
-                if (navigation is null)
-                {
-                    throw new InvalidOperationException("The specified include expression does not reference a defined navigation.");
-                }
-
-                yield return property;
-
-                entityType = navigation.TargetEntityType;
+            if (resolvedSubpaths.Count == 0)
+            {
+                result.Add([navigation.GetIdentifyingMemberInfo()]);
             }
         }
 
-        private static IEnumerable<(Expression expression, IList<INavigation> path)> BuildIncludeAccessors(
-            IEntityType entityType,
-            Expression baseExpression,
-            IEnumerable<IEnumerable<MemberInfo>> paths,
-            IList<INavigation> previousPath)
+        return result;
+    }
+
+    private IEnumerable<MemberInfo> ProcessIncludeLambda(LambdaExpression lambdaExpression)
+    {
+        if (!lambdaExpression.TryGetComplexPropertyAccess(out var properties))
         {
-            foreach (var pathset in paths.Where(p => p.Any()).GroupBy(p => p.First(), p => p.Skip(1)))
+            throw new InvalidOperationException("The specified include expression is not supported.");
+        }
+
+        var clrType
+            = lambdaExpression.Parameters[0].Type.IsSequenceType()
+                ? lambdaExpression.Parameters[0].Type.GetSequenceType()
+                : lambdaExpression.Parameters[0].Type;
+
+        var entityType = GetEntityTypeForInclude(clrType);
+
+        foreach (var property in properties)
+        {
+            var navigation = entityType.FindNavigation(property);
+
+            if (navigation is null)
             {
-                var includedMember = pathset.Key;
-
-                var navigation = entityType.GetNavigations().FirstOrDefault(n => n.GetSemanticReadableMemberInfo().Equals(includedMember));
-
-                if (navigation is null)
-                {
-                    // The navigation may be null in some inheritance scenarios.
-
-                    navigation = (from t in entityType.GetDerivedTypes()
-                                  from n in t.GetNavigations()
-                                  where n.GetSemanticReadableMemberInfo().Equals(includedMember)
-                                  select n).FirstOrDefault();
-
-                    if (navigation is null)
-                    {
-                        // TODO: maybe throw?
-                        continue;
-                    }
-                }
-
-                var currentBaseExpression = baseExpression;
-
-                if (includedMember.DeclaringType.IsSubclassOf(currentBaseExpression.Type))
-                {
-                    currentBaseExpression = Expression.Convert(currentBaseExpression, includedMember.DeclaringType);
-                }
-
-                var includedExpression = Expression.MakeMemberAccess(currentBaseExpression, includedMember) as Expression;
-
-                var currentPath = previousPath.ToList();
-
-                currentPath.Add(navigation);
-
-                if (pathset.Any(p => p.Any()))
-                {
-                    if (includedMember.GetMemberType().IsSequenceType())
-                    {
-                        var sequenceType = includedMember.GetMemberType().GetSequenceType();
-                        var innerParameter = Expression.Parameter(sequenceType);
-
-                        var innerIncludes
-                            = BuildIncludeAccessors(
-                                navigation.TargetEntityType,
-                                innerParameter,
-                                pathset,
-                                Array.Empty<INavigation>()).ToArray();
-
-                        var includeExpression
-                            = new IncludeExpression(
-                                innerParameter,
-                                innerIncludes.Select(i => i.expression),
-                                innerIncludes.Select(i => i.path));
-
-                        var sequenceExpression
-                            = (Expression)Expression.Call(
-                                enumerableSelectMethodInfo.MakeGenericMethod(sequenceType, sequenceType),
-                                includedExpression,
-                                Expression.Lambda(includeExpression, innerParameter));
-
-                        if (includedMember.GetMemberType().IsCollectionType())
-                        {
-                            sequenceExpression = sequenceExpression.AsCollectionType();
-                        }
-
-                        yield return (sequenceExpression, currentPath);
-                    }
-                    else
-                    {
-                        var innerIncludes
-                            = BuildIncludeAccessors(
-                                navigation.TargetEntityType,
-                                includedExpression,
-                                pathset,
-                                currentPath);
-
-                        yield return (includedExpression, currentPath);
-
-                        foreach (var innerInclude in innerIncludes)
-                        {
-                            yield return innerInclude;
-                        }
-                    }
-                }
-                else
-                {
-                    yield return (includedExpression, currentPath);
-                }
-            }
-        }
-
-        private static bool IsIncludeOrThenIncludeMethod(MethodInfo method)
-        {
-            return method?.DeclaringType == typeof(EntityFrameworkQueryableExtensions)
-                && method.Name.EndsWith(nameof(EntityFrameworkQueryableExtensions.Include));
-        }
-
-        private static bool IsThenIncludeMethod(MethodInfo method)
-        {
-            return method?.DeclaringType == typeof(EntityFrameworkQueryableExtensions)
-                && method.Name.Equals(nameof(EntityFrameworkQueryableExtensions.ThenInclude));
-        }
-
-        private IEntityType GetEntityTypeForInclude(Type type)
-        {
-            var entityType = model.GetEntityTypes().SingleOrDefault(t => !t.IsOwned() && t.ClrType == type);
-
-            if (entityType is null)
-            {
-                throw new InvalidOperationException($"Unable to include entity of unmapped type: {type.FullName}");
+                navigation
+                    = entityType
+                        .FindDerivedNavigations(property.Name)
+                        .SingleOrDefault(n => n.PropertyInfo == property);
             }
 
-            return entityType;
+            if (navigation is null)
+            {
+                throw new InvalidOperationException("The specified include expression does not reference a defined navigation.");
+            }
+
+            yield return property;
+
+            entityType = navigation.TargetEntityType;
         }
     }
 
-    internal static class ExpressionExtensionsShim
+    private static IEnumerable<(Expression expression, IList<INavigation> path)> BuildIncludeAccessors(
+        IEntityType entityType,
+        Expression baseExpression,
+        IEnumerable<IEnumerable<MemberInfo>> paths,
+        IList<INavigation> previousPath)
     {
-        public static bool TryGetComplexPropertyAccess(
-            this LambdaExpression propertyAccessExpression,
-            out IReadOnlyList<PropertyInfo> propertyPath)
+        foreach (var pathset in paths.Where(p => p.Any()).GroupBy(p => p.First(), p => p.Skip(1)))
         {
-            Debug.Assert(propertyAccessExpression.Parameters.Count == 1);
+            var includedMember = pathset.Key;
 
-            propertyPath
-                = propertyAccessExpression
-                    .Parameters
-                    .Single()
-                    .MatchPropertyAccess(propertyAccessExpression.Body);
+            var navigation = entityType.GetNavigations().FirstOrDefault(n => n.GetSemanticReadableMemberInfo().Equals(includedMember));
 
-            return propertyPath is not null;
-        }
-
-        private static List<PropertyInfo> MatchPropertyAccess(
-            this Expression parameterExpression, 
-            Expression propertyAccessExpression)
-        {
-            var propertyInfos = new List<PropertyInfo>();
-
-            MemberExpression memberExpression;
-
-            do
+            if (navigation is null)
             {
-                memberExpression = RemoveTypeAs(RemoveConvert(propertyAccessExpression)) as MemberExpression;
+                // The navigation may be null in some inheritance scenarios.
 
-                if (memberExpression?.Member is not PropertyInfo propertyInfo)
+                navigation = (from t in entityType.GetDerivedTypes()
+                              from n in t.GetNavigations()
+                              where n.GetSemanticReadableMemberInfo().Equals(includedMember)
+                              select n).FirstOrDefault();
+
+                if (navigation is null)
                 {
-                    return null;
+                    // TODO: maybe throw?
+                    continue;
                 }
-
-                propertyInfos.Insert(0, propertyInfo);
-
-                propertyAccessExpression = memberExpression.Expression;
             }
-            while (RemoveTypeAs(RemoveConvert(memberExpression.Expression)) != parameterExpression);
 
-            return propertyInfos;
-        }
+            var currentBaseExpression = baseExpression;
 
-        public static Expression RemoveConvert(this Expression expression)
-        {
-            while (expression is not null
-                   && (expression.NodeType == ExpressionType.Convert
-                       || expression.NodeType == ExpressionType.ConvertChecked))
+            if (includedMember.DeclaringType.IsSubclassOf(currentBaseExpression.Type))
             {
-                expression = RemoveConvert(((UnaryExpression)expression).Operand);
+                currentBaseExpression = Expression.Convert(currentBaseExpression, includedMember.DeclaringType);
             }
 
-            return expression;
-        }
+            var includedExpression = Expression.MakeMemberAccess(currentBaseExpression, includedMember) as Expression;
 
-        public static Expression RemoveTypeAs(this Expression expression)
-        {
-            while ((expression?.NodeType == ExpressionType.TypeAs))
+            var currentPath = previousPath.ToList();
+
+            currentPath.Add(navigation);
+
+            if (pathset.Any(p => p.Any()))
             {
-                expression = RemoveConvert(((UnaryExpression)expression).Operand);
+                if (includedMember.GetMemberType().IsSequenceType())
+                {
+                    var sequenceType = includedMember.GetMemberType().GetSequenceType();
+                    var innerParameter = Expression.Parameter(sequenceType);
+
+                    var innerIncludes
+                        = BuildIncludeAccessors(
+                            navigation.TargetEntityType,
+                            innerParameter,
+                            pathset,
+                            Array.Empty<INavigation>()).ToArray();
+
+                    var includeExpression
+                        = new IncludeExpression(
+                            innerParameter,
+                            innerIncludes.Select(i => i.expression),
+                            innerIncludes.Select(i => i.path));
+
+                    var sequenceExpression
+                        = (Expression)Expression.Call(
+                            enumerableSelectMethodInfo.MakeGenericMethod(sequenceType, sequenceType),
+                            includedExpression,
+                            Expression.Lambda(includeExpression, innerParameter));
+
+                    if (includedMember.GetMemberType().IsCollectionType())
+                    {
+                        sequenceExpression = sequenceExpression.AsCollectionType();
+                    }
+
+                    yield return (sequenceExpression, currentPath);
+                }
+                else
+                {
+                    var innerIncludes
+                        = BuildIncludeAccessors(
+                            navigation.TargetEntityType,
+                            includedExpression,
+                            pathset,
+                            currentPath);
+
+                    yield return (includedExpression, currentPath);
+
+                    foreach (var innerInclude in innerIncludes)
+                    {
+                        yield return innerInclude;
+                    }
+                }
+            }
+            else
+            {
+                yield return (includedExpression, currentPath);
+            }
+        }
+    }
+
+    private static bool IsIncludeOrThenIncludeMethod(MethodInfo method)
+    {
+        return method?.DeclaringType == typeof(EntityFrameworkQueryableExtensions)
+            && method.Name.EndsWith(nameof(EntityFrameworkQueryableExtensions.Include));
+    }
+
+    private static bool IsThenIncludeMethod(MethodInfo method)
+    {
+        return method?.DeclaringType == typeof(EntityFrameworkQueryableExtensions)
+            && method.Name.Equals(nameof(EntityFrameworkQueryableExtensions.ThenInclude));
+    }
+
+    private IEntityType GetEntityTypeForInclude(Type type)
+    {
+        var entityType = model.GetEntityTypes().SingleOrDefault(t => !t.IsOwned() && t.ClrType == type);
+
+        if (entityType is null)
+        {
+            throw new InvalidOperationException($"Unable to include entity of unmapped type: {type.FullName}");
+        }
+
+        return entityType;
+    }
+}
+
+internal static class ExpressionExtensionsShim
+{
+    public static bool TryGetComplexPropertyAccess(
+        this LambdaExpression propertyAccessExpression,
+        out IReadOnlyList<PropertyInfo> propertyPath)
+    {
+        Debug.Assert(propertyAccessExpression.Parameters.Count == 1);
+
+        propertyPath
+            = propertyAccessExpression
+                .Parameters
+                .Single()
+                .MatchPropertyAccess(propertyAccessExpression.Body);
+
+        return propertyPath is not null;
+    }
+
+    private static List<PropertyInfo> MatchPropertyAccess(
+        this Expression parameterExpression, 
+        Expression propertyAccessExpression)
+    {
+        var propertyInfos = new List<PropertyInfo>();
+
+        MemberExpression memberExpression;
+
+        do
+        {
+            memberExpression = RemoveTypeAs(RemoveConvert(propertyAccessExpression)) as MemberExpression;
+
+            if (memberExpression?.Member is not PropertyInfo propertyInfo)
+            {
+                return null;
             }
 
-            return expression;
+            propertyInfos.Insert(0, propertyInfo);
+
+            propertyAccessExpression = memberExpression.Expression;
         }
+        while (RemoveTypeAs(RemoveConvert(memberExpression.Expression)) != parameterExpression);
+
+        return propertyInfos;
+    }
+
+    public static Expression RemoveConvert(this Expression expression)
+    {
+        while (expression is not null
+               && (expression.NodeType == ExpressionType.Convert
+                   || expression.NodeType == ExpressionType.ConvertChecked))
+        {
+            expression = RemoveConvert(((UnaryExpression)expression).Operand);
+        }
+
+        return expression;
+    }
+
+    public static Expression RemoveTypeAs(this Expression expression)
+    {
+        while ((expression?.NodeType == ExpressionType.TypeAs))
+        {
+            expression = RemoveConvert(((UnaryExpression)expression).Operand);
+        }
+
+        return expression;
     }
 }

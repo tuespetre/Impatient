@@ -2,22 +2,21 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 
-namespace Impatient.EFCore.Tests
+namespace Impatient.EFCore.Tests;
+
+public class CommandInterceptionImpatientTest : CommandInterceptionTestBase
 {
-    public class CommandInterceptionImpatientTest : CommandInterceptionTestBase
+    public CommandInterceptionImpatientTest(Fixture fixture) : base(fixture)
     {
-        public CommandInterceptionImpatientTest(Fixture fixture) : base(fixture)
-        {
-            fixture.ListLoggerFactory.Clear();
-        }
+        fixture.ListLoggerFactory.Clear();
+    }
 
-        public new class Fixture : InterceptionFixtureBase
-        {
-            protected override bool ShouldSubscribeToDiagnosticListener => false;
+    public new class Fixture : InterceptionFixtureBase
+    {
+        protected override bool ShouldSubscribeToDiagnosticListener => false;
 
-            protected override string StoreName => nameof(CommandInterceptionImpatientTest);
+        protected override string StoreName => nameof(CommandInterceptionImpatientTest);
 
-            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
-        }
+        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 }

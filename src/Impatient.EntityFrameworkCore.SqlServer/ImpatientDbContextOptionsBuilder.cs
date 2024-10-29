@@ -3,33 +3,32 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using System;
 
-namespace Impatient.EntityFrameworkCore.SqlServer
+namespace Impatient.EntityFrameworkCore.SqlServer;
+
+public class ImpatientDbContextOptionsBuilder
 {
-    public class ImpatientDbContextOptionsBuilder
+    private readonly DbContextOptionsBuilder builder;
+
+    public ImpatientDbContextOptionsBuilder(DbContextOptionsBuilder builder)
     {
-        private readonly DbContextOptionsBuilder builder;
+        this.builder = builder ?? throw new ArgumentNullException(nameof(builder));
+    }
 
-        public ImpatientDbContextOptionsBuilder(DbContextOptionsBuilder builder)
-        {
-            this.builder = builder ?? throw new ArgumentNullException(nameof(builder));
-        }
+    public ImpatientDbContextOptionsBuilder WithCompatibility(ImpatientCompatibility compatibility)
+    {
+        return WithOption(e => e.WithCompatibility(compatibility));
+    }
 
-        public ImpatientDbContextOptionsBuilder WithCompatibility(ImpatientCompatibility compatibility)
-        {
-            return WithOption(e => e.WithCompatibility(compatibility));
-        }
+    private ImpatientDbContextOptionsBuilder WithOption(Func<ImpatientDbContextOptionsExtension, ImpatientDbContextOptionsExtension> setter)
+    {
+        var extension 
+            = builder.Options.FindExtension<ImpatientDbContextOptionsExtension>() 
+            ?? new ImpatientDbContextOptionsExtension();
 
-        private ImpatientDbContextOptionsBuilder WithOption(Func<ImpatientDbContextOptionsExtension, ImpatientDbContextOptionsExtension> setter)
-        {
-            var extension 
-                = builder.Options.FindExtension<ImpatientDbContextOptionsExtension>() 
-                ?? new ImpatientDbContextOptionsExtension();
+        extension = setter(extension);
 
-            extension = setter(extension);
+        ((IDbContextOptionsBuilderInfrastructure)builder).AddOrUpdateExtension(extension);
 
-            ((IDbContextOptionsBuilderInfrastructure)builder).AddOrUpdateExtension(extension);
-
-            return this;
-        }
+        return this;
     }
 }

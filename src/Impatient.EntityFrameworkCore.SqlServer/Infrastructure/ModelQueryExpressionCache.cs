@@ -2,11 +2,10 @@
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 
-namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure
+namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
+
+public class ModelQueryExpressionCache
 {
-    public class ModelQueryExpressionCache
-    {
-        public ConcurrentDictionary<IEntityType, Expression> Lookup { get; } 
-            = new ConcurrentDictionary<IEntityType, Expression>();
-    }
+    public ConcurrentDictionary<IEntityType, Expression> Lookup { get; } 
+        = new ConcurrentDictionary<IEntityType, Expression>();
 }

@@ -1,7 +1,6 @@
-﻿namespace Impatient.Query.Infrastructure
+﻿namespace Impatient.Query.Infrastructure;
+
+public interface ISemanticHashCodeProvider
 {
-    public interface ISemanticHashCodeProvider
-    {
-        int GetSemanticHashCode(ExpressionEqualityComparer comparer);
-    }
+    int GetSemanticHashCode(ExpressionEqualityComparer comparer);
 }

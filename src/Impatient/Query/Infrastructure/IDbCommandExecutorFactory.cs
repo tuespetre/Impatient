@@ -1,7 +1,6 @@
-﻿namespace Impatient.Query.Infrastructure
+﻿namespace Impatient.Query.Infrastructure;
+
+public interface IDbCommandExecutorFactory
 {
-    public interface IDbCommandExecutorFactory
-    {
-        IDbCommandExecutor Create();
-    }
+    IDbCommandExecutor Create();
 }

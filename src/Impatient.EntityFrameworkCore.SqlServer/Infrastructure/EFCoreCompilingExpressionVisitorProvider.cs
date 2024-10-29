@@ -5,45 +5,44 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
-namespace Impatient.EntityFrameworkCore.SqlServer
+namespace Impatient.EntityFrameworkCore.SqlServer;
+
+public class EFCoreCompilingExpressionVisitorProvider : DefaultCompilingExpressionVisitorProvider
 {
-    public class EFCoreCompilingExpressionVisitorProvider : DefaultCompilingExpressionVisitorProvider
+    private readonly ICurrentDbContext currentDbContext;
+
+    public EFCoreCompilingExpressionVisitorProvider(
+        ICurrentDbContext currentDbContext,
+        TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor, 
+        IQueryTranslatingExpressionVisitorFactory queryTranslatingExpressionVisitorFactory,
+        IReadValueExpressionFactoryProvider readValueExpressionFactoryProvider) 
+        : base(translatabilityAnalyzingExpressionVisitor, 
+              queryTranslatingExpressionVisitorFactory,
+              readValueExpressionFactoryProvider)
     {
-        private readonly ICurrentDbContext currentDbContext;
+        this.currentDbContext = currentDbContext;
+    }
 
-        public EFCoreCompilingExpressionVisitorProvider(
-            ICurrentDbContext currentDbContext,
-            TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor, 
-            IQueryTranslatingExpressionVisitorFactory queryTranslatingExpressionVisitorFactory,
-            IReadValueExpressionFactoryProvider readValueExpressionFactoryProvider) 
-            : base(translatabilityAnalyzingExpressionVisitor, 
-                  queryTranslatingExpressionVisitorFactory,
-                  readValueExpressionFactoryProvider)
+    public override IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
+    {
+        var model = currentDbContext.Context.Model;
+
+        // Deal with change tracking before we muck up the materializers
+
+        yield return new ResultTrackingCompilingExpressionVisitor(model);
+
+        foreach (var visitor in base.CreateExpressionVisitors(context))
         {
-            this.currentDbContext = currentDbContext;
+            yield return visitor;
         }
 
-        public override IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
-        {
-            var model = currentDbContext.Context.Model;
+        yield return new ShadowPropertyCompilingExpressionVisitor(model);
 
-            // Deal with change tracking before we muck up the materializers
+        yield return new EntityMaterializationCompilingExpressionVisitor(model);
 
-            yield return new ResultTrackingCompilingExpressionVisitor(model);
+        yield return new IncludeCompilingExpressionVisitor();
 
-            foreach (var visitor in base.CreateExpressionVisitors(context))
-            {
-                yield return visitor;
-            }
-
-            yield return new ShadowPropertyCompilingExpressionVisitor(model);
-
-            yield return new EntityMaterializationCompilingExpressionVisitor(model);
-
-            yield return new IncludeCompilingExpressionVisitor();
-
-            // TODO: this
-            //yield return new ConcurrencyDetectionCompilingExpressionVisitor();
-        }
+        // TODO: this
+        //yield return new ConcurrencyDetectionCompilingExpressionVisitor();
     }
 }

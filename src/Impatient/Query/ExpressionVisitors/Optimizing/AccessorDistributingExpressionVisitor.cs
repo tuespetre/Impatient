@@ -1,137 +1,136 @@
 ﻿using System.Linq.Expressions;
 
-namespace Impatient.Query.ExpressionVisitors.Optimizing
+namespace Impatient.Query.ExpressionVisitors.Optimizing;
+
+public class AccessorDistributingExpressionVisitor : ExpressionVisitor
 {
-    public class AccessorDistributingExpressionVisitor : ExpressionVisitor
+    protected override Expression VisitBinary(BinaryExpression node)
     {
-        protected override Expression VisitBinary(BinaryExpression node)
+        switch (node.NodeType)
         {
-            switch (node.NodeType)
+            case ExpressionType.Index:
             {
-                case ExpressionType.Index:
+                switch (node.Left)
                 {
-                    switch (node.Left)
+                    case BinaryExpression binaryExpression
+                    when binaryExpression.NodeType == ExpressionType.Coalesce:
                     {
-                        case BinaryExpression binaryExpression
-                        when binaryExpression.NodeType == ExpressionType.Coalesce:
-                        {
-                            return Visit(
-                                Expression.Condition(
-                                    Expression.NotEqual(binaryExpression.Left, Expression.Constant(null, binaryExpression.Type)),
-                                    node.Update(binaryExpression.Left, node.Conversion, node.Right),
-                                    node.Update(binaryExpression.Right, node.Conversion, node.Right)));
-                        }
+                        return Visit(
+                            Expression.Condition(
+                                Expression.NotEqual(binaryExpression.Left, Expression.Constant(null, binaryExpression.Type)),
+                                node.Update(binaryExpression.Left, node.Conversion, node.Right),
+                                node.Update(binaryExpression.Right, node.Conversion, node.Right)));
+                    }
 
-                        case ConditionalExpression conditionalExpression:
-                        {
-                            return Visit(
-                                conditionalExpression.Update(
-                                    conditionalExpression.Test,
-                                    node.Update(conditionalExpression.IfTrue, node.Conversion, node.Right),
-                                    node.Update(conditionalExpression.IfFalse, node.Conversion, node.Right)));
-                        }
+                    case ConditionalExpression conditionalExpression:
+                    {
+                        return Visit(
+                            conditionalExpression.Update(
+                                conditionalExpression.Test,
+                                node.Update(conditionalExpression.IfTrue, node.Conversion, node.Right),
+                                node.Update(conditionalExpression.IfFalse, node.Conversion, node.Right)));
+                    }
 
-                        default:
-                        {
-                            return base.VisitBinary(node);
-                        }
+                    default:
+                    {
+                        return base.VisitBinary(node);
                     }
                 }
+            }
 
-                default:
-                {
-                    return base.VisitBinary(node);
-                }
+            default:
+            {
+                return base.VisitBinary(node);
             }
         }
+    }
 
-        protected override Expression VisitMember(MemberExpression node)
+    protected override Expression VisitMember(MemberExpression node)
+    {
+        switch (node.Expression)
         {
-            switch (node.Expression)
+            case BinaryExpression binaryExpression
+            when binaryExpression.NodeType == ExpressionType.Coalesce:
             {
-                case BinaryExpression binaryExpression
-                when binaryExpression.NodeType == ExpressionType.Coalesce:
-                {
-                    return Visit(
-                        Expression.Condition(
+                return Visit(
+                    Expression.Condition(
+                    Expression.NotEqual(binaryExpression.Left, Expression.Constant(null, binaryExpression.Type)),
+                        node.Update(binaryExpression.Left),
+                        node.Update(binaryExpression.Right)));
+            }
+
+            case ConditionalExpression conditionalExpression:
+            {
+                return Visit(
+                    conditionalExpression.Update(
+                        conditionalExpression.Test,
+                        node.Update(conditionalExpression.IfTrue),
+                        node.Update(conditionalExpression.IfFalse)));
+            }
+
+            default:
+            {
+                return base.VisitMember(node);
+            }
+        }
+    }
+
+    protected override Expression VisitMethodCall(MethodCallExpression node)
+    {
+        switch (node.Object)
+        {
+            case BinaryExpression binaryExpression
+            when binaryExpression.NodeType == ExpressionType.Coalesce:
+            {
+                return Visit(
+                    Expression.Condition(
                         Expression.NotEqual(binaryExpression.Left, Expression.Constant(null, binaryExpression.Type)),
-                            node.Update(binaryExpression.Left),
-                            node.Update(binaryExpression.Right)));
-                }
+                        node.Update(binaryExpression.Left, node.Arguments),
+                        node.Update(binaryExpression.Right, node.Arguments)));
+            }
 
-                case ConditionalExpression conditionalExpression:
-                {
-                    return Visit(
-                        conditionalExpression.Update(
-                            conditionalExpression.Test,
-                            node.Update(conditionalExpression.IfTrue),
-                            node.Update(conditionalExpression.IfFalse)));
-                }
+            case ConditionalExpression conditionalExpression:
+            {
+                return Visit(
+                    conditionalExpression.Update(
+                        conditionalExpression.Test,
+                        node.Update(conditionalExpression.IfTrue, node.Arguments),
+                        node.Update(conditionalExpression.IfFalse, node.Arguments)));
+            }
 
-                default:
-                {
-                    return base.VisitMember(node);
-                }
+            default:
+            {
+                return base.VisitMethodCall(node);
             }
         }
+    }
 
-        protected override Expression VisitMethodCall(MethodCallExpression node)
+    protected override Expression VisitIndex(IndexExpression node)
+    {
+        switch (node.Object)
         {
-            switch (node.Object)
+            case BinaryExpression binaryExpression
+            when binaryExpression.NodeType == ExpressionType.Coalesce:
             {
-                case BinaryExpression binaryExpression
-                when binaryExpression.NodeType == ExpressionType.Coalesce:
-                {
-                    return Visit(
-                        Expression.Condition(
-                            Expression.NotEqual(binaryExpression.Left, Expression.Constant(null, binaryExpression.Type)),
-                            node.Update(binaryExpression.Left, node.Arguments),
-                            node.Update(binaryExpression.Right, node.Arguments)));
-                }
-
-                case ConditionalExpression conditionalExpression:
-                {
-                    return Visit(
-                        conditionalExpression.Update(
-                            conditionalExpression.Test,
-                            node.Update(conditionalExpression.IfTrue, node.Arguments),
-                            node.Update(conditionalExpression.IfFalse, node.Arguments)));
-                }
-
-                default:
-                {
-                    return base.VisitMethodCall(node);
-                }
+                return Visit(
+                    Expression.Condition(
+                        Expression.NotEqual(binaryExpression.Left, Expression.Constant(null, binaryExpression.Type)),
+                        node.Update(binaryExpression.Left, node.Arguments),
+                        node.Update(binaryExpression.Right, node.Arguments)));
             }
-        }
 
-        protected override Expression VisitIndex(IndexExpression node)
-        {
-            switch (node.Object)
+            case ConditionalExpression conditionalExpression:
             {
-                case BinaryExpression binaryExpression
-                when binaryExpression.NodeType == ExpressionType.Coalesce:
-                {
-                    return Visit(
-                        Expression.Condition(
-                            Expression.NotEqual(binaryExpression.Left, Expression.Constant(null, binaryExpression.Type)),
-                            node.Update(binaryExpression.Left, node.Arguments),
-                            node.Update(binaryExpression.Right, node.Arguments)));
-                }
+                return Visit(
+                    conditionalExpression.Update(
+                        conditionalExpression.Test,
+                        node.Update(conditionalExpression.IfTrue, node.Arguments),
+                        node.Update(conditionalExpression.IfFalse, node.Arguments)));
+            }
 
-                case ConditionalExpression conditionalExpression:
-                {
-                    return Visit(
-                        conditionalExpression.Update(
-                            conditionalExpression.Test,
-                            node.Update(conditionalExpression.IfTrue, node.Arguments),
-                            node.Update(conditionalExpression.IfFalse, node.Arguments)));
-                }
-
-                default:
-                {
-                    return base.VisitIndex(node);
-                }
+            default:
+            {
+                return base.VisitIndex(node);
             }
         }
     }

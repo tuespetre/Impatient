@@ -2,66 +2,65 @@
 using System;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.ExpressionVisitors.Rewriting
+namespace Impatient.Query.ExpressionVisitors.Rewriting;
+
+public class NullableMemberRewritingExpressionVisitor : ExpressionVisitor
 {
-    public class NullableMemberRewritingExpressionVisitor : ExpressionVisitor
+    protected override Expression VisitMember(MemberExpression node)
     {
-        protected override Expression VisitMember(MemberExpression node)
+        if (node.Expression is not null && node.Expression.Type.IsNullableType())
         {
-            if (node.Expression is not null && node.Expression.Type.IsNullableType())
+            switch (node.Member.Name)
             {
-                switch (node.Member.Name)
+                case nameof(Nullable<int>.Value):
                 {
-                    case nameof(Nullable<int>.Value):
-                    {
-                        return Expression.Convert(
-                            node.Expression,
-                            Nullable.GetUnderlyingType(
-                                node.Expression.Type));
-                    }
+                    return Expression.Convert(
+                        node.Expression,
+                        Nullable.GetUnderlyingType(
+                            node.Expression.Type));
+                }
 
-                    case nameof(Nullable<int>.HasValue):
+                case nameof(Nullable<int>.HasValue):
+                {
+                    return Expression.NotEqual(
+                        node.Expression,
+                        Expression.Constant(
+                            null,
+                            node.Expression.Type));
+                }
+            }
+        }
+
+        return base.VisitMember(node);
+    }
+
+    protected override Expression VisitMethodCall(MethodCallExpression node)
+    {
+        if (node.Object is not null && node.Object.Type.IsNullableType())
+        {
+            switch (node.Method.Name)
+            {
+                case nameof(Nullable<int>.GetValueOrDefault):
+                {
+                    if (node.Arguments.Count == 1)
                     {
-                        return Expression.NotEqual(
-                            node.Expression,
+                        return Expression.Coalesce(
+                            node.Object,
+                            node.Arguments[0]);
+                    }
+                    else
+                    {
+                        return Expression.Coalesce(
+                            node.Object,
                             Expression.Constant(
-                                null,
-                                node.Expression.Type));
+                                Activator.CreateInstance(
+                                    Nullable.GetUnderlyingType(
+                                        node.Object.Type))));
                     }
                 }
             }
-
-            return base.VisitMember(node);
         }
 
-        protected override Expression VisitMethodCall(MethodCallExpression node)
-        {
-            if (node.Object is not null && node.Object.Type.IsNullableType())
-            {
-                switch (node.Method.Name)
-                {
-                    case nameof(Nullable<int>.GetValueOrDefault):
-                    {
-                        if (node.Arguments.Count == 1)
-                        {
-                            return Expression.Coalesce(
-                                node.Object,
-                                node.Arguments[0]);
-                        }
-                        else
-                        {
-                            return Expression.Coalesce(
-                                node.Object,
-                                Expression.Constant(
-                                    Activator.CreateInstance(
-                                        Nullable.GetUnderlyingType(
-                                            node.Object.Type))));
-                        }
-                    }
-                }
-            }
-
-            return base.VisitMethodCall(node);
-        }
+        return base.VisitMethodCall(node);
     }
 }

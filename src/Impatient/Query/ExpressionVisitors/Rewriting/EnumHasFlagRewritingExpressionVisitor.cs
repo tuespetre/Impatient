@@ -4,51 +4,50 @@ using System;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.Query.ExpressionVisitors.Rewriting
+namespace Impatient.Query.ExpressionVisitors.Rewriting;
+
+public class EnumHasFlagRewritingExpressionVisitor : ExpressionVisitor
 {
-    public class EnumHasFlagRewritingExpressionVisitor : ExpressionVisitor
+    private static readonly MethodInfo enumHasFlagMethodInfo
+        = ReflectionExtensions.GetMethodInfo(() => DayOfWeek.Friday.HasFlag(DayOfWeek.Friday));
+
+    private readonly ITypeMappingProvider typeMappingProvider;
+
+    public EnumHasFlagRewritingExpressionVisitor(ITypeMappingProvider typeMappingProvider)
     {
-        private static readonly MethodInfo enumHasFlagMethodInfo
-            = ReflectionExtensions.GetMethodInfo(() => DayOfWeek.Friday.HasFlag(DayOfWeek.Friday));
+        this.typeMappingProvider = typeMappingProvider ?? throw new ArgumentNullException(nameof(typeMappingProvider));
+    }
 
-        private readonly ITypeMappingProvider typeMappingProvider;
+    protected override Expression VisitMethodCall(MethodCallExpression node)
+    {
+        var @object = Visit(node.Object);
+        var arguments = Visit(node.Arguments);
 
-        public EnumHasFlagRewritingExpressionVisitor(ITypeMappingProvider typeMappingProvider)
+        if (enumHasFlagMethodInfo.Equals(node.Method))
         {
-            this.typeMappingProvider = typeMappingProvider ?? throw new ArgumentNullException(nameof(typeMappingProvider));
-        }
+            var mapping = typeMappingProvider.FindMapping(node.Object.Type);
 
-        protected override Expression VisitMethodCall(MethodCallExpression node)
-        {
-            var @object = Visit(node.Object);
-            var arguments = Visit(node.Arguments);
-
-            if (enumHasFlagMethodInfo.Equals(node.Method))
+            if (mapping is not null && mapping.SourceType.IsNumericType())
             {
-                var mapping = typeMappingProvider.FindMapping(node.Object.Type);
+                var underlyingType = Enum.GetUnderlyingType(node.Object.Type);
 
-                if (mapping is not null && mapping.SourceType.IsNumericType())
-                {
-                    var underlyingType = Enum.GetUnderlyingType(node.Object.Type);
+                var flag 
+                    = Expression.Convert(
+                        Expression.Convert(
+                            node.Arguments[0], 
+                            node.Object.Type),
+                        underlyingType);
 
-                    var flag 
-                        = Expression.Convert(
-                            Expression.Convert(
-                                node.Arguments[0], 
-                                node.Object.Type),
-                            underlyingType);
-
-                    return Expression.Equal(
-                        Expression.And(
-                            Expression.Convert(
-                                node.Object, 
-                                underlyingType),
-                            flag), 
-                        flag);
-                }
+                return Expression.Equal(
+                    Expression.And(
+                        Expression.Convert(
+                            node.Object, 
+                            underlyingType),
+                        flag), 
+                    flag);
             }
-
-            return node.Update(@object, arguments);
         }
+
+        return node.Update(@object, arguments);
     }
 }

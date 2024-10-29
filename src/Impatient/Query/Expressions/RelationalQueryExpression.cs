@@ -2,27 +2,26 @@
 using System;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.Expressions
+namespace Impatient.Query.Expressions;
+
+public abstract class RelationalQueryExpression : Expression, ISemanticHashCodeProvider
 {
-    public abstract class RelationalQueryExpression : Expression, ISemanticHashCodeProvider
+    protected RelationalQueryExpression(SelectExpression selectExpression, Type type)
     {
-        protected RelationalQueryExpression(SelectExpression selectExpression, Type type)
-        {
-            SelectExpression = selectExpression ?? throw new ArgumentNullException(nameof(selectExpression));
-            Type = type ?? throw new ArgumentNullException(nameof(type));
-        }
+        SelectExpression = selectExpression ?? throw new ArgumentNullException(nameof(selectExpression));
+        Type = type ?? throw new ArgumentNullException(nameof(type));
+    }
 
-        public SelectExpression SelectExpression { get; }
+    public SelectExpression SelectExpression { get; }
 
-        public override Type Type { get; }
+    public override Type Type { get; }
 
-        public override ExpressionType NodeType => ExpressionType.Extension;
+    public override ExpressionType NodeType => ExpressionType.Extension;
 
-        protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
+    protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
 
-        public virtual int GetSemanticHashCode(ExpressionEqualityComparer comparer)
-        {
-            return comparer.GetHashCode(SelectExpression);
-        }
+    public virtual int GetSemanticHashCode(ExpressionEqualityComparer comparer)
+    {
+        return comparer.GetHashCode(SelectExpression);
     }
 }

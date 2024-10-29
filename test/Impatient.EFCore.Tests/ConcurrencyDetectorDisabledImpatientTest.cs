@@ -4,24 +4,23 @@ using Microsoft.EntityFrameworkCore.TestUtilities;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Impatient.EFCore.Tests
+namespace Impatient.EFCore.Tests;
+
+public class ConcurrencyDetectorDisabledImpatientTest : ConcurrencyDetectorDisabledRelationalTestBase<ConcurrencyDetectorDisabledImpatientTest.Fixture>
 {
-    public class ConcurrencyDetectorDisabledImpatientTest : ConcurrencyDetectorDisabledRelationalTestBase<ConcurrencyDetectorDisabledImpatientTest.Fixture>
+    public ConcurrencyDetectorDisabledImpatientTest(Fixture fixture) : base(fixture)
     {
-        public ConcurrencyDetectorDisabledImpatientTest(Fixture fixture) : base(fixture)
-        {
-        }
+    }
 
-        [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
-        [MemberData(nameof(IsAsyncData))]
-        public override Task FromSql(bool async)
-        {
-            return base.FromSql(async);
-        }
+    [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
+    [MemberData(nameof(IsAsyncData))]
+    public override Task FromSql(bool async)
+    {
+        return base.FromSql(async);
+    }
 
-        public new class Fixture : ConcurrencyDetectorFixtureBase
-        {
-            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
-        }
+    public new class Fixture : ConcurrencyDetectorFixtureBase
+    {
+        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 }

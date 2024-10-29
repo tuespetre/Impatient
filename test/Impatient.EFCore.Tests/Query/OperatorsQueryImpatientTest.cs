@@ -1,16 +1,10 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Impatient.EFCore.Tests.Query
+namespace Impatient.EFCore.Tests.Query;
+
+public class OperatorsQueryImpatientTest : OperatorsQueryTestBase
 {
-    public class OperatorsQueryImpatientTest : OperatorsQueryTestBase
-    {
-        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
-    }
+    protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 }

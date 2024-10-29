@@ -2,18 +2,17 @@
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 
-namespace Impatient.EFCore.Tests.Query
-{
-    public class SpatialQueryImpatientTest : SpatialQueryRelationalTestBase<SpatialQueryImpatientTest.Fixture>
-    {
-        public SpatialQueryImpatientTest(Fixture fixture) : base(fixture)
-        {
-            fixture.TestSqlLoggerFactory.Clear();
-        }
+namespace Impatient.EFCore.Tests.Query;
 
-        public new class Fixture : SpatialQueryRelationalFixture
-        {
-            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
-        }
+public class SpatialQueryImpatientTest : SpatialQueryRelationalTestBase<SpatialQueryImpatientTest.Fixture>
+{
+    public SpatialQueryImpatientTest(Fixture fixture) : base(fixture)
+    {
+        fixture.TestSqlLoggerFactory.Clear();
+    }
+
+    public new class Fixture : SpatialQueryRelationalFixture
+    {
+        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 }

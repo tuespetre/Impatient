@@ -2,98 +2,97 @@
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
-namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors
+namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
+
+// TODO: Verify how this works with result selectors like SelectMany
+internal class QueryOptionsAnnotatingExpressionVisitor : ExpressionVisitor
 {
-    // TODO: Verify how this works with result selectors like SelectMany
-    internal class QueryOptionsAnnotatingExpressionVisitor : ExpressionVisitor
+    public override Expression Visit(Expression node)
     {
-        public override Expression Visit(Expression node)
+        var visitor = new QueryOptionsDiscoveringExpressionVisitor();
+
+        node = visitor.Visit(node);
+
+        var queryTrackingBehavior = default(QueryTrackingBehavior);
+        var ignoreQueryFilters = false;
+        var useRelationalNullSemantics = false;
+
+        if (node is QueryOptionsExpression queryOptionsExpression)
         {
-            var visitor = new QueryOptionsDiscoveringExpressionVisitor();
-
-            node = visitor.Visit(node);
-
-            var queryTrackingBehavior = default(QueryTrackingBehavior);
-            var ignoreQueryFilters = false;
-            var useRelationalNullSemantics = false;
-
-            if (node is QueryOptionsExpression queryOptionsExpression)
-            {
-                node = queryOptionsExpression.Expression;
-                queryTrackingBehavior = queryOptionsExpression.QueryTrackingBehavior;
-                ignoreQueryFilters = queryOptionsExpression.IgnoreQueryFilters;
-                useRelationalNullSemantics = queryOptionsExpression.UseRelationalNullSemantics;
-            }
-
-            if (visitor.QueryTrackingBehavior.HasValue)
-            {
-                queryTrackingBehavior = visitor.QueryTrackingBehavior.Value;
-            }
-
-            if (visitor.IgnoreQueryFilters)
-            {
-                ignoreQueryFilters = true;
-            }
-
-            return new QueryOptionsExpression(
-                node, 
-                queryTrackingBehavior, 
-                ignoreQueryFilters,
-                useRelationalNullSemantics);
+            node = queryOptionsExpression.Expression;
+            queryTrackingBehavior = queryOptionsExpression.QueryTrackingBehavior;
+            ignoreQueryFilters = queryOptionsExpression.IgnoreQueryFilters;
+            useRelationalNullSemantics = queryOptionsExpression.UseRelationalNullSemantics;
         }
 
-        private class QueryOptionsDiscoveringExpressionVisitor : ExpressionVisitor
+        if (visitor.QueryTrackingBehavior.HasValue)
         {
-            public QueryTrackingBehavior? QueryTrackingBehavior { get; private set; }
+            queryTrackingBehavior = visitor.QueryTrackingBehavior.Value;
+        }
 
-            public bool IgnoreQueryFilters { get; private set; }
+        if (visitor.IgnoreQueryFilters)
+        {
+            ignoreQueryFilters = true;
+        }
 
-            protected override Expression VisitMethodCall(MethodCallExpression node)
+        return new QueryOptionsExpression(
+            node, 
+            queryTrackingBehavior, 
+            ignoreQueryFilters,
+            useRelationalNullSemantics);
+    }
+
+    private class QueryOptionsDiscoveringExpressionVisitor : ExpressionVisitor
+    {
+        public QueryTrackingBehavior? QueryTrackingBehavior { get; private set; }
+
+        public bool IgnoreQueryFilters { get; private set; }
+
+        protected override Expression VisitMethodCall(MethodCallExpression node)
+        {
+            if (node.Method.DeclaringType == typeof(EntityFrameworkQueryableExtensions))
             {
-                if (node.Method.DeclaringType == typeof(EntityFrameworkQueryableExtensions))
+                switch (node.Method.Name)
                 {
-                    switch (node.Method.Name)
+                    case nameof(EntityFrameworkQueryableExtensions.AsNoTrackingWithIdentityResolution):
                     {
-                        case nameof(EntityFrameworkQueryableExtensions.AsNoTrackingWithIdentityResolution):
-                        {
-                            var visited = base.Visit(node.Arguments[0]);
+                        var visited = base.Visit(node.Arguments[0]);
 
-                            QueryTrackingBehavior = Microsoft.EntityFrameworkCore.QueryTrackingBehavior.NoTrackingWithIdentityResolution;
+                        QueryTrackingBehavior = Microsoft.EntityFrameworkCore.QueryTrackingBehavior.NoTrackingWithIdentityResolution;
 
-                            return visited;
-                        }
+                        return visited;
+                    }
 
-                        case nameof(EntityFrameworkQueryableExtensions.AsNoTracking):
-                        {
-                            var visited = base.Visit(node.Arguments[0]);
+                    case nameof(EntityFrameworkQueryableExtensions.AsNoTracking):
+                    {
+                        var visited = base.Visit(node.Arguments[0]);
 
-                            QueryTrackingBehavior = Microsoft.EntityFrameworkCore.QueryTrackingBehavior.NoTracking;
+                        QueryTrackingBehavior = Microsoft.EntityFrameworkCore.QueryTrackingBehavior.NoTracking;
 
-                            return visited;
-                        }
+                        return visited;
+                    }
 
-                        case nameof(EntityFrameworkQueryableExtensions.AsTracking):
-                        {
-                            var visited = base.Visit(node.Arguments[0]);
+                    case nameof(EntityFrameworkQueryableExtensions.AsTracking):
+                    {
+                        var visited = base.Visit(node.Arguments[0]);
 
-                            QueryTrackingBehavior = Microsoft.EntityFrameworkCore.QueryTrackingBehavior.TrackAll;
+                        QueryTrackingBehavior = Microsoft.EntityFrameworkCore.QueryTrackingBehavior.TrackAll;
 
-                            return visited;
-                        }
+                        return visited;
+                    }
 
-                        case nameof(EntityFrameworkQueryableExtensions.IgnoreQueryFilters):
-                        {
-                            var visited = base.Visit(node.Arguments[0]);
+                    case nameof(EntityFrameworkQueryableExtensions.IgnoreQueryFilters):
+                    {
+                        var visited = base.Visit(node.Arguments[0]);
 
-                            IgnoreQueryFilters = true;
+                        IgnoreQueryFilters = true;
 
-                            return visited;
-                        }
+                        return visited;
                     }
                 }
-
-                return base.VisitMethodCall(node);
             }
+
+            return base.VisitMethodCall(node);
         }
     }
 }

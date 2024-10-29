@@ -5,75 +5,74 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.Query.ExpressionVisitors.Rewriting
+namespace Impatient.Query.ExpressionVisitors.Rewriting;
+
+public class CollectionContainsRewritingExpressionVisitor : ExpressionVisitor
 {
-    public class CollectionContainsRewritingExpressionVisitor : ExpressionVisitor
+    protected override Expression VisitMethodCall(MethodCallExpression node)
     {
-        protected override Expression VisitMethodCall(MethodCallExpression node)
+        var @object = Visit(node.Object);
+        var arguments = Visit(node.Arguments);
+
+        var method = node.Method;
+
+        var collectionType = method.DeclaringType.FindGenericType(typeof(ICollection<>));
+
+        if (collectionType is not null && @object.Type.GetSequenceType().IsScalarType())
         {
-            var @object = Visit(node.Object);
-            var arguments = Visit(node.Arguments);
+            var canRewriteMethod = false;
 
-            var method = node.Method;
-
-            var collectionType = method.DeclaringType.FindGenericType(typeof(ICollection<>));
-
-            if (collectionType is not null && @object.Type.GetSequenceType().IsScalarType())
+            if (method.DeclaringType == collectionType)
             {
-                var canRewriteMethod = false;
+                canRewriteMethod = true;
+            }
+            else
+            {
+                var map = method.DeclaringType.GetTypeInfo().GetRuntimeInterfaceMap(collectionType);
 
-                if (method.DeclaringType == collectionType)
-                {
-                    canRewriteMethod = true;
-                }
-                else
-                {
-                    var map = method.DeclaringType.GetTypeInfo().GetRuntimeInterfaceMap(collectionType);
+                var index = map.InterfaceMethods.ToList().FindIndex(m => m.Name == nameof(ICollection<int>.Contains));
 
-                    var index = map.InterfaceMethods.ToList().FindIndex(m => m.Name == nameof(ICollection<int>.Contains));
-
-                    canRewriteMethod = method == map.TargetMethods[index];
-                }
-
-                if (canRewriteMethod)
-                {
-                    var canUseValues = false;
-
-                    switch (@object)
-                    {
-                        case ConstantExpression constantExpression:
-                        {
-                            canUseValues = constantExpression.Value is not null;
-                            break;
-                        }
-
-                        case NewArrayExpression newArrayExpression:
-                        {
-                            canUseValues = true;
-                            break;
-                        }
-
-                        case ListInitExpression listInitExpression:
-                        {
-                            canUseValues = listInitExpression.Initializers.All(i => i.Arguments.Count == 1);
-                            break;
-                        }
-
-                        case Expression expression:
-                        {
-                            canUseValues = true;
-                            break;
-                        }
-                    }
-
-                    if (canUseValues)
-                    {
-                        return new SqlInExpression(arguments[0], @object);
-                    }
-                }
+                canRewriteMethod = method == map.TargetMethods[index];
             }
 
-            return node.Update(@object, arguments);
+            if (canRewriteMethod)
+            {
+                var canUseValues = false;
+
+                switch (@object)
+                {
+                    case ConstantExpression constantExpression:
+                    {
+                        canUseValues = constantExpression.Value is not null;
+                        break;
+                    }
+
+                    case NewArrayExpression newArrayExpression:
+                    {
+                        canUseValues = true;
+                        break;
+                    }
+
+                    case ListInitExpression listInitExpression:
+                    {
+                        canUseValues = listInitExpression.Initializers.All(i => i.Arguments.Count == 1);
+                        break;
+                    }
+
+                    case Expression expression:
+                    {
+                        canUseValues = true;
+                        break;
+                    }
+                }
+
+                if (canUseValues)
+                {
+                    return new SqlInExpression(arguments[0], @object);
+                }
+            }
         }
+
+        return node.Update(@object, arguments);
     }
 }

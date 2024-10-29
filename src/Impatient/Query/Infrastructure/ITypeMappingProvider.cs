@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace Impatient.Query.Infrastructure
+namespace Impatient.Query.Infrastructure;
+
+public interface ITypeMappingProvider
 {
-    public interface ITypeMappingProvider
-    {
-        ITypeMapping FindMapping(Type clrType);
-    }
+    ITypeMapping FindMapping(Type clrType);
 }
