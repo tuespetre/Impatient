@@ -47,6 +47,14 @@ namespace Impatient.Query.Infrastructure
                 return true;
             }
 
+            if (expression is EnumerableRelationalQueryExpression)
+            {
+                // EF Core changed to always create a type mapping for complex types since they 
+                // added JSON support. That's fine for stuff coming from a column, but for enumerable
+                // subqueries, it's no bueno
+                return false;
+            }
+
             var mapping = FindTypeMapping(expression) ?? typeMappingProvider.FindMapping(expression.Type);
 
             return mapping is not null;

@@ -157,5 +157,10 @@ VALUES(
 N'{{""Collection"":[{{""Bar"":21,""Foo"":""c21""}},{{""Bar"":22,""Foo"":""c22""}}]}}',
 2)");
         }
+
+        protected override void SeedTrickyBuffering(MyContextTrickyBuffering ctx)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

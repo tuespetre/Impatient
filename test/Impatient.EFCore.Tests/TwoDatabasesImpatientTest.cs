@@ -1,23 +1,27 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Impatient.EFCore.Tests.Fixtures;
+using Impatient.EFCore.Tests.Utilities;
+using Microsoft.EntityFrameworkCore;
+using System;
+using Xunit;
 
-namespace Impatient.EFCore.Tests
+namespace Impatient.EFCore.Tests;
+
+public class TwoDatabasesImpatientTest(SqlServerFixture fixture) : TwoDatabasesTestBase(fixture), IClassFixture<SqlServerFixture>
 {
-    public class TwoDatabasesImpatientTest : TwoDatabasesTestBase
-    {
-        public TwoDatabasesImpatientTest(FixtureBase fixture) : base(fixture)
-        {
-        }
+    protected override string DummyConnectionString
+        => "Database=DoesNotExist";
 
-        protected override string DummyConnectionString => throw new System.NotImplementedException();
+    protected override TwoDatabasesWithDataContext CreateBackingContext(string databaseName)
+        => throw new NotImplementedException();
+        //=> new(Fixture.CreateOptions(ImpatientTestStoreFactory.Instance.Create(databaseName)));
 
-        protected override TwoDatabasesWithDataContext CreateBackingContext(string databaseName)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        protected override DbContextOptionsBuilder CreateTestOptions(DbContextOptionsBuilder optionsBuilder, bool withConnectionString = false, bool withNullConnectionString = false)
-        {
-            throw new System.NotImplementedException();
-        }
-    }
+    protected override DbContextOptionsBuilder CreateTestOptions(
+        DbContextOptionsBuilder optionsBuilder,
+        bool withConnectionString = false,
+        bool withNullConnectionString = false)
+        => withConnectionString
+            ? withNullConnectionString
+                ? optionsBuilder.UseSqlServer((string)null)
+                : optionsBuilder.UseSqlServer(DummyConnectionString)
+            : optionsBuilder.UseSqlServer();
 }

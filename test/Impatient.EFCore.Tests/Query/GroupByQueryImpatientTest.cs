@@ -1841,6 +1841,26 @@ GROUP BY [o].[CustomerID]
 ");
         }
 
+        // Punted because if people want to skip 0 take 0, that's their own problem.
+        // SQL Server won't allow FETCH 0 even for the parameterized case,
+        // so why should we bother optimizing for the constant case?
+        [ConditionalTheory(Skip = EFCoreSkipReasons.Punt)]
+        [MemberData(nameof(IsAsyncData))]
+        public override Task GroupBy_aggregate_after_skip_0_take_0(bool async)
+        {
+            return base.GroupBy_aggregate_after_skip_0_take_0(async);
+        }
+
+        // Punted because if people want to skip 0 take 0, that's their own problem.
+        // SQL Server won't allow FETCH 0 even for the parameterized case,
+        // so why should we bother optimizing for the constant case?
+        [ConditionalTheory(Skip = EFCoreSkipReasons.Punt)]
+        [MemberData(nameof(IsAsyncData))]
+        public override Task GroupBy_skip_0_take_0_aggregate(bool async)
+        {
+            return base.GroupBy_skip_0_take_0_aggregate(async);
+        }
+
         #region utilities
 
         protected override void ClearLog() => Fixture.TestSqlLoggerFactory.Clear();

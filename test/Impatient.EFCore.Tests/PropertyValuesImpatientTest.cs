@@ -1,33 +1,25 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 
-namespace Impatient.EFCore.Tests
+namespace Impatient.EFCore.Tests;
+
+public class PropertyValuesImpatientTest(PropertyValuesImpatientTest.PropertyValuesImpatientFixture fixture) 
+    : PropertyValuesTestBase<PropertyValuesImpatientTest.PropertyValuesImpatientFixture>(fixture)
 {
-    public class PropertyValuesImpatientTest : PropertyValuesTestBase<PropertyValuesImpatientTest.PropertyValuesImpatientFixture>
+    public class PropertyValuesImpatientFixture : PropertyValuesFixtureBase
     {
-        public PropertyValuesImpatientTest(PropertyValuesImpatientFixture fixture) : base(fixture)
+        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
+        
+        protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
         {
-        }
+            base.OnModelCreating(modelBuilder, context);
 
-        public class PropertyValuesImpatientFixture : PropertyValuesFixtureBase
-        {
-            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
+            modelBuilder.Entity<Building>()
+                .Property(b => b.Value).HasColumnType("decimal(18,2)");
 
-            public override DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder)
-            {
-                var options = base.AddOptions(builder).ConfigureWarnings(
-                    c => c
-                    // TODO: this
-                        //.Log(RelationalEventId.QueryClientEvaluationWarning)
-                        .Log(SqlServerEventId.DecimalTypeDefaultWarning));
-
-                new SqlServerDbContextOptionsBuilder(options).MinBatchSize(1);
-
-                return options;
-            }
+            modelBuilder.Entity<CurrentEmployee>()
+                .Property(ce => ce.LeaveBalance).HasColumnType("decimal(18,2)");
         }
     }
 }

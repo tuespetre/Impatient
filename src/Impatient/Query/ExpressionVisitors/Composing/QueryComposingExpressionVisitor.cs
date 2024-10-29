@@ -92,6 +92,21 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             return base.Visit(node);
         }
 
+        protected override Expression VisitNew(NewExpression node)
+        {
+            var arguments = Visit(node.Arguments).ToArray();
+
+            for (var i = 0; i < arguments.Length; i++)
+            {
+                if (node.Arguments[i].Type.IsQueryableType())
+                {
+                    arguments[i] = arguments[i].AsQueryable();
+                }
+            }
+
+            return node.Update(arguments);
+        }
+
         protected override Expression VisitLambda<T>(Expression<T> node)
         {
             if (node.ReturnType.IsQueryableType())
@@ -131,11 +146,27 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 return node.Update(node.Object, new[] { inner.AsQueryable() });
             }
 
-            if (!node.Method.IsQueryableOrEnumerableMethod())
+            if (node.Method.IsQueryableOrEnumerableMethod())
             {
-                return base.VisitMethodCall(node);
+                return VisitQueryableOrEnumerableMethodCall(node);
             }
 
+            var @object = Visit(node.Object);
+            var arguments = Visit(node.Arguments).ToArray();
+
+            for (var i = 0; i < arguments.Length; i++)
+            {
+                if (node.Arguments[i].Type.IsQueryableType())
+                {
+                    arguments[i] = arguments[i].AsQueryable();
+                }
+            }
+
+            return node.Update(@object, arguments);
+        }
+
+        private Expression VisitQueryableOrEnumerableMethodCall(MethodCallExpression node)
+        { 
             var visitedArguments = new Expression[node.Arguments.Count];
 
             Expression FallbackToEnumerable()
@@ -500,7 +531,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 = selectorLambda.Parameters.Count == 2
                     && selectorLambda.Body.References(selectorLambda.Parameters[1]);
 
-            if (outerSelectExpression.IsDistinct || (referencesIndexParameter && (outerSelectExpression.HasOffsetOrLimit)))
+            if (outerSelectExpression.IsDistinct || (referencesIndexParameter && outerSelectExpression.HasOffsetOrLimit))
             {
                 if (!IsTranslatable(outerProjection))
                 {
@@ -1102,18 +1133,9 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             var outerSelectExpression = outerQuery.SelectExpression;
             var outerProjection = outerSelectExpression.Projection.Flatten().Body;
             var keySelectorLambda = node.Arguments[1].UnwrapLambda();
+            var didFirstPushdown = false;
 
-            var leafGatherer = new ProjectionLeafGatheringExpressionVisitor();
-
-            leafGatherer.Visit(keySelectorLambda.Body);
-
-            if (!leafGatherer.GatheredExpressions.Values.All(e => e.References(keySelectorLambda.Parameters[0])))
-            {
-                // SQL Server Says:
-                // Msg 164, Level 15, State 1, Line 3
-                // Each GROUP BY expression must contain at least one column that is not an outer reference.
-                return fallbackToEnumerable();
-            }
+            // First pushdown (if needed)
 
             if (outerSelectExpression.RequiresPushdownForGrouping())
             {
@@ -1123,9 +1145,9 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                 }
 
                 Pushdown(keySelectorLambda.Parameters[0].Name, ref outerSelectExpression, ref outerProjection);
-            }
 
-            outerSelectExpression = outerSelectExpression.UpdateOrderBy(null);
+                didFirstPushdown = true;
+            }
 
             // Key Selector
 
@@ -1134,7 +1156,28 @@ namespace Impatient.Query.ExpressionVisitors.Composing
                     .ExpandParameters(outerProjection)
                     .VisitWith(ServerPostExpansionVisitors);
 
-            if (!IsTranslatable(keySelector) || keySelector.ContainsAggregateOrSubquery())
+            // Second pushdown (if needed)
+
+            if (!didFirstPushdown && !keySelector.IsValidGroupingKey(outerSelectExpression))
+            {
+                if (!IsTranslatable(outerProjection))
+                {
+                    return fallbackToEnumerable();
+                }
+
+                Pushdown(keySelectorLambda.Parameters[0].Name, ref outerSelectExpression, ref outerProjection);
+
+                keySelector
+                    = keySelectorLambda
+                        .ExpandParameters(outerProjection)
+                        .VisitWith(ServerPostExpansionVisitors);
+            }
+
+            // Bail if we can't work with the key selector
+
+            if (!IsTranslatable(keySelector) 
+                || keySelector.ContainsAggregateOrSubquery() 
+                || !keySelector.IsValidGroupingKey(outerSelectExpression))
             {
                 return fallbackToEnumerable();
             }
@@ -1156,6 +1199,10 @@ namespace Impatient.Query.ExpressionVisitors.Composing
             {
                 return fallbackToEnumerable();
             }
+
+            // Remove the order by from the query before grouping
+
+            outerSelectExpression = outerSelectExpression.UpdateOrderBy(null);
 
             // Result Selector
 

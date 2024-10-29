@@ -75,6 +75,12 @@ namespace Impatient.EFCore.Tests.Query
             return base.Json_predicate_on_single(async);
         }
 
+        public override Task Json_projection_enum_with_custom_conversion(bool async)
+        {
+            // this issue is with custom naming
+            return base.Json_projection_enum_with_custom_conversion(async);
+        }
+
         public new class Fixture : JsonQueryFixtureBase
         {
             protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;

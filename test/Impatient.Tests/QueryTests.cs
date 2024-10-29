@@ -6,13 +6,13 @@ using Impatient.Query.ExpressionVisitors.Rewriting;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using Impatient.Tests.Utilities;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -24,6 +24,8 @@ namespace Impatient.Tests
     public class QueryTests
     {
         private string SqlLog => services.GetService<TestDbCommandExecutorFactory>().Log.ToString();
+
+        private static int QuantityOfOne() => 1;
 
         private readonly IServiceProvider services;
 
@@ -194,7 +196,7 @@ ALTER TABLE [dbo].[MyClass2] ADD  DEFAULT ((0)) FOR [Prop2]
 GO
 ";
 
-            using (var connection = new SqlConnection(@"Server=.\sqlexpress; Trusted_Connection=True"))
+            using (var connection = new SqlConnection(@"Server=.\sqlexpress; Trusted_Connection=True; TrustServerCertificate=true"))
             {
                 connection.Open();
 
@@ -3010,7 +3012,7 @@ INNER JOIN [dbo].[MyClass2] AS [m2_1] ON [m1].[Prop1] = [m2_1].[Prop1]",
         [TestMethod]
         public void GroupJoin_floated_up_from_subquery()
         {
-            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=True");
+            var services = ExtensionMethods.CreateServiceProvider(connectionString: NorthwindQueryContext.ConnectionString);
             var impatient = services.GetRequiredService<ImpatientQueryProvider>();
 
             var customers = CreateQueryExpression(typeof(Northwind.Customer));
@@ -4901,7 +4903,7 @@ FROM [dbo].[MyClass1] AS [m]",
         [TestMethod]
         public void StringJoin_StringArray()
         {
-            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=True");
+            var services = ExtensionMethods.CreateServiceProvider(connectionString: NorthwindQueryContext.ConnectionString);
             var impatient = services.GetRequiredService<ImpatientQueryProvider>();
             var customers = impatient.CreateQuery<Northwind.Customer>(CreateQueryExpression(typeof(Northwind.Customer)));
             var orders = impatient.CreateQuery<Northwind.Order>(CreateQueryExpression(typeof(Northwind.Order)));
@@ -4925,7 +4927,7 @@ FROM [dbo].[Customers] AS [c]", log);
         [TestMethod]
         public void StringJoin_StringEnumerable()
         {
-            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=True");
+            var services = ExtensionMethods.CreateServiceProvider(connectionString: NorthwindQueryContext.ConnectionString);
             var impatient = services.GetRequiredService<ImpatientQueryProvider>();
             var customers = impatient.CreateQuery<Northwind.Customer>(CreateQueryExpression(typeof(Northwind.Customer)));
             var orders = impatient.CreateQuery<Northwind.Order>(CreateQueryExpression(typeof(Northwind.Order)));
@@ -4949,7 +4951,7 @@ FROM [dbo].[Customers] AS [c]", log);
         [TestMethod]
         public void StringJoin_GenericEnumerable()
         {
-            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=True");
+            var services = ExtensionMethods.CreateServiceProvider(connectionString: NorthwindQueryContext.ConnectionString);
             var impatient = services.GetRequiredService<ImpatientQueryProvider>();
             var customers = impatient.CreateQuery<Northwind.Customer>(CreateQueryExpression(typeof(Northwind.Customer)));
             var orders = impatient.CreateQuery<Northwind.Order>(CreateQueryExpression(typeof(Northwind.Order)));
@@ -4973,7 +4975,7 @@ FROM [dbo].[Customers] AS [c]", log);
         [TestMethod]
         public void StringJoin_RespectsCompatibility()
         {
-            var services = ExtensionMethods.CreateServiceProvider(connectionString: @"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=True", compatibility: ImpatientCompatibility.SqlServer2016);
+            var services = ExtensionMethods.CreateServiceProvider(connectionString: NorthwindQueryContext.ConnectionString, compatibility: ImpatientCompatibility.SqlServer2016);
             var impatient = services.GetRequiredService<ImpatientQueryProvider>();
             var customers = impatient.CreateQuery<Northwind.Customer>(CreateQueryExpression(typeof(Northwind.Customer)));
             var orders = impatient.CreateQuery<Northwind.Order>(CreateQueryExpression(typeof(Northwind.Order)));
@@ -4993,6 +4995,71 @@ FROM [dbo].[Customers] AS [c]", log);
     FOR JSON PATH
 ) AS [os]
 FROM [dbo].[Customers] AS [c]", log);
+        }
+
+        /// <summary>
+        /// This query was taken from the EF Core test "GroupBy_count_filter".
+        /// It is supposed to model "GroupBy -> Count -> Where", but it actually models
+        /// another situation: grouping by a constant that was included in a projection.
+        /// </summary>
+        [TestMethod]
+        public void GroupBy_Projection_Constant_Count_Where()
+        {
+            var services = ExtensionMethods.CreateServiceProvider(connectionString: NorthwindQueryContext.ConnectionString);
+            var impatient = services.GetRequiredService<ImpatientQueryProvider>();
+            var orders = impatient.CreateQuery<Northwind.Order>(CreateQueryExpression(typeof(Northwind.Order)));
+
+            var query = orders
+                .Select(e => new { e.OrderID, Name = "Order" })
+                .GroupBy(o => o.Name)
+                .Select(g => new { Name = g.Key, Count = g.Count() })
+                .Where(o => o.Count > 0);
+
+            query.ToList();
+
+            var log = services.GetService<TestDbCommandExecutorFactory>().Log.ToString();
+
+            Assert.AreEqual(@"SELECT [o].[Name] AS [Name], [o].[Count] AS [Count]
+FROM (
+    SELECT [o_0].[Name] AS [Name], COUNT(*) AS [Count]
+    FROM (
+        SELECT [e].[OrderID] AS [OrderID], N'Order' AS [Name]
+        FROM [dbo].[Orders] AS [e]
+    ) AS [o_0]
+    GROUP BY [o_0].[Name]
+) AS [o]
+WHERE [o].[Count] > 0", log);
+        }
+
+        [TestMethod]
+        public void GroupBy_Projection_Parameter_Count_Where()
+        {
+            var services = ExtensionMethods.CreateServiceProvider(connectionString: NorthwindQueryContext.ConnectionString);
+            var impatient = services.GetRequiredService<ImpatientQueryProvider>();
+            var orders = impatient.CreateQuery<Northwind.Order>(CreateQueryExpression(typeof(Northwind.Order)));
+
+            var constantName = "Order";
+
+            var query = orders
+                .Select(e => new { e.OrderID, Name = constantName })
+                .GroupBy(o => o.Name)
+                .Select(g => new { Name = g.Key, Count = g.Count() })
+                .Where(o => o.Count > 0);
+
+            query.ToList();
+
+            var log = services.GetService<TestDbCommandExecutorFactory>().Log.ToString();
+
+            Assert.AreEqual(@"SELECT [o].[Name] AS [Name], [o].[Count] AS [Count]
+FROM (
+    SELECT [o_0].[Name] AS [Name], COUNT(*) AS [Count]
+    FROM (
+        SELECT [e].[OrderID] AS [OrderID], @p0 AS [Name]
+        FROM [dbo].[Orders] AS [e]
+    ) AS [o_0]
+    GROUP BY [o_0].[Name]
+) AS [o]
+WHERE [o].[Count] > 0", log);
         }
 
         private class QueryWrapper

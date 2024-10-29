@@ -2,18 +2,16 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 
-namespace Impatient.EFCore.Tests
-{
-    public class KeysWithConvertersImpatientTest : KeysWithConvertersTestBase<KeysWithConvertersImpatientTest.Fixture>
-    {
-        public KeysWithConvertersImpatientTest(Fixture fixture) : base(fixture)
-        {
-            fixture.ListLoggerFactory.Clear();
-        }
+namespace Impatient.EFCore.Tests;
 
-        public class Fixture : KeysWithConvertersFixtureBase
-        {
-            protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
-        }
+public class KeysWithConvertersImpatientTest(KeysWithConvertersImpatientTest.KeysWithConvertersImpatientFixture fixture) 
+    : KeysWithConvertersTestBase<KeysWithConvertersImpatientTest.KeysWithConvertersImpatientFixture>(fixture)
+{
+    public class KeysWithConvertersImpatientFixture : KeysWithConvertersFixtureBase
+    {
+        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
+
+        public override DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder)
+            => builder.UseSqlServer(b => b.MinBatchSize(1));
     }
 }

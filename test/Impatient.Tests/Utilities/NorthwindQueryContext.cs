@@ -6,6 +6,9 @@ namespace Impatient.Tests.Utilities
 {
     public class NorthwindQueryContext
     {
+        public const string ConnectionString = 
+            @"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=True; TrustServerCertificate=true";
+
         private readonly ImpatientQueryProvider impatient;
         private readonly TestDbCommandExecutorFactory executor;
 

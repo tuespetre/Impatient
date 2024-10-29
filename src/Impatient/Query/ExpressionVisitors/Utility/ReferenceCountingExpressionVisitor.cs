@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Impatient.Query.Expressions;
+using System;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Utility
@@ -22,6 +23,10 @@ namespace Impatient.Query.ExpressionVisitors.Utility
         public override Expression Visit(Expression node)
         {
             if (node == targetExpression)
+            {
+                ReferenceCount++;
+            }
+            else if (node is SqlColumnExpression column && column.Table == targetExpression)
             {
                 ReferenceCount++;
             }

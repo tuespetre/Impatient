@@ -1,7 +1,6 @@
-﻿using Impatient.Query;
-using Impatient.Query.Infrastructure;
+﻿using Impatient.Query.Infrastructure;
+using Microsoft.Data.SqlClient;
 using System.Data.Common;
-using System.Data.SqlClient;
 using System.Text;
 
 namespace Impatient.Tests.Utilities
@@ -27,7 +26,7 @@ namespace Impatient.Tests.Utilities
 
     public class TestDbCommandExecutor : BaseDbCommandExecutor
     {
-        private const string DefaultConnectionString = @"Server=.\sqlexpress; Database=Impatient; Trusted_Connection=True";
+        private const string DefaultConnectionString = @"Server=.\sqlexpress; Database=Impatient; Trusted_Connection=True; TrustServerCertificate=true";
 
         private readonly string connectionString;
 

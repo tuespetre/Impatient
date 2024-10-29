@@ -16,7 +16,7 @@ namespace Impatient.Tests.ExpressionVisitors.Rewriting
             context
                 = ExtensionMethods
                     .CreateServiceProvider(
-                        connectionString: @"Server=.\sqlexpress; Database=Northwind; Trusted_Connection=True")
+                        connectionString: NorthwindQueryContext.ConnectionString)
                     .GetService<NorthwindQueryContext>();
         }
 

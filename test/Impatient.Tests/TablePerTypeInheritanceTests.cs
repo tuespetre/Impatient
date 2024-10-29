@@ -1,14 +1,13 @@
 ﻿using Dapper;
 using Impatient.Extensions;
 using Impatient.Metadata;
-using Impatient.Query;
 using Impatient.Query.Expressions;
 using Impatient.Tests.Utilities;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -358,7 +357,7 @@ namespace Impatient.Tests
 
         public TablePerTypeInheritanceTests()
         {
-            var connectionString = @"Server=.\sqlexpress; Database=tempdb; Trusted_Connection=true";
+            var connectionString = @"Server=.\sqlexpress; Database=tempdb; Trusted_Connection=true; TrustServerCertificate=true";
 
             services = ExtensionMethods.CreateServiceProvider(connectionString: connectionString);
 

@@ -85,12 +85,19 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting
                                     Expression.Constant(1, typeof(int?)),
                                     Expression.Constant(null, typeof(int?)));
                         }
-                        
+
+                        var isDistinct = relationalGrouping.IsDistinct && node.Arguments.Count == 1;
+
+                        var innerExpression =
+                            selector.Type.IsScalarType()
+                                ? selector
+                                : new SqlFragmentExpression("*", selector.Type);
+
                         return new SqlAggregateExpression(
                             "COUNT",
-                            selector.Type.IsScalarType() ? selector : new SqlFragmentExpression("*", selector.Type),
+                            innerExpression,
                             node.Method.ReturnType,
-                            relationalGrouping.IsDistinct && node.Arguments.Count == 1);
+                            isDistinct);
                     }
 
                     case nameof(Queryable.Distinct):

@@ -14,5 +14,10 @@ namespace Impatient.EFCore.Tests.Query
 
         protected override QueryAsserter CreateQueryAsserter(NorthwindQueryImpatientFixture fixture) =>
             new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
+
+        public override Task All_top_level(bool async)
+        {
+            return base.All_top_level(async);
+        }
     }
 }

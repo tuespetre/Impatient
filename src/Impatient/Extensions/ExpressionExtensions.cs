@@ -773,5 +773,15 @@ namespace Impatient.Extensions
                 }
             }
         }
+
+        public static bool IsValidGroupingKey(this Expression keySelector, SelectExpression selectExpression)
+        {
+            var leafGatherer = new ProjectionLeafGatheringExpressionVisitor();
+            leafGatherer.Visit(keySelector);
+            var leafExpressions = leafGatherer.GatheredExpressions.Values;
+            var outerTables = selectExpression.Table.Flatten().ToArray();
+
+            return leafExpressions.All(e => outerTables.Any(t => e.References(t)));
+        }
     }
 }
