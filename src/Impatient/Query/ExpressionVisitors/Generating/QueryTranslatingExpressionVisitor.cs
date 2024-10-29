@@ -61,11 +61,11 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
     {
         Expression VisitSimple(string @operator)
         {
-            var left = VisitBinaryOperand(node.Left);
+            var left = VisitBinaryOperand(node.Left.AsSqlValueExpression());
 
             Builder.Append(@operator);
 
-            var right = VisitBinaryOperand(node.Right);
+            var right = VisitBinaryOperand(node.Right.AsSqlValueExpression());
 
             return node.UpdateWithConversion(left, right);
         }
@@ -76,11 +76,11 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
             {
                 Builder.Append("COALESCE(");
 
-                var left = Visit(node.Left);
+                var left = Visit(node.Left.AsSqlValueExpression());
 
                 Builder.Append(", ");
 
-                var right = Visit(node.Right);
+                var right = Visit(node.Right.AsSqlValueExpression());
 
                 Builder.Append(")");
 
@@ -88,7 +88,6 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
             }
 
             case ExpressionType.AndAlso:
-            case ExpressionType.And when node.Type.IsBooleanType():
             {
                 var left = VisitBinaryOperand(node.Left.AsLogicalBooleanSqlExpression());
 
@@ -100,24 +99,12 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
             }
 
             case ExpressionType.OrElse:
-            case ExpressionType.Or when node.Type.IsBooleanType():
             {
                 var left = VisitBinaryOperand(node.Left.AsLogicalBooleanSqlExpression());
 
                 Builder.Append(" OR ");
 
                 var right = VisitBinaryOperand(node.Right.AsLogicalBooleanSqlExpression());
-
-                return node.UpdateWithConversion(left, right);
-            }
-
-            case ExpressionType.ExclusiveOr when node.Type.IsBooleanType():
-            {
-                var left = VisitBinaryOperand(node.Left.AsBooleanValuedSqlExpression());
-
-                Builder.Append(" ^ ");
-
-                var right = VisitBinaryOperand(node.Right.AsBooleanValuedSqlExpression());
 
                 return node.UpdateWithConversion(left, right);
             }
@@ -151,8 +138,8 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
                     return node.UpdateWithConversion(left, right);
                 }
 
-                left = node.Left.Type.IsBooleanType() ? node.Left.AsBooleanValuedSqlExpression() : left;
-                right = node.Right.Type.IsBooleanType() ? node.Right.AsBooleanValuedSqlExpression() : right;
+                left = node.Left.AsSqlValueExpression();
+                right = node.Right.AsSqlValueExpression();
 
                 var leftIsNullable = IsNullableOperand(left);
                 var rightIsNullable = IsNullableOperand(right);
@@ -210,8 +197,8 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
                     return node.UpdateWithConversion(left, right);
                 }
 
-                left = node.Left.Type.IsBooleanType() ? node.Left.AsBooleanValuedSqlExpression() : left;
-                right = node.Right.Type.IsBooleanType() ? node.Right.AsBooleanValuedSqlExpression() : right;
+                left = node.Left.AsSqlValueExpression();
+                right = node.Right.AsSqlValueExpression();
 
                 var leftIsNullable = IsNullableOperand(left);
                 var rightIsNullable = IsNullableOperand(right);
@@ -343,10 +330,7 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
 
         Builder.Append(" THEN ");
 
-        var ifTrue
-            = Visit(node.IfTrue.Type.IsBooleanType()
-                ? node.IfTrue.AsBooleanValuedSqlExpression()
-                : node.IfTrue);
+        var ifTrue = Visit(node.IfTrue.AsSqlValueExpression());
 
         if (ifTrue.Type != node.IfTrue.Type)
         {
@@ -355,10 +339,7 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
 
         Builder.Append(" ELSE ");
 
-        var ifFalse
-            = Visit(node.IfFalse.Type.IsBooleanType()
-                ? node.IfFalse.AsBooleanValuedSqlExpression()
-                : node.IfFalse);
+        var ifFalse = Visit(node.IfFalse.AsSqlValueExpression());
 
         if (ifFalse.Type != node.IfTrue.Type)
         {
@@ -684,6 +665,8 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
 
             case ExpressionType.Convert:
             {
+                Expression visited;
+
                 if (node.Operand.Type.UnwrapNullableType() != node.Type.UnwrapNullableType())
                 {
                     var mapping = typeMappingProvider.FindMapping(node.Type);
@@ -692,7 +675,7 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
                     {
                         Builder.Append("CAST(");
 
-                        var visited = Visit(node.Operand);
+                        visited = Visit(node.Operand.AsSqlValueExpression());
 
                         Builder.Append($" AS {mapping.DbTypeName})");
 
@@ -700,14 +683,9 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
                     }
                 }
 
-                if (node.Operand.Type.IsBooleanType())
-                {
-                    var visited = Visit(node.Operand.AsBooleanValuedSqlExpression());
+                visited = Visit(node.Operand.AsSqlValueExpression());
 
-                    return node.Update(visited);
-                }
-
-                return base.VisitUnary(node);
+                return node.Update(visited);
             }
 
             default:

@@ -355,6 +355,8 @@ public static class ExpressionExtensions
     /// </summary>
     public static Expression AsLogicalBooleanSqlExpression(this Expression expression)
     {
+        Debug.Assert(expression.Type.IsBooleanType());
+
         if (expression.IsLogicalBooleanSqlExpression())
         {
             return expression;
@@ -382,6 +384,8 @@ public static class ExpressionExtensions
     /// </summary>
     public static Expression AsBooleanValuedSqlExpression(this Expression expression)
     {
+        Debug.Assert(expression.Type.IsBooleanType());
+
         if (expression.IsBooleanValuedSqlExpression())
         {
             return expression;
@@ -460,12 +464,9 @@ public static class ExpressionExtensions
         return Expression.Condition(test, ifTrue, ifFalse);
     }
 
-    public static bool IsLogicalBooleanSqlExpression(this Expression expression)
+    private static bool IsLogicalBooleanSqlExpression(this Expression expression)
     {
-        if (!expression.Type.IsBooleanType())
-        {
-            return false;
-        }
+        Debug.Assert(expression.Type.IsBooleanType());
 
         var unwrapped = expression.UnwrapInnerExpression();
 
@@ -495,8 +496,6 @@ public static class ExpressionExtensions
                     case ExpressionType.LessThanOrEqual:
                     case ExpressionType.GreaterThan:
                     case ExpressionType.GreaterThanOrEqual:
-                    case ExpressionType.And:
-                    case ExpressionType.Or:
                     {
                         return true;
                     }
@@ -533,12 +532,9 @@ public static class ExpressionExtensions
         }
     }
 
-    public static bool IsBooleanValuedSqlExpression(this Expression expression)
+    private static bool IsBooleanValuedSqlExpression(this Expression expression)
     {
-        if (!expression.Type.IsBooleanType())
-        {
-            return false;
-        }
+        Debug.Assert(expression.Type.IsBooleanType());
 
         var unwrapped = expression.UnwrapInnerExpression();
 
@@ -567,6 +563,18 @@ public static class ExpressionExtensions
             {
                 return false;
             }
+        }
+    }
+
+    public static Expression AsSqlValueExpression(this Expression expression)
+    {
+        if (expression.Type.IsBooleanType())
+        {
+            return expression.AsBooleanValuedSqlExpression();
+        }
+        else
+        {
+            return expression;
         }
     }
 

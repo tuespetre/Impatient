@@ -23051,6 +23051,24 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Contains_over_concatenated_columns_with_different_sizes" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Null_Coalesce_Short_Circuit" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Null_Coalesce_Short_Circuit" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Select_bitwise_and_or" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Select_bitwise_and_or" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Select_bitwise_or" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Select_bitwise_or" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
