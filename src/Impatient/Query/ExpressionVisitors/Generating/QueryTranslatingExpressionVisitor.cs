@@ -700,6 +700,13 @@ namespace Impatient.Query.ExpressionVisitors.Generating
                         }
                     }
 
+                    if (node.Operand.Type.IsBooleanType())
+                    {
+                        var visited = Visit(node.Operand.AsBooleanValuedSqlExpression());
+
+                        return node.Update(visited);
+                    }
+
                     return base.VisitUnary(node);
                 }
 

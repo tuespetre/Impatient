@@ -14638,6 +14638,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.Outer_parameter_in_join_key_inner_and_outer" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.Select_null_propagation_negative9" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.Select_null_propagation_negative9" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -32923,6 +32929,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Correlated_collections_basic_projecting_constant_bool" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Select_null_propagation_negative9" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Select_null_propagation_negative9" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -36915,6 +36927,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Correlated_collections_basic_projecting_constant_bool" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Correlated_collections_basic_projecting_constant_bool" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Select_null_propagation_negative9" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Select_null_propagation_negative9" />
                       </Rule>
                     </Rule>
                   </Rule>
