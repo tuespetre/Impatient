@@ -11263,6 +11263,18 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.EntitySplittingQueryImpatientTest.Tph_entity_owning_a_split_reference_on_middle_with_table_sharing_querying_sibling" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.EntitySplittingQueryImpatientTest.Tpt_entity_owning_a_split_reference_on_middle_with_table_sharing_querying_sibling" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.EntitySplittingQueryImpatientTest.Tpt_entity_owning_a_split_reference_on_middle_with_table_sharing_querying_sibling" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.EntitySplittingQueryImpatientTest.Tpt_entity_owning_a_split_reference_on_leaf_with_table_sharing_querying_sibling" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.EntitySplittingQueryImpatientTest.Tpt_entity_owning_a_split_reference_on_leaf_with_table_sharing_querying_sibling" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -33894,6 +33906,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTFiltersInheritanceQueryImpatientTest.Can_use_of_type_kiwi" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTFiltersInheritanceQueryImpatientTest.Can_use_IgnoreQueryFilters_and_GetDatabaseValues" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTFiltersInheritanceQueryImpatientTest.Can_use_IgnoreQueryFilters_and_GetDatabaseValues" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -37268,6 +37286,66 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Using_is_operator_with_of_type_on_multiple_type_with_no_result" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Using_is_operator_with_of_type_on_multiple_type_with_no_result" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_insert_update_delete" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_insert_update_delete" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_query_when_shared_column" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_query_when_shared_column" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Member_access_on_intermediate_type_works" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Member_access_on_intermediate_type_works" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_use_backwards_is_animal" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_use_backwards_is_animal" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_use_backwards_of_type_animal" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_use_backwards_of_type_animal" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_query_just_roses" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_query_just_roses" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Byte_enum_value_constant_used_in_projection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Byte_enum_value_constant_used_in_projection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Setting_foreign_key_to_a_different_type_throws" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Setting_foreign_key_to_a_different_type_throws" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_include_prey" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_include_prey" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_query_just_kiwis" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_query_just_kiwis" />
                       </Rule>
                     </Rule>
                   </Rule>

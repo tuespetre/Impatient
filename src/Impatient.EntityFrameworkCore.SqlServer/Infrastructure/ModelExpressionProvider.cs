@@ -770,6 +770,7 @@ public class ModelExpressionProvider
             = (from t in hierarchy
                from p in IterateProperties(t).Distinct()
                from m in p.GetTableColumnMappings()
+               where tableLookup.ContainsKey(m.Column.Table)
                select (Property: p, Mapping: m)).ToArray();
 
         var columnExpressions
