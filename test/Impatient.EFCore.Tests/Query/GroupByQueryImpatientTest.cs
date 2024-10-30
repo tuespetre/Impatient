@@ -878,7 +878,7 @@ GROUP BY [g].[CustomerID]
         await base.GroupBy_Property_scalar_element_selector_Count(async);
 
         AssertSql(@"
-SELECT COUNT([g].[OrderID])
+SELECT COUNT(*)
 FROM [Orders] AS [g]
 GROUP BY [g].[CustomerID]
 ");
@@ -891,7 +891,7 @@ GROUP BY [g].[CustomerID]
         await base.GroupBy_Property_scalar_element_selector_LongCount(async);
 
         AssertSql(@"
-SELECT COUNT_BIG([g].[OrderID])
+SELECT COUNT_BIG(*)
 FROM [Orders] AS [g]
 GROUP BY [g].[CustomerID]
 ");

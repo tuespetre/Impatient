@@ -16155,6 +16155,18 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.GroupByQueryImpatientTest.GroupBy_Select_Distinct_aggregate" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.GroupByQueryImpatientTest.GroupBy_Property_Select_Count_with_nulls" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.GroupByQueryImpatientTest.GroupBy_Property_Select_Count_with_nulls" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.GroupByQueryImpatientTest.GroupBy_Property_Select_LongCount_with_nulls" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.GroupByQueryImpatientTest.GroupBy_Property_Select_LongCount_with_nulls" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">

@@ -89,7 +89,7 @@ public class GroupingAggregationRewritingExpressionVisitor : ExpressionVisitor
                     var isDistinct = relationalGrouping.IsDistinct && node.Arguments.Count == 1;
 
                     var innerExpression =
-                        selector.Type.IsScalarType()
+                        (selector.Type.IsScalarType() && isDistinct) || node.Arguments.Count == 2
                             ? selector
                             : new SqlFragmentExpression("*", selector.Type);
 
