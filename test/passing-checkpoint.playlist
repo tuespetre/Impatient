@@ -144,6 +144,24 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.BuiltInDataTypesImpatientTest.Optional_datetime_reading_null_from_database" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.BuiltInDataTypesImpatientTest.Can_insert_and_read_back_all_nullable_data_types_with_values_set_to_non_null" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.BuiltInDataTypesImpatientTest.Can_insert_and_read_back_all_nullable_data_types_with_values_set_to_non_null" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.BuiltInDataTypesImpatientTest.Can_query_using_any_data_type_nullable_shadow" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.BuiltInDataTypesImpatientTest.Can_query_using_any_data_type_nullable_shadow" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.BuiltInDataTypesImpatientTest.Can_query_using_any_nullable_data_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.BuiltInDataTypesImpatientTest.Can_query_using_any_nullable_data_type" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -849,6 +867,24 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ConvertToProviderTypesImpatientTest.Optional_datetime_reading_null_from_database" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ConvertToProviderTypesImpatientTest.Can_query_using_any_nullable_data_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ConvertToProviderTypesImpatientTest.Can_query_using_any_nullable_data_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ConvertToProviderTypesImpatientTest.Can_query_using_any_data_type_nullable_shadow" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ConvertToProviderTypesImpatientTest.Can_query_using_any_data_type_nullable_shadow" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ConvertToProviderTypesImpatientTest.Can_insert_and_read_back_all_nullable_data_types_with_values_set_to_non_null" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ConvertToProviderTypesImpatientTest.Can_insert_and_read_back_all_nullable_data_types_with_values_set_to_non_null" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -1062,6 +1098,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CustomConvertersImpatientTest.Optional_datetime_reading_null_from_database" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CustomConvertersImpatientTest.Optional_datetime_reading_null_from_database" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CustomConvertersImpatientTest.Can_query_using_any_data_type_nullable_shadow" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CustomConvertersImpatientTest.Can_query_using_any_data_type_nullable_shadow" />
                       </Rule>
                     </Rule>
                   </Rule>

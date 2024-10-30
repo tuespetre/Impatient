@@ -17,18 +17,25 @@ public static class MaterializationUtilities
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TValue ReadNullable<TValue>(DbDataReader reader, int index)
+    public static TValue ReadNullableReference<TValue>(DbDataReader reader, int index)
     {
-        var value = reader.GetValue(index);
-
-        if (DBNull.Value.Equals(value))
+        if (reader.IsDBNull(index))
         {
             return default;
         }
-        else
+
+        return reader.GetFieldValue<TValue>(index);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Nullable<TValue> ReadNullableValue<TValue>(DbDataReader reader, int index) where TValue : struct
+    {
+        if (reader.IsDBNull(index))
         {
-            return (TValue)value;
+            return default;
         }
+
+        return reader.GetFieldValue<TValue>(index);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -99,7 +106,7 @@ public static class MaterializationUtilities
         if (expression is MethodCallExpression methodCallExpression
             && methodCallExpression.Method.DeclaringType == typeof(MaterializationUtilities))
         {
-            // Shortcut. No need to wrap calls to ReadNullable, etc.
+            // Shortcut. No need to wrap calls to ReadNullableReference, etc.
             return expression;
         }
 

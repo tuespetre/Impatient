@@ -13,9 +13,13 @@ public class DefaultScalarReadValueExpressionFactory : IReadValueExpressionFacto
         = typeof(MaterializationUtilities).GetTypeInfo()
             .GetDeclaredMethod(nameof(MaterializationUtilities.ReadNonNullable));
 
-    private static readonly MethodInfo readNullableMethodInfo
+    private static readonly MethodInfo readNullableReferenceMethodInfo
         = typeof(MaterializationUtilities).GetTypeInfo()
-            .GetDeclaredMethod(nameof(MaterializationUtilities.ReadNullable));
+            .GetDeclaredMethod(nameof(MaterializationUtilities.ReadNullableReference));
+
+    private static readonly MethodInfo readNullableValueMethodInfo
+        = typeof(MaterializationUtilities).GetTypeInfo()
+            .GetDeclaredMethod(nameof(MaterializationUtilities.ReadNullableValue));
 
     private static readonly MethodInfo readNonNullableEnumMethodInfo
         = typeof(MaterializationUtilities).GetTypeInfo()
@@ -97,7 +101,9 @@ public class DefaultScalarReadValueExpressionFactory : IReadValueExpressionFacto
         {
             methodInfo
                 = isNullable
-                    ? readNullableMethodInfo.MakeGenericMethod(source.Type)
+                    ? source.Type == unwrappedType
+                        ? readNullableReferenceMethodInfo.MakeGenericMethod(source.Type)
+                        : readNullableValueMethodInfo.MakeGenericMethod(unwrappedType)
                     : readNonNullableMethodInfo.MakeGenericMethod(source.Type);
         }
 
