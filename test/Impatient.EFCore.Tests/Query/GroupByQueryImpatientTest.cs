@@ -611,7 +611,7 @@ SELECT [o].[Key] AS [Key], (
     FROM [Orders] AS [o_0]
     WHERE (([o].[Key] IS NULL AND [o_0].[CustomerID] IS NULL) OR ([o].[Key] = [o_0].[CustomerID]))
 ) AS [Count], (
-    SELECT SUM([o_0].[OrderID])
+    SELECT COALESCE(SUM([o_0].[OrderID]), 0)
     FROM [Orders] AS [o_0]
     WHERE (([o].[Key] IS NULL AND [o_0].[CustomerID] IS NULL) OR ([o].[Key] = [o_0].[CustomerID]))
 ) AS [Sum]

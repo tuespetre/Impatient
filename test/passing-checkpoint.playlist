@@ -29461,6 +29461,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.QueryNavigationsImpatientTest.Take_Select_Navigation" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.QueryNavigationsImpatientTest.Collection_select_nav_prop_sum_plus_one" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.QueryNavigationsImpatientTest.Collection_select_nav_prop_sum_plus_one" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">

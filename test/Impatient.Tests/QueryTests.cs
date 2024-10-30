@@ -1587,7 +1587,7 @@ FROM [dbo].[MyClass1] AS [m]",
         Assert.AreEqual(86, result);
 
         Assert.AreEqual(
-            @"SELECT SUM([m].[Prop2])
+            @"SELECT COALESCE(SUM([m].[Prop2]), 0)
 FROM [dbo].[MyClass1] AS [m]",
             SqlLog);
     }
@@ -1600,7 +1600,7 @@ FROM [dbo].[MyClass1] AS [m]",
         Assert.AreEqual(86, result);
 
         Assert.AreEqual(
-            @"SELECT SUM([m].[Prop2])
+            @"SELECT COALESCE(SUM([m].[Prop2]), 0)
 FROM [dbo].[MyClass1] AS [m]",
             SqlLog);
     }
@@ -2929,7 +2929,7 @@ FROM [dbo].[MyClass1] AS [m]",
 
         Assert.AreEqual(
             @"SELECT [ms].[Prop1] AS [m.Prop1], [ms].[Prop2] AS [m.Prop2], [t].[ms.Key] AS [Key], [t].[max] AS [max], [t].[min] AS [min], [t].[count] AS [count], (
-    SELECT SUM([ms_0].[Prop2])
+    SELECT COALESCE(SUM([ms_0].[Prop2]), 0)
     FROM [dbo].[MyClass1] AS [ms_0]
     WHERE [t].[ms.Key] = [ms_0].[Prop1]
 ) AS [sum]
@@ -2960,7 +2960,7 @@ INNER JOIN [dbo].[MyClass1] AS [ms] ON [t].[ms.Key] = [ms].[Prop1]",
 
         Assert.AreEqual(
             @"SELECT [m1].[Prop1] AS [m1.Prop1], [m1].[Prop2] AS [m1.Prop2], [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2], (
-    SELECT SUM([m2_0].[Prop2])
+    SELECT COALESCE(SUM([m2_0].[Prop2]), 0)
     FROM [dbo].[MyClass2] AS [m2_0]
     WHERE [m1].[Prop1] = [m2_0].[Prop1]
 ) AS [sum]
@@ -2994,7 +2994,7 @@ INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop1] = [m2].[Prop1]",
 
         Assert.AreEqual(
             @"SELECT [m1].[Prop1] AS [sub.m1.Prop1], [m1].[Prop2] AS [sub.m1.Prop2], [m2].[Prop1] AS [sub.m2.Prop1], [m2].[Prop2] AS [sub.m2.Prop2], (
-    SELECT SUM([m2_0].[Prop2])
+    SELECT COALESCE(SUM([m2_0].[Prop2]), 0)
     FROM [dbo].[MyClass2] AS [m2_0]
     WHERE [m1].[Prop1] = [m2_0].[Prop1]
 ) AS [sub.sum], (
@@ -4192,7 +4192,7 @@ FROM (
         var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => m.Prop2).Distinct().Sum();
 
         Assert.AreEqual(
-            @"SELECT SUM([t].[Prop2])
+            @"SELECT COALESCE(SUM([t].[Prop2]), 0)
 FROM (
     SELECT DISTINCT [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
@@ -4206,7 +4206,7 @@ FROM (
         var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => m.Prop2).Skip(1).Sum();
 
         Assert.AreEqual(
-            @"SELECT SUM([t].[Prop2])
+            @"SELECT COALESCE(SUM([t].[Prop2]), 0)
 FROM (
     SELECT [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
@@ -4222,7 +4222,7 @@ FROM (
         var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Select(m => m.Prop2).Take(2).Sum();
 
         Assert.AreEqual(
-            @"SELECT SUM([t].[Prop2])
+            @"SELECT COALESCE(SUM([t].[Prop2]), 0)
 FROM (
     SELECT TOP (2) [m].[Prop2]
     FROM [dbo].[MyClass1] AS [m]
@@ -4236,7 +4236,7 @@ FROM (
         var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).Select(g => g.Key).Sum();
 
         Assert.AreEqual(
-            @"SELECT SUM([t].[Prop2])
+            @"SELECT COALESCE(SUM([t].[Prop2]), 0)
 FROM (
     SELECT [g].[Prop2]
     FROM [dbo].[MyClass1] AS [g]
@@ -4251,7 +4251,7 @@ FROM (
         var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Distinct().Sum(m => m.Prop2);
 
         Assert.AreEqual(
-            @"SELECT SUM([m].[Prop2])
+            @"SELECT COALESCE(SUM([m].[Prop2]), 0)
 FROM (
     SELECT DISTINCT [m_0].[Prop1] AS [Prop1], [m_0].[Prop2] AS [Prop2]
     FROM [dbo].[MyClass1] AS [m_0]
@@ -4265,7 +4265,7 @@ FROM (
         var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Skip(1).Sum(m => m.Prop2);
 
         Assert.AreEqual(
-            @"SELECT SUM([m].[Prop2])
+            @"SELECT COALESCE(SUM([m].[Prop2]), 0)
 FROM (
     SELECT [m_0].[Prop2]
     FROM [dbo].[MyClass1] AS [m_0]
@@ -4281,7 +4281,7 @@ FROM (
         var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).Take(2).Sum(m => m.Prop2);
 
         Assert.AreEqual(
-            @"SELECT SUM([m].[Prop2])
+            @"SELECT COALESCE(SUM([m].[Prop2]), 0)
 FROM (
     SELECT TOP (2) [m_0].[Prop2]
     FROM [dbo].[MyClass1] AS [m_0]
@@ -4295,7 +4295,7 @@ FROM (
         var result = impatient.CreateQuery<MyClass1>(MyClass1QueryExpression).GroupBy(m => m.Prop2).Sum(g => g.Key);
 
         Assert.AreEqual(
-            @"SELECT SUM([g].[Prop2])
+            @"SELECT COALESCE(SUM([g].[Prop2]), 0)
 FROM (
     SELECT [g_0].[Prop2]
     FROM [dbo].[MyClass1] AS [g_0]

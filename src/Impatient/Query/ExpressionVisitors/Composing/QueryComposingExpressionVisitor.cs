@@ -18,7 +18,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
     private readonly IEnumerable<ExpressionVisitor> rewritingExpressionVisitors;
     private readonly IEnumerable<ExpressionVisitor> providerSpecificRewritingExpressionVisitors;
     private readonly ExpressionVisitor parameterizingExpressionVisitor;
-    
+
     private bool topLevel = true;
 
     public QueryComposingExpressionVisitor(
@@ -38,7 +38,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
         get
         {
             yield return new GroupingAggregationRewritingExpressionVisitor(translatabilityVisitor);
-            
+
             yield return this;
 
             foreach (var visitor in rewritingExpressionVisitors)
@@ -166,7 +166,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
     }
 
     private Expression VisitQueryableOrEnumerableMethodCall(MethodCallExpression node)
-    { 
+    {
         var visitedArguments = new Expression[node.Arguments.Count];
 
         Expression FallbackToEnumerable()
@@ -349,7 +349,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
             case nameof(Queryable.OrderDescending):
             {
                 return HandleOrder(outerQuery, node, visitedArguments, FallbackToEnumerable);
-            }    
+            }
 
             // Partitioning operations
 
@@ -1175,8 +1175,8 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
 
         // Bail if we can't work with the key selector
 
-        if (!IsTranslatable(keySelector) 
-            || keySelector.ContainsAggregateOrSubquery() 
+        if (!IsTranslatable(keySelector)
+            || keySelector.ContainsAggregateOrSubquery()
             || !keySelector.IsValidGroupingKey(outerSelectExpression))
         {
             return fallbackToEnumerable();
@@ -1945,7 +1945,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
         var outerSelectExpression = outerQuery.SelectExpression;
         var outerProjection = outerSelectExpression.Projection.Flatten().Body;
         var selectorLambda = node.Arguments[1].UnwrapLambda();
-        
+
         if (!selectorLambda.Body.References(selectorLambda.Parameters[0]))
         {
             // SQL Server Says:
@@ -2010,7 +2010,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
             }
         }
 
-        ReturnOrderedEnumerable:
+    ReturnOrderedEnumerable:
 
         if (node.Method.Name == nameof(Queryable.ThenBy)
             || node.Method.Name == nameof(Queryable.ThenByDescending))
@@ -2564,7 +2564,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
                 return fallbackToEnumerable();
             }
         }
-        
+
         if (outerProjection.Type.IsScalarType())
         {
             outerProjection = new SubqueryAliasDecoratingExpressionVisitor().Visit(outerProjection);
@@ -2990,7 +2990,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
             return fallbackToEnumerable();
         }
 
-        var valueExpression 
+        var valueExpression
             = node.Arguments[1]
                 .VisitWith(ServerPostExpansionVisitors);
 
@@ -3074,27 +3074,36 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
                             outerProjection))));
         }
 
-        Expression aggregateExpression
-            = node.Method.Name == nameof(Queryable.Average)
-                ? new SqlAggregateExpression(
+        Expression aggregateExpression;
+
+        if (node.Method.Name == nameof(Queryable.Average))
+        {
+            aggregateExpression
+                = new SqlAggregateExpression(
                     "AVG",
                     new SqlCastExpression(
                         outerProjection,
                         node.Method.ReturnType),
-                    node.Method.ReturnType)
-                : new SqlAggregateExpression(
-                    node.Method.Name.ToUpperInvariant(),
-                    outerProjection,
                     node.Method.ReturnType);
-
-        if (node.Method.Name == nameof(Queryable.Sum)
-            && node.Method.ReturnType.IsNullableType())
+        }
+        else if (node.Method.Name == nameof(Queryable.Sum))
         {
             aggregateExpression
                 = Expression.Coalesce(
-                    aggregateExpression,
+                    new SqlAggregateExpression(
+                        "SUM",
+                        outerProjection,
+                        node.Method.ReturnType.AsNullableType()),
                     Expression.Constant(
                         Activator.CreateInstance(node.Method.ReturnType.UnwrapNullableType())));
+        }
+        else
+        {
+            aggregateExpression
+                = new SqlAggregateExpression(
+                    node.Method.Name.ToUpperInvariant(),
+                    outerProjection,
+                    node.Method.ReturnType);
         }
 
         return new SingleValueRelationalQueryExpression(
