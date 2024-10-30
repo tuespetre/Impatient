@@ -57,12 +57,35 @@ public class GroupingAggregationRewritingExpressionVisitor : ExpressionVisitor
                             node.Method.ReturnType,
                             relationalGrouping.IsDistinct && node.Arguments.Count == 1);
                     }
+                    else if (node.Method.Name == nameof(Queryable.Sum))
+                    {
+                        var aggregateExpression
+                            = Expression.Coalesce(
+                                new SqlAggregateExpression(
+                                    "SUM",
+                                    selector,
+                                    node.Method.ReturnType.AsNullableType(),
+                                    relationalGrouping.IsDistinct && node.Arguments.Count == 1),
+                                Expression.Constant(
+                                    Activator.CreateInstance(node.Method.ReturnType.UnwrapNullableType())));
 
-                    return new SqlAggregateExpression(
-                        node.Method.Name.ToUpperInvariant(),
-                        selector,
-                        node.Method.ReturnType,
-                        relationalGrouping.IsDistinct && node.Arguments.Count == 1);
+                        if (node.Method.ReturnType.IsNullableType())
+                        {
+                            return Expression.Convert(aggregateExpression, node.Method.ReturnType);
+                        }
+                        else
+                        {
+                            return aggregateExpression;
+                        }
+                    }
+                    else
+                    {
+                        return new SqlAggregateExpression(
+                            node.Method.Name.ToUpperInvariant(),
+                            selector,
+                            node.Method.ReturnType,
+                            relationalGrouping.IsDistinct && node.Arguments.Count == 1);
+                    }
                 }
 
                 case nameof(Queryable.Count):

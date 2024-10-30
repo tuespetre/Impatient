@@ -3129,7 +3129,7 @@ INNER JOIN [dbo].[MyClass2] AS [m2] ON [m1].[Prop2] = [m2].[Prop2]",
         Assert.AreEqual(
             @"SELECT [m1].[Key] AS [m1.Key], [m1].[Sum] AS [m1.Sum], [m2].[Prop1] AS [m2.Prop1], [m2].[Prop2] AS [m2.Prop2]
 FROM (
-    SELECT [m1g].[Prop2] AS [Key], SUM([m1g].[Prop2]) AS [Sum]
+    SELECT [m1g].[Prop2] AS [Key], COALESCE(SUM([m1g].[Prop2]), 0) AS [Sum]
     FROM [dbo].[MyClass1] AS [m1g]
     GROUP BY [m1g].[Prop2]
 ) AS [m1]

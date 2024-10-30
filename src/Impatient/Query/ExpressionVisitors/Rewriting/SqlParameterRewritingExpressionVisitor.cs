@@ -91,7 +91,7 @@ public class SqlParameterRewritingExpressionVisitor : ExpressionVisitor
 
                 madeChange = true;
             }
-            else if (left is ConstantExpression && rightMapping.SourceConversion is not null)
+            else if (left is ConstantExpression && rightMapping.SourceConversion is not null && left.Type.IsAssignableTo(rightMapping.TargetType))
             {
                 left
                     = new SqlParameterExpression(
@@ -115,7 +115,7 @@ public class SqlParameterRewritingExpressionVisitor : ExpressionVisitor
 
                 madeChange = true;
             }
-            else if (right is ConstantExpression && leftMapping.SourceConversion is not null)
+            else if (right is ConstantExpression && leftMapping.SourceConversion is not null && right.Type.IsAssignableTo(leftMapping.TargetType))
             {
                 right
                     = new SqlParameterExpression(
