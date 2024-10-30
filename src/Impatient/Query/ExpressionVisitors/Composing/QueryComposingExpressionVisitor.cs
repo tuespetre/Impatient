@@ -3165,7 +3165,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
             outerSelectExpression
                 .UpdateOrderBy(null)
                 .UpdateProjection(new ServerProjectionExpression(
-                    new SqlAggregateExpression("COUNT", starFragment, node.Method.ReturnType)
+                    new SqlAggregateExpression("COUNT", starFragment, node.Method.ReturnType, hasOpaqueType: true)
                         .VisitWith(ServerPostExpansionVisitors))));
     }
 

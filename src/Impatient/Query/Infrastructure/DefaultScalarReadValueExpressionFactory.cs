@@ -121,7 +121,8 @@ public class DefaultScalarReadValueExpressionFactory : IReadValueExpressionFacto
                 return sqlColumnExpression.TypeMapping;
             }
 
-            case SqlAggregateExpression sqlAggregateExpression:
+            case SqlAggregateExpression sqlAggregateExpression
+            when !sqlAggregateExpression.HasOpaqueType:
             {
                 return FindTypeMapping(sqlAggregateExpression.Expression);
             }

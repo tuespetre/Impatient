@@ -16107,6 +16107,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.GroupByQueryImpatientTest.GroupBy_count_filter" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.GroupByQueryImpatientTest.GroupBy_Select_Distinct_aggregate" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.GroupByQueryImpatientTest.GroupBy_Select_Distinct_aggregate" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -16925,6 +16931,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryAdhocImpatientTest.Predicate_based_on_element_of_json_array_of_primitives1" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryAdhocImpatientTest.Can_project_nullable_json_property_when_the_element_in_json_is_not_present" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryAdhocImpatientTest.Can_project_nullable_json_property_when_the_element_in_json_is_not_present" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -17576,6 +17588,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_of_primitives_contains_in_predicate" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_of_primitives_contains_in_predicate" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Project_json_entity_FirstOrDefault_subquery_with_binding_on_top" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Project_json_entity_FirstOrDefault_subquery_with_binding_on_top" />
                       </Rule>
                     </Rule>
                   </Rule>

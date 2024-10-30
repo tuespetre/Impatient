@@ -27,7 +27,7 @@ public class SqlServerJsonMemberRewritingExpressionVisitor : ExpressionVisitor
             case SqlExpression sqlExpression
             when !sqlExpression.Type.IsScalarType():
             {
-                if (node.Type == typeof(bool))
+                if (node.Type.IsScalarType())
                 {
                     var jsonValue = new SqlFunctionExpression(
                         "JSON_VALUE",
@@ -35,14 +35,27 @@ public class SqlServerJsonMemberRewritingExpressionVisitor : ExpressionVisitor
                         sqlExpression,
                         Expression.Constant(GetJsonPath(path)));
 
-                    return Expression.Equal(jsonValue, Expression.Constant("true"));
+                    if (node.Type == typeof(string))
+                    {
+                        return jsonValue;
+                    }
+                    else if (node.Type.IsBooleanType())
+                    {
+                        return Expression.Equal(jsonValue, Expression.Constant("true"));
+                    }
+                    else
+                    {
+                        return new SqlCastExpression(jsonValue, node.Type);
+                    }
                 }
-
-                return new SqlFunctionExpression(
-                    node.Type.IsScalarType() ? "JSON_VALUE" : "JSON_QUERY",
-                    node.Type,
-                    sqlExpression,
-                    Expression.Constant(GetJsonPath(path)));
+                else
+                {
+                    return new SqlFunctionExpression(
+                        "JSON_QUERY",
+                        node.Type,
+                        sqlExpression,
+                        Expression.Constant(GetJsonPath(path)));
+                }
             }
 
             default:

@@ -97,7 +97,8 @@ public class GroupingAggregationRewritingExpressionVisitor : ExpressionVisitor
                         "COUNT",
                         innerExpression,
                         node.Method.ReturnType,
-                        isDistinct);
+                        isDistinct,
+                        hasOpaqueType: true);
                 }
 
                 case nameof(Queryable.Distinct):

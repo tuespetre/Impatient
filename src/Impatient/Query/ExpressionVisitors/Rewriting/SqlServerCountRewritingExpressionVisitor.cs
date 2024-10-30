@@ -15,7 +15,8 @@ public class SqlServerCountRewritingExpressionVisitor : ExpressionVisitor
                 "COUNT_BIG",
                 sqlAggregate.Expression,
                 sqlAggregate.Type,
-                sqlAggregate.IsDistinct);
+                sqlAggregate.IsDistinct,
+                hasOpaqueType: true);
         }
         else
         {
