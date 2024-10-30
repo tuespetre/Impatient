@@ -1174,7 +1174,14 @@ internal static class SqlServerJsonValueReader
 
         reader.Read();
 
-        Debug.Assert(reader.TokenType == JsonToken.PropertyName);
+        Debug.Assert(reader.TokenType == JsonToken.PropertyName || reader.TokenType == JsonToken.EndObject);
+
+        if (reader.TokenType == JsonToken.EndObject)
+        {
+            list.Add(default);
+
+            goto ReadElementOrEnd;
+        }
 
         var element = materializer();
 

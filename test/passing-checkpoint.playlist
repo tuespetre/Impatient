@@ -7210,6 +7210,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsQueryImpatientTest.Select_nav_prop_collection_one_to_many_required" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsQueryImpatientTest.Include_ThenInclude_ThenInclude_followed_by_two_nested_selects" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsQueryImpatientTest.Include_ThenInclude_ThenInclude_followed_by_two_nested_selects" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -7657,6 +7663,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSharedTypeQueryImpatientTest.Select_nav_prop_collection_one_to_many_required" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSharedTypeQueryImpatientTest.Select_nav_prop_collection_one_to_many_required" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSharedTypeQueryImpatientTest.Include_ThenInclude_ThenInclude_followed_by_two_nested_selects" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSharedTypeQueryImpatientTest.Include_ThenInclude_ThenInclude_followed_by_two_nested_selects" />
                       </Rule>
                     </Rule>
                   </Rule>
@@ -28939,6 +28951,30 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.PrimitiveCollectionsQueryImpatientTest.Project_collection_of_ints_with_distinct" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.PrimitiveCollectionsQueryImpatientTest.Project_collection_of_ints_with_distinct" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.PrimitiveCollectionsQueryImpatientTest.Project_collection_of_nullable_ints_with_paging2" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.PrimitiveCollectionsQueryImpatientTest.Project_collection_of_nullable_ints_with_paging2" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.PrimitiveCollectionsQueryImpatientTest.Project_collection_of_nullable_ints_with_paging" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.PrimitiveCollectionsQueryImpatientTest.Project_collection_of_nullable_ints_with_paging" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.PrimitiveCollectionsQueryImpatientTest.Project_collection_of_nullable_ints_with_paging3" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.PrimitiveCollectionsQueryImpatientTest.Project_collection_of_nullable_ints_with_paging3" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.PrimitiveCollectionsQueryImpatientTest.Project_empty_collection_of_nullables_and_collection_only_containing_nulls" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.PrimitiveCollectionsQueryImpatientTest.Project_empty_collection_of_nullables_and_collection_only_containing_nulls" />
                       </Rule>
                     </Rule>
                   </Rule>
