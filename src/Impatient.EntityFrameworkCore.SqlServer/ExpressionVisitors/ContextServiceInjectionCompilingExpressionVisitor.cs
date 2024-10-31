@@ -1,4 +1,5 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Expressions;
+using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using System;

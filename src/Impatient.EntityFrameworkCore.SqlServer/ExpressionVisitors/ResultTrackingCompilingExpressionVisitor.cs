@@ -26,15 +26,23 @@ public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
 
     public override Expression Visit(Expression node)
     {
+        var queryTrackingBehavior = QueryTrackingBehavior.TrackAll;
+
         if (node is QueryOptionsExpression queryOptionsExpression)
         {
-            // TODO: why not also NoTrackingWithIdentityResolution?
-            if (queryOptionsExpression.QueryTrackingBehavior == QueryTrackingBehavior.NoTracking)
+            queryTrackingBehavior = queryOptionsExpression.QueryTrackingBehavior;
+
+            if (queryTrackingBehavior is QueryTrackingBehavior.NoTracking or QueryTrackingBehavior.NoTrackingWithIdentityResolution)
             {
                 // remove shadow properties from materialization expressions
                 // so they are not pulled from the server.
 
-                return new ShadowPropertyRemovingExpressionVisitor().Visit(node);
+                node = new ShadowPropertyRemovingExpressionVisitor().Visit(node);
+
+                if (queryTrackingBehavior is QueryTrackingBehavior.NoTracking)
+                {
+                    return node;
+                }
             }
         }
 
@@ -73,7 +81,8 @@ public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
                 }
             }
 
-            var result = new UntrackingExpressionVisitor().Visit(node);
+            //var result = new UntrackingExpressionVisitor().Visit(node);
+            var result = node;
 
             var body = projection.Flatten().Body;
 
@@ -96,6 +105,7 @@ public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
                             EntityTrackingHelper.TrackEntitiesMethodInfo,
                             result,
                             Expression.Convert(ExecutionContextParameters.DbCommandExecutor, typeof(EFCoreDbCommandExecutor)),
+                            Expression.Constant(queryTrackingBehavior == QueryTrackingBehavior.NoTrackingWithIdentityResolution),
                             Expression.Constant(GenerateAccessors(pathFinder.FoundPaths.Values.ToArray()))));
             }
 

@@ -1,28 +1,23 @@
-﻿using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
-using Impatient.Query.Infrastructure;
+﻿using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
-using System.Linq;
-using System.Linq.Expressions;
 
-namespace Impatient.EntityFrameworkCore.SqlServer;
+namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 
 public class EFCoreDbCommandExecutor : IDbCommandExecutor
 {
     private readonly IRelationalCommandDiagnosticsLogger logger;
 
-    private readonly Dictionary<IEntityType, EntityLookups> entityLookups = [];
-
-    private IStateManager stateManager;
+    private IStateManager persistentStateManager;
+    private IStateManager ephemeralStateManager;
     private BufferingDbDataReader unbufferedReader;
 
     public EFCoreDbCommandExecutor(
@@ -35,8 +30,11 @@ public class EFCoreDbCommandExecutor : IDbCommandExecutor
 
     public ICurrentDbContext CurrentDbContext { get; }
 
-    public IStateManager StateManager => 
-        stateManager ??= CurrentDbContext.GetDependencies().StateManager;
+    public IStateManager PersistentStateManager =>
+        persistentStateManager ??= CurrentDbContext.GetDependencies().StateManager;
+
+    public IStateManager EphemeralStateManager =>
+        ephemeralStateManager ??= new StateManager(PersistentStateManager.Dependencies);
 
     public TResult ExecuteComplex<TResult>(Action<DbCommand> initializer, Func<DbDataReader, TResult> materializer)
     {
@@ -83,9 +81,6 @@ public class EFCoreDbCommandExecutor : IDbCommandExecutor
                 CommandSource.LinqQuery);
 
             reader.Read();
-
-            // TODO: this
-            //CurrentDbContext.GetDependencies().StateManager.BeginTrackingQuery();
 
             return materializer(reader);
         }
@@ -186,9 +181,6 @@ public class EFCoreDbCommandExecutor : IDbCommandExecutor
                 connection.Close();
             }
         }
-
-        // TODO: begin tracking query replacement??
-        //CurrentDbContext.GetDependencies().StateManager.BeginTrackingQuery();
 
         try
         {
@@ -307,161 +299,5 @@ public class EFCoreDbCommandExecutor : IDbCommandExecutor
         }
 
         return command;
-    }
-
-    public bool TryGetEntity(object entity, IEntityType entityType, out EntityMaterializationInfo info)
-    {
-        info = default;
-
-        var rootType = entityType.GetRootType();
-
-        if (entityLookups.TryGetValue(rootType, out var lookups))
-        {
-            return lookups.EntityMap.TryGetValue(entity, out info);
-        }
-
-        return false;
-    }
-
-    public bool TryGetEntity(IEntityType entityType, object[] keyValues, out EntityMaterializationInfo info)
-    {
-        info = default;
-
-        var rootType = entityType.GetRootType();
-
-        if (entityLookups.TryGetValue(rootType, out var lookups))
-        {
-            return lookups.KeyMap.TryGetValue(keyValues, out info);
-        }
-
-        return false;
-    }
-
-    public void CacheEntity(IEntityType entityType, object[] keyValues, in EntityMaterializationInfo info)
-    {
-        var rootType = entityType.GetRootType();
-
-        if (!entityLookups.TryGetValue(rootType, out var lookups))
-        {
-            IEqualityComparer<object[]> instance;
-
-            switch (keyValues.Length)
-            {
-                case 1:
-                {
-                    instance = KeyValuesComparer1.Instance;
-                    break;
-                }
-
-                case 2:
-                {
-                    instance = KeyValuesComparer2.Instance;
-                    break;
-                }
-
-                default:
-                {
-                    instance = KeyValuesComparer.Create(keyValues.Length);
-                    break;
-                }
-            }
-
-            entityLookups[rootType] = lookups = new EntityLookups
-            {
-                KeyMap = new Dictionary<object[], EntityMaterializationInfo>(instance),
-                EntityMap = new Dictionary<object, EntityMaterializationInfo>(LegacyReferenceEqualityComparer.Instance)
-            };
-        }
-
-        lookups.KeyMap[keyValues] = info;
-        lookups.EntityMap[info.Entity] = info;
-    }
-
-    private struct EntityLookups
-    {
-        public Dictionary<object[], EntityMaterializationInfo> KeyMap;
-        public Dictionary<object, EntityMaterializationInfo> EntityMap;
-    }
-
-    private class KeyValuesComparer1 : IEqualityComparer<object[]>
-    {
-        public static KeyValuesComparer1 Instance = new();
-
-        public bool Equals(object[] x, object[] y)
-        {
-            return x[0].Equals(y[0]);
-        }
-
-        public int GetHashCode(object[] obj)
-        {
-            var hash = new HashCode();
-            hash.Add(obj[0]);
-            return hash.ToHashCode();
-        }
-    }
-
-    private class KeyValuesComparer2 : IEqualityComparer<object[]>
-    {
-        public static KeyValuesComparer2 Instance = new();
-
-        public bool Equals(object[] x, object[] y)
-        {
-            return x[0].Equals(y[0]) && x[1].Equals(y[1]);
-        }
-
-        public int GetHashCode(object[] values)
-        {
-            var hash = new HashCode();
-            hash.Add(values[0]);
-            hash.Add(values[1]);
-            return hash.ToHashCode();
-        }
-    }
-
-    private class KeyValuesComparer : IEqualityComparer<object[]>
-    {
-        private readonly Func<object[], object[], bool> compiled;
-
-        private KeyValuesComparer(Func<object[], object[], bool> compiled)
-        {
-            this.compiled = compiled;
-        }
-
-        public static KeyValuesComparer Create(int length)
-        {
-            var p1 = Expression.Parameter(typeof(object[]));
-            var p2 = Expression.Parameter(typeof(object[]));
-            var comparisons = new BinaryExpression[length];
-
-            for (var i = 0; i < length; ++i)
-            {
-                comparisons[i]
-                    = Expression.Equal(
-                        Expression.ArrayIndex(p1, Expression.Constant(i)),
-                        Expression.ArrayIndex(p2, Expression.Constant(i)));
-            }
-
-            return new KeyValuesComparer(
-                (Func<object[], object[], bool>)Expression.Lambda(
-                    comparisons.Aggregate(Expression.AndAlso),
-                    [p1, p2]).Compile());
-        }
-
-        public bool Equals(object[] x, object[] y)
-        {
-            return compiled(x, y);
-        }
-
-        public int GetHashCode(object[] values)
-        {
-            var hash = new HashCode();
-
-            for (var i = 0; i < values.Length; i++)
-            {
-                hash.Add(values[i]);
-            }
-
-            return hash.ToHashCode();
-        }
     }
 }

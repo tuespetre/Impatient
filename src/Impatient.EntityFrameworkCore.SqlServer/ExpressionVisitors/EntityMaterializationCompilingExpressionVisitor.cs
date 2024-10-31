@@ -9,10 +9,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using static System.Linq.Expressions.Expression;
 
-namespace Impatient.EntityFrameworkCore.SqlServer;
+namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
 
 public class EntityMaterializationCompilingExpressionVisitor(IModel model) : ExpressionVisitor
 {
@@ -47,27 +46,9 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
                     identifier += "_0";
                 }
 
-                MethodInfo getEntityMethodInfo;
-
-                switch (entityMaterializationExpression.QueryTrackingBehavior)
+                if (entityMaterializationExpression.QueryTrackingBehavior == QueryTrackingBehavior.NoTracking)
                 {
-                    case QueryTrackingBehavior.TrackAll:
-                    {
-                        getEntityMethodInfo = EntityTrackingHelper.GetEntityUsingStateManagerMethodInfo;
-                        break;
-                    }
-
-                    case QueryTrackingBehavior.NoTrackingWithIdentityResolution:
-                    {
-                        getEntityMethodInfo = EntityTrackingHelper.GetEntityUsingIdentityMapMethodInfo;
-                        break;
-                    }
-
-                    case QueryTrackingBehavior.NoTracking:
-                    default:
-                    {
-                        return MaterializationUtilities.Invoke(materializerInvocation, identifier);
-                    }
+                    return MaterializationUtilities.Invoke(materializerInvocation, identifier);
                 }
 
                 var shadowPropertiesExpression = (Expression)Constant(Array.Empty<object>());
@@ -75,7 +56,7 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
 
                 if (!shadowProperties.IsDefaultOrEmpty)
                 {
-                    var values 
+                    var values
                         = Enumerable
                             .Repeat(Constant(null), entityType.GetProperties().Count(p => p.IsShadowProperty()))
                             .Cast<Expression>()
@@ -85,14 +66,14 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
                     {
                         values[shadowProperties[i].GetShadowIndex()]
                             = Convert(
-                                entityMaterializationExpression.Properties[i], 
+                                entityMaterializationExpression.Properties[i],
                                 typeof(object));
                     }
 
                     shadowPropertiesExpression = NewArrayInit(typeof(object), values);
                 }
 
-                var result 
+                var result
                     = Block(
                         variables: new ParameterExpression[]
                         {
@@ -110,10 +91,11 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
                             Assign(entityVariable, materializerInvocation),
                             Convert(
                                 Call(
-                                    getEntityMethodInfo,
+                                    EntityTrackingHelper.GetEntityUsingStateManagerMethodInfo,
                                     Convert(
-                                        ExecutionContextParameters.DbCommandExecutor, 
+                                        ExecutionContextParameters.DbCommandExecutor,
                                         typeof(EFCoreDbCommandExecutor)),
+                                    Constant(entityMaterializationExpression.QueryTrackingBehavior == QueryTrackingBehavior.NoTrackingWithIdentityResolution),
                                     Constant(entityType),
                                     entityMaterializationExpression.KeyExpression
                                         .UnwrapLambda()
@@ -187,7 +169,7 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
                     }
                 }
             }
-            
+
             return node.Update(newExpression, bindings);
         }
 

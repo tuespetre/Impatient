@@ -4146,6 +4146,252 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Setting_navigation_to_null_is_detected_by_local_DetectChanges" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_PK_to_PK_reference_to_dependent_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_PK_to_PK_reference_to_dependent_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_alternate_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_alternate_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal_full_loader_constructor_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal_full_loader_constructor_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal_alternate_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal_alternate_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_collection_delegate_loader_constructor_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_collection_delegate_loader_constructor_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_PK_to_PK_reference_to_dependent" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_PK_to_PK_reference_to_dependent" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_collection_full_loader_constructor_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_collection_full_loader_constructor_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal_shadow_fk" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal_shadow_fk" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_composite_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_composite_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_collection_delegate_loader_property_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_collection_delegate_loader_property_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_delegate_loader_constructor_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_delegate_loader_constructor_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal_already_loaded_full_loader_constructor_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal_already_loaded_full_loader_constructor_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_alternate_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_alternate_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_shadow_fk" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_shadow_fk" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_collection_shadow_fk" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_collection_shadow_fk" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_full_loader_constructor_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_full_loader_constructor_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal_delegate_loader_constructor_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal_delegate_loader_constructor_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_composite_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_composite_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_collection_composite_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_collection_composite_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_PK_to_PK_reference_to_principal" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_PK_to_PK_reference_to_principal" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_already_loaded_full_loader_constructor_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_already_loaded_full_loader_constructor_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_delegate_loader_property_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_delegate_loader_property_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Load_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Load_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_delegate_loader_constructor_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_delegate_loader_constructor_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_delegate_loader_property_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_delegate_loader_property_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_PK_to_PK_reference_to_principal_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_PK_to_PK_reference_to_principal_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal_delegate_loader_property_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal_delegate_loader_property_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_full_loader_constructor_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_full_loader_constructor_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal_composite_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_many_to_one_reference_to_principal_composite_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_shadow_fk" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_shadow_fk" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_already_loaded_full_loader_constructor_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_already_loaded_full_loader_constructor_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_collection_already_partially_loaded_2" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_collection_already_partially_loaded_2" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_already_loaded_delegate_loader_property_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_already_loaded_delegate_loader_property_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_already_loaded_delegate_loader_constructor_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_dependent_already_loaded_delegate_loader_constructor_injection" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -6469,6 +6715,35 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.WithConstructorsImpatientTest.Query_with_loader_injected_into_property_via_constructor_for_reference" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.WithConstructorsImpatientTest.Query_with_loader_injected_into_property_via_constructor_for_reference" />
+                      </Rule>
+                    </Rule>
+                  </Rule>
+                </Rule>
+                <Rule Match="All">
+                  <Property Name="Class" Value="KeysWithConvertersImpatientTest" />
+                  <Rule Match="Any">
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_query_and_update_owned_entity_with_binary_struct_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_query_and_update_owned_entity_with_binary_struct_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_query_and_update_owned_entity_with_structural_generic_comparable_bytes_struct_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_query_and_update_owned_entity_with_structural_generic_comparable_bytes_struct_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_query_and_update_owned_entity_with_comparable_bytes_struct_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_query_and_update_owned_entity_with_comparable_bytes_struct_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_query_and_update_owned_entity_with_generic_comparable_bytes_struct_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_query_and_update_owned_entity_with_generic_comparable_bytes_struct_key" />
                       </Rule>
                     </Rule>
                   </Rule>
@@ -14716,6 +14991,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.GroupBy_Select_sum" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.EF_Property_based_Include_navigation_on_derived_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.EF_Property_based_Include_navigation_on_derived_type" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -16818,6 +17099,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.IncludeImpatientTest.Then_include_property_expression_invalid" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.IncludeImpatientTest.Then_include_property_expression_invalid" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.IncludeImpatientTest.Include_collection_dependent_already_tracked" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.IncludeImpatientTest.Include_collection_dependent_already_tracked" />
                       </Rule>
                     </Rule>
                   </Rule>
@@ -26423,6 +26710,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindStringIncludeQueryImpatientTest.Then_include_property_expression_invalid" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindStringIncludeQueryImpatientTest.Include_collection_dependent_already_tracked" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindStringIncludeQueryImpatientTest.Include_collection_dependent_already_tracked" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -29787,6 +30080,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.SimpleQueryImpatientTest.Unwrap_convert_node_over_projection_when_translating_contains_over_subquery_3" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.SimpleQueryImpatientTest.Unwrap_convert_node_over_projection_when_translating_contains_over_subquery_3" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.SimpleQueryImpatientTest.Multiple_nested_reference_navigations" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.SimpleQueryImpatientTest.Multiple_nested_reference_navigations" />
                       </Rule>
                     </Rule>
                   </Rule>
@@ -33161,6 +33460,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.GroupBy_Select_sum" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.GroupBy_Select_sum" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.EF_Property_based_Include_navigation_on_derived_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.EF_Property_based_Include_navigation_on_derived_type" />
                       </Rule>
                     </Rule>
                   </Rule>
@@ -37173,6 +37478,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.GroupBy_Select_sum" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.GroupBy_Select_sum" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.EF_Property_based_Include_navigation_on_derived_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.EF_Property_based_Include_navigation_on_derived_type" />
                       </Rule>
                     </Rule>
                   </Rule>

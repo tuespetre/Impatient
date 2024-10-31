@@ -1,4 +1,5 @@
-﻿using Impatient.Query.Expressions;
+﻿using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
+using Impatient.Query.Expressions;
 using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;

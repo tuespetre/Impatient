@@ -29,7 +29,6 @@ public class QueryOptionsComposingExpressionVisitor : ExpressionVisitor
         }
     }
 
-
     private class QueryOptionsApplyingExpressionVisitor : ExpressionVisitor
     {
         private readonly QueryTrackingBehavior queryTrackingBehavior;
@@ -80,12 +79,6 @@ public class QueryOptionsComposingExpressionVisitor : ExpressionVisitor
 
                 case EntityMaterializationExpression entityMaterializationExpression:
                 {
-                    /*var identityMapMode 
-                        = queryTrackingBehavior == QueryTrackingBehavior.TrackAll 
-                            && entityMaterializationExpression.EntityType.FindPrimaryKey() is null
-                            ? IdentityMapMode.StateManager
-                            : IdentityMapMode.IdentityMap;*/
-
                     return base.Visit(
                         entityMaterializationExpression
                             .UpdateQueryTrackingBehavior(queryTrackingBehavior));

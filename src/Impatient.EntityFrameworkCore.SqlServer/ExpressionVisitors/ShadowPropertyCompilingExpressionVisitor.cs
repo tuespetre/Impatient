@@ -1,4 +1,5 @@
-﻿using Impatient.Extensions;
+﻿using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
+using Impatient.Extensions;
 using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
