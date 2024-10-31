@@ -2999,6 +2999,11 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
             return fallbackToEnumerable();
         }
 
+        if (outerSelectExpression.HasOrdering && !outerSelectExpression.HasOffsetOrLimit)
+        {
+            outerSelectExpression = outerSelectExpression.UpdateOrderBy(null);
+        }
+
         // TODO: Test with a scalar subquery as the value e.g. (SELECT 1) IN (SELECT 1)
         return new ContainsRelationalQueryExpression(new SqlInExpression(valueExpression, outerSelectExpression));
     }

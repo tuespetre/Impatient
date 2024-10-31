@@ -27598,6 +27598,18 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindWhereQueryImpatientTest.Where_Queryable_AsEnumerable_Contains_negated" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindWhereQueryImpatientTest.Where_collection_navigation_ToArray_Contains" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindWhereQueryImpatientTest.Where_collection_navigation_ToArray_Contains" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindWhereQueryImpatientTest.Where_collection_navigation_AsEnumerable_Contains" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindWhereQueryImpatientTest.Where_collection_navigation_AsEnumerable_Contains" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
