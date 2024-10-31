@@ -28618,6 +28618,66 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Simple_query_entity_with_owned_collection" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity_and_collection_split" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity_and_collection_split" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity_and_property" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity_and_property" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity_and_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity_and_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.SelectMany_on_owned_reference_followed_by_regular_entity_and_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.SelectMany_on_owned_reference_followed_by_regular_entity_and_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.SelectMany_on_owned_reference_with_entity_in_between_ending_in_owned_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.SelectMany_on_owned_reference_with_entity_in_between_ending_in_owned_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity_and_collection_count" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity_and_collection_count" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity_and_another_reference" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity_and_another_reference" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity_and_another_reference_and_scalar" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity_and_another_reference_and_scalar" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity_and_another_reference_in_predicate_and_projection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity_and_another_reference_in_predicate_and_projection" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">

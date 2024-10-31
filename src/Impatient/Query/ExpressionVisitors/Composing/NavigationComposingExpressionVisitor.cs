@@ -2208,7 +2208,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
 
         protected override Expression VisitMember(MemberExpression node)
         {
-            var descriptor = descriptors.SingleOrDefault(d => d.Member == node.Member);
+            var descriptor = descriptors.FirstOrDefault(d => d.Member == node.Member);
 
             if (descriptor is null)
             {
@@ -2434,7 +2434,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
             {
                 case MemberExpression memberExpression:
                 {
-                    var descriptor = descriptors.SingleOrDefault(d => d.Member == memberExpression.Member);
+                    var descriptor = descriptors.FirstOrDefault(d => d.Member == memberExpression.Member);
 
                     if (descriptor is not null)
                     {
