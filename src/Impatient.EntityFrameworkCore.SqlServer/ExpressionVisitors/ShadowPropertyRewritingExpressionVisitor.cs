@@ -59,8 +59,7 @@ public class ShadowPropertyRewritingExpressionVisitor : ExpressionVisitor
 
                 if (result is not null)
                 {
-                    if (result.Type != node.Type 
-                        && result.Type.UnwrapNullableType() == node.Type.UnwrapNullableType())
+                    if (result.Type != node.Type)
                     {
                         result = Expression.Convert(result, node.Type);
                     }
