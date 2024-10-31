@@ -17,7 +17,7 @@ public static class MaterializationUtilities
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TValue ReadNullableReference<TValue>(DbDataReader reader, int index)
+    public static TValue ReadNullableReference<TValue>(DbDataReader reader, int index) where TValue : class
     {
         if (reader.IsDBNull(index))
         {
@@ -29,6 +29,17 @@ public static class MaterializationUtilities
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Nullable<TValue> ReadNullableValue<TValue>(DbDataReader reader, int index) where TValue : struct
+    {
+        if (reader.IsDBNull(index))
+        {
+            return default;
+        }
+
+        return reader.GetFieldValue<TValue>(index);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TValue ReadNullableValueOrDefault<TValue>(DbDataReader reader, int index) where TValue : struct
     {
         if (reader.IsDBNull(index))
         {

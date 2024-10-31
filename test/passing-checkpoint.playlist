@@ -6317,6 +6317,42 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TPTTableSplittingImpatientTest.Warn_when_save_optional_dependent_with_null_values_sensitive" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TPTTableSplittingImpatientTest.Can_change_dependent_instance_non_derived" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TPTTableSplittingImpatientTest.Can_change_dependent_instance_non_derived" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TPTTableSplittingImpatientTest.Can_query_shared" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TPTTableSplittingImpatientTest.Can_query_shared" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TPTTableSplittingImpatientTest.Optional_dependent_materialized_when_no_properties" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TPTTableSplittingImpatientTest.Optional_dependent_materialized_when_no_properties" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TPTTableSplittingImpatientTest.Can_change_principal_instance_non_derived" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TPTTableSplittingImpatientTest.Can_change_principal_instance_non_derived" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TPTTableSplittingImpatientTest.Can_share_required_columns" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TPTTableSplittingImpatientTest.Can_share_required_columns" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TPTTableSplittingImpatientTest.Can_change_principal_and_dependent_instance_non_derived" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TPTTableSplittingImpatientTest.Can_change_principal_and_dependent_instance_non_derived" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -37486,6 +37522,90 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.EF_Property_based_Include_navigation_on_derived_type" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_reference_on_derived_type_using_string_nested1" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_reference_on_derived_type_using_string_nested1" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_reference_on_derived_type_using_string" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_reference_on_derived_type_using_string" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_reference_on_derived_type_using_EF_Property" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_reference_on_derived_type_using_EF_Property" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_on_derived_type_with_order_by_and_paging" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_on_derived_type_with_order_by_and_paging" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.ThenInclude_reference_on_derived_after_derived_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.ThenInclude_reference_on_derived_after_derived_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Collection_navigation_access_on_derived_entity_using_cast_in_SelectMany" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Collection_navigation_access_on_derived_entity_using_cast_in_SelectMany" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Checked_context_with_addition_does_not_fail" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Checked_context_with_addition_does_not_fail" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Contains_on_collection_of_byte_subquery" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Contains_on_collection_of_byte_subquery" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_reference_on_derived_type_using_lambda_with_soft_cast" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_reference_on_derived_type_using_lambda_with_soft_cast" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_reference_on_derived_type_using_lambda" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_reference_on_derived_type_using_lambda" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_reference_on_derived_type_using_string_nested2" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_reference_on_derived_type_using_string_nested2" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Project_collection_navigation_with_inheritance1" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Project_collection_navigation_with_inheritance1" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_reference_on_derived_type_using_lambda_with_tracking" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_reference_on_derived_type_using_lambda_with_tracking" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_on_derived_entity_using_OfType" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Include_on_derived_entity_using_OfType" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -37747,6 +37867,24 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_query_just_kiwis" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_query_just_kiwis" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_query_all_plants" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_query_all_plants" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_use_of_type_rose" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_use_of_type_rose" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_query_all_types_when_shared_column" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_query_all_types_when_shared_column" />
                       </Rule>
                     </Rule>
                   </Rule>

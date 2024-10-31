@@ -764,14 +764,13 @@ public class ModelExpressionProvider
 
         // Construct the projection / materializer
 
-        var hierarchy = targetType.GetDerivedTypesInclusive();
+        var hierarchy = targetType.GetDerivedTypesInclusive().ToArray();
 
         var propertyMappings
-            = (from t in hierarchy
-               from p in IterateProperties(t).Distinct()
-               from m in p.GetTableColumnMappings()
+            = (from p in IterateProperties(targetType).Distinct()
+               from m in p.GetTableColumnMappings().OrderBy(m => Array.IndexOf(hierarchy, m.TableMapping.TypeBase))
                where tableLookup.ContainsKey(m.Column.Table)
-               select (Property: p, Mapping: m)).ToArray();
+               select (Property: p, Mapping: m)).Distinct().ToArray();
 
         var columnExpressions
             = (from p in propertyMappings
