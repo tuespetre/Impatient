@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Impatient.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -8,8 +9,7 @@ namespace Impatient.Query.Expressions;
 
 public class DefaultIfEmptyExpression : ExtraPropertiesExpression
 {
-    private static readonly ReadOnlyCollection<string> names
-        = new ReadOnlyCollection<string>(new[] { "$empty" });
+    private static readonly ReadOnlyCollection<string> names = new(["$empty"]);
 
     public DefaultIfEmptyExpression(Expression expression) : this(expression, Constant(0, typeof(int?)))
     {
@@ -17,12 +17,10 @@ public class DefaultIfEmptyExpression : ExtraPropertiesExpression
 
     public DefaultIfEmptyExpression(Expression expression, Expression flag) : base(expression)
     {
-        if (flag is null)
-        {
-            throw new ArgumentNullException(nameof(flag));
-        }
+        ArgumentNullException.ThrowIfNull(flag);
+        //ArgumentOutOfRangeException.ThrowIfNotEqual(true, flag.Type.IsNullableType() || !flag.Type.IsValueType);
 
-        Properties = new ReadOnlyCollection<Expression>(new[] { flag });
+        Properties = new ReadOnlyCollection<Expression>([flag]);
     }
 
     public Expression Flag => Properties[0];
@@ -30,6 +28,14 @@ public class DefaultIfEmptyExpression : ExtraPropertiesExpression
     public override ReadOnlyCollection<string> Names => names;
 
     public override ReadOnlyCollection<Expression> Properties { get; }
+
+    public override Expression Reduce()
+    {
+        return Condition(
+            Equal(Flag, Constant(null, Flag.Type)),
+            Default(Expression.Type),
+            Expression);
+    }
 
     public override ExtraPropertiesExpression Update(Expression expression, IEnumerable<Expression> properties)
     {

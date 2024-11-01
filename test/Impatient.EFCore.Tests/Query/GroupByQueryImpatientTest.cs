@@ -79,7 +79,7 @@ ORDER BY [o].[CustomerID] ASC
     {
         await base.GroupBy_aggregate_Contains(async);
 
-        Fixture.AssertSql(@"
+        AssertSql(@"
 SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
 FROM [Orders] AS [o]
 WHERE [o].[CustomerID] IN (
@@ -570,7 +570,7 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
     {
         await base.GroupBy_empty_key_Aggregate(async);
 
-        Fixture.AssertSql(@"SELECT [g].[OrderID] AS [OrderID], [g].[CustomerID] AS [CustomerID], [g].[EmployeeID] AS [EmployeeID], [g].[OrderDate] AS [OrderDate]
+        AssertSql(@"SELECT [g].[OrderID] AS [OrderID], [g].[CustomerID] AS [CustomerID], [g].[EmployeeID] AS [EmployeeID], [g].[OrderDate] AS [OrderDate]
 FROM [Orders] AS [g]");
     }
 
@@ -1547,7 +1547,7 @@ INNER JOIN [Orders] AS [o] ON [a].[LastOrderID] = [o].[OrderID]
     {
         await base.Join_GroupBy_Aggregate_on_key(async);
 
-        Fixture.AssertSql(@"SELECT [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Country] AS [c.Country], [c].[Fax] AS [c.Fax], [c].[Phone] AS [c.Phone], [c].[PostalCode] AS [c.PostalCode], [c].[Region] AS [c.Region], [a].[LastOrderID] AS [LastOrderID]
+        AssertSql(@"SELECT [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Country] AS [c.Country], [c].[Fax] AS [c.Fax], [c].[Phone] AS [c.Phone], [c].[PostalCode] AS [c.PostalCode], [c].[Region] AS [c.Region], [a].[LastOrderID] AS [LastOrderID]
 FROM [Customers] AS [c]
 INNER JOIN (
     SELECT [g].[Key] AS [Key], (
@@ -1864,9 +1864,9 @@ GROUP BY [o].[CustomerID]
 
     protected override void ClearLog() => Fixture.TestSqlLoggerFactory.Clear();
 
-    private void AssertSql(string sql) => Fixture.AssertSql(sql);
+    private void AssertSql(string sql) => Fixture.TestSqlLoggerFactory.AssertSql(sql);
 
-    private void AssertSqlStartsWith(string sql) => Fixture.AssertSqlStartsWith(sql);
+    private void AssertSqlStartsWith(string sql) => Fixture.TestSqlLoggerFactory.AssertSqlStartsWith(sql);
 
     protected override QueryAsserter CreateQueryAsserter(NorthwindQueryImpatientFixture fixture) =>
         new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);

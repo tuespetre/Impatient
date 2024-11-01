@@ -368,6 +368,11 @@ public class SqlServerForJsonReadValueExpressionFactory : IReadValueExpressionFa
         {
             switch (node)
             {
+                case DefaultIfEmptyExpression defaultIfEmpty:
+                {
+                    return Visit(defaultIfEmpty.Expression);
+                }
+
                 case ExtraPropertiesExpression:
                 {
                     var flag = extraProperties;

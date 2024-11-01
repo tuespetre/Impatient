@@ -1,6 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore.Query;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore.Query;
 using System.Data.Common;
-using System.Data.SqlClient;
 
 namespace Impatient.EFCore.Tests.Query;
 

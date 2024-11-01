@@ -53,7 +53,17 @@ public static class ExpressionExtensions
 
     public static Expression AsNullable(this Expression expression)
     {
-        return Expression.Convert(expression, expression.Type.AsNullableType());
+        if (expression.Type.IsValueType)
+        {
+            if (expression.Type.IsNullableType())
+            {
+                return expression;
+            }
+
+            return Expression.Convert(expression, expression.Type.AsNullableType());
+        }
+
+        return expression;
     }
 
     public static Expression AsEnumerableQuery(this Expression expression)
