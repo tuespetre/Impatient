@@ -156,7 +156,7 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
         return paths;
     }
 
-    private List<List<MemberInfo>> ResolveIncludePaths(string[] names, ref int depth, ref IEntityType entityType)
+    private static List<List<MemberInfo>> ResolveIncludePaths(string[] names, ref int depth, ref IEntityType entityType)
     {
         var navigations = entityType.FindDerivedNavigations(names[depth]);
 
@@ -230,7 +230,12 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
 
         foreach (var member in members)
         {
-            var navigation = entityType.FindNavigation(member);
+            INavigationBase navigation = entityType.FindNavigation(member);
+
+            if (navigation is null)
+            {
+                navigation = entityType.FindSkipNavigation(member);
+            }
 
             if (navigation is null)
             {
@@ -363,7 +368,7 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
 
     private IEntityType GetEntityTypeForInclude(Type type)
     {
-        var entityType = model.GetEntityTypes().SingleOrDefault(t => !t.IsOwned() && t.ClrType == type);
+        var entityType = model.GetEntityTypes().SingleOrDefault(t => t.ClrType == type);
 
         if (entityType is null)
         {

@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Impatient.EFCore.Tests.Fixtures;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Query;
 using System.Data.Common;
 
