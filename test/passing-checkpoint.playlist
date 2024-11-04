@@ -335,6 +335,48 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ComplexTypesTrackingImpatientTest.Throws_only_when_saving_with_null_top_level_complex_property" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ComplexTypesTrackingImpatientTest.Can_track_entity_with_complex_readonly_structs" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ComplexTypesTrackingImpatientTest.Can_track_entity_with_complex_readonly_structs" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ComplexTypesTrackingImpatientTest.Can_track_entity_with_complex_objects_with_fields" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ComplexTypesTrackingImpatientTest.Can_track_entity_with_complex_objects_with_fields" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ComplexTypesTrackingImpatientTest.Can_track_entity_with_complex_record_objects" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ComplexTypesTrackingImpatientTest.Can_track_entity_with_complex_record_objects" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ComplexTypesTrackingImpatientTest.Can_track_entity_with_complex_record_objects_with_fields" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ComplexTypesTrackingImpatientTest.Can_track_entity_with_complex_record_objects_with_fields" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ComplexTypesTrackingImpatientTest.Can_track_entity_with_complex_structs_with_fields" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ComplexTypesTrackingImpatientTest.Can_track_entity_with_complex_structs_with_fields" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ComplexTypesTrackingImpatientTest.Can_track_entity_with_complex_objects" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ComplexTypesTrackingImpatientTest.Can_track_entity_with_complex_objects" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ComplexTypesTrackingImpatientTest.Can_track_entity_with_complex_structs" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ComplexTypesTrackingImpatientTest.Can_track_entity_with_complex_structs" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -2774,6 +2816,126 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Query_reference_with_navigation_to_principal_for_detached_throws" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Query_reference_with_navigation_to_principal_for_detached_throws" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_PK_to_PK_reference_to_dependent_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_PK_to_PK_reference_to_dependent_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_many_to_one_reference_to_principal_using_Query_already_loaded_untyped" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_many_to_one_reference_to_principal_using_Query_already_loaded_untyped" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_many_to_one_reference_to_principal_using_Query_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_many_to_one_reference_to_principal_using_Query_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_collection_already_loaded_untyped" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_collection_already_loaded_untyped" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_PK_to_PK_reference_to_principal_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_PK_to_PK_reference_to_principal_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_collection_using_Query_already_loaded_untyped" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_collection_using_Query_already_loaded_untyped" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_many_to_one_reference_to_principal_already_loaded_untyped" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_many_to_one_reference_to_principal_already_loaded_untyped" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_collection_using_Query_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_collection_using_Query_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_reference_to_principal_using_Query_already_loaded_untyped" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_reference_to_principal_using_Query_already_loaded_untyped" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_reference_to_dependent_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_reference_to_dependent_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_reference_to_dependent_using_Query_already_loaded_untyped" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_reference_to_dependent_using_Query_already_loaded_untyped" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_reference_to_principal_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_reference_to_principal_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_reference_to_dependent_using_Query_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_reference_to_dependent_using_Query_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_reference_to_principal_using_Query_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_reference_to_principal_using_Query_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_PK_to_PK_reference_to_principal_using_Query_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_PK_to_PK_reference_to_principal_using_Query_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_many_to_one_reference_to_principal_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_many_to_one_reference_to_principal_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_reference_to_dependent_already_loaded_untyped" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_reference_to_dependent_already_loaded_untyped" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_reference_to_principal_already_loaded_untyped" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_reference_to_principal_already_loaded_untyped" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_collection_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_collection_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_PK_to_PK_reference_to_dependent_using_Query_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldsOnlyLoadImpatientTest.Load_one_to_one_PK_to_PK_reference_to_dependent_using_Query_already_loaded" />
                       </Rule>
                     </Rule>
                   </Rule>

@@ -1,5 +1,7 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 
 namespace Impatient.EFCore.Tests;
@@ -9,6 +11,9 @@ public class ComplexTypesTrackingImpatientTest : ComplexTypesTrackingTestBase<Co
     public ComplexTypesTrackingImpatientTest(Fixture fixture) : base(fixture)
     {
     }
+
+    protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
+        => facade.UseTransaction(transaction.GetDbTransaction());
 
     public new class Fixture : FixtureBase
     {

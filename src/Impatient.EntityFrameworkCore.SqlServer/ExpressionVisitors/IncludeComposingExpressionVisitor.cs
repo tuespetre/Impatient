@@ -216,7 +216,7 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
 
     private IEnumerable<MemberInfo> ProcessIncludeLambda(LambdaExpression lambdaExpression)
     {
-        if (!lambdaExpression.TryGetComplexPropertyAccess(out var properties))
+        if (!lambdaExpression.TryGetComplexMemberAccess(out var members))
         {
             throw new InvalidOperationException("The specified include expression is not supported.");
         }
@@ -228,16 +228,16 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
 
         var entityType = GetEntityTypeForInclude(clrType);
 
-        foreach (var property in properties)
+        foreach (var member in members)
         {
-            var navigation = entityType.FindNavigation(property);
+            var navigation = entityType.FindNavigation(member);
 
             if (navigation is null)
             {
                 navigation
                     = entityType
-                        .FindDerivedNavigations(property.Name)
-                        .SingleOrDefault(n => n.PropertyInfo == property);
+                        .FindDerivedNavigations(member.Name)
+                        .SingleOrDefault(n => n.PropertyInfo == member || n.FieldInfo == member);
             }
 
             if (navigation is null)
@@ -245,7 +245,7 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
                 throw new InvalidOperationException("The specified include expression does not reference a defined navigation.");
             }
 
-            yield return property;
+            yield return member;
 
             entityType = navigation.TargetEntityType;
         }
@@ -376,45 +376,47 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
 
 internal static class ExpressionExtensionsShim
 {
-    public static bool TryGetComplexPropertyAccess(
-        this LambdaExpression propertyAccessExpression,
-        out IReadOnlyList<PropertyInfo> propertyPath)
+    public static bool TryGetComplexMemberAccess(
+        this LambdaExpression memberAccessLambda,
+        out IReadOnlyList<MemberInfo> memberPath)
     {
-        Debug.Assert(propertyAccessExpression.Parameters.Count == 1);
+        Debug.Assert(memberAccessLambda.Parameters.Count == 1);
 
-        propertyPath
-            = propertyAccessExpression
+        memberPath
+            = memberAccessLambda
                 .Parameters
                 .Single()
-                .MatchPropertyAccess(propertyAccessExpression.Body);
+                .MatchMemberAccess(memberAccessLambda.Body);
 
-        return propertyPath is not null;
+        return memberPath is not null;
     }
 
-    private static List<PropertyInfo> MatchPropertyAccess(
+    private static List<MemberInfo> MatchMemberAccess(
         this Expression parameterExpression, 
-        Expression propertyAccessExpression)
+        Expression memberAccessExpression)
     {
-        var propertyInfos = new List<PropertyInfo>();
+        var members = new List<MemberInfo>();
 
         MemberExpression memberExpression;
 
         do
         {
-            memberExpression = RemoveTypeAs(RemoveConvert(propertyAccessExpression)) as MemberExpression;
+            memberExpression = RemoveTypeAs(RemoveConvert(memberAccessExpression)) as MemberExpression;
 
-            if (memberExpression?.Member is not PropertyInfo propertyInfo)
+            var member = memberExpression?.Member;
+
+            if (member is not (PropertyInfo or FieldInfo))
             {
                 return null;
             }
 
-            propertyInfos.Insert(0, propertyInfo);
+            members.Insert(0, member);
 
-            propertyAccessExpression = memberExpression.Expression;
+            memberAccessExpression = memberExpression.Expression;
         }
         while (RemoveTypeAs(RemoveConvert(memberExpression.Expression)) != parameterExpression);
 
-        return propertyInfos;
+        return members;
     }
 
     public static Expression RemoveConvert(this Expression expression)
