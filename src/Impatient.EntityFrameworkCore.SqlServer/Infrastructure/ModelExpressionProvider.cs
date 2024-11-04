@@ -721,7 +721,10 @@ public class ModelExpressionProvider
     {
         // Construct an inner join for the target type without any derived types 
 
-        var targetTableMappings = targetType.GetTableMappings().ToArray();
+        var targetTableMappings
+            = IterateTableMappings(targetType, includeDerived: false)
+                .GroupBy(m => m.Table, (t, m) => m.First())
+                .ToArray();
 
         var tableLookup = new Dictionary<ITableBase, AliasedTableExpression>();
 
@@ -765,12 +768,19 @@ public class ModelExpressionProvider
 
         // Construct left joins for concrete derived types of the target type
 
-        foreach (var concreteType in targetType.GetDerivedTypes().Where(t => !t.IsAbstract()))
+        var derivedTypes = IterateDerivedTypes(targetType).ToArray();
+
+        foreach (var derivedType in derivedTypes)
         {
             var derivedOuterTable = outerTable;
             var derivedOuterTableExpression = outerTableExpression;
 
-            foreach (var innerMapping in concreteType.GetTableMappings())
+            var tableMappings
+                = IterateTableMappings(derivedType, includeDerived: false)
+                    .GroupBy(m => m.Table, (t, m) => m.First())
+                    .ToArray();
+
+            foreach (var innerMapping in tableMappings)
             {
                 if (tableLookup.ContainsKey(innerMapping.Table))
                 {
@@ -800,8 +810,6 @@ public class ModelExpressionProvider
                 derivedOuterTableExpression = innerTableExpression;
             }
         }
-
-        // TODO: construct joins for owned/split types
 
         // Construct the projection / materializer
 
@@ -1266,6 +1274,24 @@ public class ModelExpressionProvider
         }
     }
 
+    /// <summary>
+    /// Recursively enumerates through the derived types of the given type.
+    /// Sometimes IEntityType.GetDerivedTypesInclusive will return types in a "bad" order,
+    /// e.g. [Eagle,Bird,Kiwi] when it "should" be [Bird,Eagle,Kiwi]
+    /// </summary>
+    private static IEnumerable<IEntityType> IterateDerivedTypes(IEntityType type)
+    {
+        foreach (var derived in type.GetDirectlyDerivedTypes())
+        {
+            yield return derived;
+
+            foreach (var derived2 in IterateDerivedTypes(derived))
+            {
+                yield return derived2;
+            }
+        }
+    }
+
     private static bool TablesMatch(IEntityType type, IEntityType ownedType)
     {
         var tables1 = IterateTableMappings(type, false).Select(m => m.Table);
@@ -1400,7 +1426,7 @@ public class ModelExpressionProvider
     {
         // TODO: why would there be more than one?
         // TODO: why would there be zero?
-        var mapping = entityType.GetTableMappings().FirstOrDefault();
+        var mapping = entityType.GetTableMappings().FirstOrDefault(m => m.IncludesDerivedTypes);
 
         if (mapping is not null)
         {

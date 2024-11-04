@@ -1,17 +1,16 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using static Impatient.EFCore.Tests.Query.TPTFiltersInheritanceQueryImpatientTest;
 
 namespace Impatient.EFCore.Tests.Query;
 
-public class TPTFiltersInheritanceQueryImpatientTest : TPTFiltersInheritanceQueryTestBase<TPTFiltersInheritanceQueryImpatientTest.Fixture>
+public class TPTFiltersInheritanceQueryImpatientTest(Fixture fixture) : TPTFiltersInheritanceQueryTestBase<Fixture>(fixture)
 {
-    public TPTFiltersInheritanceQueryImpatientTest(Fixture fixture) : base(fixture)
+    public new class Fixture : TPTInheritanceQueryFixture
     {
-    }
+        public override bool EnableFilters => true;
 
-    public class Fixture : TPTInheritanceQueryFixture
-    {
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 }

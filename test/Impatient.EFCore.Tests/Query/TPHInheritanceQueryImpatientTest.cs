@@ -1,6 +1,7 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -10,6 +11,12 @@ public class TPHInheritanceQueryImpatientTest : TPHInheritanceQueryTestBase<TPHI
 {
     public TPHInheritanceQueryImpatientTest(Fixture fixture, ITestOutputHelper testOutputHelper) : base(fixture, testOutputHelper)
     {
+    }
+
+    [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
+    public override Task Can_query_all_animal_views(bool async)
+    {
+        return base.Can_query_all_animal_views(async);
     }
 
     [Fact(Skip = EFCoreSkipReasons.FromSql)]
