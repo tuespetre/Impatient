@@ -43,19 +43,27 @@ public class SqlServerStringJoinRewritingExpressionVisitor : ExpressionVisitor
                 && arguments[1] is EnumerableRelationalQueryExpression query
                 && query.SelectExpression.Projection is ServerProjectionExpression)
             {
+                var selectExpression = query.SelectExpression;
+
+                if (selectExpression.HasOrdering && !selectExpression.HasOffsetOrLimit)
+                {
+                    selectExpression = selectExpression.UpdateOrderBy(null);
+                }
+
                 // TODO: Consider COALESCE for the expression for parity
                 // between SQL Server's behavior and C#'s behavior.
 
                 return new SingleValueRelationalQueryExpression(
-                    query.SelectExpression.UpdateProjection(
-                        new ServerProjectionExpression(
-                            Expression.Coalesce(
-                                new SqlFunctionExpression(
-                                    "STRING_AGG",
-                                    typeof(string),
-                                    query.SelectExpression.Projection.Flatten().Body,
-                                    arguments[0]),
-                                Expression.Constant(string.Empty)))));
+                    selectExpression
+                        .UpdateProjection(
+                            new ServerProjectionExpression(
+                                Expression.Coalesce(
+                                    new SqlFunctionExpression(
+                                        "STRING_AGG",
+                                        typeof(string),
+                                        selectExpression.Projection.Flatten().Body,
+                                        arguments[0]),
+                                    Expression.Constant(string.Empty)))));
             }
         }
 
