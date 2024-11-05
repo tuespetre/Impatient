@@ -3,12 +3,25 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using System.Threading.Tasks;
 using Xunit;
+using static Impatient.EFCore.Tests.Query.TPTManyToManyNoTrackingQueryImpatientTest;
 
-#pragma warning disable xUnit1003 // Theory methods must have test data
 namespace Impatient.EFCore.Tests.Query;
 
-public class TPTManyToManyNoTrackingQueryImpatientTest : TPTManyToManyNoTrackingQueryRelationalTestBase<TPTManyToManyNoTrackingQueryImpatientTest.Fixture>
+public class TPTManyToManyNoTrackingQueryImpatientTest : TPTManyToManyNoTrackingQueryRelationalTestBase<Fixture>
 {
+    public TPTManyToManyNoTrackingQueryImpatientTest(Fixture fixture) : base(fixture)
+    {
+        fixture.TestSqlLoggerFactory.Clear();
+    }
+
+    protected override QueryAsserter CreateQueryAsserter(Fixture fixture)
+        => new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
+
+    public new class Fixture : TPTManyToManyQueryRelationalFixture
+    {
+        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
+    }
+
     [Theory(Skip = EFCoreSkipReasons.SpecialIncludes)]
     public override Task Filtered_include_on_navigation_then_filtered_include_on_skip_navigation(bool async)
     {
@@ -193,15 +206,5 @@ public class TPTManyToManyNoTrackingQueryImpatientTest : TPTManyToManyNoTracking
     public override Task Throws_when_different_filtered_then_include_via_different_paths(bool async)
     {
         return base.Throws_when_different_filtered_then_include_via_different_paths(async);
-    }
-
-    public TPTManyToManyNoTrackingQueryImpatientTest(Fixture fixture) : base(fixture)
-    {
-        fixture.TestSqlLoggerFactory.Clear();
-    }
-
-    public class Fixture : TPTManyToManyQueryRelationalFixture
-    {
-        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 }

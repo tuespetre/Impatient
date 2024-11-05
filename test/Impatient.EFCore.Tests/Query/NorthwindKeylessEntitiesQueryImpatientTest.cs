@@ -2,6 +2,7 @@
 using Impatient.EFCore.Tests.Utilities;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.TestUtilities;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -13,6 +14,11 @@ public class NorthwindKeylessEntitiesQueryImpatientTest : NorthwindKeylessEntiti
     {
         fixture.TestSqlLoggerFactory.Clear();
     }
+
+    protected override QueryAsserter CreateQueryAsserter(NorthwindQueryImpatientFixture fixture)
+        => new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
+
+    private void AssertSql(string expected) => Fixture.TestSqlLoggerFactory.AssertSql(expected);
 
     [Theory(Skip = EFCoreSkipReasons.FromSql)]
     public override Task Auto_initialized_view_set(bool async)
@@ -126,6 +132,4 @@ public class NorthwindKeylessEntitiesQueryImpatientTest : NorthwindKeylessEntiti
     {
         return base.Projecting_collection_correlated_with_keyless_entity_throws(async);
     }
-
-    private void AssertSql(string expected) => Fixture.TestSqlLoggerFactory.AssertSql(expected);
 }
