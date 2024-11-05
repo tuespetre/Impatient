@@ -37,7 +37,7 @@ public class IncludeExpression : ExtraPropertiesExpression
 
         Includes = includes;
         Paths = paths;
-        Names = new ReadOnlyCollection<string>(Enumerable.Range(0, paths.Length).Select(i => $"Include_{i}").ToArray());
+        Names = new ReadOnlyCollection<string>(paths.Select(p => string.Join(".", p.Select(m => m.Name))).ToArray());
     }
 
     public ReadOnlyCollection<Expression> Includes { get; }

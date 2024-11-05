@@ -2213,6 +2213,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldMappingImpatientTest.Update_write_only_props_with_named_fields" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldMappingImpatientTest.Field_mapping_with_conversion_does_not_throw" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldMappingImpatientTest.Field_mapping_with_conversion_does_not_throw" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -18247,6 +18253,18 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Project_json_entity_FirstOrDefault_subquery_with_binding_on_top" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Project_json_entity_FirstOrDefault_subquery_with_binding_on_top" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Left_join_json_entities_json_being_inner" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Left_join_json_entities_json_being_inner" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Left_join_json_entities" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Left_join_json_entities" />
                       </Rule>
                     </Rule>
                   </Rule>

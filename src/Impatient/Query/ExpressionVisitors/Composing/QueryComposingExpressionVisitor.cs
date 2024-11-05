@@ -1950,7 +1950,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
         {
             // SQL Server Says:
             // The ORDER BY position number 42 is out of range of the number of items in the select list.
-            return fallbackToEnumerable();
+            goto ReturnOrderedEnumerable;
 
             // TODO: Push down into a subquery instead of falling back to enumerable.
         }
@@ -3057,14 +3057,17 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
 
         if (outerProjection.ContainsAggregateOrSubquery())
         {
-            var enumerableMethod
+            var enumerableMethods
                 = (from m in typeof(Enumerable).GetRuntimeMethods()
                    where m.Name == node.Method.Name
                    let p = m.GetParameters()
-                   where p.Length == 1
+                   where p.Length == 1 && (p[0].ParameterType.GetSequenceType() == outerProjection.Type || p[0].ParameterType.IsGenericParameter)
                    where m.ReturnType == node.Method.ReturnType || m.ReturnType.IsGenericParameter
                    orderby m.ContainsGenericParameters
-                   select m).First();
+                   select m);
+
+            var enumerableMethod
+                = enumerableMethods.First();
 
             if (enumerableMethod.IsGenericMethodDefinition)
             {

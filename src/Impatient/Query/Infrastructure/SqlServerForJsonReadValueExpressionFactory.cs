@@ -160,19 +160,6 @@ public class SqlServerForJsonReadValueExpressionFactory : IReadValueExpressionFa
             }
 
             case SqlColumnExpression sqlColumnExpression
-            when sqlColumnExpression.Table is SubqueryTableExpression subqueryTableExpression:
-            {
-                var body = subqueryTableExpression.Subquery.Projection.Flatten().Body;
-
-                if (body.TryResolvePath(sqlColumnExpression.ColumnName, out var resolved))
-                {
-                    return ExtractProjectionExpression(resolved);
-                }
-
-                return ExtractProjectionExpression(body);
-            }
-
-            case SqlColumnExpression sqlColumnExpression
             when sqlColumnExpression.Table is TableValuedExpressionTableExpression tableValuedExpressionTableExpression:
             {
                 var function = tableValuedExpressionTableExpression.Expression as SqlFunctionExpression;

@@ -149,10 +149,14 @@ public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
                     Expression.Equal(nullConstantExpression, currentExpression),
                     Expression.Return(returnLabel, Expression.Default(memberType))));
 
-            blockExpressions.Add(
-                Expression.Assign(
-                    memberVariable,
-                    Expression.MakeMemberAccess(currentExpression, GetMemberForRead(member))));
+            Expression readExpression = Expression.MakeMemberAccess(currentExpression, GetMemberForRead(member));
+
+            if (!memberType.IsAssignableFrom(readExpression.Type))
+            {
+                readExpression = Expression.TypeAs(readExpression, memberType);
+            }
+
+            blockExpressions.Add(Expression.Assign(memberVariable, readExpression));
 
             currentExpression = memberVariable;
         }
