@@ -44,6 +44,7 @@ public class GroupingAggregationRewritingExpressionVisitor : ExpressionVisitor
 
                     // TODO: Find a suitable place to perform lifting of subqueries out into an OUTER APPLY or LEFT JOIN.
                     if (selector.ContainsAggregateOrSubquery()
+                        || !selector.Type.IsScalarType()
                         || translatabilityAnalyzingExpressionVisitor.Visit(selector) is not TranslatableExpression)
                     {
                         break;

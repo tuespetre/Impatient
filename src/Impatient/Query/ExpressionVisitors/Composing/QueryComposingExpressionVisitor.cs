@@ -5,6 +5,7 @@ using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -3020,6 +3021,11 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
         var outerProjection = outerSelectExpression.Projection.Flatten().Body;
         var selectorLambda = node.Arguments.ElementAtOrDefault(1)?.UnwrapLambda();
 
+        if (!(selectorLambda?.ReturnType ?? outerProjection.Type).IsScalarType())
+        {
+            return fallbackToEnumerable();
+        }
+
         if (selectorLambda is not null)
         {
             if (outerSelectExpression.IsDistinct)
@@ -3083,6 +3089,8 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
                         .UpdateProjection(new ServerProjectionExpression(
                             outerProjection))));
         }
+
+        Debug.Assert(outerProjection.Type.IsScalarType());
 
         Expression aggregateExpression;
 

@@ -25,4 +25,7 @@ public static class EFCoreSkipReasons
 
     public const string TranslationBeyondEF =
         "The test demonstrates a query that Impatient translates but EF does not.";
+
+    public const string ClientEval =
+        "The test should 'pass' by failing with an InvalidOperationException for client evaluation to comply with EF Core expectations.";
 }

@@ -2,12 +2,18 @@
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using System.Threading.Tasks;
+using Xunit;
 using static Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest;
 
 namespace Impatient.EFCore.Tests.Query;
 
-public class TPTGearsOfWarQueryImpatientTest(Fixture fixture) : TPTGearsOfWarQueryRelationalTestBase<Fixture>(fixture)
+public class TPTGearsOfWarQueryImpatientTest : TPTGearsOfWarQueryRelationalTestBase<Fixture>
 {
+    public TPTGearsOfWarQueryImpatientTest(Fixture fixture) : base(fixture)
+    {
+        fixture.TestSqlLoggerFactory.Clear();
+    }
+
     protected override QueryAsserter CreateQueryAsserter(Fixture fixture)
         => new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
 
@@ -16,8 +22,9 @@ public class TPTGearsOfWarQueryImpatientTest(Fixture fixture) : TPTGearsOfWarQue
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 
-    public override async Task Select_null_propagation_negative9(bool async)
+    [ConditionalTheory(Skip = EFCoreSkipReasons.ClientEval)]
+    public override Task Group_by_with_aggregate_max_on_entity_type(bool async)
     {
-        await base.Select_null_propagation_negative9(async);
+        return base.Group_by_with_aggregate_max_on_entity_type(async);
     }
 }
