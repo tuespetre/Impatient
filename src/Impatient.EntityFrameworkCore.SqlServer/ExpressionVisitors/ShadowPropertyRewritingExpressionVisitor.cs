@@ -21,7 +21,7 @@ public class ShadowPropertyRewritingExpressionVisitor : ExpressionVisitor
         var @object = Visit(node.Object);
         var arguments = Visit(node.Arguments);
 
-        if (node.Method.IsEFPropertyMethod() 
+        if (node.Method.IsEFPropertyMethod()
             && arguments[1] is ConstantExpression constantExpression)
         {
             var propertyName = (string)constantExpression.Value;
@@ -61,7 +61,11 @@ public class ShadowPropertyRewritingExpressionVisitor : ExpressionVisitor
                 {
                     if (result.Type != node.Type)
                     {
-                        result = Expression.Convert(result, node.Type);
+                        try
+                        {
+                            result = Expression.Convert(result, node.Type);
+                        }
+                        catch { } // TODO: think this through a little more.
                     }
 
                     if (node.Type.IsAssignableFrom(result.Type))

@@ -1031,6 +1031,7 @@ public class ModelExpressionProvider
         var properties
             = (from p in entityType.GetProperties()
                where !p.IsShadowProperty()
+               where !p.IsIndexerProperty() // TODO: include indexer properties
                select p).ToList();
 
         var navigations
