@@ -10,8 +10,10 @@ public class UdfDbFunctionImpatientTest : UdfDbFunctionTestBase<UdfDbFunctionImp
 {
     public UdfDbFunctionImpatientTest(SqlServerUDFFixture fixture) : base(fixture)
     {
-        Fixture.ListLoggerFactory.Clear();
+        Fixture.TestSqlLoggerFactory.Clear();
     }
+
+    private void AssertSql(string expected) => Fixture.TestSqlLoggerFactory.AssertSql(expected);
 
     [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
     public override void QF_CrossApply_Correlated_Select_Anonymous()
@@ -131,6 +133,18 @@ public class UdfDbFunctionImpatientTest : UdfDbFunctionTestBase<UdfDbFunctionImp
     public override void Udf_with_argument_being_comparison_to_null_parameter()
     {
         base.Udf_with_argument_being_comparison_to_null_parameter();
+    }
+
+    //[Fact(Skip = EFCoreSkipReasons.FromSql)]
+    public override void TVF_backing_entity_type_mapped_to_view()
+    {
+        base.TVF_backing_entity_type_mapped_to_view();
+
+        AssertSql("""
+            SELECT [t].[Id] AS [Id], [t].[FirstName] AS [FirstName], [t].[LastName] AS [LastName]
+            FROM [Customers] AS [t]
+            ORDER BY [t].[FirstName] ASC
+            """);
     }
 
     public class SqlServerUDFFixture : UdfFixtureBase

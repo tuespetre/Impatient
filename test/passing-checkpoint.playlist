@@ -30974,17 +30974,6 @@
                   </Rule>
                 </Rule>
                 <Rule Match="All">
-                  <Property Name="Class" Value="ToSqlQueryImpatientTest" />
-                  <Rule Match="Any">
-                    <Rule Match="All">
-                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ToSqlQueryImpatientTest.Entity_type_with_navigation_mapped_to_SqlQuery" />
-                      <Rule Match="Any">
-                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ToSqlQueryImpatientTest.Entity_type_with_navigation_mapped_to_SqlQuery" />
-                      </Rule>
-                    </Rule>
-                  </Rule>
-                </Rule>
-                <Rule Match="All">
                   <Property Name="Class" Value="TPCFiltersInheritanceQueryImpatientTest" />
                   <Rule Match="Any">
                     <Rule Match="All">

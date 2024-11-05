@@ -289,18 +289,14 @@ public class ModelExpressionProvider
     {
         ThrowForUnsupportedMappings(targetType);
 
-        var tableMappings = targetType.GetTableMappings().ToArray();
-
-        if (tableMappings.Length != 0)
+        if (targetType.GetTableMappings().Any())
         {
             return CreateNonPolymorphicQueryExpressionFromTableMappings(targetType);
         }
 
-        var viewMappings = targetType.GetViewMappings().ToArray();
-
-        if (viewMappings.Length != 0)
+        if (targetType.GetViewMappings().Any())
         {
-            return CreateNonPolymorphicQueryExpressionFromViewMappings(targetType, viewMappings);
+            return CreateNonPolymorphicQueryExpressionFromViewMappings(targetType);
         }
 
         throw new InvalidOperationException("Could not find appropriate mappings for the entity type");
@@ -308,15 +304,22 @@ public class ModelExpressionProvider
 
     private static void ThrowForUnsupportedMappings(IEntityType targetType)
     {
+        if (targetType.GetSqlQueryMappings().Any())
+        {
+            throw new NotSupportedException("Impatient does not support querying entities mapped to SQL strings");
+        }
+
+        if (IterateTableMappings(targetType, includeDerived: true).Any() || targetType.GetViewMappings().Any())
+        {
+            return;
+        }
+
         if (targetType.GetFunctionMappings().Any())
         {
             throw new NotImplementedException("Impatient does not yet implement entities mapped to functions");
         }
 
-        if (targetType.GetSqlQueryMappings().Any())
-        {
-            throw new NotSupportedException("Impatient does not support querying entities mapped to SQL strings");
-        }
+        throw new InvalidOperationException("Could not find appropriate mappings for the entity type");
     }
 
     private EnumerableRelationalQueryExpression CreateNonPolymorphicQueryExpressionFromTableMappings(IEntityType targetType)
@@ -390,8 +393,10 @@ public class ModelExpressionProvider
         return new EnumerableRelationalQueryExpression(selectExpression);
     }
 
-    private EnumerableRelationalQueryExpression CreateNonPolymorphicQueryExpressionFromViewMappings(IEntityType targetType, IViewMapping[] viewMappings)
+    private EnumerableRelationalQueryExpression CreateNonPolymorphicQueryExpressionFromViewMappings(IEntityType targetType)
     {
+        var viewMappings = targetType.GetViewMappings().ToArray();
+
         var queryTable
             = new BaseTableExpression(
                 viewMappings[0].View.Schema,
