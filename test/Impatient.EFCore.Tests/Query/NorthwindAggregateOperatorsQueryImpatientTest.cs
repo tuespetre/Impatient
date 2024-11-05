@@ -14,17 +14,21 @@ public class NorthwindAggregateOperatorsQueryImpatientTest : NorthwindAggregateO
     }
 
     [Theory(Skip = "Impatient supports Last without an ordering")]
-    [MemberData(nameof(IsAsyncData))]
     public override Task Last_when_no_order_by(bool async)
     {
         return base.Last_when_no_order_by(async);
     }
 
     [Theory(Skip = "Impatient supports LastOrDefault without an ordering")]
-    [MemberData(nameof(IsAsyncData))]
     public override Task LastOrDefault_when_no_order_by(bool async)
     {
         return base.LastOrDefault_when_no_order_by(async);
+    }
+
+    [Theory(Skip = EFCoreSkipReasons.FromSql)]
+    public override Task Contains_over_keyless_entity_throws(bool async)
+    {
+        return base.Contains_over_keyless_entity_throws(async);
     }
 
     protected override QueryAsserter CreateQueryAsserter(NorthwindQueryImpatientFixture fixture) =>

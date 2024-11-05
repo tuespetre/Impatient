@@ -287,6 +287,8 @@ public class ModelExpressionProvider
 
     private EnumerableRelationalQueryExpression CreateNonPolymorphicQueryExpression(IEntityType targetType)
     {
+        ThrowForUnsupportedMappings(targetType);
+
         var tableMappings = targetType.GetTableMappings().ToArray();
 
         if (tableMappings.Length != 0)
@@ -301,21 +303,20 @@ public class ModelExpressionProvider
             return CreateNonPolymorphicQueryExpressionFromViewMappings(targetType, viewMappings);
         }
 
-        var udfMappings = targetType.GetFunctionMappings().ToArray();
+        throw new InvalidOperationException("Could not find appropriate mappings for the entity type");
+    }
 
-        if (udfMappings.Length != 0)
+    private static void ThrowForUnsupportedMappings(IEntityType targetType)
+    {
+        if (targetType.GetFunctionMappings().Any())
         {
             throw new NotImplementedException("Impatient does not yet implement entities mapped to functions");
         }
 
-        var sqlMappings = targetType.GetSqlQueryMappings().ToArray();
-
-        if (sqlMappings.Length != 0)
+        if (targetType.GetSqlQueryMappings().Any())
         {
             throw new NotSupportedException("Impatient does not support querying entities mapped to SQL strings");
         }
-
-        throw new InvalidOperationException("Could not find appropriate mappings for the entity type");
     }
 
     private EnumerableRelationalQueryExpression CreateNonPolymorphicQueryExpressionFromTableMappings(IEntityType targetType)
@@ -425,6 +426,8 @@ public class ModelExpressionProvider
 
     private EnumerableRelationalQueryExpression CreateTPHQueryExpression(IEntityType targetType)
     {
+        ThrowForUnsupportedMappings(targetType);
+
         var tableMappings
             = IterateTableMappings(targetType, includeDerived: true)
                 .GroupBy(m => m.Table, (t, m) => m.First())
@@ -563,6 +566,8 @@ public class ModelExpressionProvider
 
     private EnumerableRelationalQueryExpression CreateTPCQueryExpression(IEntityType targetType)
     {
+        ThrowForUnsupportedMappings(targetType);
+
         var concreteTypes = targetType.GetConcreteDerivedTypesInclusive().ToArray();
 
         if (concreteTypes.Length == 1)
@@ -719,6 +724,8 @@ public class ModelExpressionProvider
 
     private EnumerableRelationalQueryExpression CreateTPTQueryExpression(IEntityType targetType)
     {
+        ThrowForUnsupportedMappings(targetType);
+
         // Construct an inner join for the target type without any derived types 
 
         var targetTableMappings
