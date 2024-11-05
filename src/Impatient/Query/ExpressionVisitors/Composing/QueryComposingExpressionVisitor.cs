@@ -44,13 +44,15 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
             foreach (var visitor in rewritingExpressionVisitors)
             {
                 yield return visitor;
-            }
 
-            yield return this;
+                yield return this;
+            }
 
             foreach (var visitor in providerSpecificRewritingExpressionVisitors)
             {
                 yield return visitor;
+
+                yield return this;
             }
 
             foreach (var visitor in ClientPostExpansionVisitors)
@@ -2985,7 +2987,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
         var outerSelectExpression = outerQuery.SelectExpression;
         var outerProjection = outerSelectExpression.Projection.Flatten().Body;
 
-        if (!IsTranslatable(outerProjection))
+        if (!IsTranslatable(outerProjection) || !outerProjection.Type.IsScalarType())
         {
             return fallbackToEnumerable();
         }

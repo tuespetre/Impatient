@@ -17596,6 +17596,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryAdhocImpatientTest.Can_project_nullable_json_property_when_the_element_in_json_is_not_present" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryAdhocImpatientTest.Contains_on_nested_collection_with_init_only_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryAdhocImpatientTest.Contains_on_nested_collection_with_init_only_navigation" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -28255,6 +28261,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindWhereQueryImpatientTest.Where_collection_navigation_AsEnumerable_Contains" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindWhereQueryImpatientTest.Where_collection_navigation_AsEnumerable_Contains" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindWhereQueryImpatientTest.Where_collection_navigation_ToList_Contains" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindWhereQueryImpatientTest.Where_collection_navigation_ToList_Contains" />
                       </Rule>
                     </Rule>
                   </Rule>

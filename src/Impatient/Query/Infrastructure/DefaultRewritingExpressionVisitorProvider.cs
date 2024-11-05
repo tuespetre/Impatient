@@ -29,8 +29,9 @@ public class DefaultRewritingExpressionVisitorProvider : IRewritingExpressionVis
         /*
         
         Order-dependency notes:
-
-        - ListContainsToEnumerableContainsRewritingExpressionVisitor
+        
+        - ListContainsRewritingExpressionVisitor
+        - CollectionContainsRewritingExpressionVisitor
             - has to run before EnumerableContainsRewritingExpressionVisitor
 
         - GroupingAggregationRewritingExpressionVisitor
@@ -44,7 +45,9 @@ public class DefaultRewritingExpressionVisitorProvider : IRewritingExpressionVis
 
         */
 
-        yield return new ListContainsToEnumerableContainsRewritingExpressionVisitor();
+        yield return new ListContainsRewritingExpressionVisitor();
+
+        yield return new CollectionContainsRewritingExpressionVisitor();
 
         yield return new EqualsMethodRewritingExpressionVisitor();
 
@@ -59,8 +62,6 @@ public class DefaultRewritingExpressionVisitorProvider : IRewritingExpressionVis
         yield return new DateTimeMemberRewritingExpressionVisitor();
 
         yield return new StringMemberRewritingExpressionVisitor();
-
-        yield return new CollectionContainsRewritingExpressionVisitor();
 
         yield return new EnumerableContainsRewritingExpressionVisitor();
 

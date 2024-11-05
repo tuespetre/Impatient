@@ -7,7 +7,10 @@ using static Impatient.Extensions.ReflectionExtensions;
 
 namespace Impatient.Query.ExpressionVisitors.Rewriting;
 
-public class ListContainsToEnumerableContainsRewritingExpressionVisitor : ExpressionVisitor
+/// <summary>
+/// Rewrites <see cref="List{T}.Contains(T)"/> calls as <see cref="Enumerable.Contains{T}(IEnumerable{T}, T)}"/> calls.
+/// </summary>
+public class ListContainsRewritingExpressionVisitor : ExpressionVisitor
 {
     private static readonly MethodInfo enumerableContainsMethodInfo
         = GetGenericMethodDefinition((IEnumerable<object> e) => e.Contains(null));
@@ -23,7 +26,7 @@ public class ListContainsToEnumerableContainsRewritingExpressionVisitor : Expres
         {
             return Expression.Call(
                 enumerableContainsMethodInfo.MakeGenericMethod(listType.GetGenericArguments().Single()),
-                arguments.Prepend(@object));
+                [@object, .. arguments]);
         }
 
         return node.Update(@object, arguments);
