@@ -187,7 +187,8 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
             return Expression.Call(MatchQueryableMethod(node.Method), fallbackArguments);
         }
 
-        if (node.Method.HasComparerArgument()
+        if (node.Arguments.Count == 0
+            || node.Method.HasComparerArgument()
             || node.ContainsNonLambdaDelegates()
             || node.ContainsNonLambdaExpressions())
         {

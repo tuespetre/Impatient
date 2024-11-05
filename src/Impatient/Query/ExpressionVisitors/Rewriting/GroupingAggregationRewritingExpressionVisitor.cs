@@ -26,7 +26,7 @@ public class GroupingAggregationRewritingExpressionVisitor : ExpressionVisitor
 
         if (node.Method.IsQueryableOrEnumerableMethod()
             && !node.ContainsNonLambdaDelegates()
-            && arguments[0] is GroupByResultExpression relationalGrouping)
+            && arguments.FirstOrDefault() is GroupByResultExpression relationalGrouping)
         {
             switch (node.Method.Name)
             {

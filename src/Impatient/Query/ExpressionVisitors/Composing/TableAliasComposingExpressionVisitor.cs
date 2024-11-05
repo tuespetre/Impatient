@@ -36,7 +36,7 @@ public class TableAliasComposingExpressionVisitor : ExpressionVisitor
 
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
-        if (node.Method.IsQueryableOrEnumerableMethod())
+        if (node.Method.IsQueryableOrEnumerableMethod() && node.Arguments.Count > 0)
         {
             switch (node.Method.Name)
             {
