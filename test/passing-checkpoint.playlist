@@ -6982,6 +6982,296 @@
                     </Rule>
                   </Rule>
                 </Rule>
+                <Rule Match="All">
+                  <Property Name="Class" Value="CommandInterceptionImpatientTest" />
+                  <Rule Match="Any">
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_to_mutate_command" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_to_mutate_command" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_one_app_and_one_injected_interceptor" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_one_app_and_one_injected_interceptor" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_to_throw" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_to_throw" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_to_replace_result" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_to_replace_result" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_to_suppress_execution" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_to_suppress_execution" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_to_mutate_command" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_to_mutate_command" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_CommandInitialized_to_mutate_scalar_command" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_CommandInitialized_to_mutate_scalar_command" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_with_two_injected_interceptors" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_with_two_injected_interceptors" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_to_throw" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_to_throw" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_with_one_app_and_one_injected_interceptor" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_with_one_app_and_one_injected_interceptor" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_to_replace_result" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_to_replace_result" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_that_throws" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_that_throws" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_with_explicitly_composed_app_interceptor" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_with_explicitly_composed_app_interceptor" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_that_throws" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_that_throws" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_passively" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_passively" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_with_explicitly_composed_app_interceptor" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_with_explicitly_composed_app_interceptor" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_to_replace_execution" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_non_query_to_replace_execution" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_passively" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_passively" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_with_two_injected_interceptors" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_with_two_injected_interceptors" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_to_suppress_execution" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_to_suppress_execution" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_to_replace_execution" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_scalar_to_replace_execution" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_query_to_throw" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CommandInterceptionImpatientTest.Intercept_query_to_throw" />
+                      </Rule>
+                    </Rule>
+                  </Rule>
+                </Rule>
+                <Rule Match="All">
+                  <Property Name="Class" Value="MaterializationInterceptionImpatientTest" />
+                  <Rule Match="Any">
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.MaterializationInterceptionImpatientTest.Binding_interceptors_are_used_when_creating_instances" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.MaterializationInterceptionImpatientTest.Binding_interceptors_are_used_when_creating_instances" />
+                      </Rule>
+                    </Rule>
+                  </Rule>
+                </Rule>
+                <Rule Match="All">
+                  <Property Name="Class" Value="TransactionInterceptionImpatientTest" />
+                  <Rule Match="Any">
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_error_on_commit_or_rollback" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_error_on_commit_or_rollback" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_Rollback" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_Rollback" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_CreateSavepoint" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_CreateSavepoint" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_BeginTransaction_to_suppress" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_BeginTransaction_to_suppress" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_RollbackToSavepoint" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_RollbackToSavepoint" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_UseTransaction_to_wrap" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_UseTransaction_to_wrap" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_Commit_to_suppress" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_Commit_to_suppress" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_BeginTransaction_with_isolation_level" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_BeginTransaction_with_isolation_level" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_UseTransaction" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_UseTransaction" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_connection_with_multiple_interceptors" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_connection_with_multiple_interceptors" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_Rollback_to_suppress" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_Rollback_to_suppress" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.UseTransaction_without_interceptor" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.UseTransaction_without_interceptor" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_Commit" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_Commit" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.BeginTransaction_without_interceptor" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.BeginTransaction_without_interceptor" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_BeginTransaction" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_BeginTransaction" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_BeginTransaction_to_wrap" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TransactionInterceptionImpatientTest.Intercept_BeginTransaction_to_wrap" />
+                      </Rule>
+                    </Rule>
+                  </Rule>
+                </Rule>
+                <Rule Match="All">
+                  <Property Name="Class" Value="SaveChangesInterceptionImpatientTest" />
+                  <Rule Match="Any">
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.SaveChangesInterceptionImpatientTest.Intercept_SaveChanges_with_multiple_interceptors" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.SaveChangesInterceptionImpatientTest.Intercept_SaveChanges_with_multiple_interceptors" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.SaveChangesInterceptionImpatientTest.Intercept_to_suppress_concurrency_exception" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.SaveChangesInterceptionImpatientTest.Intercept_to_suppress_concurrency_exception" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.SaveChangesInterceptionImpatientTest.Intercept_SaveChanges_to_change_result" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.SaveChangesInterceptionImpatientTest.Intercept_SaveChanges_to_change_result" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.SaveChangesInterceptionImpatientTest.Intercept_SaveChanges_failed" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.SaveChangesInterceptionImpatientTest.Intercept_SaveChanges_failed" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.SaveChangesInterceptionImpatientTest.Intercept_SaveChanges_to_suppress_save" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.SaveChangesInterceptionImpatientTest.Intercept_SaveChanges_to_suppress_save" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.SaveChangesInterceptionImpatientTest.Intercept_SaveChanges_passively" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.SaveChangesInterceptionImpatientTest.Intercept_SaveChanges_passively" />
+                      </Rule>
+                    </Rule>
+                  </Rule>
+                </Rule>
               </Rule>
             </Rule>
             <Rule Match="All">
