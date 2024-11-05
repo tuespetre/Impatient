@@ -3240,7 +3240,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
 
     protected virtual Expression ProcessQuerySource(Expression node)
     {
-        if (node is null || !node.Type.IsSequenceType())
+        if (node is null || node.Type.IsScalarType() || !node.Type.IsSequenceType())
         {
             return node;
         }

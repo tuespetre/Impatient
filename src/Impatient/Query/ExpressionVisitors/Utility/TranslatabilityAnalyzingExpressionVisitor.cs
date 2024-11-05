@@ -154,9 +154,8 @@ public class TranslatabilityAnalyzingExpressionVisitor : ExpressionVisitor
             }
 
             case SingleValueRelationalQueryExpression query
-            when query.Type.IsScalarType() 
-                || (queryFormattingProvider.SupportsComplexTypeSubqueries
-                    && query.SelectExpression.Projection is ServerProjectionExpression):
+            when (query.Type.IsScalarType() || queryFormattingProvider.SupportsComplexTypeSubqueries)
+                && query.SelectExpression.Projection is ServerProjectionExpression:
             {
                 return new TranslatableExpression(node);
             }

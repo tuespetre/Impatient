@@ -26,7 +26,8 @@ public class EnumerableContainsRewritingExpressionVisitor : ExpressionVisitor
                 || node.Method.GetGenericMethodDefinition() == queryableContainsMethodInfo))
         {
             // The separate ifs are here for breakpoint purposes.
-            if (arguments[0].Type.GetSequenceType().IsScalarType())
+            // The left condition here is to make sure it's not, say, string or byte[]
+            if (!arguments[0].Type.IsScalarType() && arguments[0].Type.GetSequenceType().IsScalarType())
             {
                 var canUseValues = false;
 
