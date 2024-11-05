@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -158,11 +159,16 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
 
     private static List<List<MemberInfo>> ResolveIncludePaths(string[] names, ref int depth, ref IEntityType entityType)
     {
-        var navigations = entityType.FindDerivedNavigations(names[depth]);
+        var navigations = new HashSet<INavigationBase>();
 
-        if (entityType.FindNavigation(names[depth]) is INavigation nonderived)
+        foreach (var type in entityType.GetDerivedTypesInclusive())
         {
-            navigations = navigations.Prepend(nonderived);
+            var navigation = type.FindNavigation(names[depth]) ?? (INavigationBase)type.FindSkipNavigation(names[depth]);
+
+            if (navigation is not null)
+            {
+                navigations.Add(navigation);
+            }
         }
 
         var result = new List<List<MemberInfo>>();
@@ -171,8 +177,6 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
         {
             return result;
         }
-
-        navigations = navigations.Distinct();
 
         depth++;
 

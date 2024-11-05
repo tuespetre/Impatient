@@ -1654,7 +1654,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
 
             foreach (var navigation in findingVisitor.FoundNavigations.OrderBy(f => f.Path.Count()))
             {
-                var outerType = source.Type.GetSequenceType();
+                var outerType = navigation.SourceType.IsAssignableFrom(source.Type.GetSequenceType()) ? navigation.SourceType : source.Type.GetSequenceType();
                 var innerType = navigation.DestinationType.FindGenericType(typeof(IEnumerable<>)) ?? navigation.DestinationType;
                 var scopeType = typeof(NavigationTransparentIdentifier<,>).MakeGenericType(outerType, innerType);
 
@@ -1786,13 +1786,18 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                             innerEnumerableType,
                             innerKeySelector.Parameters.Single().Name + "s");
 
+                    Expression outerValue
+                        = intermediateOuterField.FieldType.IsAssignableFrom(currentParameter.Type)
+                            ? currentParameter
+                            : Expression.Convert(currentParameter, intermediateOuterField.FieldType);
+
                     // Create the result selector
                     var resultSelector
                         = Expression.Lambda(
                             name: "NavigationExpandedResultSelector",
                             body: Expression.New(
                                 intermediateScopeType.GetTypeInfo().DeclaredConstructors.Single(),
-                                new[] { currentParameter, innerEnumerableParameter },
+                                new[] { outerValue, innerEnumerableParameter },
                                 new[] { intermediateOuterField, intermediateInnerField }),
                             parameters: new[] { currentParameter, innerEnumerableParameter });
 
@@ -2278,6 +2283,15 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                     return base.VisitExtension(node);
                 }
             }
+        }
+
+        protected override Expression VisitConditional(ConditionalExpression node)
+        {
+            var test = Visit(node.Test);
+            var ifTrue = MaybeToList(node.IfTrue);
+            var ifFalse = MaybeToList(node.IfFalse);
+
+            return node.Update(test, ifTrue, ifFalse);
         }
 
         protected override Expression VisitNew(NewExpression node)

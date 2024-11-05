@@ -18332,6 +18332,30 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_then_include_inverse_works_for_tracking_query_unidirectional" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_then_reference_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_then_reference_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_and_reference_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_and_reference_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_then_include_skip_navigation_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_then_include_skip_navigation_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_then_include_reference_and_skip_navigation_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_then_include_reference_and_skip_navigation_unidirectional" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -18383,6 +18407,36 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ManyToManyQueryImpatientTest.GetType_in_hierarchy_in_querying_base_type_unidirectional" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ManyToManyQueryImpatientTest.GetType_in_hierarchy_in_querying_base_type_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ManyToManyQueryImpatientTest.Include_skip_navigation_then_reference_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ManyToManyQueryImpatientTest.Include_skip_navigation_then_reference_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ManyToManyQueryImpatientTest.Include_skip_navigation_then_include_reference_and_skip_navigation_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ManyToManyQueryImpatientTest.Include_skip_navigation_then_include_reference_and_skip_navigation_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ManyToManyQueryImpatientTest.Include_skip_navigation_then_include_inverse_works_for_tracking_query_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ManyToManyQueryImpatientTest.Include_skip_navigation_then_include_inverse_works_for_tracking_query_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ManyToManyQueryImpatientTest.Include_skip_navigation_then_include_skip_navigation_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ManyToManyQueryImpatientTest.Include_skip_navigation_then_include_skip_navigation_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ManyToManyQueryImpatientTest.Include_skip_navigation_and_reference_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ManyToManyQueryImpatientTest.Include_skip_navigation_and_reference_unidirectional" />
                       </Rule>
                     </Rule>
                   </Rule>
@@ -33840,6 +33894,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.EF_Property_based_Include_navigation_on_derived_type" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Include_after_SelectMany_throws" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Include_after_SelectMany_throws" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -34186,6 +34246,30 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_then_include_inverse_works_for_tracking_query_unidirectional" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_and_reference_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_and_reference_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_then_reference_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_then_reference_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_then_include_skip_navigation_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_then_include_skip_navigation_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_then_include_reference_and_skip_navigation_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_then_include_reference_and_skip_navigation_unidirectional" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -34237,6 +34321,36 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyQueryImpatientTest.GetType_in_hierarchy_in_querying_base_type_unidirectional" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyQueryImpatientTest.GetType_in_hierarchy_in_querying_base_type_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyQueryImpatientTest.Include_skip_navigation_then_include_skip_navigation_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyQueryImpatientTest.Include_skip_navigation_then_include_skip_navigation_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyQueryImpatientTest.Include_skip_navigation_then_include_inverse_works_for_tracking_query_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyQueryImpatientTest.Include_skip_navigation_then_include_inverse_works_for_tracking_query_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyQueryImpatientTest.Include_skip_navigation_then_reference_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyQueryImpatientTest.Include_skip_navigation_then_reference_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyQueryImpatientTest.Include_skip_navigation_and_reference_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyQueryImpatientTest.Include_skip_navigation_and_reference_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyQueryImpatientTest.Include_skip_navigation_then_include_reference_and_skip_navigation_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCManyToManyQueryImpatientTest.Include_skip_navigation_then_include_reference_and_skip_navigation_unidirectional" />
                       </Rule>
                     </Rule>
                   </Rule>
