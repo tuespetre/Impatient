@@ -1,4 +1,5 @@
-﻿using Impatient.EFCore.Tests.Utilities;
+﻿using Impatient.EFCore.Tests.Fixtures;
+using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using System.Threading.Tasks;
@@ -10,66 +11,61 @@ public class JsonQueryImpatientTest : JsonQueryTestBase<JsonQueryImpatientTest.F
 {
     public JsonQueryImpatientTest(Fixture fixture) : base(fixture)
     {
+        fixture.TestSqlLoggerFactory.Clear();
     }
 
-    [ConditionalTheory]
-    [MemberData(nameof(IsAsyncData))]
-    public override Task Basic_json_projection_enum_inside_json_entity(bool async)
+    private void AssertSql(string expected) => base.Fixture.TestSqlLoggerFactory.AssertSql(expected);
+
+    protected override QueryAsserter CreateQueryAsserter(Fixture fixture)
+        => new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
+
+    public new class Fixture : JsonQueryFixtureBase
     {
-        return base.Basic_json_projection_enum_inside_json_entity(async);
+        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 
     [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
-    [MemberData(nameof(IsAsyncData))]
     public override Task FromSql_on_entity_with_json_basic(bool async)
     {
         return base.FromSql_on_entity_with_json_basic(async);
     }
 
     [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
-    [MemberData(nameof(IsAsyncData))]
     public override Task FromSql_on_entity_with_json_inheritance_on_base(bool async)
     {
         return base.FromSql_on_entity_with_json_inheritance_on_base(async);
     }
 
     [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
-    [MemberData(nameof(IsAsyncData))]
     public override Task FromSql_on_entity_with_json_inheritance_on_derived(bool async)
     {
         return base.FromSql_on_entity_with_json_inheritance_on_derived(async);
     }
 
     [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
-    [MemberData(nameof(IsAsyncData))]
     public override Task FromSql_on_entity_with_json_inheritance_project_reference_on_base(bool async)
     {
         return base.FromSql_on_entity_with_json_inheritance_project_reference_on_base(async);
     }
 
     [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
-    [MemberData(nameof(IsAsyncData))]
     public override Task FromSql_on_entity_with_json_inheritance_project_reference_on_derived(bool async)
     {
         return base.FromSql_on_entity_with_json_inheritance_project_reference_on_derived(async);
     }
 
     [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
-    [MemberData(nameof(IsAsyncData))]
     public override Task FromSql_on_entity_with_json_project_json_collection(bool async)
     {
         return base.FromSql_on_entity_with_json_project_json_collection(async);
     }
 
     [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
-    [MemberData(nameof(IsAsyncData))]
     public override Task FromSql_on_entity_with_json_project_json_reference(bool async)
     {
         return base.FromSql_on_entity_with_json_project_json_reference(async);
     }
 
-    [ConditionalTheory]
-    [MemberData(nameof(IsAsyncData))]
     public override Task Json_predicate_on_single(bool async)
     {
         return base.Json_predicate_on_single(async);
@@ -81,8 +77,9 @@ public class JsonQueryImpatientTest : JsonQueryTestBase<JsonQueryImpatientTest.F
         return base.Json_projection_enum_with_custom_conversion(async);
     }
 
-    public new class Fixture : JsonQueryFixtureBase
+    [Theory(Skip = EFCoreSkipReasons.BadMaterialization)]
+    public override Task Project_json_reference_in_tracking_query_fails(bool async)
     {
-        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
+        return base.Project_json_reference_in_tracking_query_fails(async);
     }
 }

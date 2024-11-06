@@ -123,6 +123,113 @@ public class UdfDbFunctionImpatientTest : UdfDbFunctionTestBase<UdfDbFunctionImp
         base.QF_Stand_Alone_Parameter();
     }
 
+    public override void TVF_backing_entity_type_mapped_to_view()
+    {
+        base.TVF_backing_entity_type_mapped_to_view();
+
+        AssertSql("""
+            SELECT [t].[Id] AS [Id], [t].[FirstName] AS [FirstName], [t].[LastName] AS [LastName]
+            FROM [Customers] AS [t]
+            ORDER BY [t].[FirstName] ASC
+            """);
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    public override void Scalar_Nested_Function_BCL_Client_Instance()
+    {
+        base.Scalar_Nested_Function_BCL_Client_Instance();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    public override void Scalar_Nested_Function_BCL_Client_Static()
+    {
+        base.Scalar_Nested_Function_BCL_Client_Static();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    public override void Scalar_Nested_Function_BCL_Client_UDF_Instance()
+    {
+        base.Scalar_Nested_Function_BCL_Client_UDF_Instance();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    public override void Scalar_Nested_Function_BCL_Client_UDF_Static()
+    {
+        base.Scalar_Nested_Function_BCL_Client_UDF_Static();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    public override void Scalar_Nested_Function_Client_BCL_Instance()
+    {
+        base.Scalar_Nested_Function_Client_BCL_Instance();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    public override void Scalar_Nested_Function_Client_BCL_Static()
+    {
+        base.Scalar_Nested_Function_Client_BCL_Static();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    public override void Scalar_Nested_Function_Client_BCL_UDF_Instance()
+    {
+        base.Scalar_Nested_Function_Client_BCL_UDF_Instance();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    public override void Scalar_Nested_Function_Client_BCL_UDF_Static()
+    {
+        base.Scalar_Nested_Function_Client_BCL_UDF_Static();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    public override void Scalar_Nested_Function_Client_UDF_BCL_Instance()
+    {
+        base.Scalar_Nested_Function_Client_UDF_BCL_Instance();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    public override void Scalar_Nested_Function_Client_UDF_BCL_Static()
+    {
+        base.Scalar_Nested_Function_Client_UDF_BCL_Static();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    public override void Scalar_Nested_Function_Client_UDF_Instance()
+    {
+        base.Scalar_Nested_Function_Client_UDF_Instance();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    public override void Scalar_Nested_Function_Client_UDF_Static()
+    {
+        base.Scalar_Nested_Function_Client_UDF_Static();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    public override void Scalar_Nested_Function_Unwind_Client_Eval_OrderBy_Instance()
+    {
+        base.Scalar_Nested_Function_Unwind_Client_Eval_OrderBy_Instance();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    public override void Scalar_Nested_Function_Unwind_Client_Eval_OrderBy_Static()
+    {
+        base.Scalar_Nested_Function_Unwind_Client_Eval_OrderBy_Static();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    public override void Scalar_Nested_Function_Unwind_Client_Eval_Where_Instance()
+    {
+        base.Scalar_Nested_Function_Unwind_Client_Eval_Where_Instance();
+    }
+
+    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    public override void Scalar_Nested_Function_Unwind_Client_Eval_Where_Static()
+    {
+        base.Scalar_Nested_Function_Unwind_Client_Eval_Where_Static();
+    }
+
     [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
     public override void Udf_with_argument_being_comparison_of_nullable_columns()
     {
@@ -133,18 +240,6 @@ public class UdfDbFunctionImpatientTest : UdfDbFunctionTestBase<UdfDbFunctionImp
     public override void Udf_with_argument_being_comparison_to_null_parameter()
     {
         base.Udf_with_argument_being_comparison_to_null_parameter();
-    }
-
-    //[Fact(Skip = EFCoreSkipReasons.FromSql)]
-    public override void TVF_backing_entity_type_mapped_to_view()
-    {
-        base.TVF_backing_entity_type_mapped_to_view();
-
-        AssertSql("""
-            SELECT [t].[Id] AS [Id], [t].[FirstName] AS [FirstName], [t].[LastName] AS [LastName]
-            FROM [Customers] AS [t]
-            ORDER BY [t].[FirstName] ASC
-            """);
     }
 
     public class SqlServerUDFFixture : UdfFixtureBase
