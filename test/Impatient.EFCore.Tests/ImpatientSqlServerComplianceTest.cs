@@ -16,6 +16,9 @@ public class ImpatientSqlServerComplianceTest : RelationalComplianceTestBase
     protected override ICollection<Type> IgnoredTestBases { get; }
         = new List<Type>
         {
+            // Not yet supporting proxies
+            typeof(LazyLoadProxyTestBase<>),
+
             // Raw SQL queries - not supported
             typeof(FromSqlQueryTestBase<>),
             typeof(FromSqlSprocQueryTestBase<>),
@@ -66,6 +69,9 @@ public class ImpatientSqlServerComplianceTest : RelationalComplianceTestBase
             typeof(JsonTypesRelationalTestBase),
             typeof(ModelBuilding101TestBase),
             typeof(ModelBuilding101RelationalTestBase),
+
+            // The test uses some built in EF components directly, so our code never gets hit, making them meaningless passing tests
+            typeof(BadDataJsonDeserializationTestBase),
 
             // Miscellaneous
             typeof(ApiConsistencyTestBase<>),
