@@ -646,7 +646,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                 var result
                     = CreateCall(
                         node.Method.GetGenericMethodDefinition().MakeGenericMethod(
-                            sourceParameter.Type,
+                            source.Type.GetSequenceType(),
                             collectionSelector.ReturnType.GetSequenceType(),
                             resultSelector.ReturnType),
                         new[] { source, collectionSelector, resultSelector });
@@ -1137,12 +1137,6 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
             {
                 outerContext.ApplyMappings(ref outerKeySelector, ref outerKeyParameter);
 
-                outerContext
-                    = NavigationExpansionContext.Advance(
-                        outerContext,
-                        ref resultSelector,
-                        ref outerResultParameter);
-
                 outerConsumed = true;
             }
 
@@ -1157,6 +1151,12 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
 
             if (outerConsumed || innerConsumed)
             {
+                outerContext
+                    = NavigationExpansionContext.Advance(
+                        outerContext,
+                        ref resultSelector,
+                        ref outerResultParameter);
+
                 if (innerConsumed)
                 {
                     var oldResultInnerParameter = resultSelector.Parameters[1];
@@ -1196,33 +1196,9 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                             resultSelector,
                         });
 
-                var newParameter = Expression.Parameter(resultSelector.ReturnType);
-
-                Expression outerTerminalSelector
-                    = outerConsumed
-                        ? outerContext.OuterTerminalSelector
-                        : Expression.Lambda(
-                            body: newParameter,
-                            name: "GroupJoinPassthroughSelector",
-                            parameters: new[] { newParameter });
-
-                var terminalSelectMethod = enumerableSelectMethodInfo;
-
-                if (node.Method.IsQueryableMethod())
-                {
-                    outerTerminalSelector = Expression.Quote(outerTerminalSelector);
-                    terminalSelectMethod = queryableSelectMethodInfo;
-                }
-
-                var terminator
-                    = Expression.Call(
-                        terminalSelectMethod.MakeGenericMethod(
-                            resultSelector.ReturnType,
-                            node.Type.GetSequenceType()),
-                        result,
-                        outerTerminalSelector);
-
-                return new NavigationExpansionContextExpression(terminator, outerContext);
+                return new NavigationExpansionContextExpression(
+                    CreateTerminalCall(node, result, outerContext),
+                    outerContext);
             }
             else
             {
