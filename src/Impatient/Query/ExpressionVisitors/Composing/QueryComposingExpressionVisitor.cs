@@ -95,6 +95,18 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
         return base.Visit(node);
     }
 
+    protected override MemberAssignment VisitMemberAssignment(MemberAssignment node)
+    {
+        var expression = Visit(node.Expression);
+
+        if (node.Expression.Type.IsQueryableType())
+        {
+            expression = expression.AsQueryable();
+        }
+
+        return node.Update(expression);
+    }
+
     protected override Expression VisitNew(NewExpression node)
     {
         var arguments = Visit(node.Arguments).ToArray();
