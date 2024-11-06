@@ -50,6 +50,7 @@ public class ProjectionBubblingExpressionVisitor : ExpressionVisitor
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
         if (node.Method.IsQueryableOrEnumerableMethod()
+            && node.Arguments.Count > 0
             && !node.ContainsNonLambdaExpressions()
             && !node.ContainsNonLambdaDelegates())
         {
@@ -61,7 +62,7 @@ public class ProjectionBubblingExpressionVisitor : ExpressionVisitor
                 {
                     if (arguments[0] is ProjectionExpression projection)
                     {
-                        return projection.Merge(arguments[1].UnwrapLambda());
+                        return MergeBubbledProjection(projection, arguments[1].UnwrapLambda());
                     }
 
                     return node;
@@ -141,15 +142,16 @@ public class ProjectionBubblingExpressionVisitor : ExpressionVisitor
                     if (arguments[0] is ProjectionExpression projection
                         && node.Method.HasResultSelector())
                     {
-                        var keyExpression = projection.Merge(arguments[1].UnwrapLambda()).Flatten().Body;
+                        var keyExpression
+                            = MergeBubbledProjection(projection, arguments[1].UnwrapLambda()).Flatten().Body;
 
                         var elementProjectionBody
-                            = projection.Flatten().Body;
+                            = Visit(projection.Flatten().Body);
 
                         if (node.Method.HasElementSelector())
                         {
                             elementProjectionBody
-                                = projection.Merge(arguments[2].UnwrapLambda()).Flatten().Body;
+                                = MergeBubbledProjection(projection, arguments[2].UnwrapLambda()).Flatten().Body;
                         }
 
                         var elementExpression
@@ -236,6 +238,18 @@ public class ProjectionBubblingExpressionVisitor : ExpressionVisitor
         }
 
         return node;
+    }
+
+    private ProjectionExpression MergeBubbledProjection(ProjectionExpression projection, LambdaExpression lambda)
+    {
+        var flattened = Visit(projection.Flatten().Body);
+
+        if (flattened is ProjectionExpression projectionFromFlattened)
+        {
+            return projectionFromFlattened.Merge(lambda);
+        }
+
+        return projection.Merge(lambda);
     }
 
     private class SurrogateEnumerableRelationalQueryExpression : EnumerableRelationalQueryExpression
