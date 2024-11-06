@@ -24,6 +24,12 @@ public class TPTGearsOfWarQueryImpatientTest : TPTGearsOfWarQueryRelationalTestB
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 
+    [Theory(Skip = EFCoreSkipReasons.ClientEval)]
+    public override Task Client_member_and_unsupported_string_Equals_in_the_same_query(bool async)
+    {
+        return base.Client_member_and_unsupported_string_Equals_in_the_same_query(async);
+    }
+
     [ConditionalTheory(Skip = EFCoreSkipReasons.ClientEval)]
     public override Task Group_by_with_aggregate_max_on_entity_type(bool async)
     {

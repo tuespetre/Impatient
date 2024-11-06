@@ -13,6 +13,9 @@ public class NorthwindWhereQueryImpatientTest : NorthwindWhereQueryRelationalTes
     {
     }
 
+    protected override QueryAsserter CreateQueryAsserter(NorthwindQueryImpatientFixture fixture)
+        => new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
+
     // just added this override because the base test only uses InlineData(false) for some reason,
     // and Test Explorer saved playlist would then not show it for some reason?
     [ConditionalTheory]
@@ -22,6 +25,9 @@ public class NorthwindWhereQueryImpatientTest : NorthwindWhereQueryRelationalTes
         return base.Where_bitwise_xor(async);
     }
 
-    protected override QueryAsserter CreateQueryAsserter(NorthwindQueryImpatientFixture fixture) =>
-        new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
+    [Theory(Skip = EFCoreSkipReasons.ClientEval)]
+    public override Task Where_equals_method_string_with_ignore_case(bool async)
+    {
+        return base.Where_equals_method_string_with_ignore_case(async);
+    }
 }

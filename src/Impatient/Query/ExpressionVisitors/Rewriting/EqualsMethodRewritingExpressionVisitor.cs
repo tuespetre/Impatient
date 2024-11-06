@@ -9,7 +9,8 @@ public class EqualsMethodRewritingExpressionVisitor : ExpressionVisitor
 {
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
-        if (node.Method.Name == nameof(object.Equals))
+        if (node.Method.Name == nameof(object.Equals)
+            && (node.Method.IsStatic || node.Arguments.Count == 1))
         {
             if (node.Method.DeclaringType == typeof(object)
                 || node.Method.DeclaringType.IsGenericType(typeof(IEquatable<>)))
