@@ -120,7 +120,8 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
         var parameter
             = Expression.Parameter(
                 innerSequenceType,
-                entityType.GetTableName()[..1].ToLower());
+                entityType.GetTableName()?[..1].ToLower()
+                    ?? entityType.Name[..1].ToLower());
 
         var includeAccessors
             = BuildIncludeAccessors(
