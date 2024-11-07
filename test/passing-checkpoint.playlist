@@ -10391,6 +10391,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_composite_with_navs_unidirectional" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Many_to_many_delete_behaviors_are_set" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Many_to_many_delete_behaviors_are_set" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
