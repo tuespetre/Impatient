@@ -4583,6 +4583,18 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyFieldsLoadImpatientTest.Query_collection_for_detached_throws" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyFieldsLoadImpatientTest.Load_collection_using_Query_not_found_untyped" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyFieldsLoadImpatientTest.Load_collection_using_Query_not_found_untyped" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyFieldsLoadImpatientTest.Load_collection_not_found_untyped" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyFieldsLoadImpatientTest.Load_collection_not_found_untyped" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -4610,6 +4622,30 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Query_collection_for_detached_throws_unidirectional" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Query_collection_for_detached_throws_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_using_Query_not_found_untyped" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_using_Query_not_found_untyped" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_not_found_untyped" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_not_found_untyped" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_using_Query_not_found_untyped_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_using_Query_not_found_untyped_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_not_found_untyped_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_not_found_untyped_unidirectional" />
                       </Rule>
                     </Rule>
                   </Rule>

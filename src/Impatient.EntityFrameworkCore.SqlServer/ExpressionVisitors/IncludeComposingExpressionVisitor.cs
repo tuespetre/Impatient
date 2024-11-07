@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -221,7 +220,7 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
 
     private IEnumerable<MemberInfo> ProcessIncludeLambda(LambdaExpression lambdaExpression)
     {
-        if (!lambdaExpression.TryGetComplexMemberAccess(out var members))
+        if (!TryGetComplexMemberAccess(lambdaExpression, out var members))
         {
             throw new InvalidOperationException("The specified include expression is not supported.");
         }
@@ -362,7 +361,8 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
     private static bool IsIncludeOrThenIncludeMethod(MethodInfo method)
     {
         return method?.DeclaringType == typeof(EntityFrameworkQueryableExtensions)
-            && method.Name.EndsWith(nameof(EntityFrameworkQueryableExtensions.Include));
+            && (method.Name.Equals(nameof(EntityFrameworkQueryableExtensions.Include))
+                || method.Name.Equals(nameof(EntityFrameworkQueryableExtensions.ThenInclude)));
     }
 
     private static bool IsThenIncludeMethod(MethodInfo method)
@@ -382,27 +382,23 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
 
         return entityType;
     }
-}
 
-internal static class ExpressionExtensionsShim
-{
     public static bool TryGetComplexMemberAccess(
-        this LambdaExpression memberAccessLambda,
+        LambdaExpression memberAccessLambda,
         out IReadOnlyList<MemberInfo> memberPath)
     {
         Debug.Assert(memberAccessLambda.Parameters.Count == 1);
 
         memberPath
-            = memberAccessLambda
-                .Parameters
-                .Single()
-                .MatchMemberAccess(memberAccessLambda.Body);
+            = MatchMemberAccess(
+                memberAccessLambda.Parameters.Single(),
+                memberAccessLambda.Body);
 
         return memberPath is not null;
     }
 
     private static List<MemberInfo> MatchMemberAccess(
-        this Expression parameterExpression, 
+        Expression parameterExpression,
         Expression memberAccessExpression)
     {
         var members = new List<MemberInfo>();
@@ -429,7 +425,7 @@ internal static class ExpressionExtensionsShim
         return members;
     }
 
-    public static Expression RemoveConvert(this Expression expression)
+    private static Expression RemoveConvert(Expression expression)
     {
         while (expression is not null
                && (expression.NodeType == ExpressionType.Convert
@@ -441,9 +437,9 @@ internal static class ExpressionExtensionsShim
         return expression;
     }
 
-    public static Expression RemoveTypeAs(this Expression expression)
+    private static Expression RemoveTypeAs(Expression expression)
     {
-        while ((expression?.NodeType == ExpressionType.TypeAs))
+        while (expression?.NodeType == ExpressionType.TypeAs)
         {
             expression = RemoveConvert(((UnaryExpression)expression).Operand);
         }
