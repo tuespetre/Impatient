@@ -30,7 +30,7 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
 
                 var entityType = entityMaterializationExpression.EntityType;
                 var materializer = Visit(entityMaterializationExpression.Expression);
-                var materializerInvocation = new CollectionNavigationFixupExpressionVisitor(model).Visit(materializer);
+                var materializerInvocation = new CollectionNavigationFixupExpressionVisitor(model, entityType).Visit(materializer);
 
                 var identifier = $"MaterializeEntity_{entityType.DisplayName()}";
 
@@ -117,19 +117,17 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
         }
     }
 
-    private class CollectionNavigationFixupExpressionVisitor : ExpressionVisitor
+    private class CollectionNavigationFixupExpressionVisitor(IModel model, IEntityType entityType) : ExpressionVisitor
     {
-        private readonly IModel model;
-
-        public CollectionNavigationFixupExpressionVisitor(IModel model)
-        {
-            this.model = model;
-        }
-
         protected override Expression VisitExtension(Expression node)
         {
             switch (node)
             {
+                case EntityMaterializationExpression entityMaterializationExpression:
+                {
+                    throw new NotImplementedException();
+                }
+
                 case ExtendedMemberInitExpression extendedMemberInitExpression:
                 {
                     return VisitExtendedMemberInit(extendedMemberInitExpression);
@@ -147,27 +145,22 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
             var newExpression = VisitAndConvert(node.NewExpression, nameof(VisitMemberInit));
             var bindings = node.Bindings.Select(VisitMemberBinding).ToArray();
 
-            var entityType = model.FindEntityType(node.Type);
+            var collectionMembers
+                = from n in entityType.GetNavigations()
+                    where n.IsCollection
+                    from m in new[] { n.GetSemanticReadableMemberInfo(), n.GetWritableMemberInfo() }
+                    select m;
 
-            if (entityType is not null)
+            for (var i = 0; i < bindings.Length; i++)
             {
-                var collectionMembers
-                    = from n in entityType.GetNavigations()
-                      where n.IsCollection
-                      from m in new[] { n.GetSemanticReadableMemberInfo(), n.GetWritableMemberInfo() }
-                      select m;
-
-                for (var i = 0; i < bindings.Length; i++)
+                if (collectionMembers.Contains(bindings[i].Member))
                 {
-                    if (collectionMembers.Contains(bindings[i].Member))
-                    {
-                        var collection = ((MemberAssignment)bindings[i]).Expression.AsCollectionType();
-                        var elementType = collection.Type.GetSequenceType();
-                        //var elementType = bindings[i].Member.GetMemberType().GetSequenceType();
-                        var listType = typeof(List<>).MakeGenericType(elementType);
+                    var collection = ((MemberAssignment)bindings[i]).Expression.AsCollectionType();
+                    var elementType = collection.Type.GetSequenceType();
+                    //var elementType = bindings[i].Member.GetMemberType().GetSequenceType();
+                    var listType = typeof(List<>).MakeGenericType(elementType);
 
-                        bindings[i] = Bind(bindings[i].Member, Coalesce(collection, New(listType)));
-                    }
+                    bindings[i] = Bind(bindings[i].Member, Coalesce(collection, New(listType)));
                 }
             }
 
@@ -179,26 +172,21 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
             var newExpression = VisitAndConvert(node.NewExpression, nameof(VisitExtendedMemberInit));
             var arguments = Visit(node.Arguments).ToArray();
 
-            var entityType = model.FindEntityType(node.Type);
+            var collectionMembers
+                = from n in entityType.GetNavigations()
+                    where n.IsCollection
+                    from m in new[] { n.GetSemanticReadableMemberInfo(), n.GetWritableMemberInfo() }
+                    select m;
 
-            if (entityType is not null)
+            for (var i = 0; i < arguments.Length; i++)
             {
-                var collectionMembers
-                    = from n in entityType.GetNavigations()
-                      where n.IsCollection
-                      from m in new[] { n.GetSemanticReadableMemberInfo(), n.GetWritableMemberInfo() }
-                      select m;
-
-                for (var i = 0; i < arguments.Length; i++)
+                if (collectionMembers.Contains(node.WritableMembers[i]))
                 {
-                    if (collectionMembers.Contains(node.WritableMembers[i]))
-                    {
-                        var collection = arguments[i].AsCollectionType();
-                        var elementType = collection.Type.GetSequenceType();
-                        var listType = typeof(List<>).MakeGenericType(elementType);
+                    var collection = arguments[i].AsCollectionType();
+                    var elementType = collection.Type.GetSequenceType();
+                    var listType = typeof(List<>).MakeGenericType(elementType);
 
-                        arguments[i] = Coalesce(collection, New(listType));
-                    }
+                    arguments[i] = Coalesce(collection, New(listType));
                 }
             }
 

@@ -1,4 +1,5 @@
-﻿using Impatient.Query.Expressions;
+﻿using Impatient.EntityFrameworkCore.SqlServer.Expressions;
+using Impatient.Query.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
@@ -28,7 +29,12 @@ public class OwnedTypeIncludeComposingExpressionVisitor : ExpressionVisitor
 
         if (node is EnumerableRelationalQueryExpression query)
         {
-            var entityType = model.FindEntityType(query.SelectExpression.Type);
+            var entityType = (query.SelectExpression.Projection.Flatten().Body as EntityMaterializationExpression)?.EntityType;
+
+            if (entityType is null)
+            {
+                entityType = model.FindFirstEntityType(query.SelectExpression.Type);
+            }
 
             if (entityType is not null)
             {

@@ -82,6 +82,7 @@ public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
                 }
             }
 
+            // TODO: consider whether this is still needed, but maybe in a modified way
             //var result = new UntrackingExpressionVisitor().Visit(node);
             var result = node;
 
@@ -119,6 +120,67 @@ public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
         }
 
         return node;
+    }
+
+    private MaterializerAccessorInfo[] GenerateAccessors(MaterializerPathInfo[] pathInfos)
+    {
+        var accessorInfos = new List<MaterializerAccessorInfo>();
+
+        foreach (var pathInfo in pathInfos)
+        {
+            var entityTypes = model.FindEntityTypes(pathInfo.Type).ToArray();
+            var entityType = entityTypes.FirstOrDefault();
+
+            if (entityTypes.Length > 1)
+            {
+                var targetMember = pathInfo.Path.Last();
+                var resolvedEntityType = default(IEntityType);
+
+                foreach (var candidateType in entityTypes)
+                {
+                    foreach (var foreignKey in candidateType.GetForeignKeys())
+                    {
+                        if (foreignKey.IsOwnership
+                            && foreignKey.PrincipalToDependent.GetSemanticReadableMemberInfo() == targetMember)
+                        {
+                            resolvedEntityType = candidateType;
+                            goto Resolved;
+                        }
+                    }
+                }
+
+                if (resolvedEntityType is null)
+                {
+                    throw new InvalidOperationException();
+                }
+
+            Resolved:
+                entityType = resolvedEntityType;
+            }
+
+            // TODO: remove the stuff above?
+
+            var getter = GenerateGetter(pathInfo);
+
+            var setter = GenerateSetter(pathInfo);
+
+            var subAccessors = default(MaterializerAccessorInfo[]);
+
+            if (pathInfo.SubPaths != null)
+            {
+                subAccessors = GenerateAccessors(pathInfo.SubPaths);
+            }
+
+            accessorInfos.Add(new MaterializerAccessorInfo
+            {
+                EntityType = entityType,
+                GetValue = getter,
+                SetValue = setter,
+                SubAccessors = subAccessors,
+            });
+        }
+
+        return accessorInfos.ToArray();
     }
 
     private Func<object, object> GenerateGetter(MaterializerPathInfo pathInfo)
@@ -234,11 +296,7 @@ public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
 
         var propertyInfo = (PropertyInfo)memberInfo;
 
-        var configuredField
-            = model.GetEntityTypes()
-                .Where(e => e.ClrType == propertyInfo.DeclaringType)
-                .FirstOrDefault()
-                ?.FindNavigation(propertyInfo).FieldInfo;
+        var configuredField = GetNavigationForMember(memberInfo)?.FieldInfo;
 
         return configuredField ?? propertyInfo.FindBackingField() ?? memberInfo;
     }
@@ -254,11 +312,7 @@ public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
 
         if (!propertyInfo.CanWrite)
         {
-            var configuredField
-                = model.GetEntityTypes()
-                    .Where(e => e.ClrType == propertyInfo.DeclaringType)
-                    .FirstOrDefault()
-                    ?.FindNavigation(propertyInfo).FieldInfo;
+            var configuredField = GetNavigationForMember(memberInfo)?.FieldInfo;
 
             return configuredField ?? propertyInfo.FindBackingField() ?? memberInfo;
         }
@@ -266,65 +320,24 @@ public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
         return memberInfo;
     }
 
-    private MaterializerAccessorInfo[] GenerateAccessors(MaterializerPathInfo[] pathInfos)
+    private INavigationBase GetNavigationForMember(MemberInfo targetMember)
     {
-        var accessorInfos = new List<MaterializerAccessorInfo>();
-
-        foreach (var pathInfo in pathInfos)
+        foreach (var candidateType in model.FindEntityTypes(targetMember.GetMemberType()))
         {
-            var getter = GenerateGetter(pathInfo);
-
-            var setter = GenerateSetter(pathInfo);
-
-            var subAccessors = default(MaterializerAccessorInfo[]);
-
-            if (pathInfo.SubPaths != null)
+            foreach (var foreignKey in candidateType.GetForeignKeys())
             {
-                subAccessors = GenerateAccessors(pathInfo.SubPaths);
-            }
-
-            var type = pathInfo.Type;
-
-            var entityTypes = model.GetEntityTypes().Where(t => t.ClrType == type).ToArray();
-            var entityType = entityTypes.FirstOrDefault();
-
-            if (entityTypes.Length > 1)
-            {
-                var targetMember = pathInfo.Path.Last();
-                var resolvedEntityType = default(IEntityType);
-
-                foreach (var candidateType in entityTypes)
+                if (foreignKey.PrincipalToDependent?.GetSemanticReadableMemberInfo() == targetMember)
                 {
-                    foreach (var foreignKey in candidateType.GetForeignKeys())
-                    {
-                        if (foreignKey.IsOwnership
-                            && foreignKey.PrincipalToDependent.GetSemanticReadableMemberInfo() == targetMember)
-                        {
-                            resolvedEntityType = candidateType;
-                            goto Resolved;
-                        }
-                    }
+                    return foreignKey.PrincipalToDependent;
                 }
-
-                if (resolvedEntityType is null)
+                else if (foreignKey.DependentToPrincipal?.GetSemanticReadableMemberInfo() == targetMember)
                 {
-                    throw new InvalidOperationException();
+                    return foreignKey.DependentToPrincipal;
                 }
-
-            Resolved:
-                entityType = resolvedEntityType;
             }
-
-            accessorInfos.Add(new MaterializerAccessorInfo
-            {
-                EntityType = entityType,
-                GetValue = getter,
-                SetValue = setter,
-                SubAccessors = subAccessors,
-            });
         }
 
-        return accessorInfos.ToArray();
+        return null;
     }
 
     private class UntrackingExpressionVisitor : ExpressionVisitor
@@ -479,7 +492,7 @@ public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
         }
     }
 
-    private class MaterializerPathInfo
+    private struct MaterializerPathInfo
     {
         public Type Type;
         public MemberInfo[] Path;

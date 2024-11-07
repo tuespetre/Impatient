@@ -103,7 +103,7 @@ public static class ReflectionExtensions
 
     public static bool IsSequenceType(this Type type)
     {
-        return type != typeof(string) && type.IsGenericType(typeof(IEnumerable<>));
+        return type.IsGenericType(typeof(IEnumerable<>)) && !type.IsScalarType();
     }
 
     public static Type GetSequenceType(this Type type)

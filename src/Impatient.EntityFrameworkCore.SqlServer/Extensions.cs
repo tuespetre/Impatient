@@ -46,7 +46,7 @@ internal static class Extensions
 
             case PropertyAccessMode.Property:
             {
-                return propertyBase.GetReadablePropertyInfo() 
+                return propertyBase.GetReadablePropertyInfo()
                     ?? throw new InvalidOperationException();
             }
 
@@ -153,5 +153,34 @@ internal static class Extensions
     public static IEnumerable<INavigation> FindDerivedNavigations(this IEntityType entityType, string name)
     {
         return entityType.GetDerivedTypes().Select(t => t.FindDeclaredNavigation(name)).Where(n => n != null);
+    }
+
+    public static INavigationBase FindNavigationBase(this IEntityType entityType, MemberInfo member)
+    {
+        INavigationBase navigation = entityType.FindNavigation(member);
+
+        if (navigation is not null)
+        {
+            return navigation;
+        }
+
+        navigation = entityType.FindSkipNavigation(member);
+
+        if (navigation is not null)
+        {
+            return navigation;
+        }
+
+        navigation
+            = entityType
+                .FindDerivedNavigations(member.Name)
+                .SingleOrDefault(n => n.PropertyInfo == member || n.FieldInfo == member);
+
+        return navigation;
+    }
+
+    public static IEntityType FindFirstEntityType(this IModel model, Type type)
+    {
+        return model.FindEntityTypes(type).FirstOrDefault();
     }
 }

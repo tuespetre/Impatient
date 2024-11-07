@@ -234,20 +234,7 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
 
         foreach (var member in members)
         {
-            INavigationBase navigation = entityType.FindNavigation(member);
-
-            if (navigation is null)
-            {
-                navigation = entityType.FindSkipNavigation(member);
-            }
-
-            if (navigation is null)
-            {
-                navigation
-                    = entityType
-                        .FindDerivedNavigations(member.Name)
-                        .SingleOrDefault(n => n.PropertyInfo == member || n.FieldInfo == member);
-            }
+            var navigation = entityType.FindNavigationBase(member);
 
             if (navigation is null)
             {
@@ -373,7 +360,7 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
 
     private IEntityType GetEntityTypeForInclude(Type type)
     {
-        var entityType = model.GetEntityTypes().SingleOrDefault(t => t.ClrType == type);
+        var entityType = model.FindFirstEntityType(type);
 
         if (entityType is null)
         {
@@ -407,7 +394,7 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
 
         do
         {
-            memberExpression = RemoveTypeAs(RemoveConvert(memberAccessExpression)) as MemberExpression;
+            memberExpression = RemoveConvert(memberAccessExpression) as MemberExpression;
 
             var member = memberExpression?.Member;
 
@@ -420,28 +407,16 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
 
             memberAccessExpression = memberExpression.Expression;
         }
-        while (RemoveTypeAs(RemoveConvert(memberExpression.Expression)) != parameterExpression);
+        while (RemoveConvert(memberExpression.Expression) != parameterExpression);
 
         return members;
     }
 
     private static Expression RemoveConvert(Expression expression)
     {
-        while (expression is not null
-               && (expression.NodeType == ExpressionType.Convert
-                   || expression.NodeType == ExpressionType.ConvertChecked))
+        while (expression is { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked or ExpressionType.TypeAs })
         {
-            expression = RemoveConvert(((UnaryExpression)expression).Operand);
-        }
-
-        return expression;
-    }
-
-    private static Expression RemoveTypeAs(Expression expression)
-    {
-        while (expression?.NodeType == ExpressionType.TypeAs)
-        {
-            expression = RemoveConvert(((UnaryExpression)expression).Operand);
+            expression = ((UnaryExpression)expression).Operand;
         }
 
         return expression;

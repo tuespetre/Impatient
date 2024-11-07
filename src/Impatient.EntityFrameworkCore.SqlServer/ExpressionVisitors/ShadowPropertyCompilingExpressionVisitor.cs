@@ -33,7 +33,7 @@ public class ShadowPropertyCompilingExpressionVisitor : ExpressionVisitor
             var expression = arguments[0].UnwrapInnerExpression();
             var propertyNameArgument = arguments[1];
 
-            var entityType = model.FindEntityType(expression.Type);
+            var entityType = model.FindFirstEntityType(expression.Type);
 
             if (entityType is not null)
             {
@@ -83,7 +83,7 @@ public class ShadowPropertyCompilingExpressionVisitor : ExpressionVisitor
 
                 var finalExpression = default(Expression);
 
-                if (model.GetEntityTypes().Any(t => t.ClrType == node.Type))
+                if (model.FindEntityTypes(node.Type).Any())
                 {
                     finalExpression =
                         Expression.MakeMemberAccess(

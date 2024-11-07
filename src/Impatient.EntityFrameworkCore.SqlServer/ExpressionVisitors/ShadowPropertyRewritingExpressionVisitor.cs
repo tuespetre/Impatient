@@ -37,7 +37,7 @@ public class ShadowPropertyRewritingExpressionVisitor : ExpressionVisitor
             }
 
             // TODO: used to be SingleOrDefault. something is probably wrong here (as in, with using FirstOrDefault)
-            var entityType = model.GetEntityTypes().FirstOrDefault(t => t.ClrType == arguments[0].Type);
+            var entityType = model.FindFirstEntityType(arguments[0].Type);
 
             if (entityType is not null)
             {
