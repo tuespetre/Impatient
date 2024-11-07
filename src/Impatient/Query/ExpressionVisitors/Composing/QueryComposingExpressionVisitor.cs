@@ -3261,6 +3261,11 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
 
         switch (node)
         {
+            case AnnotationExpression annotation:
+            {
+                return ProcessQuerySource(annotation.Expression);
+            }
+
             case GroupedRelationalQueryExpression query:
             {
                 var selectExpression = query.SelectExpression;

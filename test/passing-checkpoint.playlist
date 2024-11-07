@@ -10747,6 +10747,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTRelationshipsQueryImpatientTest.Changes_in_derived_related_entities_are_detected" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTRelationshipsQueryImpatientTest.Collection_projection_on_base_type_split" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTRelationshipsQueryImpatientTest.Collection_projection_on_base_type_split" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -16101,6 +16107,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCRelationshipsQueryImpatientTest.Changes_in_derived_related_entities_are_detected" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCRelationshipsQueryImpatientTest.Collection_projection_on_base_type_split" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCRelationshipsQueryImpatientTest.Collection_projection_on_base_type_split" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -17028,6 +17040,474 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Collection_projection_over_GroupBy_over_parameter" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Collection_projection_over_GroupBy_over_parameter" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_collection_and_include" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_collection_and_include" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Complex_multi_include_with_order_by_and_paging_joins_on_correct_key2" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Complex_multi_include_with_order_by_and_paging_joins_on_correct_key2" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_with_Include2" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_with_Include2" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_collection_navigation_nested_anonymous" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_collection_navigation_nested_anonymous" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_multiple_orderbys_complex" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_multiple_orderbys_complex" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Take_on_correlated_collection_in_projection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Take_on_correlated_collection_in_projection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_collection_navigation_using_ef_property" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_collection_navigation_using_ef_property" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_multiple_orderbys_methodcall" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_multiple_orderbys_methodcall" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Skip_Take_on_grouping_element_with_collection_include" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Skip_Take_on_grouping_element_with_collection_include" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_multiple_orderbys_complex_repeated" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_multiple_orderbys_complex_repeated" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Orderby_SelectMany_with_Include1" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Orderby_SelectMany_with_Include1" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Multiple_complex_include_select" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Multiple_complex_include_select" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Final_GroupBy_property_entity_Include_collection_reference_same_level" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Final_GroupBy_property_entity_Include_collection_reference_same_level" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_collection_navigation_composed" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_collection_navigation_composed" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_with_Include_and_order_by" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_with_Include_and_order_by" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_reference_and_collection_order_by" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_reference_and_collection_order_by" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Complex_multi_include_with_order_by_and_paging_joins_on_correct_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Complex_multi_include_with_order_by_and_paging_joins_on_correct_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Final_GroupBy_property_entity_Include_collection_reference" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Final_GroupBy_property_entity_Include_collection_reference" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_with_order_by_and_Include" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_with_order_by_and_Include" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_partially_added_before_Where_and_then_build_upon" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_partially_added_before_Where_and_then_build_upon" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_ThenInclude_two_references" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_ThenInclude_two_references" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_navigation_and_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_navigation_and_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Complex_query_issue_21665" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Complex_query_issue_21665" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Multiple_complex_includes" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Multiple_complex_includes" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Skip_Take_on_grouping_element_inside_collection_projection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Skip_Take_on_grouping_element_inside_collection_projection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_collection_and_root_entity" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_collection_and_root_entity" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_multiple_orderbys_member" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_multiple_orderbys_member" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_groupby_in_subquery" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_groupby_in_subquery" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_ThenInclude_ThenInclude_followed_by_two_nested_selects" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_ThenInclude_ThenInclude_followed_by_two_nested_selects" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Projecting_collection_after_optional_reference_correlated_with_parent" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Projecting_collection_after_optional_reference_correlated_with_parent" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Projecting_collection_with_FirstOrDefault" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Projecting_collection_with_FirstOrDefault" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_followed_by_projecting_the_included_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_followed_by_projecting_the_included_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_reference_ThenInclude_collection_order_by" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_reference_ThenInclude_collection_order_by" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_after_SelectMany" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_after_SelectMany" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Projecting_collection_with_group_by_after_optional_reference_correlated_with_parent" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Projecting_collection_with_group_by_after_optional_reference_correlated_with_parent" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Complex_multi_include_with_order_by_and_paging" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Complex_multi_include_with_order_by_and_paging" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.FirstOrDefault_with_predicate_on_correlated_collection_in_projection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.FirstOrDefault_with_predicate_on_correlated_collection_in_projection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Multiple_SelectMany_with_Include" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Multiple_SelectMany_with_Include" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Final_GroupBy_property_entity_Include_collection_nested" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Final_GroupBy_property_entity_Include_collection_nested" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Final_GroupBy_property_entity_Include_reference_multiple" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Final_GroupBy_property_entity_Include_reference_multiple" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Multiple_SelectMany_navigation_property_followed_by_select_collection_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Multiple_SelectMany_navigation_property_followed_by_select_collection_navigation" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_with_Include1" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_with_Include1" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_multiple_orderbys_property" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_multiple_orderbys_property" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_conditional_order_by" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_conditional_order_by" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_groupby_in_subquery_and_filter_before_groupby" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_groupby_in_subquery_and_filter_before_groupby" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_collection_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_collection_navigation" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_reference_collection_order_by_reference_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_reference_collection_order_by_reference_navigation" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Final_GroupBy_property_entity_Include_reference" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Final_GroupBy_property_entity_Include_reference" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Including_reference_navigation_and_projecting_collection_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Including_reference_navigation_and_projecting_collection_navigation" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Multi_level_include_correct_PK_is_chosen_as_the_join_predicate_for_queries_that_join_same_table_multiple_times" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Multi_level_include_correct_PK_is_chosen_as_the_join_predicate_for_queries_that_join_same_table_multiple_times" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_DefaultIfEmpty_multiple_times_with_joins_projecting_a_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_DefaultIfEmpty_multiple_times_with_joins_projecting_a_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_then_reference" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_then_reference" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_reference_followed_by_include_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_reference_followed_by_include_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_multiple_orderbys_complex_repeated_checked" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_multiple_orderbys_complex_repeated_checked" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_with_navigation_and_Distinct_projecting_columns_including_join_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_with_navigation_and_Distinct_projecting_columns_including_join_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_nested_with_optional_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_nested_with_optional_navigation" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_collection_navigation_nested" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_collection_navigation_nested" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Lift_projection_mapping_when_pushing_down_subquery" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Lift_projection_mapping_when_pushing_down_subquery" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_followed_by_include_reference" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_followed_by_include_reference" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_multiple" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_multiple" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_with_predicate_and_DefaultIfEmpty_projecting_root_collection_element_and_another_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_with_predicate_and_DefaultIfEmpty_projecting_root_collection_element_and_another_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Take_Select_collection_Take" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Take_Select_collection_Take" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_collection_navigation_nested_with_take" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Project_collection_navigation_nested_with_take" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Complex_SelectMany_with_nested_navigations_and_explicit_DefaultIfEmpty_with_other_query_operators_composed_on_top" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Complex_SelectMany_with_nested_navigations_and_explicit_DefaultIfEmpty_with_other_query_operators_composed_on_top" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_navigation_property_with_include_and_followed_by_select_collection_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_navigation_property_with_include_and_followed_by_select_collection_navigation" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Final_GroupBy_property_entity_Include_collection_multiple" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Final_GroupBy_property_entity_Include_collection_multiple" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Multiple_complex_includes_self_ref" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Multiple_complex_includes_self_ref" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Skip_Take_on_grouping_element_with_reference_include" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Skip_Take_on_grouping_element_with_reference_include" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_navigation_property_followed_by_select_collection_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_navigation_property_followed_by_select_collection_navigation" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_multiple_with_filter" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_multiple_with_filter" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_with_Include_ThenInclude" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_with_Include_ThenInclude" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_with_navigation_and_Distinct" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.SelectMany_with_navigation_and_Distinct" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Final_GroupBy_property_entity_Include_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Final_GroupBy_property_entity_Include_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_groupby_in_subquery_and_filter_after_groupby" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_collection_with_groupby_in_subquery_and_filter_after_groupby" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Multi_level_include_one_to_many_optional_and_one_to_many_optional_produces_valid_sql" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Multi_level_include_one_to_many_optional_and_one_to_many_optional_produces_valid_sql" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Select_nav_prop_collection_one_to_many_required" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Select_nav_prop_collection_one_to_many_required" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Multiple_include_with_multiple_optional_navigations" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Multiple_include_with_multiple_optional_navigations" />
                       </Rule>
                     </Rule>
                   </Rule>
@@ -21903,6 +22383,414 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Take_on_grouping_element" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_with_conditional_order_by" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_with_conditional_order_by" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_reference_ThenInclude_collection_order_by" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_reference_ThenInclude_collection_order_by" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_navigation_property_followed_by_select_collection_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_navigation_property_followed_by_select_collection_navigation" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_after_SelectMany" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_after_SelectMany" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_navigation_property_with_include_and_followed_by_select_collection_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_navigation_property_with_include_and_followed_by_select_collection_navigation" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Final_GroupBy_property_entity_Include_collection_reference_same_level" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Final_GroupBy_property_entity_Include_collection_reference_same_level" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_with_groupby_in_subquery" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_with_groupby_in_subquery" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_then_reference" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_then_reference" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_collection_and_root_entity" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_collection_and_root_entity" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_collection_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_collection_navigation" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Skip_Take_on_grouping_element_with_reference_include" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Skip_Take_on_grouping_element_with_reference_include" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Complex_multi_include_with_order_by_and_paging" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Complex_multi_include_with_order_by_and_paging" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_partially_added_before_Where_and_then_build_upon" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_partially_added_before_Where_and_then_build_upon" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_with_groupby_in_subquery_and_filter_before_groupby" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_with_groupby_in_subquery_and_filter_before_groupby" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_with_navigation_and_Distinct" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_with_navigation_and_Distinct" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_collection_and_include" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_collection_and_include" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_collection_navigation_nested_anonymous" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_collection_navigation_nested_anonymous" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Multi_level_include_correct_PK_is_chosen_as_the_join_predicate_for_queries_that_join_same_table_multiple_times" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Multi_level_include_correct_PK_is_chosen_as_the_join_predicate_for_queries_that_join_same_table_multiple_times" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_multiple" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_multiple" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.FirstOrDefault_with_predicate_on_correlated_collection_in_projection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.FirstOrDefault_with_predicate_on_correlated_collection_in_projection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_with_order_by_and_Include" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_with_order_by_and_Include" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Final_GroupBy_property_entity_Include_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Final_GroupBy_property_entity_Include_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Select_nav_prop_collection_one_to_many_required" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Select_nav_prop_collection_one_to_many_required" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_with_Include2" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_with_Include2" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Multiple_include_with_multiple_optional_navigations" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Multiple_include_with_multiple_optional_navigations" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_collection_navigation_composed" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_collection_navigation_composed" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Multiple_complex_includes" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Multiple_complex_includes" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_reference_collection_order_by_reference_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_reference_collection_order_by_reference_navigation" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Take_on_correlated_collection_in_projection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Take_on_correlated_collection_in_projection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_with_Include1" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_with_Include1" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Final_GroupBy_property_entity_Include_reference" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Final_GroupBy_property_entity_Include_reference" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Skip_Take_Select_collection_Skip_Take" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Skip_Take_Select_collection_Skip_Take" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Orderby_SelectMany_with_Include1" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Orderby_SelectMany_with_Include1" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_with_Include_ThenInclude" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_with_Include_ThenInclude" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Final_GroupBy_property_entity_Include_collection_multiple" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Final_GroupBy_property_entity_Include_collection_multiple" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_collection_navigation_using_ef_property" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_collection_navigation_using_ef_property" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Projecting_collection_after_optional_reference_correlated_with_parent" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Projecting_collection_after_optional_reference_correlated_with_parent" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_collection_navigation_nested" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_collection_navigation_nested" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Final_GroupBy_property_entity_Include_collection_nested" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Final_GroupBy_property_entity_Include_collection_nested" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Complex_multi_include_with_order_by_and_paging_joins_on_correct_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Complex_multi_include_with_order_by_and_paging_joins_on_correct_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_with_Include_and_order_by" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_with_Include_and_order_by" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_followed_by_projecting_the_included_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_followed_by_projecting_the_included_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Final_GroupBy_property_entity_Include_reference_multiple" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Final_GroupBy_property_entity_Include_reference_multiple" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Multiple_SelectMany_navigation_property_followed_by_select_collection_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Multiple_SelectMany_navigation_property_followed_by_select_collection_navigation" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Multiple_complex_include_select" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Multiple_complex_include_select" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_ThenInclude_two_references" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_ThenInclude_two_references" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_collection_navigation_nested_with_take" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_collection_navigation_nested_with_take" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Including_reference_navigation_and_projecting_collection_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Including_reference_navigation_and_projecting_collection_navigation" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Lift_projection_mapping_when_pushing_down_subquery" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Lift_projection_mapping_when_pushing_down_subquery" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_reference_and_collection_order_by" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_reference_and_collection_order_by" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Take_Select_collection_Take" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Take_Select_collection_Take" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_nested_with_optional_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_nested_with_optional_navigation" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_with_predicate_and_DefaultIfEmpty_projecting_root_collection_element_and_another_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.SelectMany_with_predicate_and_DefaultIfEmpty_projecting_root_collection_element_and_another_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Complex_multi_include_with_order_by_and_paging_joins_on_correct_key2" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Complex_multi_include_with_order_by_and_paging_joins_on_correct_key2" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Projecting_collection_with_FirstOrDefault" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Projecting_collection_with_FirstOrDefault" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_with_groupby_in_subquery_and_filter_after_groupby" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_with_groupby_in_subquery_and_filter_after_groupby" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_ThenInclude_ThenInclude_followed_by_two_nested_selects" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_ThenInclude_ThenInclude_followed_by_two_nested_selects" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_reference_followed_by_include_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_reference_followed_by_include_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_multiple_with_filter" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_multiple_with_filter" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Projecting_collection_with_group_by_after_optional_reference_correlated_with_parent" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Projecting_collection_with_group_by_after_optional_reference_correlated_with_parent" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Skip_Take_on_grouping_element_with_collection_include" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Skip_Take_on_grouping_element_with_collection_include" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Multi_level_include_one_to_many_optional_and_one_to_many_optional_produces_valid_sql" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Multi_level_include_one_to_many_optional_and_one_to_many_optional_produces_valid_sql" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_navigation_and_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Project_navigation_and_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Skip_Take_on_grouping_element_inside_collection_projection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Skip_Take_on_grouping_element_inside_collection_projection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_followed_by_include_reference" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_followed_by_include_reference" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Multiple_SelectMany_with_Include" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Multiple_SelectMany_with_Include" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Final_GroupBy_property_entity_Include_collection_reference" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Final_GroupBy_property_entity_Include_collection_reference" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -24694,6 +25582,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Any_nested_negated3" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Any_nested_negated3" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Projecting_collection_split" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Projecting_collection_split" />
                       </Rule>
                     </Rule>
                   </Rule>
@@ -32153,6 +33047,30 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindSplitIncludeQueryImpatientTest.Include_duplicate_collection_result_operator" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindSplitIncludeQueryImpatientTest.Include_reference_dependent_already_tracked" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindSplitIncludeQueryImpatientTest.Include_reference_dependent_already_tracked" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindSplitIncludeQueryImpatientTest.Include_collection_dependent_already_tracked" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindSplitIncludeQueryImpatientTest.Include_collection_dependent_already_tracked" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindSplitIncludeQueryImpatientTest.Include_collection_principal_already_tracked" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindSplitIncludeQueryImpatientTest.Include_collection_principal_already_tracked" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindSplitIncludeQueryImpatientTest.Include_empty_reference_sets_IsLoaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindSplitIncludeQueryImpatientTest.Include_empty_reference_sets_IsLoaded" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -33169,6 +34087,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindSplitIncludeNoTrackingQueryImpatientTest.Then_include_collection_order_by_collection_column" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindSplitIncludeNoTrackingQueryImpatientTest.Include_empty_reference_sets_IsLoaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindSplitIncludeNoTrackingQueryImpatientTest.Include_empty_reference_sets_IsLoaded" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -33678,6 +34602,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.InheritanceRelationshipsQueryImpatientTest.Changes_in_derived_related_entities_are_detected" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.InheritanceRelationshipsQueryImpatientTest.Changes_in_derived_related_entities_are_detected" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.InheritanceRelationshipsQueryImpatientTest.Collection_projection_on_base_type_split" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.InheritanceRelationshipsQueryImpatientTest.Collection_projection_on_base_type_split" />
                       </Rule>
                     </Rule>
                   </Rule>
@@ -42892,6 +43822,47 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_and_reference_unidirectional" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_and_reference_unidirectional" />
+                      </Rule>
+                    </Rule>
+                  </Rule>
+                </Rule>
+                <Rule Match="All">
+                  <Property Name="Class" Value="CompositeKeysSplitQueryImpatientTest" />
+                  <Rule Match="Any">
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.CompositeKeysSplitQueryImpatientTest.Projecting_multiple_collections_same_level_top_level_ordering" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.CompositeKeysSplitQueryImpatientTest.Projecting_multiple_collections_same_level_top_level_ordering" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.CompositeKeysSplitQueryImpatientTest.Projecting_multiple_collections_same_level_top_level_ordering_using_entire_composite_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.CompositeKeysSplitQueryImpatientTest.Projecting_multiple_collections_same_level_top_level_ordering_using_entire_composite_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.CompositeKeysSplitQueryImpatientTest.Projecting_multiple_collections_with_ordering_same_level" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.CompositeKeysSplitQueryImpatientTest.Projecting_multiple_collections_with_ordering_same_level" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.CompositeKeysSplitQueryImpatientTest.Projecting_multiple_collections_with_ordering_same_level_top_level_ordering" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.CompositeKeysSplitQueryImpatientTest.Projecting_multiple_collections_with_ordering_same_level_top_level_ordering" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.CompositeKeysSplitQueryImpatientTest.Projecting_multiple_collections_on_multiple_levels_no_explicit_ordering" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.CompositeKeysSplitQueryImpatientTest.Projecting_multiple_collections_on_multiple_levels_no_explicit_ordering" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.CompositeKeysSplitQueryImpatientTest.Projecting_collections_multi_level" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.CompositeKeysSplitQueryImpatientTest.Projecting_collections_multi_level" />
                       </Rule>
                     </Rule>
                   </Rule>

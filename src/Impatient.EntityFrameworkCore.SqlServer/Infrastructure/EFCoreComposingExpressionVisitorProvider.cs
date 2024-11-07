@@ -31,6 +31,10 @@ public class EFCoreComposingExpressionVisitorProvider : IComposingExpressionVisi
 
     public virtual IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
     {
+        // Turns calls to AsSplitQuery into annotation expressions
+
+        yield return new AsSplitQueryAnnotatingExpressionVisitor();
+
         // Before any composition, extract the 'query options' 
         // (AsTracking, AsNoTracking, AsNoTrackingWithIdentityResolution, IgnoreQueryFilters)
 
