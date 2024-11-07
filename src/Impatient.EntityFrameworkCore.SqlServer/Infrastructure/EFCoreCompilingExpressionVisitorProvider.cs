@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
-namespace Impatient.EntityFrameworkCore.SqlServer;
+namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 
 public class EFCoreCompilingExpressionVisitorProvider : DefaultCompilingExpressionVisitorProvider
 {
@@ -13,10 +13,10 @@ public class EFCoreCompilingExpressionVisitorProvider : DefaultCompilingExpressi
 
     public EFCoreCompilingExpressionVisitorProvider(
         ICurrentDbContext currentDbContext,
-        TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor, 
+        TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor,
         IQueryTranslatingExpressionVisitorFactory queryTranslatingExpressionVisitorFactory,
-        IReadValueExpressionFactoryProvider readValueExpressionFactoryProvider) 
-        : base(translatabilityAnalyzingExpressionVisitor, 
+        IReadValueExpressionFactoryProvider readValueExpressionFactoryProvider)
+        : base(translatabilityAnalyzingExpressionVisitor,
               queryTranslatingExpressionVisitorFactory,
               readValueExpressionFactoryProvider)
     {

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Impatient.EFCore.Tests.Fixtures;
+using Microsoft.EntityFrameworkCore;
 
 namespace Impatient.EFCore.Tests;
 

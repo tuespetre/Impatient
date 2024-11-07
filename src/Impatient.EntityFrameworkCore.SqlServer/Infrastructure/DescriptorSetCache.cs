@@ -1,9 +1,8 @@
-﻿using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
-using Impatient.Metadata;
+﻿using Impatient.Metadata;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
-namespace Impatient.EntityFrameworkCore.SqlServer;
+namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 
 public class DescriptorSetCache
 {

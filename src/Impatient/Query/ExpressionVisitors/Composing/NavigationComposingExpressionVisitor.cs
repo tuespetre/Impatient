@@ -1,6 +1,7 @@
 ﻿using Impatient.Extensions;
 using Impatient.Metadata;
 using Impatient.Query.Expressions;
+using Impatient.Query.ExpressionVisitors.Projection;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using System;

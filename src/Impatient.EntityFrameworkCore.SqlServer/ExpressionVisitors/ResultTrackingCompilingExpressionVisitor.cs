@@ -2,6 +2,7 @@
 using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 using Impatient.Extensions;
 using Impatient.Query.Expressions;
+using Impatient.Query.ExpressionVisitors.Projection;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.EntityFrameworkCore.SqlServer;
+namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
 
 public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
 {

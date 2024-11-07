@@ -1,8 +1,9 @@
 ﻿using Impatient.EntityFrameworkCore.SqlServer.Expressions;
+using Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
 using Impatient.Extensions;
 using Impatient.Metadata;
 using Impatient.Query.Expressions;
-using Impatient.Query.ExpressionVisitors.Utility;
+using Impatient.Query.ExpressionVisitors.Projection;
 using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;

@@ -1,7 +1,7 @@
 ﻿using Impatient.Query.Expressions;
 using System.Linq.Expressions;
 
-namespace Impatient.EntityFrameworkCore.SqlServer;
+namespace Impatient.EntityFrameworkCore.SqlServer.Expressions;
 
 /// <summary>
 /// An <see cref="AnnotationExpression"/> that wraps expressions

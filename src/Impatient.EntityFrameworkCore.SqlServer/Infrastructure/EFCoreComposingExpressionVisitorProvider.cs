@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
-namespace Impatient.EntityFrameworkCore.SqlServer;
+namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 
 public class EFCoreComposingExpressionVisitorProvider : IComposingExpressionVisitorProvider
 {
@@ -19,7 +19,7 @@ public class EFCoreComposingExpressionVisitorProvider : IComposingExpressionVisi
 
     public EFCoreComposingExpressionVisitorProvider(
         ICurrentDbContext currentDbContext,
-        TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor, 
+        TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor,
         IRewritingExpressionVisitorProvider rewritingExpressionVisitorProvider,
         IProviderSpecificRewritingExpressionVisitorProvider providerSpecificRewritingExpressionVisitor)
     {

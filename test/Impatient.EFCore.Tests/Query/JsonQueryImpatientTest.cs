@@ -1,5 +1,4 @@
-﻿using Impatient.EFCore.Tests.Fixtures;
-using Impatient.EFCore.Tests.Utilities;
+﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using System.Threading.Tasks;

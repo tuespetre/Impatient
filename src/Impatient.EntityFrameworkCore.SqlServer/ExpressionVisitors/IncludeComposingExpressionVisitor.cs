@@ -11,7 +11,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.EntityFrameworkCore.SqlServer;
+namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
 
 public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descriptorSet) : ExpressionVisitor
 {

@@ -1,4 +1,5 @@
-﻿using Impatient.Tests.Northwind;
+﻿using Impatient.EntityFrameworkCore.SqlServer;
+using Impatient.Tests.Northwind;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

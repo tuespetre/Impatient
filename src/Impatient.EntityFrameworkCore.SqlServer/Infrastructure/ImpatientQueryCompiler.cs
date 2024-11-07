@@ -15,7 +15,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Impatient.EntityFrameworkCore.SqlServer;
+namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 
 public partial class ImpatientQueryCompiler : IQueryCompiler
 {
@@ -85,7 +85,7 @@ public partial class ImpatientQueryCompiler : IQueryCompiler
     {
         var provider = GetQueryProvider();
 
-        var context 
+        var context
             = currentDbContext.Context
                 .GetService<IQueryProcessingContextFactory>()
                 .CreateQueryProcessingContext(provider);
@@ -126,7 +126,7 @@ public partial class ImpatientQueryCompiler : IQueryCompiler
                 parameterArray)
             .Compile();
 
-        return (QueryContext queryContext) =>
+        return (queryContext) =>
         {
             var arguments = new object[2 + discovered.Length];
 
@@ -155,7 +155,7 @@ public partial class ImpatientQueryCompiler : IQueryCompiler
     {
         var compiled = CreateCompiledQuery<TResult>(query);
 
-        return (QueryContext queryContext) =>
+        return (queryContext) =>
         {
             // TODO: wtf?
             return compiled(queryContext);
@@ -221,8 +221,8 @@ public partial class ImpatientQueryCompiler : IQueryCompiler
     private Expression PrepareQuery(Expression query)
     {
         return new QueryOptionsExpression(
-            query, 
-            currentDbContext.Context.ChangeTracker.QueryTrackingBehavior, 
+            query,
+            currentDbContext.Context.ChangeTracker.QueryTrackingBehavior,
             false,
             RelationalOptionsExtension.Extract(
                 currentDbContext.Context.GetService<IDbContextOptions>())

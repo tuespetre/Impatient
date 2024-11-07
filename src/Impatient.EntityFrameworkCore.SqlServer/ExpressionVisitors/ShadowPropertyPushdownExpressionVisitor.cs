@@ -7,7 +7,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using static Impatient.Extensions.ReflectionExtensions;
 
-namespace Impatient.EntityFrameworkCore.SqlServer;
+namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
 
 public class ShadowPropertyPushdownExpressionVisitor : SelectorPushdownExpressionVisitor
 {
@@ -53,7 +53,7 @@ public class ShadowPropertyPushdownExpressionVisitor : SelectorPushdownExpressio
 
                     var selectMethod = enumerableSelect;
 
-                    var selector 
+                    var selector
                         = (Expression)Expression.Lambda(
                             Expression.Call(node.Method, selectorParameter, arguments[1]),
                             selectorParameter);
@@ -83,7 +83,7 @@ public class ShadowPropertyPushdownExpressionVisitor : SelectorPushdownExpressio
 
                     var selector
                         = (Expression)Expression.Lambda(
-                            Expression.Call(node.Method, parameter, arguments[1]), 
+                            Expression.Call(node.Method, parameter, arguments[1]),
                             parameter);
 
                     if (methodCallExpression.Method.IsQueryableMethod())

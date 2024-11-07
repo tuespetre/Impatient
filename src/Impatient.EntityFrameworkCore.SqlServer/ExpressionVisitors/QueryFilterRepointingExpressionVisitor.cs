@@ -1,7 +1,7 @@
 ﻿using Impatient.Extensions;
 using System.Linq.Expressions;
 
-namespace Impatient.EntityFrameworkCore.SqlServer;
+namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
 
 public class QueryFilterRepointingExpressionVisitor : ExpressionVisitor
 {

@@ -8,7 +8,7 @@ using System.Linq;
 using System.Reflection;
 using static Impatient.Tests.Utilities.QueryExpressionHelper;
 
-namespace Impatient.Tests;
+namespace Impatient.Tests.ExpressionVisitors;
 
 [TestClass]
 public class NavigationRewritingExpressionVisitorTests
@@ -64,7 +64,7 @@ public class NavigationRewritingExpressionVisitorTests
                 GetExpression((OrderDetail d) => new { d.OrderID, d.ProductID })),
         };
 
-        services 
+        services
             = ExtensionMethods.CreateServiceProvider(
                 descriptorSet: new DescriptorSet(primaryKeyDescriptors, navigationDescriptors),
                 connectionString: NorthwindQueryContext.ConnectionString);

@@ -1,9 +1,9 @@
-﻿using Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
+﻿using Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
 using Impatient.Query.ExpressionVisitors.Optimizing;
 using Impatient.Query.Infrastructure;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
-namespace Impatient.EntityFrameworkCore.SqlServer;
+namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 
 internal class EFCoreQueryableInliningExpressionVisitorFactory : IQueryableInliningExpressionVisitorFactory
 {

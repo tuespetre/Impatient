@@ -5,7 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-namespace Microsoft.EntityFrameworkCore.Internal;
+namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 
 internal sealed class LegacyReferenceEqualityComparer : IEqualityComparer<object>, IEqualityComparer
 {

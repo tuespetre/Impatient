@@ -1,12 +1,13 @@
 ﻿using Impatient.Extensions;
 using Impatient.Query.Expressions;
+using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using static System.Linq.Enumerable;
 
-namespace Impatient.Query.ExpressionVisitors.Utility;
+namespace Impatient.Query.ExpressionVisitors.Projection;
 
 public class ProjectionReferenceRewritingExpressionVisitor : ExpressionVisitor
 {

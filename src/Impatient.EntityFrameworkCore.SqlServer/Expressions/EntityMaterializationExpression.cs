@@ -9,18 +9,18 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Impatient.EntityFrameworkCore.SqlServer;
+namespace Impatient.EntityFrameworkCore.SqlServer.Expressions;
 
 public class EntityMaterializationExpression : ExtraPropertiesExpression
 {
     public EntityMaterializationExpression(
-        IEntityType entityType, 
+        IEntityType entityType,
         QueryTrackingBehavior queryTrackingBehavior,
         Expression keyExpression,
         IEnumerable<IProperty> shadowProperties,
         IEnumerable<Expression> shadowPropertyExpressions,
         Expression expression,
-        IEnumerable<INavigation> includedNavigations = null) 
+        IEnumerable<INavigation> includedNavigations = null)
         : base(expression)
     {
         EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
@@ -67,10 +67,10 @@ public class EntityMaterializationExpression : ExtraPropertiesExpression
     public EntityMaterializationExpression UpdateQueryTrackingBehavior(QueryTrackingBehavior queryTrackingBehavior)
     {
         return new EntityMaterializationExpression(
-            EntityType, 
-            queryTrackingBehavior, 
-            KeyExpression, 
-            ShadowProperties, 
+            EntityType,
+            queryTrackingBehavior,
+            KeyExpression,
+            ShadowProperties,
             Properties,
             Expression,
             IncludedNavigations);
@@ -94,7 +94,7 @@ public class EntityMaterializationExpression : ExtraPropertiesExpression
         {
             var hash = EntityType.GetHashCode();
 
-            hash = (hash * 16777619) ^ comparer.GetHashCode(Expression);
+            hash = hash * 16777619 ^ comparer.GetHashCode(Expression);
 
             return hash;
         }

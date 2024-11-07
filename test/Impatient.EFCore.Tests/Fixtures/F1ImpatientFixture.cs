@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System;
 using System.Linq;
 
-namespace Impatient.EFCore.Tests;
+namespace Impatient.EFCore.Tests.Fixtures;
 
 public class F1ImpatientFixture : F1RelationalFixture<byte[]>
 {
@@ -81,7 +81,7 @@ public class F1ImpatientFixture : F1RelationalFixture<byte[]>
     {
         public BinaryVersionComparer()
             : base(
-                (l, r) => (l == null && r == null) || (l != null && r != null && l.SequenceEqual(r)),
+                (l, r) => l == null && r == null || l != null && r != null && l.SequenceEqual(r),
                 v => CalculateHashCode(v),
                 v => v == null ? null : v.ToList())
         {

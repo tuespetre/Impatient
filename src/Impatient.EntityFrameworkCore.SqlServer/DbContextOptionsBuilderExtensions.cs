@@ -1,8 +1,8 @@
-﻿using Impatient.EntityFrameworkCore.SqlServer;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using System;
 
-namespace Microsoft.EntityFrameworkCore;
+namespace Impatient.EntityFrameworkCore.SqlServer;
 
 public static class DbContextOptionsBuilderExtensions
 {
@@ -16,7 +16,7 @@ public static class DbContextOptionsBuilderExtensions
         }
 
         var extension = GetOrCreateExtension(builder);
-        
+
         ((IDbContextOptionsBuilderInfrastructure)builder).AddOrUpdateExtension(extension);
 
         return builder;
