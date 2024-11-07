@@ -553,7 +553,7 @@ public class ModelExpressionProvider
                        new SqlInExpression(
                            MakeColumnExpression(
                                principalTable,
-                               discriminatorProperty.GetColumnName(),
+                               discriminatorProperty.GetTableColumnMappings().Select(m => m.Column).Distinct().Single().Name,
                                discriminatorProperty),
                            Expression.NewArrayInit(
                                discriminatorProperty.ClrType,

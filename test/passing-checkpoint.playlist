@@ -8854,6 +8854,72 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_query_shared_nonhierarchy" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_manipulate_entities_sharing_row_independently" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_manipulate_entities_sharing_row_independently" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_update_just_dependents" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_update_just_dependents" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Optional_dependent_materialized_when_no_properties" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Optional_dependent_materialized_when_no_properties" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_share_required_columns" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_share_required_columns" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_query_shared" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_query_shared" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_change_principal_and_dependent_instance_non_derived" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_change_principal_and_dependent_instance_non_derived" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_insert_dependent_with_just_one_parent" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_insert_dependent_with_just_one_parent" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_use_optional_dependents_with_shared_concurrency_tokens" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_use_optional_dependents_with_shared_concurrency_tokens" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_query_shared_derived_hierarchy" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_query_shared_derived_hierarchy" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_change_dependent_instance_non_derived" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_change_dependent_instance_non_derived" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_change_principal_instance_non_derived" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TableSplittingImpatientTest.Can_change_principal_instance_non_derived" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -9083,6 +9149,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TPTTableSplittingImpatientTest.No_warn_when_save_optional_dependent_at_least_one_none_null" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TPTTableSplittingImpatientTest.No_warn_when_save_optional_dependent_at_least_one_none_null" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.TPTTableSplittingImpatientTest.Can_insert_dependent_with_just_one_parent" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.TPTTableSplittingImpatientTest.Can_insert_dependent_with_just_one_parent" />
                       </Rule>
                     </Rule>
                   </Rule>
