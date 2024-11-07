@@ -128,38 +128,6 @@ public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
 
         foreach (var pathInfo in pathInfos)
         {
-            var entityTypes = model.FindEntityTypes(pathInfo.Type).ToArray();
-            var entityType = entityTypes.FirstOrDefault();
-
-            if (entityTypes.Length > 1)
-            {
-                var targetMember = pathInfo.Path.Last();
-                var resolvedEntityType = default(IEntityType);
-
-                foreach (var candidateType in entityTypes)
-                {
-                    foreach (var foreignKey in candidateType.GetForeignKeys())
-                    {
-                        if (foreignKey.IsOwnership
-                            && foreignKey.PrincipalToDependent.GetSemanticReadableMemberInfo() == targetMember)
-                        {
-                            resolvedEntityType = candidateType;
-                            goto Resolved;
-                        }
-                    }
-                }
-
-                if (resolvedEntityType is null)
-                {
-                    throw new InvalidOperationException();
-                }
-
-            Resolved:
-                entityType = resolvedEntityType;
-            }
-
-            // TODO: remove the stuff above?
-
             var getter = GenerateGetter(pathInfo);
 
             var setter = GenerateSetter(pathInfo);
@@ -173,7 +141,6 @@ public class ResultTrackingCompilingExpressionVisitor : ExpressionVisitor
 
             accessorInfos.Add(new MaterializerAccessorInfo
             {
-                EntityType = entityType,
                 GetValue = getter,
                 SetValue = setter,
                 SubAccessors = subAccessors,

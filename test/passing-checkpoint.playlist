@@ -10669,6 +10669,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTRelationshipsQueryImpatientTest.Include_collection_with_inheritance_on_derived1_split" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTRelationshipsQueryImpatientTest.Changes_in_derived_related_entities_are_detected" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTRelationshipsQueryImpatientTest.Changes_in_derived_related_entities_are_detected" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -16015,6 +16021,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCRelationshipsQueryImpatientTest.Include_reference_with_inheritance_on_derived_with_filter4" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCRelationshipsQueryImpatientTest.Include_reference_with_inheritance_on_derived_with_filter4" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCRelationshipsQueryImpatientTest.Changes_in_derived_related_entities_are_detected" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCRelationshipsQueryImpatientTest.Changes_in_derived_related_entities_are_detected" />
                       </Rule>
                     </Rule>
                   </Rule>
@@ -33588,6 +33600,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.InheritanceRelationshipsQueryImpatientTest.Nested_include_with_inheritance_collection_collection_reverse_split" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.InheritanceRelationshipsQueryImpatientTest.Nested_include_with_inheritance_collection_collection_reverse_split" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.InheritanceRelationshipsQueryImpatientTest.Changes_in_derived_related_entities_are_detected" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.InheritanceRelationshipsQueryImpatientTest.Changes_in_derived_related_entities_are_detected" />
                       </Rule>
                     </Rule>
                   </Rule>
