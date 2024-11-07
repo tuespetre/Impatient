@@ -52,7 +52,13 @@ public class OwnedTypeIncludeComposingExpressionVisitor : ExpressionVisitor
 
     private static IEnumerable<(Type, string)> GetOwnedTypeIncludePaths(IEntityType entityType)
     {
-        foreach (var navigation in entityType.GetNavigations().Where(n => n.ForeignKey.IsOwnership && !n.IsOnDependent))
+        var navigations
+            = entityType
+                .GetNavigations()
+                .Concat(entityType.GetDerivedNavigations())
+                .Where(n => n.ForeignKey.IsOwnership && !n.IsOnDependent);
+
+        foreach (var navigation in navigations)
         {
             if (navigation.IsCollection && !navigation.TargetEntityType.IsMappedToJson())
             {
