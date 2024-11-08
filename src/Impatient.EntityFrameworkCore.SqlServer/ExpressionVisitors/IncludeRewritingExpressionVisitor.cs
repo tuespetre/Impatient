@@ -127,6 +127,13 @@ public class IncludeRewritingExpressionVisitor : ExpressionVisitor
                             if (name == navigation.Name
                                 || name == $"<{navigation.DeclaringType.ClrType.Name}>{navigation.Name}")
                             {
+                                if (path.Count == 0)
+                                {
+                                    Finished = true;
+
+                                    return extraPropertiesExpression.SetProperty(name, includedExpression);
+                                }
+
                                 var expression = Visit(extraPropertiesExpression.Properties[i]);
 
                                 if (Finished)

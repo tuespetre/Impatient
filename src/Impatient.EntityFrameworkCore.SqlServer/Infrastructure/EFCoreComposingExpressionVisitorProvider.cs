@@ -52,13 +52,33 @@ public class EFCoreComposingExpressionVisitorProvider : IComposingExpressionVisi
 
         yield return new KeyEqualityComposingExpressionVisitor(context.DescriptorSet);
 
-        yield return new NavigationComposingExpressionVisitor(context.DescriptorSet.NavigationDescriptors);
+        #region navigations and includes
 
-        yield return new OwnedTypeIncludeComposingExpressionVisitor(currentDbContext.Context.Model);
+        var navigationVisitor = new NavigationComposingExpressionVisitor(context.DescriptorSet.NavigationDescriptors);
+        var ownedTypeIncludeVisitor = new OwnedTypeIncludeComposingExpressionVisitor(currentDbContext.Context.Model);
+        var includeVisitor = new IncludeComposingExpressionVisitor(currentDbContext.Context.Model, context.DescriptorSet);
 
-        yield return new IncludeComposingExpressionVisitor(currentDbContext.Context.Model, context.DescriptorSet);
+        // compose navigations once before doing anything with includes.
 
-        yield return new NavigationComposingExpressionVisitor(context.DescriptorSet.NavigationDescriptors);
+        yield return navigationVisitor;
+
+        // pass one
+
+        yield return ownedTypeIncludeVisitor;
+
+        yield return includeVisitor;
+
+        yield return navigationVisitor;
+
+        // pass two -- this makes sure owned type includes are added on any types that were explicitly included with Include/ThenInclude from the first pass
+
+        yield return ownedTypeIncludeVisitor;
+
+        yield return includeVisitor;
+
+        yield return navigationVisitor;
+
+        #endregion
 
         yield return new TableAliasComposingExpressionVisitor();
 
