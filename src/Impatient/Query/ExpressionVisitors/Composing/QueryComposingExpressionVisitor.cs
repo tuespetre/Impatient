@@ -1963,7 +1963,9 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
         var outerProjection = outerSelectExpression.Projection.Flatten().Body;
         var selectorLambda = node.Arguments[1].UnwrapLambda();
 
-        if (!selectorLambda.Body.References(selectorLambda.Parameters[0]))
+        // TODO: check for more than just 'is not SqlColumnExpression' -- allow expressions composed with SqlColumnExpressions too
+        if (!selectorLambda.Body.References(selectorLambda.Parameters[0])
+            && selectorLambda.Body is not SqlColumnExpression)
         {
             // SQL Server Says:
             // The ORDER BY position number 42 is out of range of the number of items in the select list.
