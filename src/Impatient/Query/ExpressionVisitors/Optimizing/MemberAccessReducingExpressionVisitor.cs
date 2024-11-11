@@ -38,7 +38,7 @@ public class MemberAccessReducingExpressionVisitor : ExpressionVisitor
     {
         var expression = Visit(node.Expression);
 
-        switch (expression)
+        switch (expression.UnwrapInnerExpression())
         {
             case ExtendedMemberInitExpression extendedMemberInitExpression
             when FindExpressionForMember(extendedMemberInitExpression, node.Member, out var foundExpression):

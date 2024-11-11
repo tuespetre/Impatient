@@ -90,6 +90,25 @@ public class TPCGearsOfWarQueryImpatientTest : TPCGearsOfWarQueryRelationalTestB
         return base.Group_by_with_aggregate_max_on_entity_type(async);
     }
 
+    public override async Task Nav_rewrite_with_convert1(bool async)
+    {
+        await base.Nav_rewrite_with_convert1(async);
+
+        AssertSql("""
+            SELECT [l].[$empty] AS [$empty], [l].[Name] AS [Name], [l].[ThreatLevel] AS [ThreatLevel], [l].[ThreatLevelByte] AS [ThreatLevelByte], [l].[ThreatLevelNullableByte] AS [ThreatLevelNullableByte], [l].[DefeatedByNickname] AS [DefeatedByNickname], [l].[DefeatedBySquadId] AS [DefeatedBySquadId], [l].[HighCommandId] AS [HighCommandId]
+            FROM [LocustHordes] AS [f]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [c].[Name] AS [Name], [c].[Location] AS [Location], [c].[Nation] AS [Nation]
+                FROM [Cities] AS [c]
+            ) AS [c_0] ON [f].[CapitalName] = [c_0].[Name]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [l_0].[LocustHordeId] AS [LocustHordeId], [l_0].[Name] AS [Name], [l_0].[ThreatLevel] AS [ThreatLevel], [l_0].[ThreatLevelByte] AS [ThreatLevelByte], [l_0].[ThreatLevelNullableByte] AS [ThreatLevelNullableByte], [l_0].[DefeatedByNickname] AS [DefeatedByNickname], [l_0].[DefeatedBySquadId] AS [DefeatedBySquadId], [l_0].[HighCommandId] AS [HighCommandId]
+                FROM [LocustCommanders] AS [l_0]
+            ) AS [l] ON [f].[CommanderName] = [l].[Name]
+            WHERE ([c_0].[Name] IS NULL OR ([c_0].[Name] <> N'Foo'))
+            """);
+    }
+
     [Theory(Skip = ClientEval)]
     public override Task Orderby_added_for_client_side_GroupJoin_composite_dependent_to_principal_LOJ_when_incomplete_key_is_used(bool async)
     {

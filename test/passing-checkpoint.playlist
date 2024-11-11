@@ -12021,6 +12021,66 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Correlated_collection_order_by_constant" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Nav_rewrite_with_convert3" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Nav_rewrite_with_convert3" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Project_collection_navigation_with_inheritance3" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Project_collection_navigation_with_inheritance3" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Navigation_access_on_derived_entity_using_cast" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Navigation_access_on_derived_entity_using_cast" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Navigation_access_fk_on_derived_entity_using_cast" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Navigation_access_fk_on_derived_entity_using_cast" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Nav_rewrite_with_convert1" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Nav_rewrite_with_convert1" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Nav_rewrite_with_convert2" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Nav_rewrite_with_convert2" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Navigation_access_on_derived_materialized_entity_using_cast" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Navigation_access_on_derived_materialized_entity_using_cast" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Navigation_based_on_complex_expression3" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Navigation_based_on_complex_expression3" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Navigation_based_on_complex_expression2" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Navigation_based_on_complex_expression2" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Navigation_access_via_EFProperty_on_derived_entity_using_cast" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Navigation_access_via_EFProperty_on_derived_entity_using_cast" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
