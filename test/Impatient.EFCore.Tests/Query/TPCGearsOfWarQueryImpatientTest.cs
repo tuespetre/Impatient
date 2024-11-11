@@ -137,6 +137,13 @@ public class TPCGearsOfWarQueryImpatientTest : TPCGearsOfWarQueryRelationalTestB
             """);
     }
 
+    public override async Task Projecting_property_converted_to_nullable_and_use_it_in_order_by(bool async)
+    {
+        // failing because TranslatabilityAnalyzingExpressionVisitor.VisitConditional not currently allowing non-scalar types
+
+        await base.Projecting_property_converted_to_nullable_and_use_it_in_order_by(async);
+    }
+
     [Theory(Skip = ClientEval)]
     public override Task Select_Where_Navigation_Client(bool async)
     {

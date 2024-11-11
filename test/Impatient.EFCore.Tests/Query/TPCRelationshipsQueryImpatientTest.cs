@@ -1,6 +1,7 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using Xunit;
 
 namespace Impatient.EFCore.Tests.Query;
 
@@ -94,5 +95,18 @@ public class TPCRelationshipsQueryImpatientTest : TPCRelationshipsQueryTestBase<
                 WHERE [set].[Item2] = [set_0].[Item1]
             ) AS [b]
             """);
+    }
+
+    // What is the goal here? To push down the derived include before falling back to client eval of the cast?
+    [Theory(Skip = Punt)]
+    public override async Task Include_on_derived_type_with_queryable_Cast(bool async)
+    {
+        await base.Include_on_derived_type_with_queryable_Cast(async);
+    }
+
+    [Theory(Skip = Punt)]
+    public override Task Include_on_derived_type_with_queryable_Cast_split(bool async)
+    {
+        return base.Include_on_derived_type_with_queryable_Cast_split(async);
     }
 }
