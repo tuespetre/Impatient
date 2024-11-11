@@ -522,6 +522,48 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Scalar_current_values_can_be_set_using_a_property_dictionary" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Current_values_can_be_set_from_DTO_object_missing_key_using_non_generic_dictionary" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Current_values_can_be_set_from_DTO_object_missing_key_using_non_generic_dictionary" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Current_values_can_be_set_from_dictionary_some_missing" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Current_values_can_be_set_from_dictionary_some_missing" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Current_values_can_be_set_from_an_object_using_generic_dictionary" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Current_values_can_be_set_from_an_object_using_generic_dictionary" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Current_values_can_be_set_from_DTO_object_using_non_generic_dictionary" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Current_values_can_be_set_from_DTO_object_using_non_generic_dictionary" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Current_values_can_be_set_from_an_object_using_non_generic_dictionary" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Current_values_can_be_set_from_an_object_using_non_generic_dictionary" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Current_values_can_be_set_from_dictionary" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Current_values_can_be_set_from_dictionary" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Current_values_can_be_set_from_dictionary_typed_string" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Current_values_can_be_set_from_dictionary_typed_string" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -13655,6 +13697,306 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_nested_struct_complex_type" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_property_in_struct_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_property_in_struct_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_nested_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_nested_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_single_property_on_nested_struct_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_single_property_on_nested_struct_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_entity_type_containing_complex_property" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_entity_type_containing_complex_property" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_of_same_nested_complex_type_projected_twice_with_double_pushdown" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_of_same_nested_complex_type_projected_twice_with_double_pushdown" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Complex_type_equals_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Complex_type_equals_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Struct_complex_type_equals_struct_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Struct_complex_type_equals_struct_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Filter_on_property_inside_nested_struct_complex_type_after_subquery" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Filter_on_property_inside_nested_struct_complex_type_after_subquery" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Filter_on_property_inside_complex_type_after_subquery" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Filter_on_property_inside_complex_type_after_subquery" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Concat_property_in_struct_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Concat_property_in_struct_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_same_nested_complex_type_twice_with_pushdown" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_same_nested_complex_type_twice_with_pushdown" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_same_nested_complex_type_twice_with_double_pushdown" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_same_nested_complex_type_twice_with_double_pushdown" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Filter_on_property_inside_struct_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Filter_on_property_inside_struct_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_same_entity_with_nested_complex_type_twice_with_double_pushdown" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_same_entity_with_nested_complex_type_twice_with_double_pushdown" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Filter_on_property_inside_nested_complex_type_after_subquery" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Filter_on_property_inside_nested_complex_type_after_subquery" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_struct_complex_type_Distinct" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_struct_complex_type_Distinct" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_struct_complex_type_Where" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_struct_complex_type_Where" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Filter_on_property_inside_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Filter_on_property_inside_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Filter_on_property_inside_nested_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Filter_on_property_inside_nested_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Concat_property_in_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Concat_property_in_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_single_property_on_nested_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_single_property_on_nested_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_same_struct_nested_complex_type_twice_with_pushdown" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_same_struct_nested_complex_type_twice_with_pushdown" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_property_in_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_property_in_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Concat_entity_type_containing_complex_property" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Concat_entity_type_containing_complex_property" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Complex_type_equals_parameter" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Complex_type_equals_parameter" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Struct_complex_type_equals_parameter" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Struct_complex_type_equals_parameter" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_struct_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_struct_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_same_entity_with_struct_nested_complex_type_twice_with_pushdown" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_same_entity_with_struct_nested_complex_type_twice_with_pushdown" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Load_complex_type_after_subquery_on_entity_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Load_complex_type_after_subquery_on_entity_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_of_same_entity_with_nested_complex_type_projected_twice_with_double_pushdown" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_of_same_entity_with_nested_complex_type_projected_twice_with_double_pushdown" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_struct_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_struct_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_same_entity_with_nested_complex_type_twice_with_pushdown" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_same_entity_with_nested_complex_type_twice_with_pushdown" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Concat_struct_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Concat_struct_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Concat_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Concat_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_complex_type_Where" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_complex_type_Where" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_same_struct_nested_complex_type_twice_with_double_pushdown" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_same_struct_nested_complex_type_twice_with_double_pushdown" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_of_same_entity_with_nested_complex_type_projected_twice_with_pushdown" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_of_same_entity_with_nested_complex_type_projected_twice_with_pushdown" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_of_same_nested_complex_type_projected_twice_with_pushdown" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_of_same_nested_complex_type_projected_twice_with_pushdown" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Concat_entity_type_containing_struct_complex_property" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Concat_entity_type_containing_struct_complex_property" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_entity_type_containing_struct_complex_property" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Union_entity_type_containing_struct_complex_property" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_same_entity_with_struct_nested_complex_type_twice_with_double_pushdown" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_same_entity_with_struct_nested_complex_type_twice_with_double_pushdown" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_entity_with_complex_type_pushdown_and_then_left_join" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_entity_with_complex_type_pushdown_and_then_left_join" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Load_struct_complex_type_after_subquery_on_entity_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Load_struct_complex_type_after_subquery_on_entity_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Filter_on_property_inside_nested_struct_complex_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Filter_on_property_inside_nested_struct_complex_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_struct_complex_type_via_required_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_struct_complex_type_via_required_navigation" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Filter_on_property_inside_struct_complex_type_after_subquery" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Filter_on_property_inside_struct_complex_type_after_subquery" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_complex_type_Distinct" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Select_complex_type_Distinct" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_complex_type_via_required_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexTypeQueryImpatientTest.Project_complex_type_via_required_navigation" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -23165,6 +23507,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Can_use_of_type_bird_with_projection" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Filter_on_property_inside_complex_type_on_derived_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Filter_on_property_inside_complex_type_on_derived_type" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -31809,6 +32157,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCInheritanceQueryImpatientTest.Can_use_is_kiwi_with_other_predicate" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCInheritanceQueryImpatientTest.Can_use_is_kiwi_with_other_predicate" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCInheritanceQueryImpatientTest.Filter_on_property_inside_complex_type_on_derived_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCInheritanceQueryImpatientTest.Filter_on_property_inside_complex_type_on_derived_type" />
                       </Rule>
                     </Rule>
                   </Rule>
@@ -41373,6 +41727,29 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_and_reference_unidirectional" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ManyToManyNoTrackingQueryImpatientTest.Include_skip_navigation_and_reference_unidirectional" />
+                      </Rule>
+                    </Rule>
+                  </Rule>
+                </Rule>
+                <Rule Match="All">
+                  <Property Name="Class" Value="AdHocAdvancedMappingsQueryImpatientTest" />
+                  <Rule Match="Any">
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.AdHocAdvancedMappingsQueryImpatientTest.Projecting_one_of_two_similar_complex_types_picks_the_correct_one" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.AdHocAdvancedMappingsQueryImpatientTest.Projecting_one_of_two_similar_complex_types_picks_the_correct_one" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.AdHocAdvancedMappingsQueryImpatientTest.Two_similar_complex_properties_projected_with_split_query2" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.AdHocAdvancedMappingsQueryImpatientTest.Two_similar_complex_properties_projected_with_split_query2" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.AdHocAdvancedMappingsQueryImpatientTest.Two_similar_complex_properties_projected_with_split_query1" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.AdHocAdvancedMappingsQueryImpatientTest.Two_similar_complex_properties_projected_with_split_query1" />
                       </Rule>
                     </Rule>
                   </Rule>

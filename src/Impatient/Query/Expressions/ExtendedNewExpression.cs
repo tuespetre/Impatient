@@ -3,6 +3,7 @@ using Impatient.Query.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -19,7 +20,7 @@ public class ExtendedNewExpression : Expression, ISemanticHashCodeProvider
 
     public ReadOnlyCollection<MemberInfo> WritableMembers { get; }
 
-    public override Type Type => Constructor.DeclaringType;
+    public override Type Type { get; }
 
     public override ExpressionType NodeType => ExpressionType.Extension;
 
@@ -27,26 +28,37 @@ public class ExtendedNewExpression : Expression, ISemanticHashCodeProvider
 
     public override Expression Reduce() => ReduceToNewExpression();
 
-    public NewExpression ReduceToNewExpression() => New(Constructor, Arguments);
+    public NewExpression ReduceToNewExpression() => Constructor is null ? New(Type) : New(Constructor, Arguments);
 
     public ExtendedNewExpression(Type type)
     {
-        var constructor = type.GetConstructor([]);
-
-        if (constructor is null)
-        {
-            throw new ArgumentException("Could not find a parameterless public constructor for the given type", nameof(type));
-        }
-
-        Constructor = constructor;
+        Type = type ?? throw new ArgumentNullException(nameof(type));
+        Constructor = type.GetConstructor([]);
+        Arguments = new([]);
+        ReadableMembers = new([]);
+        WritableMembers = new([]);
     }
 
     public ExtendedNewExpression(
+        Type type,
         ConstructorInfo constructor,
         IEnumerable<Expression> arguments,
         IEnumerable<MemberInfo> readableMembers,
         IEnumerable<MemberInfo> writableMembers)
     {
+        Type = type ?? throw new ArgumentNullException(nameof(type));
+
+        if (constructor is null)
+        {
+            Debug.Assert(!arguments.Any());
+            Debug.Assert(!readableMembers.Any());
+            Debug.Assert(!writableMembers.Any());
+            Arguments = new([]);
+            ReadableMembers = new([]);
+            WritableMembers = new([]);
+            return;
+        }
+
         Constructor = constructor ?? throw new ArgumentNullException(nameof(constructor));
         Arguments = new ReadOnlyCollection<Expression>(arguments?.ToArray() ?? throw new ArgumentNullException(nameof(arguments)));
         ReadableMembers = new ReadOnlyCollection<MemberInfo>(readableMembers?.ToArray() ?? throw new ArgumentNullException(nameof(readableMembers)));
@@ -108,7 +120,7 @@ public class ExtendedNewExpression : Expression, ISemanticHashCodeProvider
 
         if (arguments != Arguments)
         {
-            return new ExtendedNewExpression(Constructor, arguments, ReadableMembers, WritableMembers);
+            return new ExtendedNewExpression(Type, Constructor, arguments, ReadableMembers, WritableMembers);
         }
 
         return this;
@@ -123,7 +135,7 @@ public class ExtendedNewExpression : Expression, ISemanticHashCodeProvider
 
         if (!arguments.SequenceEqual(Arguments))
         {
-            return new ExtendedNewExpression(Constructor, arguments, ReadableMembers, WritableMembers);
+            return new ExtendedNewExpression(Type, Constructor, arguments, ReadableMembers, WritableMembers);
         }
 
         return this;

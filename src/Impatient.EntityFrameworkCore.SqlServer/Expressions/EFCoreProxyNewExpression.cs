@@ -21,7 +21,7 @@ public class EFCoreProxyNewExpression : ExtendedNewExpression
         IEnumerable<Expression> arguments, 
         IEnumerable<MemberInfo> readableMembers, 
         IEnumerable<MemberInfo> writableMembers) 
-        : base(constructor, arguments, readableMembers, writableMembers)
+        : base(constructor.DeclaringType, constructor, arguments, readableMembers, writableMembers)
     {
         this.factoryInstance = factoryInstance;
         this.factoryMethod = factoryMethod ?? throw new ArgumentNullException(nameof(factoryMethod));

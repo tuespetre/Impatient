@@ -16,4 +16,9 @@ public class ComplexTypeQueryImpatientTest(Fixture fixture) : ComplexTypeQueryRe
     {
         return base.Complex_type_equals_constant(async);
     }
+
+    public override Task Filter_on_property_inside_complex_type(bool async)
+    {
+        return base.Filter_on_property_inside_complex_type(async);
+    }
 }

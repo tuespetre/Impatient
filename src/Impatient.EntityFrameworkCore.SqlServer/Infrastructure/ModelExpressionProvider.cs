@@ -382,7 +382,7 @@ public class ModelExpressionProvider
                select (p, x)).ToDictionary(t => t.p, t => (Expression)t.x);
 
         var materializer
-            = CreateMaterializationExpression(
+            = CreateEntityMaterializationExpression(
                 targetType,
                 tableLookup,
                 propertyExpressions);
@@ -418,7 +418,7 @@ public class ModelExpressionProvider
                select (p, x)).ToDictionary(t => t.p, t => (Expression)t.x);
 
         var materializer
-            = CreateMaterializationExpression(
+            = CreateEntityMaterializationExpression(
                 targetType,
                 viewLookup,
                 propertyExpressions);
@@ -523,7 +523,7 @@ public class ModelExpressionProvider
 
             var descriptorMaterializer
                 = Expression.Lambda(
-                    CreateMaterializationExpression(concreteType, tableLookup, propertyExpressions),
+                    CreateEntityMaterializationExpression(concreteType, tableLookup, propertyExpressions),
                     tupleParameter);
 
             descriptors[i] = new PolymorphicTypeDescriptor(concreteType.ClrType, test, descriptorMaterializer);
@@ -710,7 +710,7 @@ public class ModelExpressionProvider
 
             var descriptorMaterializer
                 = Expression.Lambda(
-                    CreateMaterializationExpression(concreteType, null, propertyExpressions),
+                    CreateEntityMaterializationExpression(concreteType, null, propertyExpressions),
                     tupleParameter);
 
             descriptors[i] = new PolymorphicTypeDescriptor(concreteType.ClrType, test, descriptorMaterializer);
@@ -877,7 +877,7 @@ public class ModelExpressionProvider
 
             var descriptorMaterializer
                 = Expression.Lambda(
-                    CreateMaterializationExpression(concreteType, tableLookup, propertyExpressions),
+                    CreateEntityMaterializationExpression(concreteType, tableLookup, propertyExpressions),
                     tupleParameter);
 
             descriptors[i] = new PolymorphicTypeDescriptor(concreteType.ClrType, test, descriptorMaterializer);
@@ -913,7 +913,7 @@ public class ModelExpressionProvider
         return new EnumerableRelationalQueryExpression(selectExpression);
     }
 
-    private static ExtendedNewExpression CreateNewExpression(IEntityType type, Dictionary<IProperty, Expression> propertyExpressions)
+    private static ExtendedNewExpression CreateNewExpression(ITypeBase type, Dictionary<IProperty, Expression> propertyExpressions)
     {
         var instantiationBinding = type.ConstructorBinding;
 
@@ -929,6 +929,13 @@ public class ModelExpressionProvider
                 return CreateNewExpression(type, factoryMethodBinding, propertyExpressions);
             }
 
+            case DefaultValueBinding defaultValueBinding:
+            {
+                Debug.Assert(defaultValueBinding.ParameterBindings.Count == 0);
+
+                return new ExtendedNewExpression(type.ClrType);
+            }
+
             case null:
             {
                 return new ExtendedNewExpression(type.ClrType);
@@ -941,7 +948,7 @@ public class ModelExpressionProvider
         }
     }
 
-    private static ExtendedNewExpression CreateNewExpression(IEntityType type, ConstructorBinding constructorBinding, Dictionary<IProperty, Expression> propertyExpressions)
+    private static ExtendedNewExpression CreateNewExpression(ITypeBase type, ConstructorBinding constructorBinding, Dictionary<IProperty, Expression> propertyExpressions)
     {
         var constructor = constructorBinding.Constructor;
         var arguments = new Expression[constructor.GetParameters().Length];
@@ -961,10 +968,10 @@ public class ModelExpressionProvider
             }
         }
 
-        return new ExtendedNewExpression(constructor, arguments, readableMembers, writableMembers);
+        return new ExtendedNewExpression(type.ClrType, constructor, arguments, readableMembers, writableMembers);
     }
 
-    private static EFCoreProxyNewExpression CreateNewExpression(IEntityType type, FactoryMethodBinding factoryMethodBinding, Dictionary<IProperty, Expression> propertyExpressions)
+    private static EFCoreProxyNewExpression CreateNewExpression(ITypeBase type, FactoryMethodBinding factoryMethodBinding, Dictionary<IProperty, Expression> propertyExpressions)
     {
         var factoryInstance
             = typeof(FactoryMethodBinding)
@@ -1035,7 +1042,7 @@ public class ModelExpressionProvider
             writableMembers);
     }
 
-    private static Expression CreateMaterializationExpression(
+    private static Expression CreateEntityMaterializationExpression(
         IEntityType entityType,
         Dictionary<ITableBase, AliasedTableExpression> tableLookup,
         Dictionary<IProperty, Expression> propertyExpressions,
@@ -1045,6 +1052,10 @@ public class ModelExpressionProvider
             = (from p in entityType.GetProperties()
                where !p.IsShadowProperty()
                where !p.IsIndexerProperty() // TODO: include indexer properties
+               select p).ToList();
+
+        var complexProperties
+            = (from p in entityType.GetComplexProperties()
                select p).ToList();
 
         var navigations
@@ -1066,7 +1077,7 @@ public class ModelExpressionProvider
             services.RemoveAll(p => newExpression.WritableMembers.Contains(p.GetWritableMemberInfo()));
         }
 
-        var arguments = new Expression[properties.Count + navigations.Count + services.Count];
+        var arguments = new Expression[properties.Count + complexProperties.Count + navigations.Count + services.Count];
         var readableMembers = new MemberInfo[arguments.Length];
         var writableMembers = new MemberInfo[arguments.Length];
 
@@ -1082,8 +1093,20 @@ public class ModelExpressionProvider
             writableMembers[i] = property.GetWritableMemberInfo();
         }
 
-        c += navigations.Count;
+        c += complexProperties.Count;
         d += properties.Count;
+
+        for (var i = d; i < c; i++)
+        {
+            var complexProperty = complexProperties[i - d];
+
+            arguments[i] = CreateComplexMaterializationExpression(complexProperty.ComplexType, tableLookup, propertyExpressions);
+            readableMembers[i] = complexProperty.GetSemanticReadableMemberInfo();
+            writableMembers[i] = complexProperty.GetWritableMemberInfo();
+        }
+
+        c += navigations.Count;
+        d += complexProperties.Count;
 
         for (var i = d; i < c; i++)
         {
@@ -1106,7 +1129,7 @@ public class ModelExpressionProvider
             else
             {
                 arguments[i]
-                    = CreateMaterializationExpression(
+                    = CreateEntityMaterializationExpression(
                         ownedType,
                         tableLookup,
                         propertyExpressions,
@@ -1181,7 +1204,68 @@ public class ModelExpressionProvider
         return materializer;
     }
 
-    private static Expression GetBindingExpression(IEntityType type, ParameterBinding binding, Dictionary<IProperty, Expression> propertyExpressions)
+    private static Expression CreateComplexMaterializationExpression(
+        IComplexType complexType,
+        Dictionary<ITableBase, AliasedTableExpression> tableLookup,
+        Dictionary<IProperty, Expression> propertyExpressions)
+    {
+        var properties
+            = (from p in complexType.GetProperties()
+               where !p.IsShadowProperty()
+               where !p.IsIndexerProperty() // TODO: include indexer properties
+               select p).ToList();
+
+        var complexProperties
+            = (from p in complexType.GetComplexProperties()
+               select p).ToList();
+
+        var newExpression = CreateNewExpression(complexType, propertyExpressions);
+
+        if (newExpression.WritableMembers is not null)
+        {
+            properties.RemoveAll(p => newExpression.WritableMembers.Contains(p.GetWritableMemberInfo()));
+        }
+
+        var arguments = new Expression[properties.Count + complexProperties.Count];
+        var readableMembers = new MemberInfo[arguments.Length];
+        var writableMembers = new MemberInfo[arguments.Length];
+
+        var c = properties.Count;
+        var d = 0;
+
+        for (var i = 0; i < c; i++)
+        {
+            var property = properties[i - d];
+
+            arguments[i] = propertyExpressions[property];
+            readableMembers[i] = property.GetSemanticReadableMemberInfo();
+            writableMembers[i] = property.GetWritableMemberInfo();
+        }
+
+        c += complexProperties.Count;
+        d += properties.Count;
+
+        for (var i = d; i < c; i++)
+        {
+            var complexProperty = complexProperties[i - d];
+
+            arguments[i] = CreateComplexMaterializationExpression(complexProperty.ComplexType, tableLookup, propertyExpressions);
+            readableMembers[i] = complexProperty.GetSemanticReadableMemberInfo();
+            writableMembers[i] = complexProperty.GetWritableMemberInfo();
+        }
+
+        Expression materializer
+            = new ExtendedMemberInitExpression(
+                complexType.ClrType,
+                newExpression,
+                arguments,
+                readableMembers,
+                writableMembers);
+
+        return materializer;
+    }
+
+    private static Expression GetBindingExpression(ITypeBase type, ParameterBinding binding, Dictionary<IProperty, Expression> propertyExpressions)
     {
         switch (binding)
         {
@@ -1206,7 +1290,7 @@ public class ModelExpressionProvider
 
             case EntityTypeParameterBinding _:
             {
-                return new EntityTypeInjectionExpression(type);
+                return new EntityTypeInjectionExpression((IEntityType)type);
             }
 
             case ContextParameterBinding _:
@@ -1255,7 +1339,7 @@ public class ModelExpressionProvider
 
     private static IEnumerable<IProperty> IterateProperties(IEntityType type, bool includeDerived)
     {
-        foreach (var property in type.GetProperties())
+        foreach (var property in type.GetFlattenedProperties())
         {
             yield return property;
         }
@@ -1358,9 +1442,54 @@ public class ModelExpressionProvider
             return true;
         }
 
-        // If the property is declared by a derived type or a type owned by a derived type, it can be null
+        if (property.DeclaringType is IEntityType declaringEntityType)
+        {
+            // If the property is declared by a derived type or a type owned by a derived type, it can be null
 
-        var resolvedEntityType = (IEntityType)property.DeclaringType;
+            if (IsDerivedTypeOrOwnedByDerivedType(declaringEntityType))
+            {
+                return true;
+            }
+
+            // If the property is declared by an owned type of a root type and not declared nullable, it can't be null
+
+            if (declaringEntityType.IsOwned())
+            {
+                return false;
+            }
+
+            // If the property is part of a foreign key within the same table as the principal type,
+            // but the principal type is derived, it can be null
+
+            var tableId = GetRelationalId(declaringEntityType);
+
+            foreach (var foreignKey in declaringEntityType.GetForeignKeys())
+            {
+                var principalType = foreignKey.PrincipalEntityType;
+
+                if (tableId.Equals(GetRelationalId(principalType))
+                    && principalType != principalType.GetRootType())
+                {
+                    return true;
+                }
+            }
+        }
+        else if (property.DeclaringType is IComplexType declaringComplexType)
+        {
+            if (IsDerivedTypeOrOwnedByDerivedType(declaringComplexType.ContainingEntityType))
+            {
+                return true;
+            }
+
+            return declaringComplexType.ComplexProperty.IsNullable;
+        }
+
+        return false;
+    }
+
+    private static bool IsDerivedTypeOrOwnedByDerivedType(IEntityType entityType)
+    {
+        var resolvedEntityType = entityType;
 
         while (resolvedEntityType.IsOwned())
         {
@@ -1377,29 +1506,6 @@ public class ModelExpressionProvider
         if (resolvedEntityType != resolvedEntityType.GetRootType())
         {
             return true;
-        }
-
-        // If the property is declared by an owned type of a root type and not declared nullable, it can't be null
-
-        if (((IEntityType)property.DeclaringType).IsOwned())
-        {
-            return false;
-        }
-
-        // If the property is part of a foreign key within the same table as the principal type,
-        // but the principal type is derived, it can be null
-
-        var tableId = GetRelationalId((IEntityType)property.DeclaringType);
-
-        foreach (var foreignKey in ((IEntityType)property.DeclaringType).GetForeignKeys())
-        {
-            var principalType = foreignKey.PrincipalEntityType;
-
-            if (tableId.Equals(GetRelationalId(principalType))
-                && principalType != principalType.GetRootType())
-            {
-                return true;
-            }
         }
 
         return false;
