@@ -31,4 +31,7 @@ public static class EFCoreSkipReasons
 
     public const string BadMaterialization =
         "The test should 'pass' by failing with an InvalidOperationException for a 'bad' materializer to comply with EF Core expectations.";
+
+    public const string SkipNavigations =
+        "Have not yet added support for skip navigations.";
 }

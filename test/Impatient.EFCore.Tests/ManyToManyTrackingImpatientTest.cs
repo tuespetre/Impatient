@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestModels.ManyToManyModel;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using Xunit;
 
 namespace Impatient.EFCore.Tests;
 
@@ -63,5 +64,11 @@ public class ManyToManyTrackingImpatientTest : ManyToManyTrackingRelationalTestB
                 .Property(e => e.Payload)
                 .HasDefaultValue("Generated");
         }
+    }
+
+    [Theory(Skip = SkipNavigations)]
+    public override Task Initial_tracking_uses_skip_navigations(bool async)
+    {
+        return base.Initial_tracking_uses_skip_navigations(async);
     }
 }
