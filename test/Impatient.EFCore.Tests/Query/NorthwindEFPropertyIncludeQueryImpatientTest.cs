@@ -2,7 +2,6 @@
 using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Impatient.EFCore.Tests.Query;
@@ -19,7 +18,13 @@ public class NorthwindEFPropertyIncludeQueryImpatientTest : NorthwindEFPropertyI
     protected override QueryAsserter CreateQueryAsserter(NorthwindQueryImpatientFixture fixture)
         => new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
 
-    [Theory(Skip = EFCoreSkipReasons.ClientEval)]
+    [Theory(Skip = SpecialIncludes)]
+    public override Task Filtered_include_with_multiple_ordering(bool async)
+    {
+        return base.Filtered_include_with_multiple_ordering(async);
+    }
+
+    [Theory(Skip = ClientEval)]
     public override Task Include_collection_with_client_filter(bool async)
     {
         return base.Include_collection_with_client_filter(async);

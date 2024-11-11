@@ -4,9 +4,6 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.EntityFrameworkCore.TestModels.ConcurrencyModel;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System.Collections.Generic;
-using System;
-using System.Linq;
 
 namespace Impatient.EFCore.Tests.Fixtures;
 

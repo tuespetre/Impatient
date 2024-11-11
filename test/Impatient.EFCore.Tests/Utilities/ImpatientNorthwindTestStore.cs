@@ -1,10 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System;
 using System.Data;
-using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Impatient.EFCore.Tests.Utilities;

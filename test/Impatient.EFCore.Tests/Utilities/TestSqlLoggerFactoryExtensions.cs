@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore.TestUtilities;
-using System;
 using Xunit;
 
 namespace Impatient.EFCore.Tests.Utilities;

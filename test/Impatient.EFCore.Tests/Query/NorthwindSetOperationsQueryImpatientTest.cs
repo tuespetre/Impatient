@@ -3,8 +3,6 @@ using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Impatient.EFCore.Tests.Query;
@@ -21,7 +19,7 @@ public class NorthwindSetOperationsQueryImpatientTest : NorthwindSetOperationsQu
     protected override QueryAsserter CreateQueryAsserter(NorthwindQueryImpatientFixture fixture)
         => new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
 
-    [Trait("Translation", "Exceeds")]
+    [TranslationExceedsEFCore]
     public override async Task Collection_projection_after_set_operation_fails_if_distinct(bool async)
     {
         //await base.Collection_projection_after_set_operation_fails_if_distinct(async);
@@ -57,7 +55,7 @@ public class NorthwindSetOperationsQueryImpatientTest : NorthwindSetOperationsQu
             """);
     }
 
-    [Trait("Translation", "Exceeds")]
+    [TranslationExceedsEFCore]
     public override async Task Collection_projection_before_set_operation_fails(bool async)
     {
         //await base.Collection_projection_before_set_operation_fails(async);

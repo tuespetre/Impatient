@@ -3,8 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.FunkyDataModel;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Impatient.EFCore.Tests.Query;
 

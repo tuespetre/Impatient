@@ -14,7 +14,7 @@ public class NullSemanticsQueryImpatientTest : NullSemanticsQueryTestBase<NullSe
     {
     }
 
-    [Fact(Skip = EFCoreSkipReasons.FromSql)]
+    [Fact(Skip = FromSql)]
     public override void From_sql_composed_with_relational_null_comparison()
     {
         base.From_sql_composed_with_relational_null_comparison();

@@ -1,7 +1,6 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Impatient.EFCore.Tests.Query;
@@ -23,43 +22,43 @@ public class JsonQueryImpatientTest : JsonQueryTestBase<JsonQueryImpatientTest.F
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 
-    [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
+    [ConditionalTheory(Skip = FromSql)]
     public override Task FromSql_on_entity_with_json_basic(bool async)
     {
         return base.FromSql_on_entity_with_json_basic(async);
     }
 
-    [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
+    [ConditionalTheory(Skip = FromSql)]
     public override Task FromSql_on_entity_with_json_inheritance_on_base(bool async)
     {
         return base.FromSql_on_entity_with_json_inheritance_on_base(async);
     }
 
-    [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
+    [ConditionalTheory(Skip = FromSql)]
     public override Task FromSql_on_entity_with_json_inheritance_on_derived(bool async)
     {
         return base.FromSql_on_entity_with_json_inheritance_on_derived(async);
     }
 
-    [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
+    [ConditionalTheory(Skip = FromSql)]
     public override Task FromSql_on_entity_with_json_inheritance_project_reference_on_base(bool async)
     {
         return base.FromSql_on_entity_with_json_inheritance_project_reference_on_base(async);
     }
 
-    [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
+    [ConditionalTheory(Skip = FromSql)]
     public override Task FromSql_on_entity_with_json_inheritance_project_reference_on_derived(bool async)
     {
         return base.FromSql_on_entity_with_json_inheritance_project_reference_on_derived(async);
     }
 
-    [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
+    [ConditionalTheory(Skip = FromSql)]
     public override Task FromSql_on_entity_with_json_project_json_collection(bool async)
     {
         return base.FromSql_on_entity_with_json_project_json_collection(async);
     }
 
-    [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
+    [ConditionalTheory(Skip = FromSql)]
     public override Task FromSql_on_entity_with_json_project_json_reference(bool async)
     {
         return base.FromSql_on_entity_with_json_project_json_reference(async);
@@ -76,7 +75,7 @@ public class JsonQueryImpatientTest : JsonQueryTestBase<JsonQueryImpatientTest.F
         return base.Json_projection_enum_with_custom_conversion(async);
     }
 
-    [Theory(Skip = EFCoreSkipReasons.BadMaterialization)]
+    [Theory(Skip = BadMaterialization)]
     public override Task Project_json_reference_in_tracking_query_fails(bool async)
     {
         return base.Project_json_reference_in_tracking_query_fails(async);

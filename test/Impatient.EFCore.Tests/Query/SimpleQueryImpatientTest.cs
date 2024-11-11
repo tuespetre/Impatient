@@ -1,7 +1,6 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Impatient.EFCore.Tests.Query;
@@ -10,7 +9,7 @@ public class SimpleQueryImpatientTest : SimpleQueryRelationalTestBase
 {
     protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 
-    [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
+    [ConditionalTheory(Skip = FromSql)]
     [MemberData(nameof(IsAsyncData))]
     public override Task Multiple_different_entity_type_from_different_namespaces(bool async)
     {

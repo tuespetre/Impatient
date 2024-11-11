@@ -1,7 +1,6 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Impatient.EFCore.Tests;
@@ -17,25 +16,25 @@ public class ConcurrencyDetectorEnabledImpatientTest : ConcurrencyDetectorEnable
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 
-    [Theory(Skip = EFCoreSkipReasons.Punt)]
+    [Theory(Skip = Punt)]
     public override Task Any(bool async)
     {
         return base.Any(async);
     }
 
-    [Theory(Skip = EFCoreSkipReasons.Punt)]
+    [Theory(Skip = Punt)]
     public override Task Count(bool async)
     {
         return base.Count(async);
     }
 
-    [Theory(Skip = EFCoreSkipReasons.Punt)]
+    [Theory(Skip = Punt)]
     public override Task Find(bool async)
     {
         return base.Find(async);
     }
 
-    [Theory(Skip = EFCoreSkipReasons.Punt)]
+    [Theory(Skip = Punt)]
     public override Task First(bool async)
     {
         return base.First(async);
@@ -47,19 +46,19 @@ public class ConcurrencyDetectorEnabledImpatientTest : ConcurrencyDetectorEnable
         return base.FromSql(async);
     }
 
-    [Theory(Skip = EFCoreSkipReasons.Punt)]
+    [Theory(Skip = Punt)]
     public override Task Last(bool async)
     {
         return base.Last(async);
     }
 
-    [Theory(Skip = EFCoreSkipReasons.Punt)]
+    [Theory(Skip = Punt)]
     public override Task Single(bool async)
     {
         return base.Single(async);
     }
 
-    [Theory(Skip = EFCoreSkipReasons.Punt)]
+    [Theory(Skip = Punt)]
     public override Task ToList(bool async)
     {
         return base.ToList(async);

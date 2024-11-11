@@ -1,8 +1,6 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System;
-using System.Linq;
 using Xunit;
 
 namespace Impatient.EFCore.Tests.Query;
@@ -26,7 +24,7 @@ public class QueryFilterFuncletizationImpatientTest : QueryFilterFuncletizationT
     }
 
     [Fact]
-    [Trait("Impatient", "Overridden for exception difference")]
+    [TestCaseRewritten]
     public override void Local_variable_from_OnModelCreating_can_throw_exception()
     {
         using (var context = CreateContext())
@@ -36,7 +34,7 @@ public class QueryFilterFuncletizationImpatientTest : QueryFilterFuncletizationT
     }
 
     [Fact]
-    [Trait("Impatient", "Overridden for exception difference")]
+    [TestCaseRewritten]
     public override void DbContext_property_chain_is_parameterized()
     {
         using (var context = CreateContext())
@@ -56,7 +54,7 @@ public class QueryFilterFuncletizationImpatientTest : QueryFilterFuncletizationT
     }
 
     [Fact]
-    [Trait("Impatient", "Overridden for exception difference")]
+    [TestCaseRewritten]
     public override void DbContext_property_method_call_is_parameterized()
     {
         using (var context = CreateContext())
@@ -72,7 +70,7 @@ public class QueryFilterFuncletizationImpatientTest : QueryFilterFuncletizationT
     }
 
     [Fact]
-    [Trait("Impatient", "Overridden for exception difference")]
+    [TestCaseRewritten]
     public override void EntityTypeConfiguration_DbContext_property_chain_is_parameterized()
     {
         using (var context = CreateContext())
@@ -92,7 +90,7 @@ public class QueryFilterFuncletizationImpatientTest : QueryFilterFuncletizationT
     }
 
     [Fact]
-    [Trait("Impatient", "Overridden for exception difference")]
+    [TestCaseRewritten]
     public override void Extension_method_DbContext_property_chain_is_parameterized()
     {
         using (var context = CreateContext())
@@ -112,7 +110,7 @@ public class QueryFilterFuncletizationImpatientTest : QueryFilterFuncletizationT
     }
 
     [Fact]
-    [Trait("Impatient", "Overridden for exception difference")]
+    [TestCaseRewritten]
     public override void Remote_method_DbContext_property_method_call_is_parameterized()
     {
         using (var context = CreateContext())

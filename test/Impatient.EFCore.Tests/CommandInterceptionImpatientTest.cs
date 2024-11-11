@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Collections.Generic;
 using Xunit;
 using static Impatient.EFCore.Tests.CommandInterceptionImpatientTest;
 

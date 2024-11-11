@@ -4,8 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Impatient.EFCore.Tests.Query;
@@ -34,7 +32,7 @@ GROUP BY [o].[EmployeeID]
     }
 
     // this test uses FirstOrDefault on a complex subquery. may or may not want to support that.
-    [ConditionalTheory(Skip = EFCoreSkipReasons.Punt)]
+    [ConditionalTheory(Skip = Punt)]
     [MemberData(nameof(IsAsyncData))]
     public override Task AsEnumerable_in_subquery_for_GroupBy(bool async)
     {
@@ -99,7 +97,7 @@ WHERE [o].[CustomerID] IN (
     }
 
     // this test uses FirstOrDefault on a complex subquery. may or may not want to support that.
-    [ConditionalTheory(Skip = EFCoreSkipReasons.Punt)]
+    [ConditionalTheory(Skip = Punt)]
     [MemberData(nameof(IsAsyncData))]
     public override Task GroupBy_aggregate_from_multiple_query_in_same_projection_2(bool async)
     {
@@ -160,7 +158,7 @@ OFFSET 4 ROWS
 ");
     }
 
-    [Trait("Category", "Rewritten")]
+    [TestCaseRewritten]
     public override async Task GroupBy_aggregate_SelectMany(bool async)
     {
         await AssertQuery(
@@ -522,7 +520,7 @@ GROUP BY [g].[CustomerID], [g].[EmployeeID]
 ");
     }
 
-    [Trait("Category", "Rewritten")]
+    [TestCaseRewritten]
     public override async Task GroupBy_Distinct(bool async)
     {
         await AssertQuery(
@@ -655,7 +653,8 @@ WHERE [o].[Key] = N'ALFKI'
 ");
     }
 
-    [Trait("Translation", "Exceeds")]
+    [TestCaseRewritten]
+    [TranslationExceedsEFCore]
     public override async Task GroupBy_let_orderby_projection_with_coalesce_operation(bool async)
     {
         await AssertQuery(
@@ -748,7 +747,8 @@ ORDER BY [o].[CustomerID] ASC
 ");
     }
 
-    [Trait("Translation", "Exceeds")]
+    [TestCaseRewritten]
+    [TranslationExceedsEFCore]
     public override async Task GroupBy_OrderBy_with_grouping_result(bool async)
     {
         await AssertQuery(
@@ -963,7 +963,8 @@ GROUP BY [g].[CustomerID]
 ");
     }
 
-    [Trait("Translation", "Exceeds")]
+    [TestCaseRewritten]
+    [TranslationExceedsEFCore]
     public override async Task GroupBy_Property_Select_Average_with_group_enumerable_projected(bool async)
     {
         await AssertQueryScalar(
@@ -1181,14 +1182,14 @@ GROUP BY [o].[CustomerID]
 
     // We don't support grouping by a subquery, at least not right now.
     // We probably could by pushing the key selector into the projection, pushing down into a subquery, and then grouping.
-    [ConditionalTheory(Skip = EFCoreSkipReasons.Punt)]
+    [ConditionalTheory(Skip = Punt)]
     [MemberData(nameof(IsAsyncData))]
     public override Task GroupBy_scalar_subquery(bool async)
     {
         return base.GroupBy_scalar_subquery(async);
     }
 
-    [Trait("Category", "Rewritten")]
+    [TestCaseRewritten]
     public override async Task GroupBy_SelectMany(bool async)
     {
         await AssertQuery(
@@ -1277,7 +1278,8 @@ GROUP BY [g].[CustomerID]
     // TODO: this test was rewritten because we translate beyond EF,
     // but it did expose another issue: equality semantics with strings
     // in SQL are different wrt casing
-    [Trait("Translation", "Exceeds")]
+    [TestCaseRewritten]
+    [TranslationExceedsEFCore]
     public override async Task GroupBy_Where_with_grouping_result(bool async)
     {
         await AssertQuery(
@@ -1322,7 +1324,8 @@ GROUP BY [g_0].[EmployeeID]
 ");
     }
 
-    [Trait("Translation", "Exceeds")]
+    [TestCaseRewritten]
+    [TranslationExceedsEFCore]
     public override async Task GroupBy_with_orderby_take_skip_distinct_followed_by_group_key_projection(bool async)
     {
         await AssertQuery(
@@ -1641,8 +1644,7 @@ GROUP BY [o].[CustomerID]
 ");
     }
 
-    [ConditionalTheory]
-    [MemberData(nameof(IsAsyncData))]
+    [TestCaseRewritten]
     public override async Task OrderBy_GroupBy_SelectMany(bool async)
     {
         //await base.OrderBy_GroupBy_SelectMany(async);
@@ -1664,7 +1666,7 @@ INNER JOIN [Orders] AS [o] ON [g].[Key] = [o].[CustomerID]
 ");
     }
 
-    [Trait("Translation", "Exceeds")]
+    [TranslationExceedsEFCore]
     public override async Task OrderBy_GroupBy_SelectMany_shadow(bool async)
     {
         await AssertQuery(
@@ -1785,7 +1787,7 @@ SELECT CAST((CASE WHEN EXISTS (
 ");
     }
 
-    [Trait("Category", "Rewritten")]
+    [TestCaseRewritten]
     public override async Task Select_GroupBy_SelectMany(bool async)
     {
         await AssertQuery(
@@ -1844,7 +1846,7 @@ GROUP BY [o].[CustomerID]
     // Punted because if people want to skip 0 take 0, that's their own problem.
     // SQL Server won't allow FETCH 0 even for the parameterized case,
     // so why should we bother optimizing for the constant case?
-    [ConditionalTheory(Skip = EFCoreSkipReasons.Punt)]
+    [ConditionalTheory(Skip = Punt)]
     [MemberData(nameof(IsAsyncData))]
     public override Task GroupBy_aggregate_after_skip_0_take_0(bool async)
     {
@@ -1854,7 +1856,7 @@ GROUP BY [o].[CustomerID]
     // Punted because if people want to skip 0 take 0, that's their own problem.
     // SQL Server won't allow FETCH 0 even for the parameterized case,
     // so why should we bother optimizing for the constant case?
-    [ConditionalTheory(Skip = EFCoreSkipReasons.Punt)]
+    [ConditionalTheory(Skip = Punt)]
     [MemberData(nameof(IsAsyncData))]
     public override Task GroupBy_skip_0_take_0_aggregate(bool async)
     {

@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System;
 using Xunit;
 
 namespace Impatient.EFCore.Tests;
@@ -53,7 +52,7 @@ public class CustomConvertersImpatientTest : CustomConvertersTestBase<CustomConv
     }
 
     // Really not sure what the problem is here, seems to execute okay, but EF Core expects a failure
-    [Fact(Skip = EFCoreSkipReasons.Punt)]
+    [Fact(Skip = Punt)]
     public override void Composition_over_collection_of_complex_mapped_as_scalar()
     {
         base.Composition_over_collection_of_complex_mapped_as_scalar();

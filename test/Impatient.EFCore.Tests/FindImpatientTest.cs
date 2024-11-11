@@ -1,8 +1,6 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Impatient.EFCore.Tests;

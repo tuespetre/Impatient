@@ -15,109 +15,109 @@ public class UdfDbFunctionImpatientTest : UdfDbFunctionTestBase<UdfDbFunctionImp
 
     private void AssertSql(string expected) => Fixture.TestSqlLoggerFactory.AssertSql(expected);
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_CrossApply_Correlated_Select_Anonymous()
     {
         base.QF_CrossApply_Correlated_Select_Anonymous();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_CrossApply_Correlated_Select_QF_Type()
     {
         base.QF_CrossApply_Correlated_Select_QF_Type();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_CrossApply_Correlated_Select_Result()
     {
         base.QF_CrossApply_Correlated_Select_Result();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_CrossJoin_Not_Correlated()
     {
         base.QF_CrossJoin_Not_Correlated();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_CrossJoin_Parameter()
     {
         base.QF_CrossJoin_Parameter();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_Join()
     {
         base.QF_Join();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_LeftJoin_Select_Anonymous()
     {
         base.QF_LeftJoin_Select_Anonymous();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_LeftJoin_Select_Result()
     {
         base.QF_LeftJoin_Select_Result();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_OuterApply_Correlated_Select_Anonymous()
     {
         base.QF_OuterApply_Correlated_Select_Anonymous();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_OuterApply_Correlated_Select_Entity()
     {
         base.QF_OuterApply_Correlated_Select_Entity();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_OuterApply_Correlated_Select_QF()
     {
         base.QF_OuterApply_Correlated_Select_QF();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_Select_Correlated_Subquery_In_Anonymous_MultipleCollections()
     {
         base.QF_Select_Correlated_Subquery_In_Anonymous_MultipleCollections();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_Select_Correlated_Subquery_In_Anonymous_Nested()
     {
         base.QF_Select_Correlated_Subquery_In_Anonymous_Nested();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_Select_Direct_In_Anonymous()
     {
         base.QF_Select_Direct_In_Anonymous();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_Select_NonCorrelated_Subquery_In_Anonymous()
     {
         base.QF_Select_NonCorrelated_Subquery_In_Anonymous();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_Select_NonCorrelated_Subquery_In_Anonymous_Parameter()
     {
         base.QF_Select_NonCorrelated_Subquery_In_Anonymous_Parameter();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_Stand_Alone()
     {
         base.QF_Stand_Alone();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void QF_Stand_Alone_Parameter()
     {
         base.QF_Stand_Alone_Parameter();
@@ -134,109 +134,109 @@ public class UdfDbFunctionImpatientTest : UdfDbFunctionTestBase<UdfDbFunctionImp
             """);
     }
 
-    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    [Fact(Skip = ClientEval)]
     public override void Scalar_Nested_Function_BCL_Client_Instance()
     {
         base.Scalar_Nested_Function_BCL_Client_Instance();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    [Fact(Skip = ClientEval)]
     public override void Scalar_Nested_Function_BCL_Client_Static()
     {
         base.Scalar_Nested_Function_BCL_Client_Static();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    [Fact(Skip = ClientEval)]
     public override void Scalar_Nested_Function_BCL_Client_UDF_Instance()
     {
         base.Scalar_Nested_Function_BCL_Client_UDF_Instance();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    [Fact(Skip = ClientEval)]
     public override void Scalar_Nested_Function_BCL_Client_UDF_Static()
     {
         base.Scalar_Nested_Function_BCL_Client_UDF_Static();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    [Fact(Skip = ClientEval)]
     public override void Scalar_Nested_Function_Client_BCL_Instance()
     {
         base.Scalar_Nested_Function_Client_BCL_Instance();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    [Fact(Skip = ClientEval)]
     public override void Scalar_Nested_Function_Client_BCL_Static()
     {
         base.Scalar_Nested_Function_Client_BCL_Static();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    [Fact(Skip = ClientEval)]
     public override void Scalar_Nested_Function_Client_BCL_UDF_Instance()
     {
         base.Scalar_Nested_Function_Client_BCL_UDF_Instance();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    [Fact(Skip = ClientEval)]
     public override void Scalar_Nested_Function_Client_BCL_UDF_Static()
     {
         base.Scalar_Nested_Function_Client_BCL_UDF_Static();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    [Fact(Skip = ClientEval)]
     public override void Scalar_Nested_Function_Client_UDF_BCL_Instance()
     {
         base.Scalar_Nested_Function_Client_UDF_BCL_Instance();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    [Fact(Skip = ClientEval)]
     public override void Scalar_Nested_Function_Client_UDF_BCL_Static()
     {
         base.Scalar_Nested_Function_Client_UDF_BCL_Static();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    [Fact(Skip = ClientEval)]
     public override void Scalar_Nested_Function_Client_UDF_Instance()
     {
         base.Scalar_Nested_Function_Client_UDF_Instance();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    [Fact(Skip = ClientEval)]
     public override void Scalar_Nested_Function_Client_UDF_Static()
     {
         base.Scalar_Nested_Function_Client_UDF_Static();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    [Fact(Skip = ClientEval)]
     public override void Scalar_Nested_Function_Unwind_Client_Eval_OrderBy_Instance()
     {
         base.Scalar_Nested_Function_Unwind_Client_Eval_OrderBy_Instance();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    [Fact(Skip = ClientEval)]
     public override void Scalar_Nested_Function_Unwind_Client_Eval_OrderBy_Static()
     {
         base.Scalar_Nested_Function_Unwind_Client_Eval_OrderBy_Static();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    [Fact(Skip = ClientEval)]
     public override void Scalar_Nested_Function_Unwind_Client_Eval_Where_Instance()
     {
         base.Scalar_Nested_Function_Unwind_Client_Eval_Where_Instance();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.ClientEval)]
+    [Fact(Skip = ClientEval)]
     public override void Scalar_Nested_Function_Unwind_Client_Eval_Where_Static()
     {
         base.Scalar_Nested_Function_Unwind_Client_Eval_Where_Static();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void Udf_with_argument_being_comparison_of_nullable_columns()
     {
         base.Udf_with_argument_being_comparison_of_nullable_columns();
     }
 
-    [Fact(Skip = EFCoreSkipReasons.TestRunAborts)]
+    [Fact(Skip = TestRunAborts)]
     public override void Udf_with_argument_being_comparison_to_null_parameter()
     {
         base.Udf_with_argument_being_comparison_to_null_parameter();

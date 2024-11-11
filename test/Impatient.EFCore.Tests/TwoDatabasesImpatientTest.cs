@@ -1,6 +1,5 @@
 ﻿using Impatient.EFCore.Tests.Fixtures;
 using Microsoft.EntityFrameworkCore;
-using System;
 using Xunit;
 
 namespace Impatient.EFCore.Tests;

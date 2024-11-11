@@ -1,9 +1,6 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
-using Microsoft.EntityFrameworkCore.TestModels.InheritanceRelationshipsModel;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System.Threading.Tasks;
 
 namespace Impatient.EFCore.Tests.Query;
 

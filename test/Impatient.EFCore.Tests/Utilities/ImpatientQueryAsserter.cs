@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System;
-using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.EFCore.Tests.Utilities;

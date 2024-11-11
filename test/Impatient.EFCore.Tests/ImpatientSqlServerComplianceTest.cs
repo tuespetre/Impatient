@@ -3,8 +3,6 @@ using Microsoft.EntityFrameworkCore.BulkUpdates;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Update;
-using System;
-using System.Collections.Generic;
 using System.Reflection;
 
 namespace Impatient.EFCore.Tests;

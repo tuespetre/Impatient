@@ -11,7 +11,6 @@ using Microsoft.EntityFrameworkCore.TestModels.SpatialModel;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using NetTopologySuite.Geometries;
-using System.Linq;
 using Xunit.Abstractions;
 
 namespace Impatient.EFCore.Tests.Query;

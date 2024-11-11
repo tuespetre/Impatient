@@ -1,7 +1,6 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Impatient.EFCore.Tests.Query;
@@ -12,7 +11,7 @@ public class OwnedQueryImpatientTest : OwnedQueryRelationalTestBase<OwnedQueryIm
     {
     }
 
-    [ConditionalTheory(Skip = EFCoreSkipReasons.FromSql)]
+    [ConditionalTheory(Skip = FromSql)]
     [MemberData(nameof(IsAsyncData))]
     public override Task Using_from_sql_on_owner_generates_join_with_table_for_owned_shared_dependents(bool async)
     {

@@ -3,9 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
 using Xunit;
 
 namespace Impatient.EFCore.Tests;

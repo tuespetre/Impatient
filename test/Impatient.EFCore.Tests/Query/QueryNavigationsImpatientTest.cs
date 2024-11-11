@@ -2,7 +2,6 @@
 using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Impatient.EFCore.Tests.Query;
@@ -19,13 +18,13 @@ public class QueryNavigationsImpatientTest : NorthwindNavigationsQueryRelational
     protected override QueryAsserter CreateQueryAsserter(NorthwindQueryImpatientFixture fixture)
         => new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
 
-    [Theory(Skip = EFCoreSkipReasons.ClientEval)]
+    [Theory(Skip = ClientEval)]
     public override Task Collection_select_nav_prop_all_client(bool async)
     {
         return base.Collection_select_nav_prop_all_client(async);
     }
 
-    [Theory(Skip = EFCoreSkipReasons.ClientEval)]
+    [Theory(Skip = ClientEval)]
     public override Task Select_Where_Navigation_Client(bool async)
     {
         return base.Select_Where_Navigation_Client(async);

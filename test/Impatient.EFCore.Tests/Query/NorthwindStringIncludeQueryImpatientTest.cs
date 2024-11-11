@@ -2,7 +2,6 @@
 using Impatient.EFCore.Tests.Utilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Impatient.EFCore.Tests.Query;
@@ -19,7 +18,7 @@ public class NorthwindStringIncludeQueryImpatientTest : NorthwindStringIncludeQu
     protected override QueryAsserter CreateQueryAsserter(NorthwindQueryImpatientFixture fixture)
         => new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
 
-    [Theory(Skip = EFCoreSkipReasons.ClientEval)]
+    [Theory(Skip = ClientEval)]
     public override Task Include_collection_with_client_filter(bool async)
     {
         return base.Include_collection_with_client_filter(async);
