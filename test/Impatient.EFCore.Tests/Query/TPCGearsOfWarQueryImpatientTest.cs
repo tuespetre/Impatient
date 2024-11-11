@@ -23,6 +23,13 @@ public class TPCGearsOfWarQueryImpatientTest : TPCGearsOfWarQueryRelationalTestB
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 
+    public override Task Accessing_property_of_optional_navigation_in_child_projection_works(bool async)
+    {
+        // failing because TranslatabilityAnalyzingExpressionVisitor.VisitConditional not currently allowing non-scalar types
+
+        return base.Accessing_property_of_optional_navigation_in_child_projection_works(async);
+    }
+
     [Theory(Skip = ClientEval)]
     public override Task Client_eval_followed_by_aggregate_operation(bool async)
     {

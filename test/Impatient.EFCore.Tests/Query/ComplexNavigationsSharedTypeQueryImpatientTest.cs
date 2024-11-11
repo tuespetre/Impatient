@@ -136,6 +136,36 @@ public class ComplexNavigationsSharedTypeQueryImpatientTest : ComplexNavigations
         return base.Project_shadow_properties9(async);
     }
 
+    public override async Task Prune_does_not_throw_null_ref(bool async)
+    {
+        await base.Prune_does_not_throw_null_ref(async);
+
+        // WHERE (([t_1].[$empty] IS NULL) AND (([t_1].[Level1_Required_Id] IS NULL OR ([t_1].[Level1_Required_Id] <> [x].[Id])))) OR (([t_1].[$empty] IS NOT NULL) AND (0 <> [x].[Id]))
+
+        // is incorrect
+
+        AssertSql("""
+            SELECT [l1].[Id] AS [Id], [l1].[Date] AS [Date], [l1].[Name] AS [Name]
+            FROM (
+                SELECT NULL AS [$empty]
+            ) AS [t]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [l].[Level1_Required_Id]
+                FROM [Level1] AS [t_0]
+                LEFT JOIN (
+                    SELECT 0 AS [$empty], [l_0].[OneToMany_Optional_Inverse2Id] AS [OneToMany_Optional_Inverse2Id], [l_0].[OneToMany_Required_Inverse2Id] AS [OneToMany_Required_Inverse2Id], [l_0].[OneToOne_Optional_PK_Inverse2Id] AS [OneToOne_Optional_PK_Inverse2Id], [l_0].[Id] AS [Id], [l_0].[OneToOne_Required_PK_Date] AS [Date], [l_0].[Level1_Optional_Id] AS [Level1_Optional_Id], [l_0].[Level1_Required_Id] AS [Level1_Required_Id], [l_0].[Level2_Name] AS [Name]
+                    FROM [Level1] AS [l_0]
+                ) AS [l] ON [t_0].[Id] = [l].[Id]
+                WHERE ([l].[Id] IS NOT NULL) AND ([l].[Id] < 5)
+            ) AS [t_1] ON 1 = 1
+            CROSS APPLY (
+                SELECT [x].[Id] AS [Id], [x].[Date] AS [Date], [x].[Name] AS [Name]
+                FROM [Level1] AS [x]
+                WHERE (([t_1].[$empty] IS NULL) AND (([t_1].[Level1_Required_Id] IS NULL OR ([t_1].[Level1_Required_Id] <> [x].[Id])))) OR (([t_1].[$empty] IS NOT NULL) AND (0 <> [x].[Id]))
+            ) AS [l1]
+            """);
+    }
+
     [Theory(Skip = BadMaterialization)]
     public override Task Select_projecting_queryable_followed_by_Join(bool async)
     {
