@@ -34,4 +34,7 @@ public static class EFCoreSkipReasons
 
     public const string SkipNavigations =
         "Have not yet added support for skip navigations.";
+
+    public const string LiftedInclude =
+        "This test relies on a 'lifted include', which has not yet been implemented.";
 }

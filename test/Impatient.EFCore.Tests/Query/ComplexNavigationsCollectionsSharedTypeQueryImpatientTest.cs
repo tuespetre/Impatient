@@ -23,6 +23,8 @@ public class ComplexNavigationsCollectionsSharedTypeQueryImpatientTest : Complex
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 
+    #region special includes
+
     [Theory(Skip = SpecialIncludes)]
     public override Task Filtered_include_after_different_filtered_include_different_level(bool async)
     {
@@ -257,6 +259,96 @@ public class ComplexNavigationsCollectionsSharedTypeQueryImpatientTest : Complex
         return base.Filtered_ThenInclude_OrderBy(async);
     }
 
+    [Theory(Skip = SpecialIncludes)]
+    public override Task Include_partially_added_before_Where_and_then_build_upon_with_filtered_include(bool async)
+    {
+        return base.Include_partially_added_before_Where_and_then_build_upon_with_filtered_include(async);
+    }
+
+    #endregion
+
+    #region lifted includes
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Include_after_SelectMany_and_multiple_reference_navigations(bool async)
+    {
+        return base.Include_after_SelectMany_and_multiple_reference_navigations(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Include_after_multiple_SelectMany_and_reference_navigation(bool async)
+    {
+        return base.Include_after_multiple_SelectMany_and_reference_navigation(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Include_and_ThenInclude_collections_followed_by_projecting_the_first_collection(bool async)
+    {
+        return base.Include_and_ThenInclude_collections_followed_by_projecting_the_first_collection(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Include_collection_and_another_navigation_chain_followed_by_projecting_the_first_collection(bool async)
+    {
+        return base.Include_collection_and_another_navigation_chain_followed_by_projecting_the_first_collection(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Include_collection_followed_by_complex_includes_and_projecting_the_included_collection(bool async)
+    {
+        return base.Include_collection_followed_by_complex_includes_and_projecting_the_included_collection(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Include_collection_ThenInclude_reference_followed_by_projection_into_anonmous_type(bool async)
+    {
+        return base.Include_collection_ThenInclude_reference_followed_by_projection_into_anonmous_type(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Multiple_optional_navigation_with_Include(bool async)
+    {
+        return base.Multiple_optional_navigation_with_Include(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Multiple_optional_navigation_with_string_based_Include(bool async)
+    {
+        return base.Multiple_optional_navigation_with_string_based_Include(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Optional_navigation_with_Include_and_order(bool async)
+    {
+        return base.Optional_navigation_with_Include_and_order(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Optional_navigation_with_Include_ThenInclude(bool async)
+    {
+        return base.Optional_navigation_with_Include_ThenInclude(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Optional_navigation_with_order_by_and_Include(bool async)
+    {
+        return base.Optional_navigation_with_order_by_and_Include(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Required_navigation_with_Include(bool async)
+    {
+        return base.Required_navigation_with_Include(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Required_navigation_with_Include_ThenInclude(bool async)
+    {
+        return base.Required_navigation_with_Include_ThenInclude(async);
+    }
+
+    #endregion
+
     [Theory(Skip = TranslationBeyondEF)]
     public override Task Include_after_Select(bool async)
     {
@@ -309,12 +401,6 @@ public class ComplexNavigationsCollectionsSharedTypeQueryImpatientTest : Complex
     public override Task Include_inside_subquery(bool async)
     {
         return base.Include_inside_subquery(async);
-    }
-
-    [Theory(Skip = SpecialIncludes)]
-    public override Task Include_partially_added_before_Where_and_then_build_upon_with_filtered_include(bool async)
-    {
-        return base.Include_partially_added_before_Where_and_then_build_upon_with_filtered_include(async);
     }
 
     [Theory(Skip = ClientEval)]
