@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Xunit;
+using Xunit.Sdk;
 using static Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest;
 
 namespace Impatient.EFCore.Tests.Query;
@@ -109,6 +110,62 @@ public class TPCGearsOfWarQueryImpatientTest : TPCGearsOfWarQueryRelationalTestB
             """);
     }
 
+    [TranslationExceedsEFCore]
+    public override async Task Nav_rewrite_Distinct_with_convert()
+    {
+        await Assert.ThrowsAsync<ThrowsException>(base.Nav_rewrite_Distinct_with_convert);
+
+        AssertSql("""
+            SELECT [t].[$outer.Id] AS [Id], [t].[$outer.CapitalName] AS [CapitalName], [t].[$outer.Name] AS [Name], [t].[$outer.ServerAddress] AS [ServerAddress], [t].[$outer.CommanderName] AS [CommanderName], [t].[$outer.Eradicated] AS [Eradicated], [t].[$outer.Commander.$empty] AS [Commander.$empty], [t].[$outer.Commander.Name] AS [Commander.Name], [t].[$outer.Commander.ThreatLevel] AS [Commander.ThreatLevel], [t].[$outer.Commander.ThreatLevelByte] AS [Commander.ThreatLevelByte], [t].[$outer.Commander.ThreatLevelNullableByte] AS [Commander.ThreatLevelNullableByte], [t].[$outer.Commander.DefeatedByNickname] AS [Commander.DefeatedByNickname], [t].[$outer.Commander.DefeatedBySquadId] AS [Commander.DefeatedBySquadId], [t].[$outer.Commander.HighCommandId] AS [Commander.HighCommandId]
+            FROM (
+                SELECT DISTINCT [l].[Id] AS [$outer.Id], [l].[CapitalName] AS [$outer.CapitalName], [l].[Name] AS [$outer.Name], [l].[ServerAddress] AS [$outer.ServerAddress], [l].[CommanderName] AS [$outer.CommanderName], [l].[Eradicated] AS [$outer.Eradicated], [l_0].[$empty] AS [$outer.Commander.$empty], [l_0].[LocustHordeId] AS [$outer.Commander.LocustHordeId], [l_0].[Name] AS [$outer.Commander.Name], [l_0].[ThreatLevel] AS [$outer.Commander.ThreatLevel], [l_0].[ThreatLevelByte] AS [$outer.Commander.ThreatLevelByte], [l_0].[ThreatLevelNullableByte] AS [$outer.Commander.ThreatLevelNullableByte], [l_0].[DefeatedByNickname] AS [$outer.Commander.DefeatedByNickname], [l_0].[DefeatedBySquadId] AS [$outer.Commander.DefeatedBySquadId], [l_0].[HighCommandId] AS [$outer.Commander.HighCommandId], [l].[CommanderName] AS [$inner.Key]
+                FROM [LocustHordes] AS [l]
+                LEFT JOIN (
+                    SELECT 0 AS [$empty], [l_1].[LocustHordeId] AS [LocustHordeId], [l_1].[Name] AS [Name], [l_1].[ThreatLevel] AS [ThreatLevel], [l_1].[ThreatLevelByte] AS [ThreatLevelByte], [l_1].[ThreatLevelNullableByte] AS [ThreatLevelNullableByte], [l_1].[DefeatedByNickname] AS [DefeatedByNickname], [l_1].[DefeatedBySquadId] AS [DefeatedBySquadId], [l_1].[HighCommandId] AS [HighCommandId]
+                    FROM [LocustCommanders] AS [l_1]
+                ) AS [l_0] ON [l].[CommanderName] = [l_0].[Name]
+                LEFT JOIN (
+                    SELECT 0 AS [$empty], [c].[Name] AS [Name], [c].[Location] AS [Location], [c].[Nation] AS [Nation]
+                    FROM [Cities] AS [c]
+                ) AS [c_0] ON [l].[CapitalName] = [c_0].[Name]
+                WHERE ([c_0].[Name] IS NULL OR ([c_0].[Name] <> N'Foo'))
+            ) AS [t]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [l_2].[LocustHordeId] AS [LocustHordeId], [l_2].[Name] AS [Name], [l_2].[ThreatLevel] AS [ThreatLevel], [l_2].[ThreatLevelByte] AS [ThreatLevelByte], [l_2].[ThreatLevelNullableByte] AS [ThreatLevelNullableByte], [l_2].[DefeatedByNickname] AS [DefeatedByNickname], [l_2].[DefeatedBySquadId] AS [DefeatedBySquadId], [l_2].[HighCommandId] AS [HighCommandId]
+                FROM [LocustCommanders] AS [l_2]
+            ) AS [l_3] ON [t].[$inner.Key] = [l_3].[Name]
+            WHERE ([l_3].[Name] IS NULL OR ([l_3].[Name] <> N'Bar'))
+            """);
+    }
+
+    [TranslationExceedsEFCore]
+    public override async Task Nav_rewrite_Distinct_with_convert_anonymous()
+    {
+        await Assert.ThrowsAsync<ThrowsException>(base.Nav_rewrite_Distinct_with_convert_anonymous);
+
+        AssertSql("""
+            SELECT [t].[$outer.horde.Id] AS [horde.Id], [t].[$outer.horde.CapitalName] AS [horde.CapitalName], [t].[$outer.horde.Name] AS [horde.Name], [t].[$outer.horde.ServerAddress] AS [horde.ServerAddress], [t].[$outer.horde.CommanderName] AS [horde.CommanderName], [t].[$outer.horde.Eradicated] AS [horde.Eradicated], [t].[$outer.horde.Commander.$empty] AS [horde.Commander.$empty], [t].[$outer.horde.Commander.Name] AS [horde.Commander.Name], [t].[$outer.horde.Commander.ThreatLevel] AS [horde.Commander.ThreatLevel], [t].[$outer.horde.Commander.ThreatLevelByte] AS [horde.Commander.ThreatLevelByte], [t].[$outer.horde.Commander.ThreatLevelNullableByte] AS [horde.Commander.ThreatLevelNullableByte], [t].[$outer.horde.Commander.DefeatedByNickname] AS [horde.Commander.DefeatedByNickname], [t].[$outer.horde.Commander.DefeatedBySquadId] AS [horde.Commander.DefeatedBySquadId], [t].[$outer.horde.Commander.HighCommandId] AS [horde.Commander.HighCommandId]
+            FROM (
+                SELECT DISTINCT [l].[Id] AS [$outer.horde.Id], [l].[CapitalName] AS [$outer.horde.CapitalName], [l].[Name] AS [$outer.horde.Name], [l].[ServerAddress] AS [$outer.horde.ServerAddress], [l].[CommanderName] AS [$outer.horde.CommanderName], [l].[Eradicated] AS [$outer.horde.Eradicated], [l_0].[$empty] AS [$outer.horde.Commander.$empty], [l_0].[LocustHordeId] AS [$outer.horde.Commander.LocustHordeId], [l_0].[Name] AS [$outer.horde.Commander.Name], [l_0].[ThreatLevel] AS [$outer.horde.Commander.ThreatLevel], [l_0].[ThreatLevelByte] AS [$outer.horde.Commander.ThreatLevelByte], [l_0].[ThreatLevelNullableByte] AS [$outer.horde.Commander.ThreatLevelNullableByte], [l_0].[DefeatedByNickname] AS [$outer.horde.Commander.DefeatedByNickname], [l_0].[DefeatedBySquadId] AS [$outer.horde.Commander.DefeatedBySquadId], [l_0].[HighCommandId] AS [$outer.horde.Commander.HighCommandId], [l].[CommanderName] AS [$inner.Key]
+                FROM [LocustHordes] AS [l]
+                LEFT JOIN (
+                    SELECT 0 AS [$empty], [l_1].[LocustHordeId] AS [LocustHordeId], [l_1].[Name] AS [Name], [l_1].[ThreatLevel] AS [ThreatLevel], [l_1].[ThreatLevelByte] AS [ThreatLevelByte], [l_1].[ThreatLevelNullableByte] AS [ThreatLevelNullableByte], [l_1].[DefeatedByNickname] AS [DefeatedByNickname], [l_1].[DefeatedBySquadId] AS [DefeatedBySquadId], [l_1].[HighCommandId] AS [HighCommandId]
+                    FROM [LocustCommanders] AS [l_1]
+                ) AS [l_0] ON [l].[CommanderName] = [l_0].[Name]
+                LEFT JOIN (
+                    SELECT 0 AS [$empty], [c].[Name] AS [Name], [c].[Location] AS [Location], [c].[Nation] AS [Nation]
+                    FROM [Cities] AS [c]
+                ) AS [c_0] ON [l].[CapitalName] = [c_0].[Name]
+                WHERE ([c_0].[Name] IS NULL OR ([c_0].[Name] <> N'Foo'))
+            ) AS [t]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [l_2].[LocustHordeId] AS [LocustHordeId], [l_2].[Name] AS [Name], [l_2].[ThreatLevel] AS [ThreatLevel], [l_2].[ThreatLevelByte] AS [ThreatLevelByte], [l_2].[ThreatLevelNullableByte] AS [ThreatLevelNullableByte], [l_2].[DefeatedByNickname] AS [DefeatedByNickname], [l_2].[DefeatedBySquadId] AS [DefeatedBySquadId], [l_2].[HighCommandId] AS [HighCommandId]
+                FROM [LocustCommanders] AS [l_2]
+            ) AS [l_3] ON [t].[$inner.Key] = [l_3].[Name]
+            WHERE ([l_3].[Name] IS NULL OR ([l_3].[Name] <> N'Bar'))
+            """);
+    }
+
     [Theory(Skip = ClientEval)]
     public override Task Orderby_added_for_client_side_GroupJoin_composite_dependent_to_principal_LOJ_when_incomplete_key_is_used(bool async)
     {
@@ -148,6 +205,11 @@ public class TPCGearsOfWarQueryImpatientTest : TPCGearsOfWarQueryRelationalTestB
     public override Task Select_Where_Navigation_Client(bool async)
     {
         return base.Select_Where_Navigation_Client(async);
+    }
+
+    public override Task ToString_boolean_property_non_nullable(bool async)
+    {
+        return base.ToString_boolean_property_non_nullable(async);
     }
 
     [Theory(Skip = ClientEval)]
