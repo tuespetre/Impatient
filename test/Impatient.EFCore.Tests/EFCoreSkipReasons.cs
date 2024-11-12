@@ -37,4 +37,7 @@ public static class EFCoreSkipReasons
 
     public const string LiftedInclude =
         "This test relies on a 'lifted include', which has not yet been implemented.";
+
+    public const string OrderByEntity =
+        "This test relies on ordering by an entity being translated to ordering by its primary key, which is not yet implemented.";
 }

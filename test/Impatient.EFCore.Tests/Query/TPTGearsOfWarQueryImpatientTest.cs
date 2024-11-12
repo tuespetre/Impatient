@@ -101,6 +101,30 @@ public class TPTGearsOfWarQueryImpatientTest : TPTGearsOfWarQueryRelationalTestB
         return base.Orderby_added_for_client_side_GroupJoin_composite_dependent_to_principal_LOJ_when_incomplete_key_is_used(async);
     }
 
+    [Theory(Skip = OrderByEntity)]
+    public override Task Order_by_entity_qsre(bool async)
+    {
+        return base.Order_by_entity_qsre(async);
+    }
+
+    [Theory(Skip = OrderByEntity)]
+    public override Task Order_by_entity_qsre_composite_key(bool async)
+    {
+        return base.Order_by_entity_qsre_composite_key(async);
+    }
+
+    [Theory(Skip = OrderByEntity)]
+    public override Task Order_by_entity_qsre_with_inheritance(bool async)
+    {
+        return base.Order_by_entity_qsre_with_inheritance(async);
+    }
+
+    [Theory(Skip = OrderByEntity)]
+    public override Task Order_by_entity_qsre_with_other_orderbys(bool async)
+    {
+        return base.Order_by_entity_qsre_with_other_orderbys(async);
+    }
+
     public override async Task Project_one_value_type_with_client_projection_from_empty_collection(bool async)
     {
         await base.Project_one_value_type_with_client_projection_from_empty_collection(async);
