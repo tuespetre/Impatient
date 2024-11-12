@@ -22,7 +22,7 @@ public class SqlParameterRewritingExpressionVisitor : ExpressionVisitor
         switch (node)
         {
             case null:
-            case LambdaExpression _:
+            case LambdaExpression:
             {
                 return node;
             }
@@ -74,66 +74,57 @@ public class SqlParameterRewritingExpressionVisitor : ExpressionVisitor
         var left = visitedLeft.UnwrapInnerExpression();
         var right = visitedRight.UnwrapInnerExpression();
 
-        var leftMapping = FindTypeMapping(left);
-        var rightMapping = FindTypeMapping(right);
-
         var madeChange = false;
 
-        if (rightMapping is not null)
-        {
-            if (left is SqlParameterExpression leftParameter && leftParameter.TypeMapping is null)
-            {
-                left
-                    = new SqlParameterExpression(
-                        leftParameter.Expression.UnwrapInnerExpression(),
-                        leftParameter.IsNullable,
-                        rightMapping);
-
-                madeChange = true;
-            }
-            else if (left is ConstantExpression && rightMapping.SourceConversion is not null && left.Type.IsAssignableTo(rightMapping.TargetType))
-            {
-                left
-                    = new SqlParameterExpression(
-                        left,
-                        left.Type.IsNullableType() || !left.Type.GetTypeInfo().IsValueType,
-                        rightMapping);
-
-                madeChange = true;
-            }
-        }
-
-        if (leftMapping is not null)
-        {
-            if (right is SqlParameterExpression rightParameter && rightParameter.TypeMapping is null)
-            {
-                right
-                    = new SqlParameterExpression(
-                        rightParameter.Expression.UnwrapInnerExpression(),
-                        rightParameter.IsNullable,
-                        leftMapping);
-
-                madeChange = true;
-            }
-            else if (right is ConstantExpression && leftMapping.SourceConversion is not null && right.Type.IsAssignableTo(leftMapping.TargetType))
-            {
-                right
-                    = new SqlParameterExpression(
-                        right,
-                        right.Type.IsNullableType() || !right.Type.GetTypeInfo().IsValueType,
-                        leftMapping);
-
-                madeChange = true;
-            }
-        }
+        ProcessBinaryOperand(right, ref left, ref madeChange);
+        ProcessBinaryOperand(left, ref right, ref madeChange);
 
         return madeChange
             ? node.UpdateWithConversion(left, right)
             : node.Update(visitedLeft, node.Conversion, visitedRight);
     }
 
+    private void ProcessBinaryOperand(Expression thisNode, ref Expression thatNode, ref bool madeChange)
+    {
+        var thisMapping = FindTypeMapping(thisNode);
+
+        if (thisMapping is null)
+        {
+            return;
+        }
+
+        if (thatNode is SqlParameterExpression parameter 
+            && parameter.TypeMapping is null)
+        {
+            thatNode
+                = new SqlParameterExpression(
+                    parameter.Expression.UnwrapInnerExpression(),
+                    parameter.IsNullable,
+                    thisMapping);
+
+            madeChange = true;
+        }
+        else if (thatNode is ConstantExpression 
+            && thisMapping.SourceConversion is not null 
+            && thatNode.Type.IsAssignableTo(thisMapping.TargetType))
+        {
+            thatNode
+                = new SqlParameterExpression(
+                    thatNode,
+                    thatNode.Type.IsNullableType() || !thatNode.Type.GetTypeInfo().IsValueType,
+                    thisMapping);
+
+            madeChange = true;
+        }
+    }
+
     private bool IsEligibleForParameterization(Expression node)
     {
+        if (node.NodeType is ExpressionType.Extension)
+        {
+            return false;
+        }
+
         var countingVisitor = new ParameterAndExtensionCountingExpressionVisitor(targetParameters);
 
         countingVisitor.Visit(node);
@@ -228,7 +219,7 @@ public class SqlParameterRewritingExpressionVisitor : ExpressionVisitor
         {
             switch (node)
             {
-                case RelationalQueryExpression _:
+                case RelationalQueryExpression:
                 {
                     return visitor.Visit(node);
                 }
