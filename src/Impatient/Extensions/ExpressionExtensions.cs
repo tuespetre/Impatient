@@ -237,6 +237,11 @@ public static class ExpressionExtensions
                 return null;
             }
 
+            case UnaryExpression { NodeType: ExpressionType.Convert } unaryExpression:
+            {
+                return ResolveProperty(unaryExpression.Operand, segment);
+            }
+
             default:
             {
                 return null;

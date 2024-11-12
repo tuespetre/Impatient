@@ -594,6 +594,174 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.GetDatabaseValuesAsync_for_entity_not_in_the_store_returns_null" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Scalar_store_values_can_be_accessed_as_a_non_generic_property_dictionary_using_IProperty" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Scalar_store_values_can_be_accessed_as_a_non_generic_property_dictionary_using_IProperty" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_or_set_for_a_Detached_object" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_or_set_for_a_Detached_object" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_and_set_for_an_object_in_the_Unchanged_state_asynchronously" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_and_set_for_an_object_in_the_Unchanged_state_asynchronously" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_and_set_for_an_object_in_the_Modified_state_asynchronously" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_and_set_for_an_object_in_the_Modified_state_asynchronously" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_copied_into_a_cloned_dictionary_asynchronously" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_copied_into_a_cloned_dictionary_asynchronously" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_and_set_for_an_object_in_the_Unchanged_state" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_and_set_for_an_object_in_the_Unchanged_state" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_or_set_for_an_object_in_the_Added_state_asynchronously" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_or_set_for_an_object_in_the_Added_state_asynchronously" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_copied_asynchronously_non_generic_property_dictionary_into_an_object" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_copied_asynchronously_non_generic_property_dictionary_into_an_object" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_really_are_store_values_not_current_or_original_values" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_really_are_store_values_not_current_or_original_values" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Values_can_be_reloaded_from_database_for_entity_in_any_state" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Values_can_be_reloaded_from_database_for_entity_in_any_state" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Properties_for_store_values_returns_properties_asynchronously" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Properties_for_store_values_returns_properties_asynchronously" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_copied_into_an_object_asynchronously" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_copied_into_an_object_asynchronously" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Properties_for_store_values_returns_properties" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Properties_for_store_values_returns_properties" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_and_set_for_an_object_in_the_Deleted_state" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_and_set_for_an_object_in_the_Deleted_state" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Scalar_store_values_can_be_accessed_as_a_non_generic_property_dictionary" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Scalar_store_values_can_be_accessed_as_a_non_generic_property_dictionary" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_and_set_for_an_object_in_the_Deleted_state_asynchronously" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_and_set_for_an_object_in_the_Deleted_state_asynchronously" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_or_set_for_an_object_in_the_Added_state" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_or_set_for_an_object_in_the_Added_state" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_copied_into_a_non_generic_cloned_dictionary" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_copied_into_a_non_generic_cloned_dictionary" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_copied_into_an_object" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_copied_into_an_object" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Scalar_store_values_can_be_accessed_asynchronously_as_a_non_generic_property_dictionary_using_IProperty" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Scalar_store_values_can_be_accessed_asynchronously_as_a_non_generic_property_dictionary_using_IProperty" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_copied_into_a_cloned_dictionary" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_copied_into_a_cloned_dictionary" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_and_set_for_an_object_in_the_Modified_state" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_and_set_for_an_object_in_the_Modified_state" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_copied_non_generic_property_dictionary_into_an_object" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_copied_non_generic_property_dictionary_into_an_object" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_really_are_store_values_not_current_or_original_values_async" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_really_are_store_values_not_current_or_original_values_async" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_copied_asynchronously_into_a_non_generic_cloned_dictionary" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_copied_asynchronously_into_a_non_generic_cloned_dictionary" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_or_set_for_a_Detached_object_asynchronously" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Store_values_can_be_read_or_set_for_a_Detached_object_asynchronously" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Setting_store_values_does_not_change_current_or_original_values" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Setting_store_values_does_not_change_current_or_original_values" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Scalar_store_values_can_be_accessed_asynchronously_as_a_non_generic_property_dictionary" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.PropertyValuesImpatientTest.Scalar_store_values_can_be_accessed_asynchronously_as_a_non_generic_property_dictionary" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">

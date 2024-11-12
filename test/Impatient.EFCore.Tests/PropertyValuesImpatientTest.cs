@@ -30,8 +30,6 @@ public class PropertyValuesImpatientTest(Fixture fixture) : PropertyValuesTestBa
                 .Where(e => Equals(Property(e, "BuildingId"), value(Microsoft.EntityFrameworkCore.Storage.ValueBuffer).get_Item(0)))
 
                 TODO: add a simplified test case for the above
-
-            now failing because the NewArray expression is not being considered translatable for some reason -- investigate why
         */
 
         return base.Store_values_can_be_copied_into_an_object();

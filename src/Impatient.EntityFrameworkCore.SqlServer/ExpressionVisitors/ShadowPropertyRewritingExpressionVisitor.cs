@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
-using System.Linq;
 using System.Linq.Expressions;
 
 namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
@@ -24,9 +23,10 @@ public class ShadowPropertyRewritingExpressionVisitor : ExpressionVisitor
         if (node.Method.IsEFPropertyMethod()
             && arguments[1] is ConstantExpression constantExpression)
         {
+            var entityExpression = arguments[0];
             var propertyName = (string)constantExpression.Value;
 
-            if (arguments[0].TryResolvePath(propertyName, out var resolved))
+            if (entityExpression.TryResolvePath(propertyName, out var resolved))
             {
                 if (resolved.Type != node.Type)
                 {
@@ -37,7 +37,7 @@ public class ShadowPropertyRewritingExpressionVisitor : ExpressionVisitor
             }
 
             // TODO: used to be SingleOrDefault. something is probably wrong here (as in, with using FirstOrDefault)
-            var entityType = model.FindFirstEntityType(arguments[0].Type);
+            var entityType = model.FindFirstEntityType(entityExpression.Type);
 
             if (entityType is not null)
             {
@@ -47,14 +47,14 @@ public class ShadowPropertyRewritingExpressionVisitor : ExpressionVisitor
 
                 if (property is not null && !property.IsShadowProperty())
                 {
-                    result = Expression.MakeMemberAccess(arguments[0], property.GetSemanticReadableMemberInfo());
+                    result = Expression.MakeMemberAccess(entityExpression, property.GetSemanticReadableMemberInfo());
                 }
 
                 var navigation = entityType.FindNavigation(propertyName);
 
                 if (navigation is not null && !navigation.IsShadowProperty())
                 {
-                    result = Expression.MakeMemberAccess(arguments[0], navigation.GetSemanticReadableMemberInfo());
+                    result = Expression.MakeMemberAccess(entityExpression, navigation.GetSemanticReadableMemberInfo());
                 }
 
                 if (result is not null)
