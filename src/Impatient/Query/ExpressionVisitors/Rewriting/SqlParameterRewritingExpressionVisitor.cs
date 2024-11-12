@@ -116,6 +116,18 @@ public class SqlParameterRewritingExpressionVisitor : ExpressionVisitor
 
             madeChange = true;
         }
+        else if (IsEligibleForParameterization(thatNode))
+        {
+            // this else block was actually added for EF Core -- see test 'Store_values_can_be_copied_into_an_object'
+
+            thatNode
+                = new SqlParameterExpression(
+                    thatNode,
+                    thatNode.Type.IsNullableType() || !thatNode.Type.GetTypeInfo().IsValueType,
+                    thisMapping);
+
+            madeChange = true;
+        }
     }
 
     private bool IsEligibleForParameterization(Expression node)
