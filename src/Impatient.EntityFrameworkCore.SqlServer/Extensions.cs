@@ -1,5 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Impatient.Extensions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -97,9 +99,25 @@ internal static class Extensions
             case PropertyAccessMode.PreferField:
             case PropertyAccessMode.PreferFieldDuringConstruction:
             {
-                return (MemberInfo)propertyBase.GetWritableFieldInfo()
-                    ?? propertyBase.GetWritablePropertyInfo()
-                    ?? throw new InvalidOperationException();
+                var field = propertyBase.GetWritableFieldInfo();
+                var property = propertyBase.GetWritablePropertyInfo();
+
+                if (field is null)
+                {
+                    return property;
+                }
+
+                if (property is null)
+                {
+                    return field;
+                }
+
+                if (property.GetMemberType() != field.GetMemberType())
+                {
+                    return property;
+                }
+
+                return field;
             }
 
             case PropertyAccessMode.PreferProperty:
