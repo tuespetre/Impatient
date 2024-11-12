@@ -326,7 +326,7 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
     {
         Builder.Append("(CASE WHEN ");
 
-        var test = Visit(node.Test.AsLogicalBooleanSqlExpression());
+        var test = Visit(node.Test.UnwrapInnerExpression().AsLogicalBooleanSqlExpression());
 
         Builder.Append(" THEN ");
 

@@ -74,7 +74,7 @@ public class SqlParameterRewritingExpressionVisitor : ExpressionVisitor
         var left = visitedLeft.UnwrapInnerExpression();
         var right = visitedRight.UnwrapInnerExpression();
 
-        var madeChange = false;
+        var madeChange = visitedLeft != node.Left || visitedRight != node.Right;
 
         ProcessBinaryOperand(right, ref left, ref madeChange);
         ProcessBinaryOperand(left, ref right, ref madeChange);

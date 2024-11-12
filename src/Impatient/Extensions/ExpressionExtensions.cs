@@ -448,17 +448,7 @@ public static class ExpressionExtensions
 
         if (!test.IsLogicalBooleanSqlExpression())
         {
-            if (nullable)
-            {
-                test
-                    = Expression.AndAlso(
-                        Expression.NotEqual(test, Expression.Constant(null)),
-                        test.AsLogicalBooleanSqlExpression());
-            }
-            else
-            {
-                test = test.AsLogicalBooleanSqlExpression();
-            }
+            test = test.AsLogicalBooleanSqlExpression();
         }
 
         var ifTrue = (Expression)Expression.Constant(flag);
@@ -472,6 +462,8 @@ public static class ExpressionExtensions
             }
             else
             {
+                test = Expression.Convert(test, typeof(bool));
+
                 ifTrue = Expression.Convert(ifTrue, typeof(bool?));
                 ifFalse = Expression.Constant(null, typeof(bool?));
             }
