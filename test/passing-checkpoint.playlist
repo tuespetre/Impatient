@@ -1848,6 +1848,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ConvertToProviderTypesImpatientTest.Can_insert_and_read_back_non_nullable_backed_data_types" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ConvertToProviderTypesImpatientTest.Can_insert_and_read_back_nullable_backed_data_types" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ConvertToProviderTypesImpatientTest.Can_insert_and_read_back_nullable_backed_data_types" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -3530,6 +3536,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CustomConvertersImpatientTest.Can_insert_and_read_back_non_nullable_backed_data_types" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CustomConvertersImpatientTest.Can_insert_and_read_back_nullable_backed_data_types" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CustomConvertersImpatientTest.Can_insert_and_read_back_nullable_backed_data_types" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -4064,6 +4076,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.BuiltInDataTypesImpatientTest.Can_insert_and_read_back_non_nullable_backed_data_types" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.BuiltInDataTypesImpatientTest.Can_insert_and_read_back_non_nullable_backed_data_types" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.BuiltInDataTypesImpatientTest.Can_insert_and_read_back_nullable_backed_data_types" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.BuiltInDataTypesImpatientTest.Can_insert_and_read_back_nullable_backed_data_types" />
                       </Rule>
                     </Rule>
                   </Rule>
