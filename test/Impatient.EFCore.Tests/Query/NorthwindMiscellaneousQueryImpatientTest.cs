@@ -263,6 +263,19 @@ public class NorthwindMiscellaneousQueryImpatientTest : NorthwindMiscellaneousQu
         return base.Throws_on_concurrent_query_list(async);
     }
 
+    public override async Task Where_bitwise_binary_not(bool async)
+    {
+        await base.Where_bitwise_binary_not(async);
+
+        AssertSql("""
+            @p0='-10249'
+
+            SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
+            FROM [Orders] AS [o]
+            WHERE ~[o].[OrderID] = @p0
+            """);
+    }
+
     [Theory(Skip = WeirdSkipReason)]
     public override Task Where_query_composition_entity_equality_multiple_elements_First(bool async)
     {

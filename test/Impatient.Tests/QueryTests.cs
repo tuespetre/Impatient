@@ -1059,7 +1059,7 @@ FROM [dbo].[MyClass1] AS [a]",
         Assert.AreEqual(2, results.Count);
 
         Assert.AreEqual(
-            @"SELECT ~ [a].[Prop2] AS [x]
+            @"SELECT ~[a].[Prop2] AS [x]
 FROM [dbo].[MyClass1] AS [a]",
             SqlLog);
     }

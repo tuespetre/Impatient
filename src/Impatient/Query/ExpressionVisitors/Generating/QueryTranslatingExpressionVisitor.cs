@@ -658,7 +658,7 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
 
             case ExpressionType.Not:
             {
-                Builder.Append("~ ");
+                Builder.Append("~");
 
                 return base.VisitUnary(node);
             }

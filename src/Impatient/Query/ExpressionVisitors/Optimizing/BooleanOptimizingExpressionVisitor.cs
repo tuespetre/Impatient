@@ -185,7 +185,8 @@ public class BooleanOptimizingExpressionVisitor : ExpressionVisitor
                             return Expression.Constant(false);
                         }
                     }
-                    else if (leftConstant is not null && !right.Type.IsNullableType())
+                    else if (leftConstant is not null 
+                        && !right.Type.IsNullableType())
                     {
                         if (true.Equals(leftConstant.Value))
                         {
@@ -196,7 +197,8 @@ public class BooleanOptimizingExpressionVisitor : ExpressionVisitor
                             return Expression.Not(right);
                         }
                     }
-                    else if (rightConstant is not null && !left.Type.IsNullableType())
+                    else if (rightConstant is not null 
+                        && !left.Type.IsNullableType())
                     {
                         if (true.Equals(rightConstant.Value))
                         {
@@ -207,7 +209,10 @@ public class BooleanOptimizingExpressionVisitor : ExpressionVisitor
                             return Expression.Not(left);
                         }
                     }
-                    else if (left.NodeType == ExpressionType.Not && right.NodeType == ExpressionType.Not)
+                    else if (left.NodeType == ExpressionType.Not 
+                        && right.NodeType == ExpressionType.Not
+                        && left.Type.IsBooleanType()
+                        && right.Type.IsBooleanType())
                     {
                         left = ((UnaryExpression)left).Operand;
                         right = ((UnaryExpression)right).Operand;
@@ -216,7 +221,10 @@ public class BooleanOptimizingExpressionVisitor : ExpressionVisitor
 
                         return Visit(Expression.Equal(left, right));
                     }
-                    else if (left.NodeType == ExpressionType.Not && !left.Type.IsNullableType() && !right.Type.IsNullableType())
+                    else if (left.NodeType == ExpressionType.Not 
+                        && !left.Type.IsNullableType() 
+                        && !right.Type.IsNullableType()
+                        && left.Type.IsBooleanType())
                     {
                         left = ((UnaryExpression)left).Operand;
 
@@ -224,7 +232,10 @@ public class BooleanOptimizingExpressionVisitor : ExpressionVisitor
 
                         return Visit(Expression.NotEqual(left, right));
                     }
-                    else if (right.NodeType == ExpressionType.Not && !left.Type.IsNullableType() && !right.Type.IsNullableType())
+                    else if (right.NodeType == ExpressionType.Not 
+                        && !left.Type.IsNullableType() 
+                        && !right.Type.IsNullableType()
+                        && right.Type.IsBooleanType())
                     {
                         right = ((UnaryExpression)right).Operand;
 
@@ -252,7 +263,8 @@ public class BooleanOptimizingExpressionVisitor : ExpressionVisitor
                             return Expression.Constant(true);
                         }
                     }
-                    else if (leftConstant is not null && !right.Type.IsNullableType())
+                    else if (leftConstant is not null 
+                        && !right.Type.IsNullableType())
                     {
                         if (false.Equals(leftConstant.Value))
                         {
@@ -263,7 +275,8 @@ public class BooleanOptimizingExpressionVisitor : ExpressionVisitor
                             return Expression.Not(right);
                         }
                     }
-                    else if (rightConstant is not null && !left.Type.IsNullableType())
+                    else if (rightConstant is not null 
+                        && !left.Type.IsNullableType())
                     {
                         if (false.Equals(rightConstant.Value))
                         {
@@ -274,7 +287,10 @@ public class BooleanOptimizingExpressionVisitor : ExpressionVisitor
                             return Expression.Not(left);
                         }
                     }
-                    else if (left.NodeType == ExpressionType.Not && right.NodeType == ExpressionType.Not)
+                    else if (left.NodeType == ExpressionType.Not 
+                        && right.NodeType == ExpressionType.Not
+                        && left.Type.IsBooleanType()
+                        && right.Type.IsBooleanType())
                     {
                         left = ((UnaryExpression)left).Operand;
                         right = ((UnaryExpression)right).Operand;
@@ -283,7 +299,10 @@ public class BooleanOptimizingExpressionVisitor : ExpressionVisitor
 
                         return Visit(Expression.NotEqual(left, right));
                     }
-                    else if (left.NodeType == ExpressionType.Not && !left.Type.IsNullableType() && !right.Type.IsNullableType())
+                    else if (left.NodeType == ExpressionType.Not 
+                        && !left.Type.IsNullableType() 
+                        && !right.Type.IsNullableType()
+                        && left.Type.IsBooleanType())
                     {
                         left = ((UnaryExpression)left).Operand;
 
@@ -291,7 +310,10 @@ public class BooleanOptimizingExpressionVisitor : ExpressionVisitor
 
                         return Visit(Expression.Equal(left, right));
                     }
-                    else if (right.NodeType == ExpressionType.Not && !left.Type.IsNullableType() && !right.Type.IsNullableType())
+                    else if (right.NodeType == ExpressionType.Not 
+                        && !left.Type.IsNullableType() 
+                        && !right.Type.IsNullableType()
+                        && right.Type.IsBooleanType())
                     {
                         right = ((UnaryExpression)right).Operand;
 
@@ -325,7 +347,7 @@ public class BooleanOptimizingExpressionVisitor : ExpressionVisitor
         {
             var operand = Visit(node.Operand);
 
-            if (node.NodeType == ExpressionType.Not)
+            if (node.NodeType == ExpressionType.Not && node.Type.IsBooleanType())
             {
                 switch (operand.NodeType)
                 {
