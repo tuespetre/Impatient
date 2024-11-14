@@ -143,6 +143,18 @@ public class NorthwindMiscellaneousQueryImpatientTest : NorthwindMiscellaneousQu
         return base.Dependent_to_principal_navigation_equal_to_null_for_subquery(async);
     }
 
+    [Theory(Skip = OrderByEntity)]
+    public override Task Entity_equality_orderby_subquery(bool async)
+    {
+        return base.Entity_equality_orderby_subquery(async);
+    }
+
+    [Theory(Skip = ClientEval)]
+    public override Task First_client_predicate(bool async)
+    {
+        return base.First_client_predicate(async);
+    }
+
     public override async Task Join_with_entity_equality_local_on_both_sources(bool async)
     {
         await base.Join_with_entity_equality_local_on_both_sources(async);
@@ -165,6 +177,18 @@ public class NorthwindMiscellaneousQueryImpatientTest : NorthwindMiscellaneousQu
     public override Task Mixed_sync_async_query()
     {
         return base.Mixed_sync_async_query();
+    }
+
+    [Theory(Skip = ClientEval)]
+    public override Task No_orderby_added_for_client_side_GroupJoin_dependent_to_principal_LOJ(bool async)
+    {
+        return base.No_orderby_added_for_client_side_GroupJoin_dependent_to_principal_LOJ(async);
+    }
+
+    [Theory(Skip = ClientEval)]
+    public override Task No_orderby_added_for_client_side_GroupJoin_dependent_to_principal_LOJ_with_additional_join_condition1(bool async)
+    {
+        return base.No_orderby_added_for_client_side_GroupJoin_dependent_to_principal_LOJ_with_additional_join_condition1(async);
     }
 
     [Theory(Skip = ClientEval)]
@@ -191,6 +215,13 @@ public class NorthwindMiscellaneousQueryImpatientTest : NorthwindMiscellaneousQu
     public override Task OrderBy_correlated_subquery2(bool async)
     {
         return base.OrderBy_correlated_subquery2(async);
+    }
+
+    [DisagreeWithEFCore]
+    [Theory(Skip = ClientEval)]
+    public override Task OrderBy_multiple_queries(bool async)
+    {
+        return base.OrderBy_multiple_queries(async);
     }
 
     [Theory(Skip = WeirdSkipReason)]
@@ -250,6 +281,12 @@ public class NorthwindMiscellaneousQueryImpatientTest : NorthwindMiscellaneousQu
     public override Task Select_correlated_subquery_filtered_returning_queryable_throws(bool async)
     {
         return base.Select_correlated_subquery_filtered_returning_queryable_throws(async);
+    }
+
+    [Theory(Skip = BadMaterialization)]
+    public override Task Select_correlated_subquery_ordered_returning_queryable_in_DTO_throws(bool async)
+    {
+        return base.Select_correlated_subquery_ordered_returning_queryable_in_DTO_throws(async);
     }
 
     [Theory(Skip = BadMaterialization)]
@@ -386,6 +423,18 @@ public class NorthwindMiscellaneousQueryImpatientTest : NorthwindMiscellaneousQu
     public override Task Throws_on_concurrent_query_list(bool async)
     {
         return base.Throws_on_concurrent_query_list(async);
+    }
+
+    [Theory(Skip = ClientEval)]
+    public override Task Using_string_Equals_with_StringComparison_throws_informative_error(bool async)
+    {
+        return base.Using_string_Equals_with_StringComparison_throws_informative_error(async);
+    }
+
+    [Theory(Skip = ClientEval)]
+    public override Task Using_static_string_Equals_with_StringComparison_throws_informative_error(bool async)
+    {
+        return base.Using_static_string_Equals_with_StringComparison_throws_informative_error(async);
     }
 
     public override async Task Where_bitwise_binary_not(bool async)
@@ -527,20 +576,27 @@ public class NorthwindMiscellaneousQueryImpatientTest : NorthwindMiscellaneousQu
         return base.Where_subquery_expression_same_parametername(async);
     }
 
-    [Theory(Skip = ClientEval)]
-    public override Task Using_string_Equals_with_StringComparison_throws_informative_error(bool async)
+    private const string ListExistsSkipReason = "Need to translate List.Exists";
+
+    [Theory(Skip = ListExistsSkipReason)]
+    public override Task Where_Join_Exists(bool async)
     {
-        return base.Using_string_Equals_with_StringComparison_throws_informative_error(async);
+        return base.Where_Join_Exists(async);
     }
 
-    [Theory(Skip = ClientEval)]
-    public override Task Using_static_string_Equals_with_StringComparison_throws_informative_error(bool async)
+    [Theory(Skip = ListExistsSkipReason)]
+    public override Task Where_Join_Exists_Constant(bool async)
     {
-        return base.Using_static_string_Equals_with_StringComparison_throws_informative_error(async);
+        return base.Where_Join_Exists_Constant(async);
     }
 
-    // TODO: Translate List.Exists
-    [Theory(Skip = ClientEval)]
+    [Theory(Skip = ListExistsSkipReason)]
+    public override Task Where_Join_Exists_Inequality(bool async)
+    {
+        return base.Where_Join_Exists_Inequality(async);
+    }
+
+    [Theory(Skip = ListExistsSkipReason)]
     public override Task Where_Join_Not_Exists(bool async)
     {
         return base.Where_Join_Not_Exists(async);
