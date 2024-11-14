@@ -489,7 +489,7 @@ public class ModelExpressionProvider
                let expression = MakeColumnExpression(table, column.Name, properties.First())
                select (expression, properties)).ToArray();
 
-        var tupleType = ValueTupleHelper.CreateTupleType(columnExpressions.Select(c => c.expression.Type));
+        var tupleType = ValueTupleHelper.CreateTupleType(columnExpressions.Select(c => c.expression.IsNullable ? c.expression.Type.AsNullableType() : c.expression.Type));
         var tupleParameter = Expression.Parameter(tupleType);
 
         var propertyExpressions
@@ -531,7 +531,12 @@ public class ModelExpressionProvider
 
         var materializer = new PolymorphicExpression(
             targetType.ClrType,
-            ValueTupleHelper.CreateNewExpression(tupleType, columnExpressions.Select(c => c.expression)),
+            ValueTupleHelper.CreateNewExpression(
+                tupleType, 
+                columnExpressions.Select(c => 
+                    c.expression.IsNullable 
+                        ? Expression.Convert(c.expression, c.expression.Type.AsNullableType()) 
+                        : (Expression)c.expression)),
             descriptors).Filter(targetType.ClrType);
 
         var projection = new ServerProjectionExpression(materializer);
@@ -1463,7 +1468,7 @@ public class ModelExpressionProvider
 
             var tableId = GetRelationalId(declaringEntityType);
 
-            foreach (var foreignKey in declaringEntityType.GetForeignKeys())
+            foreach (var foreignKey in declaringEntityType.GetForeignKeys().Where(fk => fk.Properties.Contains(property)))
             {
                 var principalType = foreignKey.PrincipalEntityType;
 

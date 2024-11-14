@@ -88,6 +88,27 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
         return base.Group_by_with_aggregate_max_on_entity_type(async);
     }
 
+    public override async Task Logical_operation_with_non_null_parameter_optimizes_null_checks(bool async)
+    {
+        await base.Logical_operation_with_non_null_parameter_optimizes_null_checks(async);
+
+        AssertSql("""
+            @p0='True'
+            @p1='True'
+
+            SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOfBirthName] AS [Item4], [g].[Discriminator] AS [Item5], [g].[FullName] AS [Item6], [g].[HasSoulPatch] AS [Item7], [g].[LeaderNickname] AS [Rest.Item1], [g].[LeaderSquadId] AS [Rest.Item2], [g].[Rank] AS [Rest.Item3]
+            FROM [Gears] AS [g]
+            WHERE [g].[Discriminator] IN (N'Gear', N'Officer') AND ((CASE WHEN ([g].[HasSoulPatch] = 1) AND (@p0 = 1) THEN 1 ELSE 0 END) <> @p1)
+
+            @p0='False'
+            @p1='False'
+
+            SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOfBirthName] AS [Item4], [g].[Discriminator] AS [Item5], [g].[FullName] AS [Item6], [g].[HasSoulPatch] AS [Item7], [g].[LeaderNickname] AS [Rest.Item1], [g].[LeaderSquadId] AS [Rest.Item2], [g].[Rank] AS [Rest.Item3]
+            FROM [Gears] AS [g]
+            WHERE [g].[Discriminator] IN (N'Gear', N'Officer') AND ((CASE WHEN ([g].[HasSoulPatch] = 1) OR (@p0 = 1) THEN 1 ELSE 0 END) <> @p1)
+            """);
+    }
+
     [Fact(Skip = ClientEval)]
     public override Task Nav_rewrite_Distinct_with_convert()
     {
