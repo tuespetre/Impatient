@@ -60,28 +60,20 @@ public class OwnedTypeIncludeComposingExpressionVisitor : ExpressionVisitor
 
         foreach (var navigation in navigations)
         {
-            if (navigation.IsCollection && !navigation.TargetEntityType.IsMappedToJson())
+            var ownedType = navigation.TargetEntityType;
+            var subpaths = GetOwnedTypeIncludePaths(ownedType).ToArray();
+
+            if (subpaths.Length == 0 
+                && navigation.IsCollection 
+                && !navigation.TargetEntityType.IsMappedToJson())
             {
-                var ownedType = navigation.TargetEntityType;
-
-                if (ownedType.GetSchema() == entityType.GetSchema()
-                    && ownedType.GetTableName() == entityType.GetTableName())
+                yield return (ownedType.ClrType, navigation.Name);
+            }
+            else
+            {
+                foreach (var (subtype, subpath) in subpaths)
                 {
-                    continue;
-                }
-
-                var subpaths = GetOwnedTypeIncludePaths(ownedType).ToArray();
-
-                if (subpaths.Length == 0)
-                {
-                    yield return (ownedType.ClrType, navigation.Name);
-                }
-                else
-                {
-                    foreach (var (subtype, subpath) in subpaths)
-                    {
-                        yield return (subtype, $"{navigation.Name}.{subpath}");
-                    }
+                    yield return (subtype, $"{navigation.Name}.{subpath}");
                 }
             }
         }

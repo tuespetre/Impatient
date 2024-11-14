@@ -40742,6 +40742,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedEntityQueryImpatientTest.Owned_collection_basic_split_query" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedEntityQueryImpatientTest.Multiple_owned_reference_mapped_to_own_table_containing_owned_collection_in_split_query" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedEntityQueryImpatientTest.Multiple_owned_reference_mapped_to_own_table_containing_owned_collection_in_split_query" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
