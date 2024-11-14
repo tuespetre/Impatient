@@ -236,7 +236,7 @@ public abstract class ProjectionExpressionVisitor : ExpressionVisitor
                 return extraPropertiesExpression.Update(expression, properties);
             }
 
-            case LateBoundProjectionLeafExpression _:
+            case LateBoundProjectionLeafExpression:
             {
                 return node;
             }

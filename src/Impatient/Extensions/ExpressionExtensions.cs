@@ -485,14 +485,14 @@ public static class ExpressionExtensions
                 return false;
             }
 
-            case SqlExistsExpression _:
-            case SqlInExpression _:
-            case SqlLikeExpression _:
+            case SqlExistsExpression:
+            case SqlInExpression:
+            case SqlLikeExpression:
             {
                 return true;
             }
 
-            case BinaryExpression _:
+            case BinaryExpression:
             {
                 switch (unwrapped.NodeType)
                 {
@@ -548,9 +548,9 @@ public static class ExpressionExtensions
 
         switch (unwrapped)
         {
-            case SqlInExpression _:
-            case SqlExistsExpression _:
-            case SqlLikeExpression _:
+            case SqlInExpression:
+            case SqlExistsExpression:
+            case SqlLikeExpression:
             {
                 return false;
             }
@@ -559,10 +559,10 @@ public static class ExpressionExtensions
             case BinaryExpression _ when unwrapped.NodeType == ExpressionType.ExclusiveOr:
             case BinaryExpression _ when unwrapped.NodeType == ExpressionType.And:
             case BinaryExpression _ when unwrapped.NodeType == ExpressionType.Or:
-            case ConditionalExpression _:
-            case ConstantExpression _:
-            case SqlExpression _:
-            case RelationalQueryExpression _:
+            case ConditionalExpression:
+            case ConstantExpression:
+            case SqlExpression:
+            case RelationalQueryExpression:
             {
                 return true;
             }

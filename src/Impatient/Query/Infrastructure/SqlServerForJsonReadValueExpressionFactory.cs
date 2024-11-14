@@ -375,8 +375,8 @@ public class SqlServerForJsonReadValueExpressionFactory : IReadValueExpressionFa
 
                 case NewExpression newExpression when IsNotLeaf(newExpression):
                 case MemberInitExpression memberInitExpression when IsNotLeaf(memberInitExpression):
-                case ExtendedNewExpression _:
-                case ExtendedMemberInitExpression _:
+                case ExtendedNewExpression:
+                case ExtendedMemberInitExpression:
                 {
                     var flag = extraProperties;
 

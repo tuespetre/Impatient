@@ -230,7 +230,7 @@ public class ProjectionReferenceRewritingExpressionVisitor : ExpressionVisitor
                 return extraPropertiesExpression.Update(expression, properties);
             }
 
-            case LateBoundProjectionLeafExpression _:
+            case LateBoundProjectionLeafExpression:
             {
                 return node;
             }

@@ -11,7 +11,7 @@ public class StaticMemberSqlParameterRewritingExpressionVisitor : ExpressionVisi
         switch (node)
         {
             case null:
-            case LambdaExpression _:
+            case LambdaExpression:
             {
                 return node;
             }

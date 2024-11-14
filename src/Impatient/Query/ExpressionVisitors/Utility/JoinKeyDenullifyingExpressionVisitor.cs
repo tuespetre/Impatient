@@ -35,7 +35,7 @@ public class JoinKeyDenullifyingExpressionVisitor : ExpressionVisitor
                 return base.VisitBinary(binaryExpression);
             }
             
-            case NewArrayExpression _:
+            case NewArrayExpression:
             case UnaryExpression _ when node.NodeType == ExpressionType.Convert:
             {
                 return base.Visit(node);

@@ -1288,12 +1288,12 @@ public class ModelExpressionProvider
                 return propertyExpressions[property];
             }
 
-            case EntityTypeParameterBinding _:
+            case EntityTypeParameterBinding:
             {
                 return new EntityTypeInjectionExpression((IEntityType)type);
             }
 
-            case ContextParameterBinding _:
+            case ContextParameterBinding:
             {
                 return new ContextServiceInjectionExpression(binding.ParameterType);
             }

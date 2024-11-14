@@ -58,7 +58,7 @@ public class QueryableInliningExpressionVisitor : PartialEvaluatingExpressionVis
                     return visited;
                 }
 
-                case RelationalQueryExpression _:
+                case RelationalQueryExpression:
                 {
                     return visited;
                 }

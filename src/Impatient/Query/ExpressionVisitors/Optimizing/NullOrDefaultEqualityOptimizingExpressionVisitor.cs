@@ -91,8 +91,8 @@ public class NullOrDefaultEqualityOptimizingExpressionVisitor : ExpressionVisito
                                 return Expression.Constant(NewExpressionIsNull(memberInitExpression.NewExpression));
                             }
 
-                            case NewArrayExpression _:
-                            case ListInitExpression _:
+                            case NewArrayExpression:
+                            case ListInitExpression:
                             case Expression expression when !IsNullable(expression):
                             {
                                 return Expression.Constant(false);
@@ -115,8 +115,8 @@ public class NullOrDefaultEqualityOptimizingExpressionVisitor : ExpressionVisito
                                 return Expression.Constant(NewExpressionIsDefault(memberInitExpression.NewExpression));
                             }
 
-                            case NewArrayExpression _:
-                            case ListInitExpression _:
+                            case NewArrayExpression:
+                            case ListInitExpression:
                             {
                                 return Expression.Constant(false);
                             }
@@ -199,8 +199,8 @@ public class NullOrDefaultEqualityOptimizingExpressionVisitor : ExpressionVisito
                                 return Expression.Constant(!NewExpressionIsNull(memberInitExpression.NewExpression));
                             }
 
-                            case NewArrayExpression _:
-                            case ListInitExpression _:
+                            case NewArrayExpression:
+                            case ListInitExpression:
                             case Expression expression when !IsNullable(expression):
                             {
                                 return Expression.Constant(true);
@@ -223,8 +223,8 @@ public class NullOrDefaultEqualityOptimizingExpressionVisitor : ExpressionVisito
                                 return Expression.Constant(!NewExpressionIsDefault(memberInitExpression.NewExpression));
                             }
 
-                            case NewArrayExpression _:
-                            case ListInitExpression _:
+                            case NewArrayExpression:
+                            case ListInitExpression:
                             {
                                 return Expression.Constant(true);
                             }

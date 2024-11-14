@@ -19,22 +19,22 @@ public class SubqueryAliasDecoratingExpressionVisitor : ExpressionVisitor
         switch (node)
         {
             case null:
-            case NewExpression _:
-            case MemberInitExpression _:
-            case ExtendedNewExpression _:
-            case ExtendedMemberInitExpression _:
-            case PolymorphicExpression _:
-            case SqlColumnExpression _:
-            case SqlAliasExpression _:
-            case ExtraPropertiesExpression _:
+            case NewExpression:
+            case MemberInitExpression:
+            case ExtendedNewExpression:
+            case ExtendedMemberInitExpression:
+            case PolymorphicExpression:
+            case SqlColumnExpression:
+            case SqlAliasExpression:
+            case ExtraPropertiesExpression:
             // TODO: Can these two cases be eliminated?
-            case GroupByResultExpression _:
-            case GroupedRelationalQueryExpression _:
+            case GroupByResultExpression:
+            case GroupedRelationalQueryExpression:
             {
                 return node;
             }
 
-            case AnnotationExpression _:
+            case AnnotationExpression:
             case UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked }:
             {
                 return base.Visit(node);
