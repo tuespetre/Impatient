@@ -1421,7 +1421,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
         {
             projectionBody
                 = Expression.Condition(
-                    Expression.Equal(
+                    Expression.NotEqual(
                         flag,
                         Expression.Constant(null, typeof(int?))),
                     projectionBody,

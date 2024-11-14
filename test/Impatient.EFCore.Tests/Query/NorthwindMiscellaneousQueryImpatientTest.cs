@@ -103,6 +103,26 @@ public class NorthwindMiscellaneousQueryImpatientTest : NorthwindMiscellaneousQu
             """);
     }
 
+    public override async Task DefaultIfEmpty_Sum_over_collection_navigation(bool async)
+    {
+        await base.DefaultIfEmpty_Sum_over_collection_navigation(async);
+
+        AssertSql("""
+            SELECT [c].[CustomerID] AS [CustomerID], (
+                SELECT COALESCE(SUM((CASE WHEN [t].[$empty] IS NOT NULL THEN [t].[OrderID] ELSE 0 END)), 0)
+                FROM (
+                    SELECT NULL AS [$empty]
+                ) AS [t_0]
+                LEFT JOIN (
+                    SELECT 0 AS [$empty], [o].[OrderID]
+                    FROM [Orders] AS [o]
+                    WHERE [c].[CustomerID] = [o].[CustomerID]
+                ) AS [t] ON 1 = 1
+            ) AS [Sum]
+            FROM [Customers] AS [c]
+            """);
+    }
+
     [DisagreeWithEFCore]
     [Theory(Skip = ClientEval)]
     public override Task Default_if_empty_top_level_arg(bool async)

@@ -23544,6 +23544,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.DefaultIfEmpty_in_subquery_not_correlated" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.DefaultIfEmpty_Sum_over_collection_navigation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.DefaultIfEmpty_Sum_over_collection_navigation" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">

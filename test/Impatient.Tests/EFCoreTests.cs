@@ -636,7 +636,7 @@ FROM [dbo].[Customers] AS [c]
 
             Assert.AreEqual(@"
 SELECT [c].[CustomerID] AS [c.CustomerID], [c].[Address] AS [c.Address], [c].[City] AS [c.City], [c].[CompanyName] AS [c.CompanyName], [c].[ContactName] AS [c.ContactName], [c].[ContactTitle] AS [c.ContactTitle], [c].[Country] AS [c.Country], [c].[Fax] AS [c.Fax], [c].[Phone] AS [c.Phone], [c].[PostalCode] AS [c.PostalCode], [c].[Region] AS [c.Region], (
-    SELECT MAX((CASE WHEN [t].[$empty] IS NULL THEN [t].[OrderDate] ELSE NULL END))
+    SELECT MAX((CASE WHEN [t].[$empty] IS NOT NULL THEN [t].[OrderDate] ELSE NULL END))
     FROM (
         SELECT NULL AS [$empty]
     ) AS [t_0]
