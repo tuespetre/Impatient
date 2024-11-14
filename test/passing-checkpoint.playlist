@@ -23532,6 +23532,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Where_bitwise_binary_not" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Ternary_should_not_evaluate_both_sides" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Ternary_should_not_evaluate_both_sides" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">

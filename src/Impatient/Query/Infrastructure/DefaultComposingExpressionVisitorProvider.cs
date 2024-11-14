@@ -25,7 +25,7 @@ public class DefaultComposingExpressionVisitorProvider : IComposingExpressionVis
 
     public virtual IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
     {
-        yield return new KeyEqualityComposingExpressionVisitor(context.DescriptorSet);
+        yield return new KeyEqualityComposingExpressionVisitor(context.DescriptorSet, context.ParameterMapping.Values);
 
         yield return new NavigationComposingExpressionVisitor(context.DescriptorSet.NavigationDescriptors);
         

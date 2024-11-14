@@ -1,12 +1,16 @@
 ﻿using Impatient.Metadata;
 using Impatient.Query.ExpressionVisitors.Rewriting;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace Impatient.Query.ExpressionVisitors.Composing;
 
 public class KeyEqualityComposingExpressionVisitor : KeyEqualityRewritingExpressionVisitor
 {
-    public KeyEqualityComposingExpressionVisitor(DescriptorSet descriptorSet) : base(descriptorSet)
+    public KeyEqualityComposingExpressionVisitor(
+        DescriptorSet descriptorSet, 
+        IEnumerable<ParameterExpression> mappedParameters) 
+        : base(descriptorSet, mappedParameters)
     {
     }
 

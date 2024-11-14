@@ -156,7 +156,7 @@ public class DefaultDbCommandExpressionBuilder : IDbCommandExpressionBuilder
             value = conversion.ExpandParameters(expansion);
         }
 
-        if (node.Type.IsNullableType() || !node.Type.GetTypeInfo().IsValueType)
+        if (node != value && (node.Type.IsNullableType() || !node.Type.GetTypeInfo().IsValueType))
         {
             value
                 = Expression.Condition(

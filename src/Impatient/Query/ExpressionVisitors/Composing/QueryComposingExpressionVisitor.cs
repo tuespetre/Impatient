@@ -20,6 +20,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
     private readonly IEnumerable<ExpressionVisitor> rewritingExpressionVisitors;
     private readonly IEnumerable<ExpressionVisitor> providerSpecificRewritingExpressionVisitors;
     private readonly ExpressionVisitor parameterizingExpressionVisitor;
+    private readonly StaticMemberSqlParameterRewritingExpressionVisitor staticMemberSqlParameterRewritingExpressionVisitor = new();
 
     private bool topLevel = true;
 
@@ -57,10 +58,11 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
                 yield return this;
             }
 
-            foreach (var visitor in ClientPostExpansionVisitors)
-            {
-                yield return visitor;
-            }
+            yield return parameterizingExpressionVisitor;
+
+            yield return staticMemberSqlParameterRewritingExpressionVisitor;
+
+            yield return this;
         }
     }
 
@@ -69,7 +71,9 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
         get
         {
             yield return parameterizingExpressionVisitor;
-            yield return new StaticMemberSqlParameterRewritingExpressionVisitor();
+
+            yield return staticMemberSqlParameterRewritingExpressionVisitor;
+
             yield return this;
         }
     }

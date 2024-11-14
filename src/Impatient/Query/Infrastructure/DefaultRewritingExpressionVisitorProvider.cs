@@ -51,7 +51,7 @@ public class DefaultRewritingExpressionVisitorProvider : IRewritingExpressionVis
 
         yield return new EqualsMethodRewritingExpressionVisitor();
 
-        yield return new KeyEqualityRewritingExpressionVisitor(context.DescriptorSet);
+        yield return new KeyEqualityRewritingExpressionVisitor(context.DescriptorSet, context.ParameterMapping.Values);
 
         yield return new TypeBinaryExpressionRewritingExpressionVisitor();
 

@@ -23,6 +23,11 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 
+    public override Task Bitwise_operation_with_null_arguments(bool async)
+    {
+        return base.Bitwise_operation_with_null_arguments(async);
+    }
+
     [Theory(Skip = ClientEval)]
     public override Task Client_eval_followed_by_aggregate_operation(bool async)
     {
@@ -138,6 +143,26 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
             ) AS [$inner]
             FROM [Squads] AS [s]
             WHERE [s].[Name] = N'Kilo'
+            """);
+    }
+
+    public override async Task Query_reusing_parameter_doesnt_declare_duplicate_parameter_complex(bool async)
+    {
+        await base.Query_reusing_parameter_doesnt_declare_duplicate_parameter_complex(async);
+
+        AssertSql("""
+            @p0='1'
+
+            SELECT [g].[Item1] AS [Item1], [g].[Item2] AS [Item2], [g].[Item3] AS [Item3], [g].[Item4] AS [Item4], [g].[Item5] AS [Item5], [g].[Item6] AS [Item6], [g].[Item7] AS [Item7], [g].[Rest.Item1] AS [Rest.Item1], [g].[Rest.Item2] AS [Rest.Item2], [g].[Rest.Item3] AS [Rest.Item3]
+            FROM (
+                SELECT DISTINCT [g_0].[Nickname] AS [Item1], [g_0].[SquadId] AS [Item2], [g_0].[AssignedCityName] AS [Item3], [g_0].[CityOfBirthName] AS [Item4], [g_0].[Discriminator] AS [Item5], [g_0].[FullName] AS [Item6], [g_0].[HasSoulPatch] AS [Item7], [g_0].[LeaderNickname] AS [Rest.Item1], [g_0].[LeaderSquadId] AS [Rest.Item2], [g_0].[Rank] AS [Rest.Item3]
+                FROM [Gears] AS [g_0]
+                INNER JOIN [Squads] AS [s] ON [g_0].[SquadId] = [s].[Id]
+                WHERE [g_0].[Discriminator] IN (N'Gear', N'Officer') AND ([s].[Id] = @p0)
+            ) AS [g]
+            INNER JOIN [Squads] AS [s_0] ON [g].[Item2] = [s_0].[Id]
+            WHERE [s_0].[Id] = @p0
+            ORDER BY [g].[Item6] ASC
             """);
     }
 

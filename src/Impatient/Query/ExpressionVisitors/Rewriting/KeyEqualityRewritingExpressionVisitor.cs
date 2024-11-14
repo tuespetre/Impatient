@@ -20,16 +20,20 @@ public class KeyEqualityRewritingExpressionVisitor : ExpressionVisitor
         = GetGenericMethodDefinition((IQueryable<object> e) => e.Select(x => x));
 
     private readonly DescriptorSet descriptorSet;
+    private readonly IEnumerable<ParameterExpression> mappedParameters;
 
-    public KeyEqualityRewritingExpressionVisitor(DescriptorSet descriptorSet)
+    public KeyEqualityRewritingExpressionVisitor(
+        DescriptorSet descriptorSet,
+        IEnumerable<ParameterExpression> mappedParameters)
     {
         this.descriptorSet = descriptorSet ?? throw new ArgumentNullException(nameof(descriptorSet));
+        this.mappedParameters = mappedParameters ?? throw new ArgumentNullException(nameof(mappedParameters));
     }
 
     protected override Expression VisitBinary(BinaryExpression node)
     {
         // TODO: Write an explicit test case for PolymorphicExpression key comparison
-        if (node.NodeType != ExpressionType.Equal && node.NodeType != ExpressionType.NotEqual)
+        if (node.NodeType is not (ExpressionType.Equal or ExpressionType.NotEqual))
         {
             return base.VisitBinary(node);
         }
@@ -114,6 +118,16 @@ public class KeyEqualityRewritingExpressionVisitor : ExpressionVisitor
                             .First(a => a.Type.IsScalarType());
                     break;
                 }
+            }
+
+            // if the node was originally a comparison between a complex object coming from a
+            // closure/scope parameter and a null constant, we don't want to rewrite it as a
+            // comparison of a property access or otherwise as it could cause a NullReferenceException
+            // if the resulting expression is evaluated at the client, for e.g. a SQL Parameter or
+            // a client-evaluated projection
+            if (IsParameterWithOptionalMemberAccessChain(nonNullExpression, inMappedParameters: true))
+            {
+                return node.Update(visitedLeft, node.Conversion, visitedRight);
             }
 
             nonNullExpression = nonNullExpression.AsNullable();
@@ -266,27 +280,41 @@ public class KeyEqualityRewritingExpressionVisitor : ExpressionVisitor
     {
         switch (expression)
         {
-            case NewExpression _:
-            case MemberInitExpression _:
-            case ExtendedNewExpression _:
-            case ExtendedMemberInitExpression _:
-            case ParameterExpression _:
-            case PolymorphicExpression _:
-            case ExtraPropertiesExpression _:
+            case NewExpression:
+            case MemberInitExpression:
+            case ExtendedNewExpression:
+            case ExtendedMemberInitExpression:
+            case PolymorphicExpression:
+            case ExtraPropertiesExpression:
             {
                 return true;
             }
 
             default:
             {
-                while (expression is MemberExpression memberExpression)
-                {
-                    expression = memberExpression.Expression;
-                }
-
-                return expression is ParameterExpression;
+                return IsParameterWithOptionalMemberAccessChain(expression);
             }
         }
+    }
+
+    private bool IsParameterWithOptionalMemberAccessChain(Expression expression, bool inMappedParameters = false)
+    {
+        while (expression is MemberExpression memberExpression)
+        {
+            expression = memberExpression.Expression;
+        }
+
+        if (expression is ParameterExpression parameterExpression)
+        {
+            if (inMappedParameters)
+            {
+                return mappedParameters.Contains(parameterExpression);
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     private Expression TryReduceNavigationKey(Expression expression, out bool reduced)

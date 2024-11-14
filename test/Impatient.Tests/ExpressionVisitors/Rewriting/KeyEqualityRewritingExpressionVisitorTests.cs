@@ -3,6 +3,7 @@ using Impatient.Query.ExpressionVisitors.Rewriting;
 using Impatient.Query.Infrastructure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -210,15 +211,16 @@ public class KeyEqualityRewritingExpressionVisitorTests
         var visitor
             = new KeyEqualityRewritingExpressionVisitor(
                 new DescriptorSet(
-                    primaryKeyDescriptors: new[]
-                    {
+                    primaryKeyDescriptors:
+                    [
                         myClass1KeyDescriptor,
                         myClass2KeyDescriptor,
-                    },
-                    navigationDescriptors: new[]
-                    {
+                    ],
+                    navigationDescriptors:
+                    [
                         myClass1NavigationDescriptor,
-                    }));
+                    ]),
+                []);
 
         var result = visitor.Visit(input.Body);
 
