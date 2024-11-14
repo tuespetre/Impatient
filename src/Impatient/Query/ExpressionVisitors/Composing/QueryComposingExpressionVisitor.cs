@@ -772,18 +772,16 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
 
         // TODO: Figure out a way to handle providers that do not support correlated subqueries
 
-        var joinExpression
+        TableExpression joinExpression
             = handleAsJoin
                 ? defaultIfEmpty
                     ? new LeftJoinTableExpression(outerTable, innerTable, joinPredicate, selector.Type)
                     : new InnerJoinTableExpression(outerTable, innerTable, joinPredicate, selector.Type)
-                        as TableExpression
-                : handleAsCorrelated
-                    ? defaultIfEmpty
-                        ? new OuterApplyTableExpression(outerTable, innerTable, selector.Type)
-                        : new CrossApplyTableExpression(outerTable, innerTable, selector.Type)
-                            as TableExpression
-                    : new CrossJoinTableExpression(outerTable, innerTable, selector.Type);
+                : defaultIfEmpty
+                    ? new OuterApplyTableExpression(outerTable, innerTable, selector.Type)
+                    : handleAsCorrelated
+                        ? new CrossApplyTableExpression(outerTable, innerTable, selector.Type)
+                        : new CrossJoinTableExpression(outerTable, innerTable, selector.Type);
 
         return outerQuery
             .UpdateSelectExpression(outerSelectExpression

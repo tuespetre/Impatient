@@ -87,6 +87,22 @@ public class NorthwindMiscellaneousQueryImpatientTest : NorthwindMiscellaneousQu
         return base.Comparing_collection_navigation_to_null(async);
     }
 
+    public override async Task DefaultIfEmpty_in_subquery_not_correlated(bool async)
+    {
+        await base.DefaultIfEmpty_in_subquery_not_correlated(async);
+
+        // TODO: optimize the CASE WHEN away.
+        AssertSql("""
+            SELECT [c].[CustomerID] AS [CustomerID], (CASE WHEN [o].[OrderID] IS NOT NULL THEN [o].[OrderID] ELSE CAST(NULL AS int) END) AS [OrderID]
+            FROM [Customers] AS [c]
+            OUTER APPLY (
+                SELECT 0 AS [$empty], [o_0].[OrderID] AS [OrderID], [o_0].[CustomerID] AS [CustomerID], [o_0].[EmployeeID] AS [EmployeeID], [o_0].[OrderDate] AS [OrderDate]
+                FROM [Orders] AS [o_0]
+                WHERE [o_0].[OrderID] > 15000
+            ) AS [o]
+            """);
+    }
+
     [DisagreeWithEFCore]
     [Theory(Skip = ClientEval)]
     public override Task Default_if_empty_top_level_arg(bool async)
