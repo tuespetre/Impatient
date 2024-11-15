@@ -279,4 +279,22 @@ public class TPTManyToManyQueryImpatientTest : TPTManyToManyQueryRelationalTestB
             ORDER BY [r].[Id] ASC
             """);
     }
+
+    public override async Task Contains_on_skip_collection_navigation(bool async)
+    {
+        await base.Contains_on_skip_collection_navigation(async);
+
+        AssertSql("""
+            @p0='1'
+
+            SELECT [e].[Id] AS [Id], [e].[Name] AS [Name]
+            FROM [EntityOnes] AS [e]
+            WHERE @p0 IN (
+                SELECT [e_0].[Id]
+                FROM [JoinOneToTwo] AS [j]
+                INNER JOIN [EntityTwos] AS [e_0] ON [j].[TwoId] = [e_0].[Id]
+                WHERE [e].[Id] = [j].[OneId]
+            )
+            """);
+    }
 }

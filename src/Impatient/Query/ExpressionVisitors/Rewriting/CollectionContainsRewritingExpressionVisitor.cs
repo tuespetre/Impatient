@@ -22,32 +22,11 @@ public class CollectionContainsRewritingExpressionVisitor : ExpressionVisitor
 
         var collectionType = node.Method.DeclaringType.FindGenericType(typeof(ICollection<>));
 
-        if (collectionType is not null && @object.Type.GetSequenceType().IsScalarType())
+        if (collectionType is not null && node.Method.Name is nameof(ICollection<object>.Contains))
         {
-            // I'm not actually sure what this next if/else is about or why it was needed.
-            // I should have added comments at the time, lol
-
-            var canRewriteMethod = false;
-
-            if (node.Method.DeclaringType == collectionType)
-            {
-                canRewriteMethod = true;
-            }
-            else
-            {
-                var map = node.Method.DeclaringType.GetTypeInfo().GetRuntimeInterfaceMap(collectionType);
-
-                var index = map.InterfaceMethods.ToList().FindIndex(m => m.Name == nameof(ICollection<int>.Contains));
-
-                canRewriteMethod = node.Method == map.TargetMethods[index];
-            }
-
-            if (canRewriteMethod)
-            {
-                return Expression.Call(
-                    enumerableContainsMethodInfo.MakeGenericMethod(@object.Type.GetSequenceType()),
-                    [@object, .. arguments]);
-            }
+            return Expression.Call(
+                enumerableContainsMethodInfo.MakeGenericMethod(@object.Type.GetSequenceType()),
+                [@object, .. arguments]);
         }
 
         return node.Update(@object, arguments);
