@@ -13,6 +13,8 @@ public class TPTManyToManyQueryImpatientTest : TPTManyToManyQueryRelationalTestB
         fixture.TestSqlLoggerFactory.Clear();
     }
 
+    private void AssertSql(string expected) => base.Fixture.TestSqlLoggerFactory.AssertSql(expected);
+
     protected override QueryAsserter CreateQueryAsserter(Fixture fixture)
         => new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
 
@@ -259,5 +261,22 @@ public class TPTManyToManyQueryImpatientTest : TPTManyToManyQueryRelationalTestB
     public override Task Throws_when_different_filtered_then_include_via_different_paths(bool async)
     {
         return base.Throws_when_different_filtered_then_include_via_different_paths(async);
+    }
+
+    public override async Task Select_skip_navigation(bool async)
+    {
+        await base.Select_skip_navigation(async);
+
+        AssertSql("""
+            SELECT (
+                SELECT [e].[Id] AS [Id], [e].[Name] AS [Name]
+                FROM [JoinOneSelfPayload] AS [j]
+                INNER JOIN [EntityOnes] AS [e] ON [j].[LeftId] = [e].[Id]
+                WHERE [r].[Id] = [j].[RightId]
+                FOR JSON PATH
+            )
+            FROM [EntityOnes] AS [r]
+            ORDER BY [r].[Id] ASC
+            """);
     }
 }

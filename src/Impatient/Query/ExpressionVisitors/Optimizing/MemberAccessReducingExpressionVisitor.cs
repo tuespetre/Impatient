@@ -34,6 +34,11 @@ public class MemberAccessReducingExpressionVisitor : ExpressionVisitor
         }
     }
 
+    protected override Expression VisitIndex(IndexExpression node)
+    {
+        return base.VisitIndex(node);
+    }
+
     protected override Expression VisitMember(MemberExpression node)
     {
         var expression = Visit(node.Expression);

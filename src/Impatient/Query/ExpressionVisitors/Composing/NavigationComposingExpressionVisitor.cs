@@ -1715,20 +1715,41 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
 
                 if (navigation.DestinationType.IsSequenceType())
                 {
-                    var method
-                        = operatorType
-                            .GetRuntimeMethods()
-                            .Single(m => m.Name == nameof(Queryable.GroupJoin) && m.GetParameters().Length == 5)
-                            .MakeGenericMethod(currentParameter.Type, innerType.GetSequenceType(), keyType, scopeType);
+                    Expression innerValue = innerParameter;
+
+                    // if we are dealing with something like a many-to-many navigation with an "invisible"
+                    // joining type, the expansion will contain the target type of the navigation as well as
+                    // the joining type so the key can matched. then we need to apply an additional selector
+                    // to project the target type, discarding the joining type after the join has been made.
+                    if (navigation.Descriptor.ResultSelector is not null)
+                    {
+                        innerParameter
+                            = Expression.Parameter(
+                                navigation.Descriptor.Expansion.Type.FindGenericType(typeof(IEnumerable<>)));
+
+                        innerValue
+                            = Expression.Call(
+                                enumerableSelectMethodInfo.MakeGenericMethod(
+                                    navigation.Descriptor.Expansion.Type.GetSequenceType(),
+                                    innerType.GetSequenceType()),
+                                innerParameter,
+                                navigation.Descriptor.ResultSelector);
+                    }
 
                     // Create the result selector
                     var resultSelector
                         = Expression.Lambda(
                             Expression.New(
                                 scopeType.GetTypeInfo().DeclaredConstructors.Single(),
-                                new[] { currentParameter, innerParameter },
-                                new[] { outerField, innerField }),
+                                [currentParameter, innerValue],
+                                [outerField, innerField]),
                             [currentParameter, innerParameter]);
+
+                    var method
+                        = operatorType
+                            .GetRuntimeMethods()
+                            .Single(m => m.Name == nameof(Queryable.GroupJoin) && m.GetParameters().Length == 5)
+                            .MakeGenericMethod(currentParameter.Type, innerParameter.Type.GetSequenceType(), keyType, scopeType);
 
                     source
                         = Expression.Call(

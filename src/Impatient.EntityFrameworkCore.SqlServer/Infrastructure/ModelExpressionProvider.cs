@@ -29,6 +29,9 @@ public class ModelExpressionProvider
     private static readonly MethodInfo queryableCastMethodInfo
         = ReflectionExtensions.GetMethodInfo(() => Queryable.Cast<object>(default)).GetGenericMethodDefinition();
 
+    private static readonly MethodInfo queryableJoinMethodInfo
+        = ReflectionExtensions.GetMethodInfo(() => Queryable.Join<object, object, object, object>(default, default, default, default, default)).GetGenericMethodDefinition();
+
     private readonly IRelationalTypeMappingSource relationalTypeMappingSource;
 
     public ModelExpressionProvider(IRelationalTypeMappingSource relationalTypeMappingSource)
@@ -84,6 +87,11 @@ public class ModelExpressionProvider
                         entityParameter,
                         property,
                         [Expression.Constant(p.Name)]);
+
+                    if (expressions[i].Type != p.ClrType)
+                    {
+                        expressions[i] = Expression.Convert(expressions[i], p.ClrType);
+                    }
 
                     continue;
                 }
@@ -192,23 +200,81 @@ public class ModelExpressionProvider
             if (fk.PrincipalToDependent is not null)
             {
                 yield return new NavigationDescriptor(
-                    fk.PrincipalEntityType.ClrType,
                     fk.PrincipalToDependent.GetSemanticReadableMemberInfo(),
+                    true,
+                    CreateQueryExpression(fk.DeclaringEntityType, context),
                     principal,
                     dependent,
-                    true,
-                    CreateQueryExpression(fk.DeclaringEntityType, context));
+                    null);
             }
 
             if (fk.DependentToPrincipal is not null)
             {
                 yield return new NavigationDescriptor(
-                    fk.DeclaringEntityType.ClrType,
                     fk.DependentToPrincipal.GetSemanticReadableMemberInfo(),
+                    !fk.IsRequired,
+                    CreateQueryExpression(fk.PrincipalEntityType, context),
                     dependent,
                     principal,
-                    !fk.IsRequired,
-                    CreateQueryExpression(fk.PrincipalEntityType, context));
+                    null);
+            }
+        }
+
+        foreach (var type in context.Model.GetEntityTypes())
+        {
+            foreach (var navigation in type.GetSkipNavigations())
+            {
+                var leftType = navigation.DeclaringEntityType;
+                var middleType = navigation.JoinEntityType;
+                var rightType = navigation.TargetEntityType;
+
+                var leftKeySelector = CreateNavigationKeySelector(leftType.ClrType, navigation.ForeignKey.PrincipalKey.Properties);
+                var leftMiddleKeySelector = CreateNavigationKeySelector(middleType.ClrType, navigation.ForeignKey.Properties);
+                var rightMiddleKeySelector = CreateNavigationKeySelector(middleType.ClrType, navigation.Inverse.ForeignKey.Properties);
+                var rightKeySelector = CreateNavigationKeySelector(rightType.ClrType, navigation.Inverse.ForeignKey.PrincipalKey.Properties);
+
+                var middleParameter = Expression.Parameter(middleType.ClrType);
+                var rightParameter = Expression.Parameter(rightType.ClrType);
+
+                var tupleType = ValueTupleHelper.CreateTupleType([middleType.ClrType, rightType.ClrType]);
+                var tupleParameter = Expression.Parameter(tupleType);
+
+                var expansion = Expression.Call(
+                    queryableJoinMethodInfo.MakeGenericMethod(
+                        middleType.ClrType,
+                        rightType.ClrType,
+                        rightKeySelector.ReturnType,
+                        tupleType),
+                    CreateQueryExpression(middleType, context),
+                    CreateQueryExpression(rightType, context),
+                    rightMiddleKeySelector,
+                    rightKeySelector,
+                    Expression.Lambda(
+                        ValueTupleHelper.CreateNewExpression(
+                            tupleType, 
+                            [middleParameter, rightParameter]),
+                        [middleParameter, rightParameter]));
+
+                var outerKeySelector = leftKeySelector;
+
+                var innerKeySelector
+                    = Expression.Lambda(
+                        leftMiddleKeySelector.ExpandParameters(
+                            ValueTupleHelper.CreateMemberExpression(tupleType, tupleParameter, 0)),
+                        tupleParameter);
+
+                var resultSelector
+                    = Expression.Lambda(
+                        ValueTupleHelper.CreateMemberExpression(tupleType, tupleParameter, 1),
+                        tupleParameter);
+
+                yield return new NavigationDescriptor(
+                    navigation.GetSemanticReadableMemberInfo(),
+                    true,
+                    expansion,
+                    outerKeySelector,
+                    innerKeySelector,
+                    resultSelector);
             }
         }
     }
@@ -532,10 +598,10 @@ public class ModelExpressionProvider
         var materializer = new PolymorphicExpression(
             targetType.ClrType,
             ValueTupleHelper.CreateNewExpression(
-                tupleType, 
-                columnExpressions.Select(c => 
-                    c.expression.IsNullable 
-                        ? Expression.Convert(c.expression, c.expression.Type.AsNullableType()) 
+                tupleType,
+                columnExpressions.Select(c =>
+                    c.expression.IsNullable
+                        ? Expression.Convert(c.expression, c.expression.Type.AsNullableType())
                         : (Expression)c.expression)),
             descriptors).Filter(targetType.ClrType);
 
@@ -1463,8 +1529,8 @@ public class ModelExpressionProvider
                 return false;
             }
 
-            // If the property is part of a foreign key within the same table as the principal type,
-            // but the principal type is derived, it can be null
+            // If the property is part of a foreign key within the same table as the leftKeySelector type,
+            // but the leftKeySelector type is derived, it can be null
 
             var tableId = GetRelationalId(declaringEntityType);
 

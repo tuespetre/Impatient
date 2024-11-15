@@ -197,16 +197,16 @@ public class KeyEqualityRewritingExpressionVisitorTests
 
         var myClass1NavigationDescriptor
             = new NavigationDescriptor(
-                typeof(MyClass1),
                 typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Nav1)),
+                false,
+                Expression.Default(typeof(IQueryable<MyClass2>)),
                 Expression.Lambda(
                         Expression.MakeMemberAccess(
                             myClass1KeyParameter,
                             typeof(MyClass1).GetRuntimeProperty(nameof(MyClass1.Nav1Id))),
                         myClass1KeyParameter),
                 myClass2KeyDescriptor.KeySelector,
-                false,
-                Expression.Default(typeof(IQueryable<MyClass2>)));
+                null);
 
         var visitor
             = new KeyEqualityRewritingExpressionVisitor(

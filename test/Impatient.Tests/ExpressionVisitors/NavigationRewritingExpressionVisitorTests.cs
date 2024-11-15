@@ -22,33 +22,33 @@ public class NavigationRewritingExpressionVisitorTests
         var navigationDescriptors = new[]
         {
             new NavigationDescriptor(
-                typeof(Customer),
                 typeof(Customer).GetRuntimeProperty(nameof(Customer.Orders)),
+                false,
+                CreateQueryExpression<Order>(),
                 GetExpression((Customer c) => c.CustomerID),
                 GetExpression((Order o) => o.CustomerID),
-                false,
-                CreateQueryExpression<Order>()),
+                null),
             new NavigationDescriptor(
-                typeof(Order),
                 typeof(Order).GetRuntimeProperty(nameof(Order.Customer)),
+                false,
+                CreateQueryExpression<Customer>(),
                 GetExpression((Order o) => o.CustomerID),
                 GetExpression((Customer c) => c.CustomerID),
-                false,
-                CreateQueryExpression<Customer>()),
+                null),
             new NavigationDescriptor(
-                typeof(Order),
                 typeof(Order).GetRuntimeProperty(nameof(Order.OrderDetails)),
+                false,
+                CreateQueryExpression<OrderDetail>(),
                 GetExpression((Order o) => o.OrderID),
                 GetExpression((OrderDetail d) => d.OrderID),
-                false,
-                CreateQueryExpression<OrderDetail>()),
+                null),
             new NavigationDescriptor(
-                typeof(OrderDetail),
                 typeof(OrderDetail).GetRuntimeProperty(nameof(OrderDetail.Order)),
+                false,
+                CreateQueryExpression<Order>(),
                 GetExpression((OrderDetail d) => d.OrderID),
                 GetExpression((Order o) => o.OrderID),
-                false,
-                CreateQueryExpression<Order>()),
+                null),
         };
 
         var primaryKeyDescriptors = new[]
