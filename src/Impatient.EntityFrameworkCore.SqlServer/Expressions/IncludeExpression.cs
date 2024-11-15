@@ -16,7 +16,7 @@ public class IncludeExpression : ExtraPropertiesExpression
     public IncludeExpression(
         Expression expression, 
         IEnumerable<Expression> includes, 
-        IEnumerable<IEnumerable<INavigation>> paths) 
+        IEnumerable<IEnumerable<INavigationBase>> paths) 
         : this(
               expression, 
               new ReadOnlyCollection<Expression>(includes.ToArray()), 
@@ -27,7 +27,7 @@ public class IncludeExpression : ExtraPropertiesExpression
     public IncludeExpression(
         Expression expression, 
         ReadOnlyCollection<Expression> includes,
-        ImmutableArray<ImmutableArray<INavigation>> paths) 
+        ImmutableArray<ImmutableArray<INavigationBase>> paths) 
         : base(expression)
     {
         if (includes.Count != paths.Length)
@@ -42,7 +42,7 @@ public class IncludeExpression : ExtraPropertiesExpression
 
     public ReadOnlyCollection<Expression> Includes { get; }
 
-    public ImmutableArray<ImmutableArray<INavigation>> Paths { get; }
+    public ImmutableArray<ImmutableArray<INavigationBase>> Paths { get; }
 
     public override ReadOnlyCollection<string> Names { get; }
 

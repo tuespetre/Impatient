@@ -28,7 +28,7 @@ public static class EntityTrackingHelper
         object[] keyValues,
         object entity,
         object[] shadowPropertyValues,
-        List<INavigation> includes)
+        List<INavigationBase> includes)
     {
         var stateManager = ephemeral ? executor.EphemeralStateManager : executor.PersistentStateManager;
 

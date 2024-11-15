@@ -20,7 +20,7 @@ public class EntityMaterializationExpression : ExtraPropertiesExpression
         IEnumerable<IProperty> shadowProperties,
         IEnumerable<Expression> shadowPropertyExpressions,
         Expression expression,
-        IEnumerable<INavigation> includedNavigations = null)
+        IEnumerable<INavigationBase> includedNavigations = null)
         : base(expression)
     {
         EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
@@ -40,7 +40,7 @@ public class EntityMaterializationExpression : ExtraPropertiesExpression
 
     public ImmutableArray<IProperty> ShadowProperties { get; }
 
-    public ImmutableArray<INavigation> IncludedNavigations { get; }
+    public ImmutableArray<INavigationBase> IncludedNavigations { get; }
 
     public override ReadOnlyCollection<string> Names { get; }
 
@@ -76,7 +76,7 @@ public class EntityMaterializationExpression : ExtraPropertiesExpression
             IncludedNavigations);
     }
 
-    public EntityMaterializationExpression IncludeNavigation(INavigation navigation)
+    public EntityMaterializationExpression IncludeNavigation(INavigationBase navigation)
     {
         return new EntityMaterializationExpression(
             EntityType,

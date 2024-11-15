@@ -145,11 +145,16 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
             var newExpression = VisitAndConvert(node.NewExpression, nameof(VisitMemberInit));
             var bindings = node.Bindings.Select(VisitMemberBinding).ToArray();
 
+            var navigations
+                = Enumerable.Empty<INavigationBase>()
+                    .Concat(entityType.GetNavigations())
+                    .Concat(entityType.GetSkipNavigations());
+
             var collectionMembers
-                = from n in entityType.GetNavigations()
-                    where n.IsCollection
-                    from m in new[] { n.GetSemanticReadableMemberInfo(), n.GetWritableMemberInfo() }
-                    select m;
+                = from n in navigations
+                  where n.IsCollection
+                  from m in new[] { n.GetSemanticReadableMemberInfo(), n.GetWritableMemberInfo() }
+                  select m;
 
             for (var i = 0; i < bindings.Length; i++)
             {
@@ -157,7 +162,6 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
                 {
                     var collection = ((MemberAssignment)bindings[i]).Expression.AsCollectionType();
                     var elementType = collection.Type.GetSequenceType();
-                    //var elementType = bindings[i].Member.GetMemberType().GetSequenceType();
                     var listType = typeof(List<>).MakeGenericType(elementType);
 
                     bindings[i] = Bind(bindings[i].Member, Coalesce(collection, New(listType)));
@@ -172,11 +176,16 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
             var newExpression = VisitAndConvert(node.NewExpression, nameof(VisitExtendedMemberInit));
             var arguments = Visit(node.Arguments).ToArray();
 
+            var navigations
+                = Enumerable.Empty<INavigationBase>()
+                    .Concat(entityType.GetNavigations())
+                    .Concat(entityType.GetSkipNavigations());
+
             var collectionMembers
-                = from n in entityType.GetNavigations()
-                    where n.IsCollection
-                    from m in new[] { n.GetSemanticReadableMemberInfo(), n.GetWritableMemberInfo() }
-                    select m;
+                = from n in navigations
+                  where n.IsCollection
+                  from m in new[] { n.GetSemanticReadableMemberInfo(), n.GetWritableMemberInfo() }
+                  select m;
 
             for (var i = 0; i < arguments.Length; i++)
             {

@@ -22,7 +22,7 @@ public class IncludeRewritingExpressionVisitor : ExpressionVisitor
                 var expression = includeExpression.Expression;
 
                 var remainingIncludes = new List<Expression>();
-                var remainingPaths = new List<IReadOnlyList<INavigation>>();
+                var remainingPaths = new List<IReadOnlyList<INavigationBase>>();
 
                 for (var i = 0; i < includeExpression.Includes.Count; i++)
                 {
@@ -58,20 +58,20 @@ public class IncludeRewritingExpressionVisitor : ExpressionVisitor
     private class CoreProjectionIncludeRewritingExpressionVisitor : ExpressionVisitor
     {
         private Expression includedExpression;
-        private readonly Stack<INavigation> path;
+        private readonly Stack<INavigationBase> path;
 
         public bool Finished { get; private set; }
 
         public CoreProjectionIncludeRewritingExpressionVisitor(
             Expression includedExpression,
-            IEnumerable<INavigation> path)
+            IEnumerable<INavigationBase> path)
         {
             this.includedExpression
                 = path.Last().GetSemanticReadableMemberInfo().GetMemberType().IsCollectionType()
                     ? includedExpression.AsCollectionType()
                     : includedExpression;
 
-            this.path = new Stack<INavigation>(path.Reverse());
+            this.path = new Stack<INavigationBase>(path.Reverse());
         }
 
         public override Expression Visit(Expression node)

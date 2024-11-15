@@ -48,6 +48,7 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
 
         // Where, OrderBy, OrderByDescending, ThenBy, ThenByDescending, Skip, Take
 
+        var originalNode = node; // for inspection while debugging
         var currentSet = new List<List<MemberInfo>> { new() };
         var paths = new List<List<MemberInfo>>();
         var inner = node.Arguments[0];
@@ -127,7 +128,7 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
                 entityType,
                 parameter,
                 paths.AsEnumerable(),
-                Array.Empty<INavigation>()).ToArray();
+                Array.Empty<INavigationBase>()).ToArray();
 
         var includeExpression
             = new IncludeExpression(
@@ -234,7 +235,14 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
 
         foreach (var member in members)
         {
-            var navigation = entityType.FindNavigationBase(member);
+            var candidateNavigations
+                = Enumerable.Empty<INavigationBase>()
+                    .Concat(entityType.GetNavigations())
+                    .Concat(entityType.GetSkipNavigations())
+                    .Concat(entityType.GetDerivedNavigations())
+                    .Concat(entityType.GetDerivedSkipNavigations());
+
+            var navigation = candidateNavigations.FirstOrDefault(n => member.Equals(n.GetSemanticReadableMemberInfo()));
 
             if (navigation is null)
             {
@@ -247,32 +255,39 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
         }
     }
 
-    private static IEnumerable<(Expression expression, IList<INavigation> path)> BuildIncludeAccessors(
+    private static IEnumerable<(Expression expression, IList<INavigationBase> path)> BuildIncludeAccessors(
         IEntityType entityType,
         Expression baseExpression,
         IEnumerable<IEnumerable<MemberInfo>> paths,
-        IList<INavigation> previousPath)
+        IList<INavigationBase> previousPath)
     {
         foreach (var pathset in paths.Where(p => p.Any()).GroupBy(p => p.First(), p => p.Skip(1)))
         {
             var includedMember = pathset.Key;
 
-            var navigation = entityType.GetNavigations().FirstOrDefault(n => n.GetSemanticReadableMemberInfo().Equals(includedMember));
+            if (includedMember is null)
+            {
+                // TODO: this is not optimal. it happens when attempting to include a 'unidirectional' navigation,
+                // i.e., trying to include an entity type that has a navigation member to the current entity type,
+                // but the current entity type doesn't have a navigation member. so it would only happen with string
+                // includes. currently if we were to omit them from ResolveIncludePaths it would cause an
+                // "Include error" exception
+                continue;
+            }
+
+            var candidateNavigations
+                = Enumerable.Empty<INavigationBase>()
+                    .Concat(entityType.GetNavigations())
+                    .Concat(entityType.GetSkipNavigations())
+                    .Concat(entityType.GetDerivedNavigations())
+                    .Concat(entityType.GetDerivedSkipNavigations());
+
+            var navigation = candidateNavigations.FirstOrDefault(n => includedMember.Equals(n.GetSemanticReadableMemberInfo()));
 
             if (navigation is null)
             {
-                // The navigation may be null in some inheritance scenarios.
-
-                navigation = (from t in entityType.GetDerivedTypes()
-                              from n in t.GetNavigations()
-                              where n.GetSemanticReadableMemberInfo().Equals(includedMember)
-                              select n).FirstOrDefault();
-
-                if (navigation is null)
-                {
-                    // TODO: maybe throw?
-                    continue;
-                }
+                // TODO: maybe throw?
+                continue;
             }
 
             var currentBaseExpression = baseExpression;
@@ -300,7 +315,7 @@ public class IncludeComposingExpressionVisitor(IModel model, DescriptorSet descr
                             navigation.TargetEntityType,
                             innerParameter,
                             pathset,
-                            Array.Empty<INavigation>()).ToArray();
+                            Array.Empty<INavigationBase>()).ToArray();
 
                     var includeExpression
                         = new IncludeExpression(

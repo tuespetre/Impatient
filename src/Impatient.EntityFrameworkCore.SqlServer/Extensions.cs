@@ -1,7 +1,6 @@
 ﻿using Impatient.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -166,35 +165,6 @@ internal static class Extensions
     private static FieldInfo GetWritableFieldInfo(this IPropertyBase propertyBase)
     {
         return propertyBase.FieldInfo?.DeclaringType.GetField(propertyBase.FieldInfo.Name, bindingFlags);
-    }
-
-    public static IEnumerable<INavigation> FindDerivedNavigations(this IEntityType entityType, string name)
-    {
-        return entityType.GetDerivedTypes().Select(t => t.FindDeclaredNavigation(name)).Where(n => n != null);
-    }
-
-    public static INavigationBase FindNavigationBase(this IEntityType entityType, MemberInfo member)
-    {
-        INavigationBase navigation = entityType.FindNavigation(member);
-
-        if (navigation is not null)
-        {
-            return navigation;
-        }
-
-        navigation = entityType.FindSkipNavigation(member);
-
-        if (navigation is not null)
-        {
-            return navigation;
-        }
-
-        navigation
-            = entityType
-                .FindDerivedNavigations(member.Name)
-                .SingleOrDefault(n => n.PropertyInfo == member || n.FieldInfo == member);
-
-        return navigation;
     }
 
     public static IEntityType FindFirstEntityType(this IModel model, Type type)
