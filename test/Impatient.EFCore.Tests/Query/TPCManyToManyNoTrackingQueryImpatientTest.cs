@@ -22,6 +22,12 @@ public class TPCManyToManyNoTrackingQueryImpatientTest : TPCManyToManyNoTracking
     }
 
     [Theory(Skip = SpecialIncludes)]
+    public override Task Filter_include_on_skip_navigation_combined_unidirectional(bool async)
+    {
+        return base.Filter_include_on_skip_navigation_combined_unidirectional(async);
+    }
+
+    [Theory(Skip = SpecialIncludes)]
     public override Task Filtered_include_on_navigation_then_filtered_include_on_skip_navigation(bool async)
     {
         return base.Filtered_include_on_navigation_then_filtered_include_on_skip_navigation(async);
