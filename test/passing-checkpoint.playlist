@@ -3542,12 +3542,6 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CustomConvertersImpatientTest.Can_insert_and_read_back_nullable_backed_data_types" />
                       </Rule>
                     </Rule>
-                    <Rule Match="All">
-                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.CustomConvertersImpatientTest.Where_bool_gets_converted_to_equality_when_value_conversion_is_used_using_indexer" />
-                      <Rule Match="Any">
-                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.CustomConvertersImpatientTest.Where_bool_gets_converted_to_equality_when_value_conversion_is_used_using_indexer" />
-                      </Rule>
-                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">

@@ -40,16 +40,29 @@ public class MemberAccessReducingExpressionVisitor : ExpressionVisitor
         var @object = Visit(node.Object);
         var arguments = Visit(node.Arguments);
 
-        if (@object?.UnwrapInnerExpression() is ExtendedMemberInitExpression extendedMemberInitExpression
-            && node.Indexer == extendedMemberInitExpression.Indexer
-            && arguments.Single() is ConstantExpression constantExpression
-            && constantExpression.Value is string indexerKey)
+        if (@object.UnwrapInnerExpression() is Expression expression)
         {
-            for (var i = 0; i < extendedMemberInitExpression.IndexerKeys.Count; i++)
+            if (expression is PolymorphicExpression polymorphicExpression)
             {
-                if (extendedMemberInitExpression.IndexerKeys[i] == indexerKey)
+                foreach (var descriptor in polymorphicExpression.Descriptors)
                 {
-                    return Visit(extendedMemberInitExpression.IndexerValues[i]);
+                    if (node.Indexer.DeclaringType.IsAssignableFrom(descriptor.Type))
+                    {
+                        return Visit(node.Update(descriptor.Materializer.ExpandParameters(polymorphicExpression.Row), arguments));
+                    }
+                }
+            }
+            else if (expression is ExtendedMemberInitExpression extendedMemberInitExpression
+                && node.Indexer == extendedMemberInitExpression.Indexer
+                && arguments.Single() is ConstantExpression constantExpression
+                && constantExpression.Value is string indexerKey)
+            {
+                for (var i = 0; i < extendedMemberInitExpression.IndexerKeys.Count; i++)
+                {
+                    if (extendedMemberInitExpression.IndexerKeys[i] == indexerKey)
+                    {
+                        return Visit(extendedMemberInitExpression.IndexerValues[i]);
+                    }
                 }
             }
         }
@@ -109,7 +122,7 @@ public class MemberAccessReducingExpressionVisitor : ExpressionVisitor
                     }
                 }
 
-                return node;
+                return node.Update(expression);
             }
 
             case ExtraPropertiesExpression extraPropertiesExpression:
@@ -129,16 +142,29 @@ public class MemberAccessReducingExpressionVisitor : ExpressionVisitor
         var @object = Visit(node.Object);
         var arguments = Visit(node.Arguments);
 
-        if (@object?.UnwrapInnerExpression() is ExtendedMemberInitExpression extendedMemberInitExpression
-            && node.Method == extendedMemberInitExpression.Indexer?.GetMethod
-            && arguments.Single() is ConstantExpression constantExpression
-            && constantExpression.Value is string indexerKey)
+        if (node.Method.IsSpecialName && @object.UnwrapInnerExpression() is Expression expression)
         {
-            for (var i = 0; i < extendedMemberInitExpression.IndexerKeys.Count; i++)
+            if (expression is PolymorphicExpression polymorphicExpression)
             {
-                if (extendedMemberInitExpression.IndexerKeys[i] == indexerKey)
+                foreach (var descriptor in polymorphicExpression.Descriptors)
                 {
-                    return Visit(extendedMemberInitExpression.IndexerValues[i]);
+                    if (node.Method.DeclaringType.IsAssignableFrom(descriptor.Type))
+                    {
+                        return Visit(node.Update(descriptor.Materializer.ExpandParameters(polymorphicExpression.Row), arguments));
+                    }
+                }
+            }
+            else if (expression is ExtendedMemberInitExpression extendedMemberInitExpression
+                && node.Method == extendedMemberInitExpression.Indexer?.GetMethod
+                && arguments.Single() is ConstantExpression constantExpression
+                && constantExpression.Value is string indexerKey)
+            {
+                for (var i = 0; i < extendedMemberInitExpression.IndexerKeys.Count; i++)
+                {
+                    if (extendedMemberInitExpression.IndexerKeys[i] == indexerKey)
+                    {
+                        return Visit(extendedMemberInitExpression.IndexerValues[i]);
+                    }
                 }
             }
         }

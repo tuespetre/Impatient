@@ -2063,16 +2063,6 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
         return fallbackToEnumerable();
     }
 
-    protected Expression HandleOrderDescending(
-        EnumerableRelationalQueryExpression outerQuery,
-        MethodCallExpression node,
-        Expression[] visitedArguments,
-        Func<Expression> fallbackToEnumerable)
-    {
-        // TODO: Handle OrderDescending
-        return fallbackToEnumerable();
-    }
-
     protected Expression HandleReverse(
         EnumerableRelationalQueryExpression outerQuery,
         MethodCallExpression node,
