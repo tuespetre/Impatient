@@ -26176,6 +26176,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsSharedTypeQueryImpatientTest.Join_flattening_bug_4539" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsSharedTypeQueryImpatientTest.Prune_does_not_throw_null_ref" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsSharedTypeQueryImpatientTest.Prune_does_not_throw_null_ref" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -36735,6 +36741,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsQueryImpatientTest.Join_navigation_deeply_nested_non_key_join" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsQueryImpatientTest.Join_navigation_deeply_nested_non_key_join" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsQueryImpatientTest.Prune_does_not_throw_null_ref" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsQueryImpatientTest.Prune_does_not_throw_null_ref" />
                       </Rule>
                     </Rule>
                   </Rule>

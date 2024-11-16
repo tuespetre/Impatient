@@ -140,10 +140,6 @@ public class ComplexNavigationsSharedTypeQueryImpatientTest : ComplexNavigations
     {
         await base.Prune_does_not_throw_null_ref(async);
 
-        // WHERE (([t_1].[$empty] IS NULL) AND (([t_1].[Level1_Required_Id] IS NULL OR ([t_1].[Level1_Required_Id] <> [x].[Id])))) OR (([t_1].[$empty] IS NOT NULL) AND (0 <> [x].[Id]))
-
-        // is incorrect
-
         AssertSql("""
             SELECT [l1].[Id] AS [Id], [l1].[Date] AS [Date], [l1].[Name] AS [Name]
             FROM (
@@ -161,7 +157,7 @@ public class ComplexNavigationsSharedTypeQueryImpatientTest : ComplexNavigations
             CROSS APPLY (
                 SELECT [x].[Id] AS [Id], [x].[Date] AS [Date], [x].[Name] AS [Name]
                 FROM [Level1] AS [x]
-                WHERE (([t_1].[$empty] IS NULL) AND (([t_1].[Level1_Required_Id] IS NULL OR ([t_1].[Level1_Required_Id] <> [x].[Id])))) OR (([t_1].[$empty] IS NOT NULL) AND (0 <> [x].[Id]))
+                WHERE (([t_1].[$empty] IS NOT NULL) AND (([t_1].[Level1_Required_Id] IS NULL OR ([t_1].[Level1_Required_Id] <> [x].[Id])))) OR (([t_1].[$empty] IS NULL) AND (0 <> [x].[Id]))
             ) AS [l1]
             """);
     }

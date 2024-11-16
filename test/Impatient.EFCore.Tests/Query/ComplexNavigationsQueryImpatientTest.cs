@@ -78,12 +78,6 @@ public class ComplexNavigationsQueryImpatientTest : ComplexNavigationsQueryRelat
     {
         await base.Prune_does_not_throw_null_ref(async);
 
-        // WHERE (([t_0].[$empty] IS NULL) AND ([t_0].[Level1_Required_Id] <> [x].[Id])) OR (([t_0].[$empty] IS NOT NULL) AND (0 <> [x].[Id]))
-
-        // should be
-
-        // WHERE (([t_0].[$empty] IS NULL) AND (0 <> [x].[Id])) OR (([t_0].[$empty] IS NOT NULL) AND ([t_0].[Level1_Required_Id] <> [x].[Id]))
-
         AssertSql("""
             SELECT [l1].[Id] AS [Id], [l1].[Date] AS [Date], [l1].[Name] AS [Name]
             FROM (
@@ -97,7 +91,7 @@ public class ComplexNavigationsQueryImpatientTest : ComplexNavigationsQueryRelat
             CROSS APPLY (
                 SELECT [x].[OneToMany_Optional_Self_Inverse1Id] AS [OneToMany_Optional_Self_Inverse1Id], [x].[OneToMany_Required_Self_Inverse1Id] AS [OneToMany_Required_Self_Inverse1Id], [x].[OneToOne_Optional_Self1Id] AS [OneToOne_Optional_Self1Id], [x].[Id] AS [Id], [x].[Date] AS [Date], [x].[Name] AS [Name]
                 FROM [LevelOne] AS [x]
-                WHERE (([t_0].[$empty] IS NULL) AND ([t_0].[Level1_Required_Id] <> [x].[Id])) OR (([t_0].[$empty] IS NOT NULL) AND (0 <> [x].[Id]))
+                WHERE (([t_0].[$empty] IS NOT NULL) AND ([t_0].[Level1_Required_Id] <> [x].[Id])) OR (([t_0].[$empty] IS NULL) AND (0 <> [x].[Id]))
             ) AS [l1]
             """);
     }
