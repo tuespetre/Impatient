@@ -148,7 +148,20 @@ public abstract class ProjectionExpressionVisitor : ExpressionVisitor
                     nameStack.Pop();
                 }
 
-                return memberInitExpression.Update(newExpression, arguments);
+                var indexerValues = new Expression[memberInitExpression.IndexerKeys.Count];
+
+                for (var i = 0; i < memberInitExpression.IndexerKeys.Count; i++)
+                {
+                    memberStack.Push(memberInitExpression.Indexer);
+                    nameStack.Push(memberInitExpression.IndexerKeys[i]);
+
+                    indexerValues[i] = Visit(memberInitExpression.IndexerValues[i]);
+
+                    memberStack.Pop();
+                    nameStack.Pop();
+                }
+
+                return memberInitExpression.Update(newExpression, arguments, memberInitExpression.IndexerKeys, indexerValues);
             }
 
             case NewArrayExpression newArrayExpression:

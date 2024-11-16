@@ -1122,7 +1122,13 @@ public class ModelExpressionProvider
         var properties
             = (from p in entityType.GetProperties()
                where !p.IsShadowProperty()
-               where !p.IsIndexerProperty() // TODO: include indexer properties
+               where !p.IsIndexerProperty()
+               select p).ToList();
+
+        var indexerProperties
+            = (from p in entityType.GetProperties()
+               where !p.IsShadowProperty()
+               where p.IsIndexerProperty()
                select p).ToList();
 
         var complexProperties
@@ -1223,13 +1229,27 @@ public class ModelExpressionProvider
             writableMembers[i] = service.GetWritableMemberInfo();
         }
 
+        var indexerKeys = new string[indexerProperties.Count];
+        var indexerValues = new Expression[indexerProperties.Count];
+
+        for (var i = 0; i < indexerProperties.Count; i++)
+        {
+            var indexerProperty = indexerProperties[i];
+
+            indexerKeys[i] = indexerProperty.Name;
+            indexerValues[i] = propertyExpressions[indexerProperty];
+        }
+
         Expression materializer
             = new ExtendedMemberInitExpression(
                 entityType.ClrType,
                 newExpression,
                 arguments,
                 readableMembers,
-                writableMembers);
+                writableMembers,
+                indexerProperties.Select(i => i.PropertyInfo).Distinct().SingleOrDefault(),
+                indexerKeys,
+                indexerValues);
 
         var keySelector
             = CreateMaterializationKeySelector(entityType);
@@ -1283,7 +1303,13 @@ public class ModelExpressionProvider
         var properties
             = (from p in complexType.GetProperties()
                where !p.IsShadowProperty()
-               where !p.IsIndexerProperty() // TODO: include indexer properties
+               where !p.IsIndexerProperty()
+               select p).ToList();
+
+        var indexerProperties
+            = (from p in complexType.GetProperties()
+               where !p.IsShadowProperty()
+               where p.IsIndexerProperty()
                select p).ToList();
 
         var complexProperties
@@ -1325,13 +1351,27 @@ public class ModelExpressionProvider
             writableMembers[i] = complexProperty.GetWritableMemberInfo();
         }
 
+        var indexerKeys = new string[indexerProperties.Count];
+        var indexerValues = new Expression[indexerProperties.Count];
+
+        for (var i = 0; i < indexerProperties.Count; i++)
+        {
+            var indexerProperty = indexerProperties[i];
+
+            indexerKeys[i] = indexerProperty.Name;
+            indexerValues[i] = propertyExpressions[indexerProperty];
+        }
+
         Expression materializer
             = new ExtendedMemberInitExpression(
                 complexType.ClrType,
                 newExpression,
                 arguments,
                 readableMembers,
-                writableMembers);
+                writableMembers,
+                indexerProperties.Select(i => i.PropertyInfo).Distinct().SingleOrDefault(),
+                indexerKeys,
+                indexerValues);
 
         return materializer;
     }

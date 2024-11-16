@@ -2,6 +2,7 @@
 using Impatient.Query.Expressions;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -36,7 +37,24 @@ public class MemberAccessReducingExpressionVisitor : ExpressionVisitor
 
     protected override Expression VisitIndex(IndexExpression node)
     {
-        return base.VisitIndex(node);
+        var @object = Visit(node.Object);
+        var arguments = Visit(node.Arguments);
+
+        if (@object?.UnwrapInnerExpression() is ExtendedMemberInitExpression extendedMemberInitExpression
+            && node.Indexer == extendedMemberInitExpression.Indexer
+            && arguments.Single() is ConstantExpression constantExpression
+            && constantExpression.Value is string indexerKey)
+        {
+            for (var i = 0; i < extendedMemberInitExpression.IndexerKeys.Count; i++)
+            {
+                if (extendedMemberInitExpression.IndexerKeys[i] == indexerKey)
+                {
+                    return Visit(extendedMemberInitExpression.IndexerValues[i]);
+                }
+            }
+        }
+
+        return node.Update(@object, arguments);
     }
 
     protected override Expression VisitMember(MemberExpression node)
@@ -104,6 +122,28 @@ public class MemberAccessReducingExpressionVisitor : ExpressionVisitor
                 return node.Update(expression);
             }
         }
+    }
+
+    protected override Expression VisitMethodCall(MethodCallExpression node)
+    {
+        var @object = Visit(node.Object);
+        var arguments = Visit(node.Arguments);
+
+        if (@object?.UnwrapInnerExpression() is ExtendedMemberInitExpression extendedMemberInitExpression
+            && node.Method == extendedMemberInitExpression.Indexer?.GetMethod
+            && arguments.Single() is ConstantExpression constantExpression
+            && constantExpression.Value is string indexerKey)
+        {
+            for (var i = 0; i < extendedMemberInitExpression.IndexerKeys.Count; i++)
+            {
+                if (extendedMemberInitExpression.IndexerKeys[i] == indexerKey)
+                {
+                    return Visit(extendedMemberInitExpression.IndexerValues[i]);
+                }
+            }
+        }
+
+        return node.Update(@object, arguments);
     }
 
     protected override Expression VisitUnary(UnaryExpression node)

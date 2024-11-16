@@ -19,6 +19,12 @@ public class ExtendedMemberInitExpression : Expression, ISemanticHashCodeProvide
 
     public ReadOnlyCollection<MemberInfo> WritableMembers { get; }
 
+    public PropertyInfo Indexer { get; }
+
+    public ReadOnlyCollection<string> IndexerKeys { get; }
+
+    public ReadOnlyCollection<Expression> IndexerValues { get; }
+
     public override Type Type { get; }
 
     public override ExpressionType NodeType => ExpressionType.Extension;
@@ -29,7 +35,7 @@ public class ExtendedMemberInitExpression : Expression, ISemanticHashCodeProvide
     {
         var reducedNewExpression = NewExpression.Reduce();
 
-        if (reducedNewExpression.NodeType == ExpressionType.New)
+        if (reducedNewExpression.NodeType is ExpressionType.New && Indexer is null)
         {
             return MemberInit(
                 (NewExpression)reducedNewExpression,
@@ -44,7 +50,7 @@ public class ExtendedMemberInitExpression : Expression, ISemanticHashCodeProvide
         else
         {
             var variable = Variable(reducedNewExpression.Type, "instance");
-            var expressions = new Expression[Arguments.Count + 2];
+            var expressions = new Expression[Arguments.Count + IndexerKeys.Count + 2];
 
             expressions[0] = Assign(variable, reducedNewExpression);
 
@@ -53,9 +59,14 @@ public class ExtendedMemberInitExpression : Expression, ISemanticHashCodeProvide
                 expressions[i + 1] = Assign(MakeMemberAccess(variable, WritableMembers[i]), Arguments[i]);
             }
 
-            expressions[Arguments.Count + 1] = Convert(variable, Type);
+            for (var i = 0; i < IndexerKeys.Count; i++)
+            {
+                expressions[i + 1 + Arguments.Count] = Assign(MakeIndex(variable, Indexer, [Constant(IndexerKeys[i])]), Convert(IndexerValues[i], Indexer.PropertyType));
+            }
 
-            return Block(new[] { variable }, expressions);
+            expressions[Arguments.Count + IndexerKeys.Count + 1] = Convert(variable, Type);
+
+            return Block([variable], expressions);
         }
     }
 
@@ -64,26 +75,34 @@ public class ExtendedMemberInitExpression : Expression, ISemanticHashCodeProvide
         ExtendedNewExpression newExpression,
         IEnumerable<Expression> arguments,
         IEnumerable<MemberInfo> readableMembers,
-        IEnumerable<MemberInfo> writableMembers)
-        : this(newExpression, arguments, readableMembers, writableMembers)
+        IEnumerable<MemberInfo> writableMembers,
+        PropertyInfo indexer,
+        IEnumerable<string> indexerKeys,
+        IEnumerable<Expression> indexerValues)
+        : this(newExpression, arguments, readableMembers, writableMembers, indexer, indexerKeys, indexerValues)
     {
-        Type = explicitType;
-
-        if (!Type.IsAssignableFrom(newExpression.Type))
+        if (!explicitType.IsAssignableFrom(newExpression.Type))
         {
-            throw new ArgumentException();
+            throw new ArgumentException("Type must be assignable from the ExtendedNewExpression's Type", nameof(explicitType));
         }
+
+        Type = explicitType;
     }
 
     public ExtendedMemberInitExpression(
         ExtendedNewExpression newExpression,
         IEnumerable<Expression> arguments,
         IEnumerable<MemberInfo> readableMembers,
-        IEnumerable<MemberInfo> writableMembers)
+        IEnumerable<MemberInfo> writableMembers,
+        PropertyInfo indexer,
+        IEnumerable<string> indexerKeys,
+        IEnumerable<Expression> indexerValues)
     {
         arguments = arguments?.ToArray();
         readableMembers = readableMembers?.ToArray();
         writableMembers = writableMembers?.ToArray();
+        indexerKeys = indexerKeys?.ToArray();
+        indexerValues = indexerValues?.ToArray();
 
         Type = newExpression.Type;
         NewExpression = newExpression ?? throw new ArgumentNullException(nameof(newExpression));
@@ -138,36 +157,95 @@ public class ExtendedMemberInitExpression : Expression, ISemanticHashCodeProvide
                 throw new ArgumentException($"WritableMembers must be valid for the NewExpression's type. Element {i} is not valid.");
             }
         }
+
+        if (indexer is null)
+        {
+            if (indexerKeys.Any())
+            {
+                throw new ArgumentException("Indexer keys cannot be supplied without an indexer.");
+            }
+
+            if (indexerValues.Any())
+            {
+                throw new ArgumentException("Indexer values cannot be supplied without an indexer.");
+            }
+
+            IndexerKeys = new([]);
+            IndexerValues = new([]);
+        }
+        else
+        {
+            Indexer = indexer;
+
+            var indexParameters = indexer.GetIndexParameters();
+
+            if (indexParameters.Length != 1 || indexParameters[0].ParameterType != typeof(string))
+            {
+                throw new ArgumentException("Indexer must be a property with one index parameter of type string.");
+            }
+
+            IndexerKeys = new(indexerKeys?.ToArray() ?? throw new ArgumentNullException(nameof(indexerKeys)));
+            IndexerValues = new(indexerValues?.ToArray() ?? throw new ArgumentNullException(nameof(indexerValues)));
+
+            if (IndexerKeys.Count != IndexerValues.Count)
+            {
+                throw new ArgumentException("Indexer keys and values must have the same cardinality.");
+            }
+
+            for (var i = 0; i < IndexerKeys.Count; i++)
+            {
+                if (IndexerKeys[i] is null)
+                {
+                    throw new ArgumentException($"IndexerKeys cannot be null. Element {i} is null.");
+                }
+
+                if (IndexerValues[i] is null)
+                {
+                    throw new ArgumentException($"IndexerValues cannot be null. Element {i} is null.");
+                }
+
+                if (!IndexerValues[i].Type.IsAssignableTo(indexer.PropertyType))
+                {
+                    throw new ArgumentException($"IndexerValues must be of valid type for the indexer. Element {i} is of invalid type.");
+                }
+            }
+        }
     }
 
     protected override Expression VisitChildren(ExpressionVisitor visitor)
     {
-        if (visitor is null)
-        {
-            throw new ArgumentNullException(nameof(visitor));
-        }
+        ArgumentNullException.ThrowIfNull(visitor);
 
         var newExpression = visitor.VisitAndConvert(NewExpression, nameof(VisitChildren));
         var arguments = visitor.Visit(Arguments);
+        var indexerValues = visitor.Visit(IndexerValues);
 
-        return Update(newExpression, arguments);
+        return Update(newExpression, arguments, IndexerKeys, indexerValues);
     }
 
-    public ExtendedMemberInitExpression Update(ExtendedNewExpression newExpression, IEnumerable<Expression> arguments)
+    public ExtendedMemberInitExpression Update(
+        ExtendedNewExpression newExpression,
+        IEnumerable<Expression> arguments,
+        IEnumerable<string> indexerKeys,
+        IEnumerable<Expression> indexerValues)
     {
-        if (newExpression is null)
-        {
-            throw new ArgumentNullException(nameof(newExpression));
-        }
+        ArgumentNullException.ThrowIfNull(newExpression);
+        ArgumentNullException.ThrowIfNull(arguments);
 
-        if (arguments is null)
+        if (newExpression != NewExpression
+            || !arguments.SequenceEqual(Arguments)
+            || !indexerKeys.SequenceEqual(IndexerKeys)
+            || !indexerValues.SequenceEqual(IndexerValues))
         {
-            throw new ArgumentNullException(nameof(arguments));
-        }
-
-        if (newExpression != NewExpression || arguments != Arguments)
-        {
-            return new ExtendedMemberInitExpression(Type, newExpression, arguments, ReadableMembers, WritableMembers);
+            return new ExtendedMemberInitExpression(
+                Type,
+                newExpression,
+                arguments,
+                ReadableMembers,
+                WritableMembers,
+                Indexer,
+                indexerKeys,
+                indexerValues);
         }
 
         return this;
@@ -184,6 +262,12 @@ public class ExtendedMemberInitExpression : Expression, ISemanticHashCodeProvide
                 hash = (hash * 16777619) ^ Arguments[i].GetHashCode();
                 hash = (hash * 16777619) ^ ReadableMembers[i].GetHashCode();
                 hash = (hash * 16777619) ^ WritableMembers[i].GetHashCode();
+            }
+
+            for (var i = 0; i < IndexerKeys.Count; i++)
+            {
+                hash = (hash * 16777619) ^ IndexerKeys[i].GetHashCode();
+                hash = (hash * 16777619) ^ IndexerValues[i].GetHashCode();
             }
 
             return hash;

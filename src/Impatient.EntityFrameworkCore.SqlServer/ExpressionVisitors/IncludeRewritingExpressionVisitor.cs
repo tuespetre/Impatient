@@ -346,12 +346,14 @@ public class IncludeRewritingExpressionVisitor : ExpressionVisitor
 
             if (Finished)
             {
-                return node.Update(newExpression, node.Arguments);
+                return node.Update(newExpression, node.Arguments, node.IndexerKeys, node.IndexerValues);
             }
 
             var arguments = node.Arguments.ToList();
             var readableMembers = node.ReadableMembers.ToList();
             var writableMembers = node.WritableMembers.ToList();
+            var indexerKeys = node.IndexerKeys;
+            var indexerValues = node.IndexerValues.ToList();
 
             var currentMember = path.Pop();
             var currentMemberInfo = currentMember.GetSemanticReadableMemberInfo();
@@ -400,12 +402,15 @@ public class IncludeRewritingExpressionVisitor : ExpressionVisitor
                     node.NewExpression, 
                     arguments, 
                     readableMembers, 
-                    writableMembers);
+                    writableMembers,
+                    node.Indexer,
+                    indexerKeys,
+                    indexerValues);
             }
             else
             {
 
-                return node.Update(newExpression, arguments);
+                return node.Update(newExpression, arguments, indexerKeys, indexerValues);
             }
         }
     }

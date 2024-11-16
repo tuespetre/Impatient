@@ -85,6 +85,7 @@ public class ProjectionReferenceRewritingExpressionVisitor : ExpressionVisitor
             {
                 var newExpression = (ExtendedNewExpression)Visit(memberInitExpression.NewExpression);
                 var arguments = memberInitExpression.Arguments.ToArray();
+                var indexerValues = memberInitExpression.IndexerValues.ToArray();
 
                 for (var i = 0; i < arguments.Length; i++)
                 {
@@ -93,7 +94,14 @@ public class ProjectionReferenceRewritingExpressionVisitor : ExpressionVisitor
                     nameStack.Pop();
                 }
 
-                return memberInitExpression.Update(newExpression, arguments);
+                for (var i = 0; i < indexerValues.Length; i++)
+                {
+                    nameStack.Push(memberInitExpression.IndexerKeys[i]);
+                    indexerValues[i] = Visit(indexerValues[i]);
+                    nameStack.Pop();
+                }
+
+                return memberInitExpression.Update(newExpression, arguments, memberInitExpression.IndexerKeys, indexerValues);
             }
 
             case NewArrayExpression newArrayExpression:

@@ -2374,7 +2374,9 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
         {
             return node.Update(
                 VisitAndConvert(node.NewExpression, nameof(VisitExtendedMemberInit)),
-                node.Arguments.Select(MaybeToList));
+                node.Arguments.Select(MaybeToList),
+                node.IndexerKeys,
+                node.IndexerValues);
         }
 
         private Expression MaybeToList(Expression original)

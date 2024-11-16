@@ -199,7 +199,7 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
                 }
             }
 
-            return node.Update(newExpression, arguments);
+            return node.Update(newExpression, arguments, node.IndexerKeys, node.IndexerValues);
         }
     }
 }
