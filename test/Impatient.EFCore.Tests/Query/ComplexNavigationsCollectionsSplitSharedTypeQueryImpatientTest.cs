@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Xunit;
+using Xunit.Sdk;
 using static Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest;
 
 namespace Impatient.EFCore.Tests.Query;
@@ -349,9 +350,234 @@ public class ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest : Co
 
     #endregion
 
-    [Theory(Skip = TranslationBeyondEF)]
-    public override Task Include_inside_subquery(bool async)
+    [TranslationExceedsEFCore]
+    public override async Task Include_after_Select(bool async)
     {
-        return base.Include_inside_subquery(async);
+        await Assert.ThrowsAsync<ThrowsException>(() => base.Include_after_Select(async));
+
+        AssertSql("""
+            SELECT [l].[$empty] AS [$empty], [l].[Id] AS [Id], [l].[Date] AS [Date], [l].[Level1_Optional_Id] AS [Level1_Optional_Id], [l].[Level1_Required_Id] AS [Level1_Required_Id], [l].[Name] AS [Name], (
+                SELECT [l_0].[Id] AS [Id], [l_0].[Level2_Optional_Id] AS [Level2_Optional_Id], [l_0].[Level2_Required_Id] AS [Level2_Required_Id], [l_0].[Level3_Name] AS [Name]
+                FROM [Level1] AS [l_0]
+                WHERE [l].[Id] = [l_0].[OneToMany_Optional_Inverse3Id]
+                FOR JSON PATH
+            ) AS [OneToMany_Optional2]
+            FROM [Level1] AS [l1]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [l_1].[OneToMany_Optional_Inverse2Id] AS [OneToMany_Optional_Inverse2Id], [l_1].[OneToMany_Required_Inverse2Id] AS [OneToMany_Required_Inverse2Id], [l_1].[OneToOne_Optional_PK_Inverse2Id] AS [OneToOne_Optional_PK_Inverse2Id], [l_1].[Id] AS [Id], [l_1].[OneToOne_Required_PK_Date] AS [Date], [l_1].[Level1_Optional_Id] AS [Level1_Optional_Id], [l_1].[Level1_Required_Id] AS [Level1_Required_Id], [l_1].[Level2_Name] AS [Name]
+                FROM [Level1] AS [l_1]
+            ) AS [l] ON [l1].[Id] = [l].[Level1_Optional_Id]
+            """);
+    }
+
+    [TranslationExceedsEFCore]
+    public override async Task Include_after_SelectMany_and_reference_navigation(bool async)
+    {
+        await Assert.ThrowsAsync<ThrowsException>(() => base.Include_after_SelectMany_and_reference_navigation(async));
+
+        AssertSql("""
+            SELECT [l].[$empty] AS [$empty], [l].[Id] AS [Id], [l].[Level2_Optional_Id] AS [Level2_Optional_Id], [l].[Level2_Required_Id] AS [Level2_Required_Id], [l].[Name] AS [Name], (
+                SELECT [l_0].[Id] AS [Id], [l_0].[Level3_Optional_Id] AS [Level3_Optional_Id], [l_0].[Level3_Required_Id] AS [Level3_Required_Id], [l_0].[Level4_Name] AS [Name]
+                FROM [Level1] AS [l_0]
+                WHERE [l].[Id] = [l_0].[OneToMany_Optional_Inverse4Id]
+                FOR JSON PATH
+            ) AS [OneToMany_Optional3]
+            FROM [Level1] AS [l1]
+            INNER JOIN [Level1] AS [l_1] ON [l1].[Id] = [l_1].[OneToMany_Required_Inverse2Id]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [l_2].[OneToMany_Optional_Inverse3Id] AS [OneToMany_Optional_Inverse3Id], [l_2].[OneToMany_Required_Inverse3Id] AS [OneToMany_Required_Inverse3Id], [l_2].[OneToOne_Optional_PK_Inverse3Id] AS [OneToOne_Optional_PK_Inverse3Id], [l_2].[Id] AS [Id], [l_2].[Level2_Optional_Id] AS [Level2_Optional_Id], [l_2].[Level2_Required_Id] AS [Level2_Required_Id], [l_2].[Level3_Name] AS [Name]
+                FROM [Level1] AS [l_2]
+            ) AS [l] ON [l_1].[Id] = [l].[Level2_Optional_Id]
+            """);
+    }
+
+    [TranslationExceedsEFCore]
+    public override async Task Include_collection_with_multiple_orderbys_complex(bool async)
+    {
+        await Assert.ThrowsAsync<ThrowsException>(() => base.Include_collection_with_multiple_orderbys_complex(async));
+
+        AssertSql("""
+            SELECT [l].[$empty] AS [$empty], [l].[Id] AS [Id], [l].[Date] AS [Date], [l].[Level1_Optional_Id] AS [Level1_Optional_Id], [l].[Level1_Required_Id] AS [Level1_Required_Id], [l].[Name] AS [Name], (
+                SELECT [l_0].[Id] AS [Id], [l_0].[Level2_Optional_Id] AS [Level2_Optional_Id], [l_0].[Level2_Required_Id] AS [Level2_Required_Id], [l_0].[Level3_Name] AS [Name]
+                FROM [Level1] AS [l_0]
+                WHERE [l].[Id] = [l_0].[OneToMany_Optional_Inverse3Id]
+                FOR JSON PATH
+            ) AS [OneToMany_Optional2]
+            FROM [Level1] AS [t]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [l_1].[OneToMany_Optional_Inverse2Id] AS [OneToMany_Optional_Inverse2Id], [l_1].[OneToMany_Required_Inverse2Id] AS [OneToMany_Required_Inverse2Id], [l_1].[OneToOne_Optional_PK_Inverse2Id] AS [OneToOne_Optional_PK_Inverse2Id], [l_1].[Id] AS [Id], [l_1].[OneToOne_Required_PK_Date] AS [Date], [l_1].[Level1_Optional_Id] AS [Level1_Optional_Id], [l_1].[Level1_Required_Id] AS [Level1_Required_Id], [l_1].[Level2_Name] AS [Name]
+                FROM [Level1] AS [l_1]
+            ) AS [l] ON [t].[Id] = [l].[Id]
+            WHERE [l].[Id] IS NOT NULL
+            ORDER BY ABS([l].[Level1_Required_Id]) + 7 ASC, [l].[Name] ASC
+            """);
+    }
+
+    [TranslationExceedsEFCore]
+    public override async Task Include_collection_with_multiple_orderbys_complex_repeated(bool async)
+    {
+        await Assert.ThrowsAsync<ThrowsException>(() => base.Include_collection_with_multiple_orderbys_complex_repeated(async));
+
+        AssertSql("""
+            SELECT [l].[$empty] AS [$empty], [l].[Id] AS [Id], [l].[Date] AS [Date], [l].[Level1_Optional_Id] AS [Level1_Optional_Id], [l].[Level1_Required_Id] AS [Level1_Required_Id], [l].[Name] AS [Name], (
+                SELECT [l_0].[Id] AS [Id], [l_0].[Level2_Optional_Id] AS [Level2_Optional_Id], [l_0].[Level2_Required_Id] AS [Level2_Required_Id], [l_0].[Level3_Name] AS [Name]
+                FROM [Level1] AS [l_0]
+                WHERE [l].[Id] = [l_0].[OneToMany_Optional_Inverse3Id]
+                FOR JSON PATH
+            ) AS [OneToMany_Optional2]
+            FROM [Level1] AS [t]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [l_1].[OneToMany_Optional_Inverse2Id] AS [OneToMany_Optional_Inverse2Id], [l_1].[OneToMany_Required_Inverse2Id] AS [OneToMany_Required_Inverse2Id], [l_1].[OneToOne_Optional_PK_Inverse2Id] AS [OneToOne_Optional_PK_Inverse2Id], [l_1].[Id] AS [Id], [l_1].[OneToOne_Required_PK_Date] AS [Date], [l_1].[Level1_Optional_Id] AS [Level1_Optional_Id], [l_1].[Level1_Required_Id] AS [Level1_Required_Id], [l_1].[Level2_Name] AS [Name]
+                FROM [Level1] AS [l_1]
+            ) AS [l] ON [t].[Id] = [l].[Id]
+            WHERE [l].[Id] IS NOT NULL
+            ORDER BY -([l].[Level1_Required_Id]) ASC, (
+                SELECT -([l].[Level1_Required_Id])
+            ) ASC, [l].[Name] ASC
+            """);
+    }
+
+    [TranslationExceedsEFCore]
+    public override async Task Include_collection_with_multiple_orderbys_complex_repeated_checked(bool async)
+    {
+        await Assert.ThrowsAsync<ThrowsException>(() => base.Include_collection_with_multiple_orderbys_complex_repeated_checked(async));
+
+        AssertSql("""
+            SELECT [l].[$empty] AS [$empty], [l].[Id] AS [Id], [l].[Date] AS [Date], [l].[Level1_Optional_Id] AS [Level1_Optional_Id], [l].[Level1_Required_Id] AS [Level1_Required_Id], [l].[Name] AS [Name], (
+                SELECT [l_0].[Id] AS [Id], [l_0].[Level2_Optional_Id] AS [Level2_Optional_Id], [l_0].[Level2_Required_Id] AS [Level2_Required_Id], [l_0].[Level3_Name] AS [Name]
+                FROM [Level1] AS [l_0]
+                WHERE [l].[Id] = [l_0].[OneToMany_Optional_Inverse3Id]
+                FOR JSON PATH
+            ) AS [OneToMany_Optional2]
+            FROM [Level1] AS [t]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [l_1].[OneToMany_Optional_Inverse2Id] AS [OneToMany_Optional_Inverse2Id], [l_1].[OneToMany_Required_Inverse2Id] AS [OneToMany_Required_Inverse2Id], [l_1].[OneToOne_Optional_PK_Inverse2Id] AS [OneToOne_Optional_PK_Inverse2Id], [l_1].[Id] AS [Id], [l_1].[OneToOne_Required_PK_Date] AS [Date], [l_1].[Level1_Optional_Id] AS [Level1_Optional_Id], [l_1].[Level1_Required_Id] AS [Level1_Required_Id], [l_1].[Level2_Name] AS [Name]
+                FROM [Level1] AS [l_1]
+            ) AS [l] ON [t].[Id] = [l].[Id]
+            WHERE [l].[Id] IS NOT NULL
+            ORDER BY -([l].[Level1_Required_Id]) ASC, (
+                SELECT -([l].[Level1_Required_Id])
+            ) ASC, [l].[Name] ASC
+            """);
+    }
+
+    [TranslationExceedsEFCore]
+    public override async Task Include_collection_with_multiple_orderbys_member(bool async)
+    {
+        await Assert.ThrowsAsync<ThrowsException>(() => base.Include_collection_with_multiple_orderbys_member(async));
+
+        AssertSql("""
+            SELECT [l].[$empty] AS [$empty], [l].[Id] AS [Id], [l].[Date] AS [Date], [l].[Level1_Optional_Id] AS [Level1_Optional_Id], [l].[Level1_Required_Id] AS [Level1_Required_Id], [l].[Name] AS [Name], (
+                SELECT [l_0].[Id] AS [Id], [l_0].[Level2_Optional_Id] AS [Level2_Optional_Id], [l_0].[Level2_Required_Id] AS [Level2_Required_Id], [l_0].[Level3_Name] AS [Name]
+                FROM [Level1] AS [l_0]
+                WHERE [l].[Id] = [l_0].[OneToMany_Optional_Inverse3Id]
+                FOR JSON PATH
+            ) AS [OneToMany_Optional2]
+            FROM [Level1] AS [t]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [l_1].[OneToMany_Optional_Inverse2Id] AS [OneToMany_Optional_Inverse2Id], [l_1].[OneToMany_Required_Inverse2Id] AS [OneToMany_Required_Inverse2Id], [l_1].[OneToOne_Optional_PK_Inverse2Id] AS [OneToOne_Optional_PK_Inverse2Id], [l_1].[Id] AS [Id], [l_1].[OneToOne_Required_PK_Date] AS [Date], [l_1].[Level1_Optional_Id] AS [Level1_Optional_Id], [l_1].[Level1_Required_Id] AS [Level1_Required_Id], [l_1].[Level2_Name] AS [Name]
+                FROM [Level1] AS [l_1]
+            ) AS [l] ON [t].[Id] = [l].[Id]
+            WHERE [l].[Id] IS NOT NULL
+            ORDER BY [l].[Name] ASC, [l].[Level1_Required_Id] ASC
+            """);
+    }
+
+    [TranslationExceedsEFCore]
+    public override async Task Include_collection_with_multiple_orderbys_methodcall(bool async)
+    {
+        await Assert.ThrowsAsync<ThrowsException>(() => base.Include_collection_with_multiple_orderbys_methodcall(async));
+
+        AssertSql("""
+            SELECT [l].[$empty] AS [$empty], [l].[Id] AS [Id], [l].[Date] AS [Date], [l].[Level1_Optional_Id] AS [Level1_Optional_Id], [l].[Level1_Required_Id] AS [Level1_Required_Id], [l].[Name] AS [Name], (
+                SELECT [l_0].[Id] AS [Id], [l_0].[Level2_Optional_Id] AS [Level2_Optional_Id], [l_0].[Level2_Required_Id] AS [Level2_Required_Id], [l_0].[Level3_Name] AS [Name]
+                FROM [Level1] AS [l_0]
+                WHERE [l].[Id] = [l_0].[OneToMany_Optional_Inverse3Id]
+                FOR JSON PATH
+            ) AS [OneToMany_Optional2]
+            FROM [Level1] AS [t]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [l_1].[OneToMany_Optional_Inverse2Id] AS [OneToMany_Optional_Inverse2Id], [l_1].[OneToMany_Required_Inverse2Id] AS [OneToMany_Required_Inverse2Id], [l_1].[OneToOne_Optional_PK_Inverse2Id] AS [OneToOne_Optional_PK_Inverse2Id], [l_1].[Id] AS [Id], [l_1].[OneToOne_Required_PK_Date] AS [Date], [l_1].[Level1_Optional_Id] AS [Level1_Optional_Id], [l_1].[Level1_Required_Id] AS [Level1_Required_Id], [l_1].[Level2_Name] AS [Name]
+                FROM [Level1] AS [l_1]
+            ) AS [l] ON [t].[Id] = [l].[Id]
+            WHERE [l].[Id] IS NOT NULL
+            ORDER BY ABS([l].[Level1_Required_Id]) ASC, [l].[Name] ASC
+            """);
+    }
+
+    [TranslationExceedsEFCore]
+    public override async Task Include_collection_with_multiple_orderbys_property(bool async)
+    {
+        await Assert.ThrowsAsync<ThrowsException>(() => base.Include_collection_with_multiple_orderbys_property(async));
+
+        AssertSql("""
+            SELECT [l].[$empty] AS [$empty], [l].[Id] AS [Id], [l].[Date] AS [Date], [l].[Level1_Optional_Id] AS [Level1_Optional_Id], [l].[Level1_Required_Id] AS [Level1_Required_Id], [l].[Name] AS [Name], (
+                SELECT [l_0].[Id] AS [Id], [l_0].[Level2_Optional_Id] AS [Level2_Optional_Id], [l_0].[Level2_Required_Id] AS [Level2_Required_Id], [l_0].[Level3_Name] AS [Name]
+                FROM [Level1] AS [l_0]
+                WHERE [l].[Id] = [l_0].[OneToMany_Optional_Inverse3Id]
+                FOR JSON PATH
+            ) AS [OneToMany_Optional2]
+            FROM [Level1] AS [t]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [l_1].[OneToMany_Optional_Inverse2Id] AS [OneToMany_Optional_Inverse2Id], [l_1].[OneToMany_Required_Inverse2Id] AS [OneToMany_Required_Inverse2Id], [l_1].[OneToOne_Optional_PK_Inverse2Id] AS [OneToOne_Optional_PK_Inverse2Id], [l_1].[Id] AS [Id], [l_1].[OneToOne_Required_PK_Date] AS [Date], [l_1].[Level1_Optional_Id] AS [Level1_Optional_Id], [l_1].[Level1_Required_Id] AS [Level1_Required_Id], [l_1].[Level2_Name] AS [Name]
+                FROM [Level1] AS [l_1]
+            ) AS [l] ON [t].[Id] = [l].[Id]
+            WHERE [l].[Id] IS NOT NULL
+            ORDER BY [l].[Level1_Required_Id] ASC, [l].[Name] ASC
+            """);
+    }
+
+    [TranslationExceedsEFCore]
+    public override async Task Include_inside_subquery(bool async)
+    {
+        await Assert.ThrowsAsync<ThrowsException>(() => base.Include_inside_subquery(async));
+
+        AssertSql("""
+            SELECT (
+                SELECT [l].[Id] AS [Id], [l].[Date] AS [Date], [l].[Level1_Optional_Id] AS [Level1_Optional_Id], [l].[Level1_Required_Id] AS [Level1_Required_Id], [l].[Name] AS [Name], (
+                    SELECT [l_0].[Id] AS [Id], [l_0].[Level2_Optional_Id] AS [Level2_Optional_Id], [l_0].[Level2_Required_Id] AS [Level2_Required_Id], [l_0].[Level3_Name] AS [Name]
+                    FROM [Level1] AS [l_0]
+                    WHERE [l].[Id] = [l_0].[OneToMany_Optional_Inverse3Id]
+                    FOR JSON PATH
+                ) AS [OneToMany_Optional2]
+                FROM [Level1] AS [t]
+                LEFT JOIN (
+                    SELECT [l_1].[OneToMany_Optional_Inverse2Id] AS [OneToMany_Optional_Inverse2Id], [l_1].[OneToMany_Required_Inverse2Id] AS [OneToMany_Required_Inverse2Id], [l_1].[OneToOne_Optional_PK_Inverse2Id] AS [OneToOne_Optional_PK_Inverse2Id], [l_1].[Id] AS [Id], [l_1].[OneToOne_Required_PK_Date] AS [Date], [l_1].[Level1_Optional_Id] AS [Level1_Optional_Id], [l_1].[Level1_Required_Id] AS [Level1_Required_Id], [l_1].[Level2_Name] AS [Name]
+                    FROM [Level1] AS [l_1]
+                ) AS [l] ON [t].[Id] = [l].[Id]
+                WHERE ([l].[Id] IS NOT NULL) AND ([l].[Id] > 0)
+                FOR JSON PATH
+            ) AS [subquery]
+            FROM [Level1] AS [l1]
+            WHERE [l1].[Id] < 3
+            ORDER BY [l1].[Id] ASC
+            """);
+    }
+
+    [Theory(Skip = ClientEval)]
+    public override Task SelectMany_over_conditional_empty_source(bool async)
+    {
+        return base.SelectMany_over_conditional_empty_source(async);
+    }
+
+    [TranslationExceedsEFCore]
+    public override async Task SelectMany_with_navigation_and_Distinct_projecting_columns_including_join_key(bool async)
+    {
+        await Assert.ThrowsAsync<ThrowsException>(() => base.SelectMany_with_navigation_and_Distinct_projecting_columns_including_join_key(async));
+
+        AssertSql("""
+            SELECT [l].[Id] AS [Id], [l].[Date] AS [Date], [l].[Name] AS [Name], (
+                SELECT [l_0].[Id] AS [Id], [l_0].[OneToOne_Required_PK_Date] AS [Date], [l_0].[Level1_Optional_Id] AS [Level1_Optional_Id], [l_0].[Level1_Required_Id] AS [Level1_Required_Id], [l_0].[Level2_Name] AS [Name]
+                FROM [Level1] AS [l_0]
+                WHERE [l].[Id] = [l_0].[OneToMany_Optional_Inverse2Id]
+                FOR JSON PATH
+            ) AS [OneToMany_Optional1]
+            FROM [Level1] AS [l]
+            CROSS APPLY (
+                SELECT DISTINCT [l_1].[Id] AS [Id], [l_1].[Level2_Name] AS [Name], [l_1].[OneToMany_Optional_Inverse2Id] AS [FK]
+                FROM [Level1] AS [l_1]
+                WHERE [l].[Id] = [l_1].[OneToMany_Optional_Inverse2Id]
+            ) AS [l2]
+            """);
     }
 }

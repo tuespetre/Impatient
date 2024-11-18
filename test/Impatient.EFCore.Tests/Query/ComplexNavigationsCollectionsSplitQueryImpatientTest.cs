@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Xunit;
+using Xunit.Sdk;
 using static Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest;
 
 namespace Impatient.EFCore.Tests.Query;
@@ -350,4 +351,51 @@ public class ComplexNavigationsCollectionsSplitQueryImpatientTest : ComplexNavig
     }
 
     #endregion
+
+    [TranslationExceedsEFCore]
+    public override async Task Include_after_Select(bool async)
+    {
+        await Assert.ThrowsAsync<ThrowsException>(() => base.Include_after_Select(async));
+
+        AssertSql("""
+            SELECT [l].[$empty] AS [$empty], [l].[Id] AS [Id], [l].[Date] AS [Date], [l].[Level1_Optional_Id] AS [Level1_Optional_Id], [l].[Level1_Required_Id] AS [Level1_Required_Id], [l].[Name] AS [Name], (
+                SELECT [l_0].[Id] AS [Id], [l_0].[Level2_Optional_Id] AS [Level2_Optional_Id], [l_0].[Level2_Required_Id] AS [Level2_Required_Id], [l_0].[Name] AS [Name]
+                FROM [LevelThree] AS [l_0]
+                WHERE [l].[Id] = [l_0].[OneToMany_Optional_Inverse3Id]
+                FOR JSON PATH
+            ) AS [OneToMany_Optional2]
+            FROM [LevelOne] AS [l1]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [l_1].[OneToMany_Optional_Inverse2Id] AS [OneToMany_Optional_Inverse2Id], [l_1].[OneToMany_Optional_Self_Inverse2Id] AS [OneToMany_Optional_Self_Inverse2Id], [l_1].[OneToMany_Required_Inverse2Id] AS [OneToMany_Required_Inverse2Id], [l_1].[OneToMany_Required_Self_Inverse2Id] AS [OneToMany_Required_Self_Inverse2Id], [l_1].[OneToOne_Optional_PK_Inverse2Id] AS [OneToOne_Optional_PK_Inverse2Id], [l_1].[OneToOne_Optional_Self2Id] AS [OneToOne_Optional_Self2Id], [l_1].[Id] AS [Id], [l_1].[Date] AS [Date], [l_1].[Level1_Optional_Id] AS [Level1_Optional_Id], [l_1].[Level1_Required_Id] AS [Level1_Required_Id], [l_1].[Name] AS [Name]
+                FROM [LevelTwo] AS [l_1]
+            ) AS [l] ON [l1].[Id] = [l].[Level1_Optional_Id]
+            """);
+    }
+
+    [TranslationExceedsEFCore]
+    public override async Task Include_after_SelectMany_and_reference_navigation(bool async)
+    {
+        await Assert.ThrowsAsync<ThrowsException>(() => base.Include_after_SelectMany_and_reference_navigation(async));
+
+        AssertSql("""
+            SELECT [l].[$empty] AS [$empty], [l].[Id] AS [Id], [l].[Level2_Optional_Id] AS [Level2_Optional_Id], [l].[Level2_Required_Id] AS [Level2_Required_Id], [l].[Name] AS [Name], (
+                SELECT [l_0].[Id] AS [Id], [l_0].[Level3_Optional_Id] AS [Level3_Optional_Id], [l_0].[Level3_Required_Id] AS [Level3_Required_Id], [l_0].[Name] AS [Name]
+                FROM [LevelFour] AS [l_0]
+                WHERE [l].[Id] = [l_0].[OneToMany_Optional_Inverse4Id]
+                FOR JSON PATH
+            ) AS [OneToMany_Optional3]
+            FROM [LevelOne] AS [l1]
+            INNER JOIN [LevelTwo] AS [l_1] ON [l1].[Id] = [l_1].[OneToMany_Required_Inverse2Id]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [l_2].[OneToMany_Optional_Inverse3Id] AS [OneToMany_Optional_Inverse3Id], [l_2].[OneToMany_Optional_Self_Inverse3Id] AS [OneToMany_Optional_Self_Inverse3Id], [l_2].[OneToMany_Required_Inverse3Id] AS [OneToMany_Required_Inverse3Id], [l_2].[OneToMany_Required_Self_Inverse3Id] AS [OneToMany_Required_Self_Inverse3Id], [l_2].[OneToOne_Optional_PK_Inverse3Id] AS [OneToOne_Optional_PK_Inverse3Id], [l_2].[OneToOne_Optional_Self3Id] AS [OneToOne_Optional_Self3Id], [l_2].[Id] AS [Id], [l_2].[Level2_Optional_Id] AS [Level2_Optional_Id], [l_2].[Level2_Required_Id] AS [Level2_Required_Id], [l_2].[Name] AS [Name]
+                FROM [LevelThree] AS [l_2]
+            ) AS [l] ON [l_1].[Id] = [l].[Level2_Optional_Id]
+            """);
+    }
+
+    [Theory(Skip = ClientEval)]
+    public override Task SelectMany_over_conditional_empty_source(bool async)
+    {
+        return base.SelectMany_over_conditional_empty_source(async);
+    }
 }

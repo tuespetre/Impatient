@@ -658,9 +658,25 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
 
             case ExpressionType.Not:
             {
-                Builder.Append("~");
+                Builder.Append("~(");
 
-                return base.VisitUnary(node);
+                var visited = base.VisitUnary(node);
+
+                Builder.Append(")");
+
+                return visited;
+            }
+
+            case ExpressionType.Negate:
+            case ExpressionType.NegateChecked:
+            {
+                Builder.Append("-(");
+
+                var visited = base.VisitUnary(node);
+
+                Builder.Append(")");
+
+                return visited;
             }
 
             case ExpressionType.Convert:

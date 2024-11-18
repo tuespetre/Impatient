@@ -261,6 +261,8 @@ public class TranslatabilityAnalyzingExpressionVisitor : ExpressionVisitor
     {
         switch (node.NodeType)
         {
+            case ExpressionType.Negate:
+            case ExpressionType.NegateChecked:
             case ExpressionType.Not:
             case ExpressionType.Convert:
             {

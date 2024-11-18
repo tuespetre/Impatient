@@ -446,7 +446,7 @@ public class NorthwindMiscellaneousQueryImpatientTest : NorthwindMiscellaneousQu
 
             SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
             FROM [Orders] AS [o]
-            WHERE ~[o].[OrderID] = @p0
+            WHERE ~([o].[OrderID]) = @p0
             """);
     }
 
