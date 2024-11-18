@@ -634,6 +634,10 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                 consumed |= true;
             }
 
+            // TODO: perhaps we can inject some kind of nullability annotation expression in place of the inner parameter
+            // in the result selector if the collection selector is a call to DefaultIfEmpty, then detect it in the 
+            // NavigationFindingExpressionVisitor.
+
             if (consumed)
             {
                 var resultContext

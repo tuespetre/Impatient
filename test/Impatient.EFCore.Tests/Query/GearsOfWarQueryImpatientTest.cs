@@ -76,6 +76,37 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
         return base.Correlated_collection_order_by_constant_null_of_non_mapped_type(async);
     }
 
+    [Theory(Skip = ManualLeftJoinNullabilityPropagation)]
+    public override async Task Correlated_collections_deeply_nested_left_join(bool async)
+    {
+        await base.Correlated_collections_deeply_nested_left_join(async);
+
+        AssertSql("""
+            SELECT (
+                SELECT [g].[Nickname] AS [Nickname], (
+                    SELECT [w].[Id] AS [Id], [w].[AmmunitionType] AS [AmmunitionType], [w].[IsAutomatic] AS [IsAutomatic], [w].[Name] AS [Name], [w].[OwnerFullName] AS [OwnerFullName], [w].[SynergyWithId] AS [SynergyWithId]
+                    FROM [Weapons] AS [w]
+                    WHERE ([g].[FullName] = [w].[OwnerFullName]) AND ([w].[IsAutomatic] = 1)
+                    FOR JSON PATH
+                ) AS [AutomaticWeapons]
+                FROM [Gears] AS [g]
+                WHERE ([g].[Discriminator] IN (N'Gear', N'Officer') AND ([s].[Id] = [g].[SquadId])) AND ([g].[HasSoulPatch] = 1)
+                FOR JSON PATH
+            )
+            FROM [Tags] AS [t]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [g_0].[Nickname] AS [Item1], [g_0].[SquadId] AS [Item2], [g_0].[AssignedCityName] AS [Item3], [g_0].[CityOfBirthName] AS [Item4], [g_0].[Discriminator] AS [Item5], [g_0].[FullName] AS [Item6], [g_0].[HasSoulPatch] AS [Item7], [g_0].[LeaderNickname] AS [Rest.Item1], [g_0].[LeaderSquadId] AS [Rest.Item2], [g_0].[Rank] AS [Rest.Item3]
+                FROM [Gears] AS [g_0]
+                WHERE [g_0].[Discriminator] IN (N'Gear', N'Officer')
+            ) AS [g_1] ON [t].[GearNickName] = [g_1].[Item1]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [s_0].[Id] AS [Id], [s_0].[Banner] AS [Banner], [s_0].[Banner5] AS [Banner5], [s_0].[InternalNumber] AS [InternalNumber], [s_0].[Name] AS [Name]
+                FROM [Squads] AS [s_0]
+            ) AS [s] ON [g_1].[Item2] = [s].[Id]
+            ORDER BY [t].[Note] ASC, [g_1].[Item1] DESC
+            """);
+    }
+
     [Theory(Skip = ClientEval)]
     public override Task GetValueOrDefault_on_DateTimeOffset(bool async)
     {
