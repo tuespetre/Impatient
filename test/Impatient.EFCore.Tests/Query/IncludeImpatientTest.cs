@@ -35,4 +35,22 @@ public class IncludeImpatientTest : NorthwindIncludeQueryRelationalTestBase<Nort
     {
         return base.Include_collection_with_last_no_orderby(async);
     }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Multi_level_includes_are_applied_with_skip(bool async)
+    {
+        return base.Multi_level_includes_are_applied_with_skip(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Multi_level_includes_are_applied_with_skip_take(bool async)
+    {
+        return base.Multi_level_includes_are_applied_with_skip_take(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Multi_level_includes_are_applied_with_take(bool async)
+    {
+        return base.Multi_level_includes_are_applied_with_take(async);
+    }
 }

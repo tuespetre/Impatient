@@ -15,4 +15,10 @@ public class TPCInheritanceQueryImpatientTest : TPCInheritanceQueryTestBase<TPCI
     {
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
+
+    public override Task Using_OfType_on_multiple_type_with_no_result(bool async)
+    {
+        // TODO: allow this type of query, but just use an 'empty query expression' to avoid hitting the db.
+        return base.Using_OfType_on_multiple_type_with_no_result(async);
+    }
 }

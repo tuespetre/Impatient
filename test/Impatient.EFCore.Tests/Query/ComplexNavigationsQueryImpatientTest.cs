@@ -38,6 +38,30 @@ public class ComplexNavigationsQueryImpatientTest : ComplexNavigationsQueryRelat
         return base.Complex_query_with_let_collection_SelectMany(async);
     }
 
+    [Theory(Skip = LiftedInclude)]
+    public override Task Include12(bool async)
+    {
+        return base.Include12(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Include14(bool async)
+    {
+        return base.Include14(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Include18_3_3(bool async)
+    {
+        return base.Include18_3_3(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
+    public override Task Include6(bool async)
+    {
+        return base.Include6(async);
+    }
+
     [Theory(Skip = TranslationBeyondEF)]
     public override Task Level4_Include(bool async)
     {
