@@ -14,11 +14,21 @@ public class SqlServerObjectToStringRewritingExpressionVisitor : ExpressionVisit
             && node.Object.Type.IsScalarType()
             && !node.Object.Type.IsEnum())
         {
-            return new SqlFunctionExpression(
-                "CONVERT", 
-                node.Type, 
-                new SqlFragmentExpression("VARCHAR(100)"), 
-                node.Object);
+            if (node.Object.Type.IsBooleanType())
+            {
+                return Expression.Condition(
+                    node.Object.AsLogicalBooleanSqlExpression(),
+                    Expression.Constant("True"),
+                    Expression.Constant("False"));
+            }
+            else
+            {
+                return new SqlFunctionExpression(
+                    "CONVERT",
+                    node.Type,
+                    new SqlFragmentExpression("VARCHAR(100)"),
+                    node.Object);
+            }
         }
 
         return node;
