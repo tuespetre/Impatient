@@ -1,5 +1,7 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.TestModels.GearsOfWarModel;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Xunit;
 using Xunit.Sdk;
@@ -89,6 +91,56 @@ public class TPCGearsOfWarQueryImpatientTest : TPCGearsOfWarQueryRelationalTestB
     public override Task Group_by_with_aggregate_max_on_entity_type(bool async)
     {
         return base.Group_by_with_aggregate_max_on_entity_type(async);
+    }
+
+    [TranslationExceedsEFCore]
+    [TestCaseRewritten]
+    public override async Task Include_after_select_with_cast_throws(bool async)
+    {
+        await AssertQuery(
+            async,
+            ss => ss.Set<Faction>().Where(f => f is LocustHorde).Select(f => (LocustHorde)f).Include(h => h.Commander),
+            elementAsserter: (e, a) => QueryAsserter.AssertInclude(e, a, [new ExpectedInclude<LocustHorde>(h => h.Commander)]));
+
+        AssertSql("""
+            SELECT [f].[Id] AS [Id], [f].[CapitalName] AS [CapitalName], [f].[Name] AS [Name], [f].[ServerAddress] AS [ServerAddress], [f].[CommanderName] AS [CommanderName], [f].[Eradicated] AS [Eradicated], [l].[$empty] AS [Commander.$empty], [l].[Name] AS [Commander.Name], [l].[ThreatLevel] AS [Commander.ThreatLevel], [l].[ThreatLevelByte] AS [Commander.ThreatLevelByte], [l].[ThreatLevelNullableByte] AS [Commander.ThreatLevelNullableByte], [l].[DefeatedByNickname] AS [Commander.DefeatedByNickname], [l].[DefeatedBySquadId] AS [Commander.DefeatedBySquadId], [l].[HighCommandId] AS [Commander.HighCommandId]
+            FROM [LocustHordes] AS [f]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [l_0].[LocustHordeId] AS [LocustHordeId], [l_0].[Name] AS [Name], [l_0].[ThreatLevel] AS [ThreatLevel], [l_0].[ThreatLevelByte] AS [ThreatLevelByte], [l_0].[ThreatLevelNullableByte] AS [ThreatLevelNullableByte], [l_0].[DefeatedByNickname] AS [DefeatedByNickname], [l_0].[DefeatedBySquadId] AS [DefeatedBySquadId], [l_0].[HighCommandId] AS [HighCommandId]
+                FROM [LocustCommanders] AS [l_0]
+            ) AS [l] ON [f].[CommanderName] = [l].[Name]
+            WHERE 1 = 1
+            """);
+    }
+
+    [TranslationExceedsEFCore]
+    [TestCaseRewritten]
+    public override async Task Include_after_select_with_entity_projection_throws(bool async)
+    {
+        await AssertQuery(
+            async,
+            ss => ss.Set<Faction>().Select(f => f.Capital).Include(c => c.BornGears),
+            elementAsserter: (e, a) => QueryAsserter.AssertInclude(e, a, [new ExpectedInclude<City>(c => c.BornGears)]));
+
+        AssertSql("""
+            SELECT [c].[$empty] AS [$empty], [c].[Name] AS [Name], [c].[Location] AS [Location], [c].[Nation] AS [Nation], (
+                SELECT [set].[Item1] AS [Item1], [set].[Item2] AS [Item2], [set].[Item3] AS [Item3], [set].[Item4] AS [Item4], [set].[Item5] AS [Item5], [set].[Item6] AS [Item6], [set].[Item7] AS [Item7], [set].[Rest.Item1] AS [Rest.Item1], [set].[Rest.Item2] AS [Rest.Item2], [set].[Rest.Item3] AS [Rest.Item3]
+                FROM (
+                    SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOfBirthName] AS [Item4], [g].[FullName] AS [Item5], [g].[HasSoulPatch] AS [Item6], [g].[LeaderNickname] AS [Item7], [g].[LeaderSquadId] AS [Rest.Item1], [g].[Rank] AS [Rest.Item2], N'Gear' AS [Rest.Item3]
+                    FROM [Gears] AS [g]
+                    UNION ALL
+                    SELECT [o].[Nickname] AS [Item1], [o].[SquadId] AS [Item2], [o].[AssignedCityName] AS [Item3], [o].[CityOfBirthName] AS [Item4], [o].[FullName] AS [Item5], [o].[HasSoulPatch] AS [Item6], [o].[LeaderNickname] AS [Item7], [o].[LeaderSquadId] AS [Rest.Item1], [o].[Rank] AS [Rest.Item2], N'Officer' AS [Rest.Item3]
+                    FROM [Officers] AS [o]
+                ) AS [set]
+                WHERE [c].[Name] = [set].[Item4]
+                FOR JSON PATH
+            ) AS [BornGears]
+            FROM [LocustHordes] AS [f]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [c_0].[Name] AS [Name], [c_0].[Location] AS [Location], [c_0].[Nation] AS [Nation]
+                FROM [Cities] AS [c_0]
+            ) AS [c] ON [f].[CapitalName] = [c].[Name]
+            """);
     }
 
     public override async Task Nav_rewrite_with_convert1(bool async)

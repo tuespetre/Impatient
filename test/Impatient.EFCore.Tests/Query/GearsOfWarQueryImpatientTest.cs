@@ -1,5 +1,7 @@
 ﻿using Impatient.EFCore.Tests.Utilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.TestModels.GearsOfWarModel;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Xunit;
 using static Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest;
@@ -119,6 +121,52 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
         return base.Group_by_with_aggregate_max_on_entity_type(async);
     }
 
+    [TranslationExceedsEFCore]
+    [TestCaseRewritten]
+    public override async Task Include_after_select_with_cast_throws(bool async)
+    {
+        await AssertQuery(
+            async,
+            ss => ss.Set<Faction>().Where(f => f is LocustHorde).Select(f => (LocustHorde)f).Include(h => h.Commander),
+            elementAsserter: (e, a) => QueryAsserter.AssertInclude(e, a, [new ExpectedInclude<LocustHorde>(h => h.Commander)]));
+
+        AssertSql("""
+            SELECT [l].[$empty] AS [Commander.$empty], [l].[Item1] AS [Commander.Item1], [l].[Item2] AS [Commander.Item2], [l].[Item3] AS [Commander.Item3], [l].[Item4] AS [Commander.Item4], [l].[Item5] AS [Commander.Item5], [l].[Item6] AS [Commander.Item6], [l].[Item7] AS [Commander.Item7], [l].[Rest.Item1] AS [Commander.Rest.Item1], [l].[Rest.Item2] AS [Commander.Rest.Item2], [f].[Id] AS [Item1], [f].[CapitalName] AS [Item2], [f].[Discriminator] AS [Item3], [f].[Name] AS [Item4], [f].[ServerAddress] AS [Item5], [f].[CommanderName] AS [Item6], [f].[Eradicated] AS [Item7]
+            FROM [Factions] AS [f]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [l_0].[Name] AS [Item1], [l_0].[Discriminator] AS [Item2], [l_0].[LocustHordeId] AS [Item3], [l_0].[ThreatLevel] AS [Item4], [l_0].[ThreatLevelByte] AS [Item5], [l_0].[ThreatLevelNullableByte] AS [Item6], [l_0].[DefeatedByNickname] AS [Item7], [l_0].[DefeatedBySquadId] AS [Rest.Item1], [l_0].[HighCommandId] AS [Rest.Item2]
+                FROM [LocustLeaders] AS [l_0]
+                WHERE [l_0].[Discriminator] IN (N'LocustCommander')
+            ) AS [l] ON [f].[CommanderName] = [l].[Item1]
+            WHERE [f].[Discriminator] IN (N'LocustHorde') AND ([f].[Discriminator] = N'LocustHorde')
+            """);
+    }
+
+    [TranslationExceedsEFCore]
+    [TestCaseRewritten]
+    public override async Task Include_after_select_with_entity_projection_throws(bool async)
+    {
+        await AssertQuery(
+            async,
+            ss => ss.Set<Faction>().Select(f => f.Capital).Include(c => c.BornGears),
+            elementAsserter: (e, a) => QueryAsserter.AssertInclude(e, a, [new ExpectedInclude<City>(c => c.BornGears)]));
+
+        AssertSql("""
+            SELECT [c].[$empty] AS [$empty], [c].[Name] AS [Name], [c].[Location] AS [Location], [c].[Nation] AS [Nation], (
+                SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOfBirthName] AS [Item4], [g].[Discriminator] AS [Item5], [g].[FullName] AS [Item6], [g].[HasSoulPatch] AS [Item7], [g].[LeaderNickname] AS [Rest.Item1], [g].[LeaderSquadId] AS [Rest.Item2], [g].[Rank] AS [Rest.Item3]
+                FROM [Gears] AS [g]
+                WHERE [g].[Discriminator] IN (N'Gear', N'Officer') AND ([c].[Name] = [g].[CityOfBirthName])
+                FOR JSON PATH
+            ) AS [BornGears]
+            FROM [Factions] AS [f]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [c_0].[Name] AS [Name], [c_0].[Location] AS [Location], [c_0].[Nation] AS [Nation]
+                FROM [Cities] AS [c_0]
+            ) AS [c] ON [f].[CapitalName] = [c].[Name]
+            WHERE [f].[Discriminator] IN (N'LocustHorde')
+            """);
+    }
+
     public override async Task Logical_operation_with_non_null_parameter_optimizes_null_checks(bool async)
     {
         await base.Logical_operation_with_non_null_parameter_optimizes_null_checks(async);
@@ -216,6 +264,11 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
             WHERE [s_0].[Id] = @p0
             ORDER BY [g].[Item6] ASC
             """);
+    }
+
+    public override Task Select_subquery_boolean_empty_with_pushdown(bool async)
+    {
+        return base.Select_subquery_boolean_empty_with_pushdown(async);
     }
 
     [Theory(Skip = ClientEval)]
