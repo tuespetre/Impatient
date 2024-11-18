@@ -265,7 +265,7 @@ public class DefaultDbCommandExpressionBuilder : IDbCommandExpressionBuilder
             typeof(Action<DbCommand>),
             Expression.Block(blockVariables, blockExpressions),
             "PrepareDbCommand",
-            new[] { dbCommandVariable });
+            [dbCommandVariable]);
     }
 
     private void EmitSql()

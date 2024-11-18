@@ -18,7 +18,7 @@ public class BaseTableExpression : AliasedTableExpression
 
     protected override Expression VisitChildren(ExpressionVisitor visitor) => this;
 
-    public BaseTableExpression Clone() => new BaseTableExpression(SchemaName, TableName, Alias, Type);
+    public BaseTableExpression Clone() => new(SchemaName, TableName, Alias, Type);
 
     public override int GetSemanticHashCode(ExpressionEqualityComparer comparer)
     {

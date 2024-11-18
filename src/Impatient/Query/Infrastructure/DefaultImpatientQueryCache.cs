@@ -6,7 +6,7 @@ namespace Impatient.Query.Infrastructure;
 public class DefaultImpatientQueryCache : IImpatientQueryCache
 {
     private readonly Dictionary<int, Delegate> dictionary
-        = new Dictionary<int, Delegate>();
+        = [];
 
     public Delegate GetOrAdd<TArg>(int key, Func<TArg, Delegate> factory, TArg arg) where TArg : struct
     {

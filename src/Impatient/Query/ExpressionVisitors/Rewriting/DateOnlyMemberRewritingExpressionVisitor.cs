@@ -49,9 +49,7 @@ public class DateOnlyMemberRewritingExpressionVisitor : ExpressionVisitor
                         "DATEADD",
                         typeof(DateOnly),
                         new SqlFragmentExpression(
-                            node.Method.Name
-                                .Substring(3, node.Method.Name.Length - 4)
-                                .ToLower()),
+                            node.Method.Name[3..^1].ToLower()),
                         arguments.Single(),
                         @object);
                 }

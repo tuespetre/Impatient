@@ -33,39 +33,35 @@ public class OptimisticConcurrencyImpatientTest : OptimisticConcurrencyRelationa
 
     protected override async Task ConcurrencyTestAsync(Action<F1Context> storeChange, Action<F1Context> clientChange, Action<F1Context, DbUpdateConcurrencyException> resolver, Action<F1Context> validator)
     {
-        using (var c = CreateF1Context())
-        {
-            await c.Database.CreateExecutionStrategy().ExecuteAsync(
-                c, async context =>
+        using var c = CreateF1Context();
+
+        await c.Database.CreateExecutionStrategy().ExecuteAsync(
+            c, async context =>
+            {
+                using var transaction = context.Database.BeginTransaction();
+
+                clientChange(context);
+
+                using var innerContext = CreateF1Context();
+
+                UseTransaction(innerContext.Database, transaction);
+                storeChange(innerContext);
+                await innerContext.SaveChangesAsync();
+
+                var updateException = await Assert.ThrowsAnyAsync<DbUpdateConcurrencyException>(() => context.SaveChangesAsync());
+
+                resolver(context, updateException);
+
+                using var validationContext = CreateF1Context();
+
+                UseTransaction(validationContext.Database, transaction);
+                if (validator != null)
                 {
-                    using (var transaction = context.Database.BeginTransaction())
-                    {
-                        clientChange(context);
+                    await context.SaveChangesAsync();
 
-                        using (var innerContext = CreateF1Context())
-                        {
-                            UseTransaction(innerContext.Database, transaction);
-                            storeChange(innerContext);
-                            await innerContext.SaveChangesAsync();
-
-                            var updateException = await Assert.ThrowsAnyAsync<DbUpdateConcurrencyException>(() => context.SaveChangesAsync());
-
-                            resolver(context, updateException);
-
-                            using (var validationContext = CreateF1Context())
-                            {
-                                UseTransaction(validationContext.Database, transaction);
-                                if (validator != null)
-                                {
-                                    await context.SaveChangesAsync();
-
-                                    validator(validationContext);
-                                }
-                            }
-                        }
-                    }
-                });
-        }
+                    validator(validationContext);
+                }
+            });
     }
 
     protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)

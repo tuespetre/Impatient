@@ -15,19 +15,19 @@ public class JsonQueryAdhocImpatientTest : JsonQueryAdHocTestBase
         {
             Id = 1,
             Reference = new MyJsonEntity29219 { NonNullableScalar = 10, NullableScalar = 11 },
-            Collection = new List<MyJsonEntity29219>
-        {
+            Collection =
+        [
             new() { NonNullableScalar = 100, NullableScalar = 101 },
             new() { NonNullableScalar = 200, NullableScalar = 201 },
             new() { NonNullableScalar = 300, NullableScalar = null },
-        }
+        ]
         };
 
         var entity2 = new MyEntity29219
         {
             Id = 2,
             Reference = new MyJsonEntity29219 { NonNullableScalar = 20, NullableScalar = null },
-            Collection = new List<MyJsonEntity29219> { new() { NonNullableScalar = 1001, NullableScalar = null }, }
+            Collection = [new() { NonNullableScalar = 1001, NullableScalar = null },]
         };
 
         ctx.Entities.AddRange(entity1, entity2);
@@ -77,18 +77,18 @@ N'{{""RootName"":""e4"",""Collection"":[{{""BranchName"":""e4 c1"",""Nested"":{{
             Reference = new MyJsonEntityArrayOfPrimitives
             {
                 IntArray = [1, 2, 3],
-                ListOfString = new List<string>
-            {
+                ListOfString =
+            [
                 "Foo",
                 "Bar",
                 "Baz"
-            }
+            ]
             },
-            Collection = new List<MyJsonEntityArrayOfPrimitives>
-        {
-            new() { IntArray = [111, 112, 113], ListOfString = new List<string> { "Foo11", "Bar11" } },
-            new() { IntArray = [211, 212, 213], ListOfString = new List<string> { "Foo12", "Bar12" } },
-        }
+            Collection =
+        [
+            new() { IntArray = [111, 112, 113], ListOfString = ["Foo11", "Bar11"] },
+            new() { IntArray = [211, 212, 213], ListOfString = ["Foo12", "Bar12"] },
+        ]
         };
 
         var entity2 = new MyEntityArrayOfPrimitives
@@ -97,18 +97,18 @@ N'{{""RootName"":""e4"",""Collection"":[{{""BranchName"":""e4 c1"",""Nested"":{{
             Reference = new MyJsonEntityArrayOfPrimitives
             {
                 IntArray = [10, 20, 30],
-                ListOfString = new List<string>
-            {
+                ListOfString =
+            [
                 "A",
                 "B",
                 "C"
-            }
+            ]
             },
-            Collection = new List<MyJsonEntityArrayOfPrimitives>
-        {
-            new() { IntArray = [110, 120, 130], ListOfString = new List<string> { "A1", "Z1" } },
-            new() { IntArray = [210, 220, 230], ListOfString = new List<string> { "A2", "Z2" } },
-        }
+            Collection =
+        [
+            new() { IntArray = [110, 120, 130], ListOfString = ["A1", "Z1"] },
+            new() { IntArray = [210, 220, 230], ListOfString = ["A2", "Z2"] },
+        ]
         };
 
         ctx.Entities.AddRange(entity1, entity2);

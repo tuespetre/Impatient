@@ -7,7 +7,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
 public class RelationalNullSemanticsComposingExpressionVisitor : ExpressionVisitor
 {
     private readonly RelationalNullSemanticsTargetingExpressionVisitor targetingExpressionVisitor
-        = new RelationalNullSemanticsTargetingExpressionVisitor();
+        = new();
 
     public override Expression Visit(Expression node)
     {
@@ -33,7 +33,7 @@ public class RelationalNullSemanticsComposingExpressionVisitor : ExpressionVisit
     private class RelationalNullSemanticsTargetingExpressionVisitor : ExpressionVisitor
     {
         private readonly RelationalNullSemanticsApplyingExpressionVisitor applyingExpressionVisitor
-            = new RelationalNullSemanticsApplyingExpressionVisitor();
+            = new();
 
         public override Expression Visit(Expression node)
         {

@@ -11,7 +11,7 @@ public class TPTInheritanceQueryImpatientTest : TPTInheritanceQueryTestBase<TPTI
         fixture.TestSqlLoggerFactory.Clear();
     }
 
-    public class Fixture : TPTInheritanceQueryFixture
+    public new class Fixture : TPTInheritanceQueryFixture
     {
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }

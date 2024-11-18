@@ -11,7 +11,7 @@ public class SqlServerMathMethodRewritingExpressionVisitor : ExpressionVisitor
 {
     // This class was pretty much lifted from EFCore's SqlServerMathTranslator.
 
-    private static readonly Dictionary<MethodInfo, string> generalMathMethods = new Dictionary<MethodInfo, string>
+    private static readonly Dictionary<MethodInfo, string> generalMathMethods = new()
     {
         { typeof(Math).GetRuntimeMethod(nameof(Math.Abs), [typeof(decimal)]), "ABS" },
         { typeof(Math).GetRuntimeMethod(nameof(Math.Abs), [typeof(double)]), "ABS" },
@@ -46,19 +46,19 @@ public class SqlServerMathMethodRewritingExpressionVisitor : ExpressionVisitor
         { typeof(Math).GetRuntimeMethod(nameof(Math.Sign), [typeof(short)]), "SIGN" }
     };
 
-    private static readonly IEnumerable<MethodInfo> truncateMethods = new[]
-    {
+    private static readonly IEnumerable<MethodInfo> truncateMethods =
+    [
         typeof(Math).GetRuntimeMethod(nameof(Math.Truncate), [typeof(decimal)]),
         typeof(Math).GetRuntimeMethod(nameof(Math.Truncate), [typeof(double)])
-    };
+    ];
 
-    private static readonly IEnumerable<MethodInfo> roundMethods = new[]
-    {
+    private static readonly IEnumerable<MethodInfo> roundMethods =
+    [
         typeof(Math).GetRuntimeMethod(nameof(Math.Round), [typeof(decimal)]),
         typeof(Math).GetRuntimeMethod(nameof(Math.Round), [typeof(double)]),
         typeof(Math).GetRuntimeMethod(nameof(Math.Round), [typeof(decimal), typeof(int)]),
         typeof(Math).GetRuntimeMethod(nameof(Math.Round), [typeof(double), typeof(int)])
-    };
+    ];
 
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {

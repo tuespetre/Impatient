@@ -11,7 +11,7 @@ public class OverzealousInitializationImpatientTest : OverzealousInitializationT
         fixture.ListLoggerFactory.Clear();
     }
 
-    public class Fixture : OverzealousInitializationFixtureBase
+    public new class Fixture : OverzealousInitializationFixtureBase
     {
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }

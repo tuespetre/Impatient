@@ -7,7 +7,7 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 public static class DbContextParameter
 {
     private static ConcurrentDictionary<Type, ParameterExpression> instances 
-        = new ConcurrentDictionary<Type, ParameterExpression>();
+        = new();
 
     public static ParameterExpression GetInstance(Type type)
     {

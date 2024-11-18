@@ -489,17 +489,17 @@ WHERE [p].[Discontinued] IN (0, 1)
 
         var provider = services.BuildServiceProvider();
 
-        using (var scope = provider.CreateScope())
-        using (var context = scope.ServiceProvider.GetRequiredService<NorthwindDbContext>())
-        {
-            var result = (from o in context.Set<Order>()
-                          select new
-                          {
-                              o,
-                              Customer = context.Set<Customer>().Where(ClientPredicate).FirstOrDefault()
-                          }).Take(5).ToArray();
+        using var scope = provider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<NorthwindDbContext>();
 
-            Assert.AreEqual(@"Creating DbConnectio
+        var result = (from o in context.Set<Order>()
+                      select new
+                      {
+                          o,
+                          Customer = context.Set<Customer>().Where(ClientPredicate).FirstOrDefault()
+                      }).Take(5).ToArray();
+
+        Assert.AreEqual(@"Creating DbConnectio
 Created DbConnection
 Opening connection t
 Opened connection to
@@ -518,7 +518,6 @@ Executed DbCommand (
 Closing connection t
 Closed connection to
 ", loggerProvider.LoggerInstance.StringBuilder.ToString());
-        }
     }
 
     [TestMethod]
@@ -700,11 +699,10 @@ GROUP BY [c].[CustomerID]
 
         var provider = services.BuildServiceProvider();
 
-        using (var scope = provider.CreateScope())
-        using (var context = scope.ServiceProvider.GetRequiredService<NorthwindDbContext>())
-        {
-            action(context, loggerProvider.LoggerInstance.StringBuilder);
-        }
+        using var scope = provider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<NorthwindDbContext>();
+
+        action(context, loggerProvider.LoggerInstance.StringBuilder);
     }
 
     private async Task EfCoreTestCaseAsync(Func<NorthwindDbContext, StringBuilder, Task> action)
@@ -726,11 +724,10 @@ GROUP BY [c].[CustomerID]
 
         var provider = services.BuildServiceProvider();
 
-        using (var scope = provider.CreateScope())
-        using (var context = scope.ServiceProvider.GetRequiredService<NorthwindDbContext>())
-        {
-            await action(context, loggerProvider.LoggerInstance.StringBuilder);
-        }
+        using var scope = provider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<NorthwindDbContext>();
+
+        await action(context, loggerProvider.LoggerInstance.StringBuilder);
     }
 
     public class TestLoggerProvider : ILoggerProvider
@@ -744,6 +741,7 @@ GROUP BY [c].[CustomerID]
 
         public void Dispose()
         {
+            GC.SuppressFinalize(this);
         }
     }
 
@@ -758,6 +756,7 @@ GROUP BY [c].[CustomerID]
 
         public void Dispose()
         {
+            GC.SuppressFinalize(this);
         }
     }
 
@@ -800,7 +799,7 @@ GROUP BY [c].[CustomerID]
         {
             var message = formatter(state, exception);
 
-            StringBuilder.AppendLine(message.Substring(0, 20));
+            StringBuilder.AppendLine(message[..20]);
         }
     }
 }

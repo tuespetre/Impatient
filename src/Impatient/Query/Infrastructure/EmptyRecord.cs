@@ -20,6 +20,6 @@ internal class EmptyRecord
     public static readonly NewExpression NewExpression
         = Expression.New(
             typeof(EmptyRecord).GetTypeInfo().DeclaredConstructors.Single(c => !c.IsStatic),
-            new[] { Expression.Constant(null, typeof(string)) },
-            new[] { EmptyFieldInfo });
+            [Expression.Constant(null, typeof(string))],
+            [EmptyFieldInfo]);
 }

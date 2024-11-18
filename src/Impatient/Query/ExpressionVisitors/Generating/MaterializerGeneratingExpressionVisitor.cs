@@ -42,7 +42,7 @@ public class MaterializerGeneratingExpressionVisitor : ExpressionVisitor
 
                 var body = VisitProjection(selectExpression.Projection, visitor);
 
-                return Expression.Lambda(body, "MaterializeResult", new[] { readerParameter });
+                return Expression.Lambda(body, "MaterializeResult", [readerParameter]);
             }
 
             default:

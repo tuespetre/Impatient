@@ -6,7 +6,7 @@ namespace Impatient.Query.Expressions;
 public class SingleValueRelationalQueryExpression : RelationalQueryExpression
 {
     public static readonly SingleValueRelationalQueryExpression SelectOne
-        = new SingleValueRelationalQueryExpression(
+        = new(
             new SelectExpression(
                 new ServerProjectionExpression(
                     Constant(1))));

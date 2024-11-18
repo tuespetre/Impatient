@@ -12,8 +12,8 @@ public class ImpatientSqlServerComplianceTest : RelationalComplianceTestBase
     protected override Assembly TargetAssembly { get; } = typeof(ImpatientSqlServerComplianceTest).Assembly;
 
     protected override ICollection<Type> IgnoredTestBases { get; }
-        = new List<Type>
-        {
+        =
+        [
             // Not yet supporting proxies
             typeof(LazyLoadProxyTestBase<>),
 
@@ -77,5 +77,5 @@ public class ImpatientSqlServerComplianceTest : RelationalComplianceTestBase
             typeof(LoggingTestBase),
             typeof(LoggingRelationalTestBase<,>),
             typeof(SeedingTestBase),
-        };
+        ];
 }

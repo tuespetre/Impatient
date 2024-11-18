@@ -15,7 +15,7 @@ public class FieldMappingImpatientTest : FieldMappingTestBase<FieldMappingImpati
     protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
         => facade.UseTransaction(transaction.GetDbTransaction());
 
-    public class Fixture : FieldMappingFixtureBase
+    public new class Fixture : FieldMappingFixtureBase
     {
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }

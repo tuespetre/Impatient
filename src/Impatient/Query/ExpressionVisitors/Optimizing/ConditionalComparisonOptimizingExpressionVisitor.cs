@@ -6,10 +6,10 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing;
 public class ConditionalComparisonOptimizingExpressionVisitor : ExpressionVisitor
 {
     private BooleanOptimizingExpressionVisitor booleanOptimizingExpressionVisitor
-        = new BooleanOptimizingExpressionVisitor();
+        = new();
 
     private NullOrDefaultEqualityOptimizingExpressionVisitor nullEqualityOptimizingExpressionVisitor
-        = new NullOrDefaultEqualityOptimizingExpressionVisitor();
+        = new();
 
     private Expression OptimizeAndRevisit(Expression node)
     {

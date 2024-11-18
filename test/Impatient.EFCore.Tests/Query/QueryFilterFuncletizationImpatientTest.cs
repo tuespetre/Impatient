@@ -27,102 +27,96 @@ public class QueryFilterFuncletizationImpatientTest : QueryFilterFuncletizationT
     [TestCaseRewritten]
     public override void Local_variable_from_OnModelCreating_can_throw_exception()
     {
-        using (var context = CreateContext())
-        {
-            Assert.Throws<InvalidOperationException>(() => context.Set<LocalVariableErrorFilter>().ToList());
-        }
+        using var context = CreateContext();
+
+        Assert.Throws<InvalidOperationException>(() => context.Set<LocalVariableErrorFilter>().ToList());
     }
 
     [Fact]
     [TestCaseRewritten]
     public override void DbContext_property_chain_is_parameterized()
     {
-        using (var context = CreateContext())
-        {
-            // This throws because IndirectionFlag is null
-            //Assert.Throws<NullReferenceException>(() => context.Set<PropertyChainFilter>().ToList());
-            Assert.Throws<InvalidOperationException>(() => context.Set<PropertyChainFilter>().ToList());
+        using var context = CreateContext();
 
-            context.IndirectionFlag = new Indirection { Enabled = false };
-            var entity = Assert.Single(context.Set<PropertyChainFilter>().ToList());
-            Assert.False(entity.IsEnabled);
+        // This throws because IndirectionFlag is null
+        //Assert.Throws<NullReferenceException>(() => context.Set<PropertyChainFilter>().ToList());
+        Assert.Throws<InvalidOperationException>(() => context.Set<PropertyChainFilter>().ToList());
 
-            context.IndirectionFlag = new Indirection { Enabled = true };
-            entity = Assert.Single(context.Set<PropertyChainFilter>().ToList());
-            Assert.True(entity.IsEnabled);
-        }
+        context.IndirectionFlag = new Indirection { Enabled = false };
+        var entity = Assert.Single(context.Set<PropertyChainFilter>().ToList());
+        Assert.False(entity.IsEnabled);
+
+        context.IndirectionFlag = new Indirection { Enabled = true };
+        entity = Assert.Single(context.Set<PropertyChainFilter>().ToList());
+        Assert.True(entity.IsEnabled);
     }
 
     [Fact]
     [TestCaseRewritten]
     public override void DbContext_property_method_call_is_parameterized()
     {
-        using (var context = CreateContext())
-        {
-            // This throws because IndirectionFlag is null
-            //Assert.Throws<NullReferenceException>(() => context.Set<PropertyMethodCallFilter>().ToList());
-            Assert.Throws<InvalidOperationException>(() => context.Set<PropertyMethodCallFilter>().ToList());
+        using var context = CreateContext();
 
-            context.IndirectionFlag = new Indirection();
-            var entity = Assert.Single(context.Set<PropertyMethodCallFilter>().ToList());
-            Assert.Equal(2, entity.Tenant);
-        }
+        // This throws because IndirectionFlag is null
+        //Assert.Throws<NullReferenceException>(() => context.Set<PropertyMethodCallFilter>().ToList());
+        Assert.Throws<InvalidOperationException>(() => context.Set<PropertyMethodCallFilter>().ToList());
+
+        context.IndirectionFlag = new Indirection();
+        var entity = Assert.Single(context.Set<PropertyMethodCallFilter>().ToList());
+        Assert.Equal(2, entity.Tenant);
     }
 
     [Fact]
     [TestCaseRewritten]
     public override void EntityTypeConfiguration_DbContext_property_chain_is_parameterized()
     {
-        using (var context = CreateContext())
-        {
-            // This throws because IndirectionFlag is null
-            //Assert.Throws<NullReferenceException>(() => context.Set<EntityTypeConfigurationPropertyChainFilter>().ToList());
-            Assert.Throws<InvalidOperationException>(() => context.Set<EntityTypeConfigurationPropertyChainFilter>().ToList());
+        using var context = CreateContext();
 
-            context.IndirectionFlag = new Indirection { Enabled = false };
-            var entity = Assert.Single(context.Set<EntityTypeConfigurationPropertyChainFilter>().ToList());
-            Assert.False(entity.IsEnabled);
+        // This throws because IndirectionFlag is null
+        //Assert.Throws<NullReferenceException>(() => context.Set<EntityTypeConfigurationPropertyChainFilter>().ToList());
+        Assert.Throws<InvalidOperationException>(() => context.Set<EntityTypeConfigurationPropertyChainFilter>().ToList());
 
-            context.IndirectionFlag = new Indirection { Enabled = true };
-            entity = Assert.Single(context.Set<EntityTypeConfigurationPropertyChainFilter>().ToList());
-            Assert.True(entity.IsEnabled);
-        }
+        context.IndirectionFlag = new Indirection { Enabled = false };
+        var entity = Assert.Single(context.Set<EntityTypeConfigurationPropertyChainFilter>().ToList());
+        Assert.False(entity.IsEnabled);
+
+        context.IndirectionFlag = new Indirection { Enabled = true };
+        entity = Assert.Single(context.Set<EntityTypeConfigurationPropertyChainFilter>().ToList());
+        Assert.True(entity.IsEnabled);
     }
 
     [Fact]
     [TestCaseRewritten]
     public override void Extension_method_DbContext_property_chain_is_parameterized()
     {
-        using (var context = CreateContext())
-        {
-            // This throws because IndirectionFlag is null
-            //Assert.Throws<NullReferenceException>(() => context.Set<ExtensionContextFilter>().ToList());
-            Assert.Throws<InvalidOperationException>(() => context.Set<ExtensionContextFilter>().ToList());
+        using var context = CreateContext();
 
-            context.IndirectionFlag = new Indirection { Enabled = false };
-            var entity = Assert.Single(context.Set<ExtensionContextFilter>().ToList());
-            Assert.False(entity.IsEnabled);
+        // This throws because IndirectionFlag is null
+        //Assert.Throws<NullReferenceException>(() => context.Set<ExtensionContextFilter>().ToList());
+        Assert.Throws<InvalidOperationException>(() => context.Set<ExtensionContextFilter>().ToList());
 
-            context.IndirectionFlag = new Indirection { Enabled = true };
-            entity = Assert.Single(context.Set<ExtensionContextFilter>().ToList());
-            Assert.True(entity.IsEnabled);
-        }
+        context.IndirectionFlag = new Indirection { Enabled = false };
+        var entity = Assert.Single(context.Set<ExtensionContextFilter>().ToList());
+        Assert.False(entity.IsEnabled);
+
+        context.IndirectionFlag = new Indirection { Enabled = true };
+        entity = Assert.Single(context.Set<ExtensionContextFilter>().ToList());
+        Assert.True(entity.IsEnabled);
     }
 
     [Fact]
     [TestCaseRewritten]
     public override void Remote_method_DbContext_property_method_call_is_parameterized()
     {
-        using (var context = CreateContext())
-        {
-            // This throws because IndirectionFlag is null
-            //Assert.Throws<NullReferenceException>(() => context.Set<RemoteMethodParamsFilter>().ToList());
-            Assert.Throws<InvalidOperationException>(() => context.Set<RemoteMethodParamsFilter>().ToList());
+        using var context = CreateContext();
 
-            context.IndirectionFlag = new Indirection();
-            var entity = Assert.Single(context.Set<RemoteMethodParamsFilter>().ToList());
-            Assert.Equal(2, entity.Tenant);
-        }
+        // This throws because IndirectionFlag is null
+        //Assert.Throws<NullReferenceException>(() => context.Set<RemoteMethodParamsFilter>().ToList());
+        Assert.Throws<InvalidOperationException>(() => context.Set<RemoteMethodParamsFilter>().ToList());
+
+        context.IndirectionFlag = new Indirection();
+        var entity = Assert.Single(context.Set<RemoteMethodParamsFilter>().ToList());
+        Assert.Equal(2, entity.Tenant);
     }
 }
 

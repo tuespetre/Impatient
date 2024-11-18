@@ -196,19 +196,17 @@ ALTER TABLE [dbo].[MyClass2] ADD  DEFAULT ((0)) FOR [Prop2]
 GO
 ";
 
-        using (var connection = new SqlConnection(@"Server=.\sqlexpress; Trusted_Connection=True; TrustServerCertificate=true"))
+        using var connection = new SqlConnection(@"Server=.\sqlexpress; Trusted_Connection=True; TrustServerCertificate=true");
+
+        connection.Open();
+
+        foreach (var text in sql.Split("\r\nGO\r\n").Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)))
         {
-            connection.Open();
+            using var command = connection.CreateCommand();
 
-            foreach (var text in sql.Split("\r\nGO\r\n").Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)))
-            {
-                using (var command = connection.CreateCommand())
-                {
-                    command.CommandText = text;
+            command.CommandText = text;
 
-                    command.ExecuteNonQuery();
-                }
-            }
+            command.ExecuteNonQuery();
         }
     }
 

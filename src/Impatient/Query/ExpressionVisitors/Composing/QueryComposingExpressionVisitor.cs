@@ -14,6 +14,9 @@ using static Impatient.Extensions.ReflectionExtensions;
 
 namespace Impatient.Query.ExpressionVisitors.Composing;
 
+#pragma warning disable CA1822 // Mark members as static
+#pragma warning disable IDE0060 // Remove unused parameter
+
 public class QueryComposingExpressionVisitor : ExpressionVisitor
 {
     private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor;
@@ -163,7 +166,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
                 return ordered.AsOrdered();
             }
 
-            return node.Update(node.Object, new[] { inner.AsQueryable() });
+            return node.Update(node.Object, [inner.AsQueryable()]);
         }
 
         if (node.Method.IsQueryableOrEnumerableMethod())
@@ -964,7 +967,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
             = Expression.Lambda(
                 name: "GroupJoinClientResultSelector",
                 body: resultLambda.Body.Replace(resultLambda.Parameters[1], innerProjection),
-                parameters: new[] { resultLambda.Parameters[0] });
+                parameters: [resultLambda.Parameters[0]]);
 
         return outerQuery
             .UpdateSelectExpression(outerSelectExpression
@@ -1227,7 +1230,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
 
         if (node.Method.GetParameters().Any(p => p.Name == "resultSelector"))
         {
-            var resultLambda = node.Arguments[node.Arguments.Count - 1].UnwrapLambda();
+            var resultLambda = node.Arguments[^1].UnwrapLambda();
 
             var resultSelector
                 = resultLambda

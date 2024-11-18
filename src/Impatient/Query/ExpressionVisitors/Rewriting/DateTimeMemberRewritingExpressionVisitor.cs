@@ -76,9 +76,7 @@ public class DateTimeMemberRewritingExpressionVisitor : ExpressionVisitor
                         "DATEADD",
                         typeof(DateTime),
                         new SqlFragmentExpression(
-                            node.Method.Name
-                                .Substring(3, node.Method.Name.Length - 4)
-                                .ToLower()),
+                            node.Method.Name[3..^1].ToLower()),
                         arguments.Single(),
                         @object);
                 }

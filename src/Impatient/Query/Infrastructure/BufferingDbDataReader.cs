@@ -103,7 +103,7 @@ public class BufferingDbDataReader : DbDataReader
             return;
         }
 
-        var inner = buffer[buffer.Length - 1];
+        var inner = buffer[^1];
 
         ReturnBuffer((object[])inner);
 

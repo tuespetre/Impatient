@@ -8,14 +8,14 @@ namespace Impatient.Query.ExpressionVisitors.Utility;
 public class FreeVariableDiscoveringExpressionVisitor : ExpressionVisitor
 {
     private readonly HashSet<ParameterExpression> foundVariables
-        = new HashSet<ParameterExpression>();
+        = [];
 
     private readonly HashSet<ParameterExpression> declaredVariables
-        = new HashSet<ParameterExpression>()
-        {
+        =
+        [
             ExecutionContextParameters.DbCommandExecutor,
             ExecutionContextParameters.CancellationToken,
-        };
+        ];
 
     public IEnumerable<ParameterExpression> DiscoveredVariables => foundVariables.Except(declaredVariables);
 

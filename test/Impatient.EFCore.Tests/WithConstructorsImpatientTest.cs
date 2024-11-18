@@ -15,7 +15,7 @@ public class WithConstructorsImpatientTest : WithConstructorsTestBase<WithConstr
     protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
         => facade.UseTransaction(transaction.GetDbTransaction());
 
-    public class Fixture : WithConstructorsFixtureBase
+    public new class Fixture : WithConstructorsFixtureBase
     {
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 

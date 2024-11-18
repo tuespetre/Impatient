@@ -24,12 +24,11 @@ public static class ExpandedGrouping
 
             return Expression.New(
                 expandedGroupingType.GetTypeInfo().DeclaredConstructors.Single(),
-                new[] { keyExpression, elementsExpression },
-                new[]
-                {
+                [keyExpression, elementsExpression],
+                [
                     expandedGroupingType.GetRuntimeProperty("Key"),
                     expandedGroupingType.GetRuntimeProperty("Elements")
-                });
+                ]);
         }
         else
         {

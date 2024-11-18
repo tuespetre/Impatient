@@ -76,11 +76,11 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
 
                 var result
                     = Block(
-                        variables: new ParameterExpression[]
-                        {
+                        variables:
+                        [
                             entityVariable,
                             shadowPropertiesVariable,
-                        },
+                        ],
                         expressions:
                         [
                             // TODO:

@@ -211,7 +211,7 @@ public class TablePerTypeInheritanceTests
                        = new BaseTableExpression(
                            descriptor.SchemaName,
                            descriptor.TableName,
-                           descriptor.TableName.ToLower().Substring(0, 1),
+                           descriptor.TableName.ToLower()[..1],
                            descriptor.SourceType);
 
                    var columns
@@ -361,9 +361,9 @@ public class TablePerTypeInheritanceTests
 
         services = ExtensionMethods.CreateServiceProvider(connectionString: connectionString);
 
-        using (var connection = new SqlConnection(connectionString))
-        {
-            connection.Execute(@"
+        using var connection = new SqlConnection(connectionString);
+
+        connection.Execute(@"
 DROP TABLE IF EXISTS DerivedConcreteType3;
 DROP TABLE IF EXISTS DerivedConcreteType2;
 DROP TABLE IF EXISTS DerivedConcreteType1;
@@ -447,7 +447,6 @@ VALUES
 (8, 'b'),
 (9, 'c');
 ");
-        }
     }
 
     [TestCleanup]

@@ -72,19 +72,18 @@ public class SqlServerForJsonReadValueExpressionFactory : IReadValueExpressionFa
                 Expression.Lambda(
                     materializer,
                     "JsonMaterializer",
-                    new[] { jsonTextReaderVariable })));
+                    [jsonTextReaderVariable])));
     }
 
     private static TResult Materialize<TResult>(TextReader textReader, Func<JsonTextReader, TResult> materializer)
     {
-        using (var jsonTextReader = new JsonTextReader(textReader))
-        {
-            jsonTextReader.DateParseHandling = DateParseHandling.None;
+        using var jsonTextReader = new JsonTextReader(textReader);
 
-            var result = materializer(jsonTextReader);
+        jsonTextReader.DateParseHandling = DateParseHandling.None;
 
-            return result;
-        }
+        var result = materializer(jsonTextReader);
+
+        return result;
     }
 
     private static Expression CreateSequenceExpression(Expression expression, Type type)
@@ -245,7 +244,7 @@ public class SqlServerForJsonReadValueExpressionFactory : IReadValueExpressionFa
 
                 result
                     = Expression.Block(
-                        variables: new[] { mappingParameter },
+                        variables: [mappingParameter],
                         expressions:
                         [
                             Expression.Assign(mappingParameter, result),

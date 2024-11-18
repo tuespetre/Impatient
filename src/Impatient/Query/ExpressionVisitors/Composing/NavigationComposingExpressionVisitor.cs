@@ -13,6 +13,9 @@ using static Impatient.Extensions.ReflectionExtensions;
 
 namespace Impatient.Query.ExpressionVisitors.Composing;
 
+#pragma warning disable CA1859 // Use concrete types when possible for improved performance
+#pragma warning disable IDE0059 // Unnecessary assignment of a value
+
 public class NavigationComposingExpressionVisitor : ExpressionVisitor
 {
     private static readonly MethodInfo queryableSelectMethodInfo
@@ -199,7 +202,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
             return base.VisitMethodCall(node);
         }
 
-        private MethodCallExpression CreateTerminalCall(
+        private static MethodCallExpression CreateTerminalCall(
             MethodCallExpression originalNode,
             Expression result,
             NavigationExpansionContext context)
@@ -223,7 +226,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                 terminalSelectorArgument);
         }
 
-        private MethodCallExpression CreateCall(MethodInfo method, IEnumerable<Expression> arguments)
+        private static MethodCallExpression CreateCall(MethodInfo method, IEnumerable<Expression> arguments)
         {
             if (method.IsQueryableMethod())
             {
@@ -319,7 +322,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                             frame.node.Method.GetGenericMethodDefinition().MakeGenericMethod(
                                 parameter.Type,
                                 frame.node.Method.GetGenericArguments()[1]),
-                            new[] { result, selector });
+                            [result, selector]);
                 }
 
                 return new NavigationExpansionContextExpression(
@@ -368,7 +371,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                             .Skip(1)
                             .Prepend(parameter.Type)
                             .ToArray()),
-                    new[] { source, selector });
+                    [source, selector]);
             }
             else
             {
@@ -402,7 +405,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                 return CreateCall(
                     node.Method.GetGenericMethodDefinition().MakeGenericMethod(
                         parameter.Type),
-                    new[] { source, predicate });
+                    [source, predicate]);
             }
             else
             {
@@ -495,7 +498,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                     = CreateCall(
                         node.Method.GetGenericMethodDefinition().MakeGenericMethod(
                             parameter.Type),
-                        new[] { source, predicate });
+                        [source, predicate]);
 
                 return new NavigationExpansionContextExpression(
                     CreateTerminalCall(node, result, context),
@@ -535,7 +538,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                         node.Method.GetGenericMethodDefinition().MakeGenericMethod(
                             source.Type.GetSequenceType(),
                             selector.ReturnType),
-                        new[] { source, selector });
+                        [source, selector]);
 
                 return new NavigationExpansionContextExpression(
                     CreateTerminalCall(node, result, context),
@@ -586,7 +589,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                     node.Method.GetGenericMethodDefinition().MakeGenericMethod(
                         parameter.Type,
                         node.Method.GetGenericArguments()[1]),
-                    new[] { source, selector });
+                    [source, selector]);
             }
             else
             {
@@ -654,7 +657,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                             source.Type.GetSequenceType(),
                             collectionSelector.ReturnType.GetSequenceType(),
                             resultSelector.ReturnType),
-                        new[] { source, collectionSelector, resultSelector });
+                        [source, collectionSelector, resultSelector]);
 
                 return new NavigationExpansionContextExpression(
                     CreateTerminalCall(node, result, resultContext),
@@ -737,8 +740,8 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                 = Expression.Lambda(
                     Expression.New(
                         intermediateResultType.GetTypeInfo().DeclaredConstructors.Single(),
-                        new[] { resultKeyParameter, resultElementsParameter },
-                        new[] { resultOuterField, resultInnerField }),
+                        [resultKeyParameter, resultElementsParameter],
+                        [resultOuterField, resultInnerField]),
                     [resultKeyParameter, resultElementsParameter]);
 
             var newSource
@@ -935,8 +938,8 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                 = Expression.Lambda(
                     Expression.New(
                         intermediateResultType.GetTypeInfo().DeclaredConstructors.Single(),
-                        new[] { resultKeyParameter, resultElementsParameter },
-                        new[] { resultOuterField, resultInnerField }),
+                        [resultKeyParameter, resultElementsParameter],
+                        [resultOuterField, resultInnerField]),
                     [resultKeyParameter, resultElementsParameter]);
 
             var groupByMethod
@@ -1192,14 +1195,13 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                             innerSource.Type.GetSequenceType(),
                             outerKeySelector.ReturnType,
                             resultSelector.ReturnType),
-                        new[]
-                        {
+                        [
                             outerSource,
                             innerSource,
                             outerKeySelector,
                             innerKeySelector,
                             resultSelector,
-                        });
+                        ]);
 
                 return new NavigationExpansionContextExpression(
                     CreateTerminalCall(node, result, outerContext),
@@ -1282,14 +1284,13 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                             innerSource.Type.GetSequenceType(),
                             outerKeySelector.ReturnType,
                             resultSelector.ReturnType),
-                        new[]
-                        {
+                        [
                             outerSource,
                             innerSource,
                             outerKeySelector,
                             innerKeySelector,
                             resultSelector,
-                        });
+                        ]);
 
                 return new NavigationExpansionContextExpression(
                     CreateTerminalCall(node, result, resultContext),
@@ -1362,12 +1363,11 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                             outerSource.Type.GetSequenceType(),
                             innerSource.Type.GetSequenceType(),
                             resultSelector.ReturnType),
-                        new[]
-                        {
+                        [
                             outerSource,
                             innerSource,
                             resultSelector,
-                        });
+                        ]);
 
                 return new NavigationExpansionContextExpression(
                     CreateTerminalCall(node, result, resultContext),
@@ -1544,8 +1544,8 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
     {
         private ParameterExpression currentParameter;
         private readonly IEnumerable<NavigationDescriptor> descriptors;
-        private readonly List<ExpansionMapping> mappings = new List<ExpansionMapping>();
-        private readonly Stack<MemberInfo> terminalPath = new Stack<MemberInfo>();
+        private readonly List<ExpansionMapping> mappings = [];
+        private readonly Stack<MemberInfo> terminalPath = new();
 
         public NavigationExpansionContext(
             ParameterExpression parameter,
@@ -1557,8 +1557,8 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
 
             mappings.Add(new ExpansionMapping
             {
-                OldPath = new List<MemberInfo>(),
-                NewPath = new List<MemberInfo>(),
+                OldPath = [],
+                NewPath = [],
                 Parameter = currentParameter,
             });
         }
@@ -1799,9 +1799,9 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                             name: "NavigationExpandedResultSelector",
                             body: Expression.New(
                                 intermediateScopeType.GetTypeInfo().DeclaredConstructors.Single(),
-                                new[] { outerValue, innerEnumerableParameter },
-                                new[] { intermediateOuterField, intermediateInnerField }),
-                            parameters: new[] { currentParameter, innerEnumerableParameter });
+                                [outerValue, innerEnumerableParameter],
+                                [intermediateOuterField, intermediateInnerField]),
+                            parameters: [currentParameter, innerEnumerableParameter]);
 
                     var groupJoinCall
                         = Expression.Call(
@@ -1822,22 +1822,21 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                                     .Single(m => m.Name == nameof(Enumerable.DefaultIfEmpty)
                                         && m.GetParameters().Length == 1).MakeGenericMethod(innerType),
                                 Expression.MakeMemberAccess(intermediateScopeParameter, intermediateInnerField)),
-                            parameters: new[] { intermediateScopeParameter });
+                            parameters: [intermediateScopeParameter]);
 
                     var selectManyResultSelector
                         = Expression.Lambda(
                             name: "OneToOneOptionalSelectManyResultSelector",
                             body: Expression.New(
                                 scopeType.GetTypeInfo().DeclaredConstructors.Single(),
-                                new Expression[]
-                                {
+                                [
                                     Expression.MakeMemberAccess(
                                         intermediateScopeParameter,
                                         intermediateScopeType.GetRuntimeField("Outer")),
                                     innerParameter
-                                },
-                                new[] { outerField, innerField }),
-                            parameters: new[] { intermediateScopeParameter, innerParameter });
+                                ],
+                                [outerField, innerField]),
+                            parameters: [intermediateScopeParameter, innerParameter]);
 
                     var selectManyMethod
                          = (from m in operatorType.GetRuntimeMethods()
@@ -1870,8 +1869,8 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                         = Expression.Lambda(
                             Expression.New(
                                 scopeType.GetTypeInfo().DeclaredConstructors.Single(),
-                                new[] { currentParameter, innerParameter },
-                                new[] { outerField, innerField }),
+                                [currentParameter, innerParameter],
+                                [outerField, innerField]),
                             [currentParameter, innerParameter]);
 
                     source
@@ -1895,7 +1894,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                 mappings.Add(new ExpansionMapping
                 {
                     OldPath = navigation.Path.ToList(),
-                    NewPath = new List<MemberInfo> { innerField },
+                    NewPath = [innerField],
                     Nullable = navigation.Descriptor.IsNullable || navigation.Derived || targetMapping.Nullable,
                     Parameter = currentParameter,
                 });
@@ -1931,8 +1930,8 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
 
             resultMappings.Insert(0, new ExpansionMapping
             {
-                OldPath = new List<MemberInfo> { },
-                NewPath = new List<MemberInfo> { resultInnerField },
+                OldPath = [],
+                NewPath = [resultInnerField],
                 Parameter = context.currentParameter,
             });
 
@@ -1953,8 +1952,8 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                 = Expression.Lambda(
                     Expression.New(
                         resultScopeType.GetTypeInfo().DeclaredConstructors.Single(),
-                        new[] { context.currentParameter, resultSelectorBody },
-                        new[] { resultOuterField, resultInnerField }),
+                        [context.currentParameter, resultSelectorBody],
+                        [resultOuterField, resultInnerField]),
                     // Use SwapParameter because there may be an extra argument, like index for Select
                     SwapParameter(selector.Parameters, parameter, context.currentParameter));
 
@@ -2029,8 +2028,8 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
 
             resultMappings.Insert(0, new ExpansionMapping
             {
-                OldPath = new List<MemberInfo>(),
-                NewPath = new List<MemberInfo> { resultInnerField },
+                OldPath = [],
+                NewPath = [resultInnerField],
                 Parameter = resultParameter,
             });
 
@@ -2057,15 +2056,15 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
             var resultSelectorOuterValue
                 = Expression.New(
                     mergeScopeType.GetTypeInfo().DeclaredConstructors.Single(),
-                    new[] { outerContext.currentParameter, innerContext.currentParameter },
-                    new[] { mergeOuterField, mergeInnerField });
+                    [outerContext.currentParameter, innerContext.currentParameter],
+                    [mergeOuterField, mergeInnerField]);
 
             resultSelector
                 = Expression.Lambda(
                     Expression.New(
                         resultScopeType.GetTypeInfo().DeclaredConstructors.Single(),
-                        new[] { resultSelectorOuterValue, resultSelectorBody },
-                        new[] { resultOuterField, resultInnerField }),
+                        [resultSelectorOuterValue, resultSelectorBody],
+                        [resultOuterField, resultInnerField]),
                     outerContext.currentParameter,
                     innerContext.currentParameter);
 
@@ -2163,7 +2162,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
         out Expression innerExpression,
         out List<MemberInfo> path)
     {
-        path = new List<MemberInfo>();
+        path = [];
 
         do
         {
@@ -2201,7 +2200,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
         private readonly IEnumerable<NavigationDescriptor> descriptors;
         private readonly IEnumerable<ExpansionMapping> mappings;
 
-        public List<FoundNavigation> FoundNavigations { get; } = new List<FoundNavigation>();
+        public List<FoundNavigation> FoundNavigations { get; } = [];
 
         public NavigationFindingExpressionVisitor(
             ParameterExpression targetParameter,
@@ -2439,7 +2438,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
     {
         private readonly IEnumerable<NavigationDescriptor> descriptors;
 
-        public HashSet<MemberPathMapping> Mappings { get; } = new HashSet<MemberPathMapping>();
+        public HashSet<MemberPathMapping> Mappings { get; } = [];
 
         public SelectorGatheringExpressionVisitor(IEnumerable<NavigationDescriptor> descriptors)
         {
@@ -2476,7 +2475,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                     Mappings.Add(
                         new MemberPathMapping(
                             parameterExpression,
-                            new List<MemberInfo>(),
+                            [],
                             CurrentPath.ToList()));
 
                     return node;

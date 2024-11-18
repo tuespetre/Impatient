@@ -12,16 +12,14 @@ internal static class RowNumberTuple
 
         return Expression.New(
             rowNumberTupleType.GetTypeInfo().DeclaredConstructors.Single(),
-            new[]
-            {
+            [
                 projection,
                 rowNumberExpression,
-            },
-            new[]
-            {
+            ],
+            [
                 rowNumberTupleType.GetRuntimeField("Projection"),
                 rowNumberTupleType.GetRuntimeField("RowNumber"),
-            });
+            ]);
     }
 }
 

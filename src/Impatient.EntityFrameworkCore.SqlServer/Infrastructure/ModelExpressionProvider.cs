@@ -41,7 +41,7 @@ public class ModelExpressionProvider
 
     private static LambdaExpression CreateNavigationKeySelector(Type type, IReadOnlyList<IProperty> properties)
     {
-        var entityParameter = Expression.Parameter(type, type.Name.ToLowerInvariant().Substring(0, 1));
+        var entityParameter = Expression.Parameter(type, type.Name.ToLowerInvariant()[..1]);
 
         var expressions = new Expression[properties.Count];
 
@@ -1665,15 +1665,5 @@ public class ModelExpressionProvider
         }
 
         return (entityType.GetSchema(), entityType.GetTableName());
-    }
-
-    private static (string, string, string) GetRelationalId(IProperty property)
-    {
-        // TODO: why would there be more than one? and in some cases apparently identical?
-        // TODO: why would there be zero?
-        // see test: Collection_projection_on_base_type_split
-        var mapping = property.GetTableColumnMappings().First();
-
-        return (mapping.Column.Table.Schema, mapping.Column.Table.Name, mapping.Column.Name);
     }
 }

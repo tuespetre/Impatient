@@ -15,7 +15,7 @@ public class StoreGeneratedImpatientTest : StoreGeneratedTestBase<StoreGenerated
     protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
         => facade.UseTransaction(transaction.GetDbTransaction());
 
-    public class Fixture : StoreGeneratedFixtureBase
+    public new class Fixture : StoreGeneratedFixtureBase
     {
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
 

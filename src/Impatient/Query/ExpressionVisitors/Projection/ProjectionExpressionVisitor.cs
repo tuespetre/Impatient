@@ -10,8 +10,8 @@ namespace Impatient.Query.ExpressionVisitors.Projection;
 
 public abstract class ProjectionExpressionVisitor : ExpressionVisitor
 {
-    private Stack<MemberInfo> memberStack = new Stack<MemberInfo>();
-    private Stack<string> nameStack = new Stack<string>();
+    private Stack<MemberInfo> memberStack = new();
+    private Stack<string> nameStack = new();
 
     protected bool InLeaf { get; private set; }
 

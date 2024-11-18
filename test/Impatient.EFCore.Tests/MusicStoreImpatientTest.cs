@@ -11,7 +11,7 @@ public class MusicStoreImpatientTest : MusicStoreTestBase<MusicStoreImpatientTes
         fixture.ListLoggerFactory.Clear();
     }
 
-    public class Fixture : MusicStoreFixtureBase
+    public new class Fixture : MusicStoreFixtureBase
     {
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
