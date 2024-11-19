@@ -3058,6 +3058,42 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldMappingImpatientTest.Update_full_props" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldMappingImpatientTest.Include_collection_auto_props" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldMappingImpatientTest.Include_collection_auto_props" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldMappingImpatientTest.Include_collection_full_props_with_named_fields" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldMappingImpatientTest.Include_collection_full_props_with_named_fields" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldMappingImpatientTest.Include_collection_hiding_props" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldMappingImpatientTest.Include_collection_hiding_props" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldMappingImpatientTest.Include_collection_fields_only" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldMappingImpatientTest.Include_collection_fields_only" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldMappingImpatientTest.Include_collection_props_with_IReadOnlyCollection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldMappingImpatientTest.Include_collection_props_with_IReadOnlyCollection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.FieldMappingImpatientTest.Include_collection_fields_only_for_navs_too" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.FieldMappingImpatientTest.Include_collection_fields_only_for_navs_too" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -7541,6 +7577,18 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_null_FK_full_loader_constructor_injection" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_null_FK_full_loader_constructor_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_already_loaded_delegate_loader_constructor_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_already_loaded_delegate_loader_constructor_injection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_already_loaded_delegate_loader_property_injection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.LoadImpatientTest.Lazy_load_one_to_one_reference_to_principal_already_loaded_delegate_loader_property_injection" />
                       </Rule>
                     </Rule>
                   </Rule>
@@ -33817,6 +33865,18 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindSplitIncludeNoTrackingQueryImpatientTest.Include_collection_with_outer_apply_with_filter_non_equality" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindSplitIncludeNoTrackingQueryImpatientTest.Include_collection_principal_already_tracked" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindSplitIncludeNoTrackingQueryImpatientTest.Include_collection_principal_already_tracked" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindSplitIncludeNoTrackingQueryImpatientTest.Include_collection_dependent_already_tracked" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindSplitIncludeNoTrackingQueryImpatientTest.Include_collection_dependent_already_tracked" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -39454,6 +39514,96 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Indexer_property_is_pushdown_into_subquery" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Indexer_property_is_pushdown_into_subquery" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Query_with_OfType_eagerly_loads_correct_owned_navigations_split" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Query_with_OfType_eagerly_loads_correct_owned_navigations_split" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Query_with_OfType_eagerly_loads_correct_owned_navigations" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Query_with_OfType_eagerly_loads_correct_owned_navigations" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Can_query_on_indexer_properties_split" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Can_query_on_indexer_properties_split" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Client_method_skip_loads_owned_navigations_variation_2" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Client_method_skip_loads_owned_navigations_variation_2" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity_filter" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_followed_by_regular_entity_filter" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Can_query_on_indexer_properties" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Can_query_on_indexer_properties" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_projecting_entity" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Navigation_rewrite_on_owned_reference_projecting_entity" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Can_OrderBy_indexer_properties" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Can_OrderBy_indexer_properties" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Ordering_by_identifying_projection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Ordering_by_identifying_projection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Preserve_includes_when_applying_skip_take_after_anonymous_type_select" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Preserve_includes_when_applying_skip_take_after_anonymous_type_select" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Query_for_base_type_loads_all_owned_navs" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Query_for_base_type_loads_all_owned_navs" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Query_for_base_type_loads_all_owned_navs_split" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Query_for_base_type_loads_all_owned_navs_split" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Filter_on_indexer_using_closure" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Filter_on_indexer_using_closure" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Client_method_take_loads_owned_navigations_variation_2" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Client_method_take_loads_owned_navigations_variation_2" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Client_method_skip_take_loads_owned_navigations_variation_2" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Client_method_skip_take_loads_owned_navigations_variation_2" />
                       </Rule>
                     </Rule>
                   </Rule>

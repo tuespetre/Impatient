@@ -30,7 +30,6 @@ public class OwnedQueryImpatientTest : OwnedQueryRelationalTestBase<OwnedQueryIm
 
     public override async Task Can_OrderBy_indexer_properties(bool async)
     {
-        // it's failing because the query is NoTracking, and we aren't doing navigation fixup on the owned order, setting its Client to the OwnedPerson instance.
         await base.Can_OrderBy_indexer_properties(async);
 
         AssertSql("""

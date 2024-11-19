@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -12,6 +13,10 @@ public static class EntityTrackingHelper
     public static MethodInfo GetEntityUsingStateManagerMethodInfo { get; }
         = typeof(EntityTrackingHelper)
             .GetMethod(nameof(GetEntityUsingStateManager), BindingFlags.NonPublic | BindingFlags.Static);
+
+    public static MethodInfo NoTrackingInverseFixupMethodInfo { get; }
+        = typeof(EntityTrackingHelper)
+            .GetMethod(nameof(NoTrackingInverseFixup), BindingFlags.NonPublic | BindingFlags.Static);
 
     private static object GetEntityUsingStateManager(
         EFCoreDbCommandExecutor executor,
@@ -65,5 +70,34 @@ public static class EntityTrackingHelper
         }
 
         return entry.Entity;
+    }
+
+    private static object NoTrackingInverseFixup(
+        object entity,
+        List<INavigationBase> includes)
+    {
+        for (var i = 0; i < includes.Count; i++)
+        {
+            var include = includes[i];
+            var obj = include.GetGetter().GetClrValue(entity);
+            var setter = ((IRuntimePropertyBase)include.Inverse).MaterializationSetter;
+
+            if (obj is not null)
+            {
+                if (include.IsCollection)
+                {
+                    foreach (var item in (IEnumerable)obj)
+                    {
+                        setter.SetClrValue(item, entity);
+                    }
+                }
+                else
+                {
+                    setter.SetClrValue(obj, entity);
+                }
+            }
+        }
+
+        return entity;
     }
 }

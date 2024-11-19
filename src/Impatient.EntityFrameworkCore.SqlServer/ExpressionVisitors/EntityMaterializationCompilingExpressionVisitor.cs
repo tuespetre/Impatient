@@ -24,30 +24,30 @@ public class EntityMaterializationCompilingExpressionVisitor : ExpressionVisitor
         {
             case EntityMaterializationExpression entityMaterializationExpression:
             {
-                var entityVariable = Variable(node.Type, "entity");
-                var shadowPropertiesVariable = Variable(typeof(object[]), "shadow");
-
                 var entityType = entityMaterializationExpression.EntityType;
                 var materializer = Visit(entityMaterializationExpression.Expression);
                 var materializerInvocation = new CollectionNavigationFixupExpressionVisitor(entityType).Visit(materializer);
+                var identifier = GetLambdaName(entityType);
 
-                var identifier = $"MaterializeEntity_{entityType.DisplayName()}";
-
-                if (identifierCounts.TryGetValue(identifier, out var count))
+                if (entityMaterializationExpression.QueryTrackingBehavior is QueryTrackingBehavior.NoTracking)
                 {
-                    identifierCounts[identifier] = count + 1;
+                    var navigations 
+                        = entityMaterializationExpression
+                            .IncludedNavigations
+                            .Where(n => n.Inverse is not null && !n.Inverse.IsCollection)
+                            .ToList();
 
-                    identifier += $"_{count}";
-                }
-                else
-                {
-                    identifierCounts[identifier] = 1;
+                    if (navigations.Count > 0)
+                    {
+                        materializerInvocation
+                            = Convert(
+                                Call(
+                                    EntityTrackingHelper.NoTrackingInverseFixupMethodInfo,
+                                    materializerInvocation,
+                                    Constant(navigations)),
+                                node.Type);
+                    }
 
-                    identifier += "_0";
-                }
-
-                if (entityMaterializationExpression.QueryTrackingBehavior == QueryTrackingBehavior.NoTracking)
-                {
                     return MaterializationUtilities.Invoke(materializerInvocation, identifier);
                 }
 
@@ -73,6 +73,9 @@ public class EntityMaterializationCompilingExpressionVisitor : ExpressionVisitor
                     shadowPropertiesExpression = NewArrayInit(typeof(object), values);
                 }
 
+                var entityVariable = Variable(node.Type, "entity");
+                var shadowPropertiesVariable = Variable(typeof(object[]), "shadow");
+
                 var result
                     = Block(
                         variables:
@@ -95,7 +98,7 @@ public class EntityMaterializationCompilingExpressionVisitor : ExpressionVisitor
                                     Convert(
                                         ExecutionContextParameters.DbCommandExecutor,
                                         typeof(EFCoreDbCommandExecutor)),
-                                    Constant(entityMaterializationExpression.QueryTrackingBehavior == QueryTrackingBehavior.NoTrackingWithIdentityResolution),
+                                    Constant(entityMaterializationExpression.QueryTrackingBehavior is QueryTrackingBehavior.NoTrackingWithIdentityResolution),
                                     Constant(entityType),
                                     Constant(entityType.FindPrimaryKey(), typeof(IKey)),
                                     entityMaterializationExpression.KeyExpression
@@ -115,6 +118,26 @@ public class EntityMaterializationCompilingExpressionVisitor : ExpressionVisitor
                 return base.Visit(node);
             }
         }
+    }
+
+    private string GetLambdaName(IEntityType entityType)
+    {
+        var identifier = $"MaterializeEntity_{entityType.DisplayName()}";
+
+        if (identifierCounts.TryGetValue(identifier, out var count))
+        {
+            identifierCounts[identifier] = count + 1;
+
+            identifier += $"_{count}";
+        }
+        else
+        {
+            identifierCounts[identifier] = 1;
+
+            identifier += "_0";
+        }
+
+        return identifier;
     }
 
     private class CollectionNavigationFixupExpressionVisitor(IEntityType entityType) : ExpressionVisitor
