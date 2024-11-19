@@ -212,6 +212,21 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
             """);
     }
 
+    public override async Task Join_with_complex_key_selector(bool async)
+    {
+        await base.Join_with_complex_key_selector(async);
+
+        AssertSql("""
+            SELECT [o].[Id] AS [Id], [i].[Id] AS [TagId]
+            FROM [Squads] AS [o]
+            INNER JOIN (
+                SELECT [t].[Id] AS [Id], [t].[GearNickName] AS [GearNickName], [t].[GearSquadId] AS [GearSquadId], [t].[IssueDate] AS [IssueDate], [t].[Note] AS [Note]
+                FROM [Tags] AS [t]
+                WHERE [t].[Note] = N'Marcus'' Tag'
+            ) AS [i] ON 1 = 1
+            """);
+    }
+
     public override async Task Logical_operation_with_non_null_parameter_optimizes_null_checks(bool async)
     {
         await base.Logical_operation_with_non_null_parameter_optimizes_null_checks(async);

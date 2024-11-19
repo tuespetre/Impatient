@@ -161,82 +161,81 @@ public class KeyEqualityRewritingExpressionVisitor : ExpressionVisitor
                     var outerKeySelector = arguments[2].UnwrapLambda();
                     var innerKeySelector = arguments[3].UnwrapLambda();
 
-                    if (CanRewrite(outerKeySelector?.Body) && CanRewrite(innerKeySelector?.Body))
+                    outerKeySelector =
+                        Expression.Lambda(
+                            TryReduceNavigationKey(outerKeySelector.Body, out var rewroteOuter),
+                            outerKeySelector.Parameters[0]);
+
+                    innerKeySelector =
+                        Expression.Lambda(
+                            TryReduceNavigationKey(innerKeySelector.Body, out var rewroteInner),
+                            innerKeySelector.Parameters[0]);
+
+                    if (!rewroteOuter || !rewroteInner)
                     {
-                        outerKeySelector =
-                            Expression.Lambda(
-                                TryReduceNavigationKey(outerKeySelector.Body, out var rewroteOuter),
-                                outerKeySelector.Parameters[0]);
+                        var primaryKeyDescriptor
+                            = descriptorSet
+                                .PrimaryKeyDescriptors
+                                .FirstOrDefault(d => d.TargetType.IsAssignableFrom(genericArguments[2]));
 
-                        innerKeySelector =
-                            Expression.Lambda(
-                                TryReduceNavigationKey(innerKeySelector.Body, out var rewroteInner),
-                                innerKeySelector.Parameters[0]);
-
-                        if (!rewroteOuter || !rewroteInner)
+                        if (primaryKeyDescriptor is not null)
                         {
-                            var primaryKeyDescriptor
-                                = descriptorSet
-                                    .PrimaryKeyDescriptors
-                                    .FirstOrDefault(d => d.TargetType.IsAssignableFrom(genericArguments[2]));
-
-                            if (primaryKeyDescriptor is not null)
-                            {
-                                if (!rewroteOuter)
-                                {
-                                    outerKeySelector
-                                        = Expression.Lambda(
-                                            primaryKeyDescriptor.KeySelector.ExpandParameters(outerKeySelector.Body),
-                                            outerKeySelector.Parameters[0]);
-                                }
-
-                                if (!rewroteInner)
-                                {
-                                    innerKeySelector
-                                        = Expression.Lambda(
-                                            primaryKeyDescriptor.KeySelector.ExpandParameters(innerKeySelector.Body),
-                                            innerKeySelector.Parameters[0]);
-                                }
-                            }
-                        }
-
-                        if (outerKeySelector.ReturnType != innerKeySelector.ReturnType)
-                        {
-                            if (outerKeySelector.ReturnType.IsNullableType())
-                            {
-                                innerKeySelector
-                                    = Expression.Lambda(
-                                        Expression.Convert(innerKeySelector.Body, outerKeySelector.ReturnType),
-                                        innerKeySelector.Parameters);
-                            }
-                            else
+                            if (!rewroteOuter)
                             {
                                 outerKeySelector
                                     = Expression.Lambda(
-                                        Expression.Convert(outerKeySelector.Body, innerKeySelector.ReturnType),
-                                        outerKeySelector.Parameters);
+                                        primaryKeyDescriptor.KeySelector.ExpandParameters(outerKeySelector.Body),
+                                        outerKeySelector.Parameters[0]);
                             }
-                        }
 
-                        genericArguments[2] = outerKeySelector.ReturnType;
-
-                        if (node.Method.IsQueryableMethod())
-                        {
-                            arguments[2] = Expression.Quote(outerKeySelector);
-                            arguments[3] = Expression.Quote(innerKeySelector);
+                            if (!rewroteInner)
+                            {
+                                innerKeySelector
+                                    = Expression.Lambda(
+                                        primaryKeyDescriptor.KeySelector.ExpandParameters(innerKeySelector.Body),
+                                        innerKeySelector.Parameters[0]);
+                            }
                         }
                         else
                         {
-                            arguments[2] = outerKeySelector;
-                            arguments[3] = innerKeySelector;
+                            break;
                         }
-
-                        return Expression.Call(
-                            node.Method.GetGenericMethodDefinition().MakeGenericMethod(genericArguments),
-                            arguments);
                     }
 
-                    break;
+                    if (outerKeySelector.ReturnType != innerKeySelector.ReturnType)
+                    {
+                        if (outerKeySelector.ReturnType.IsNullableType())
+                        {
+                            innerKeySelector
+                                = Expression.Lambda(
+                                    Expression.Convert(innerKeySelector.Body, outerKeySelector.ReturnType),
+                                    innerKeySelector.Parameters);
+                        }
+                        else
+                        {
+                            outerKeySelector
+                                = Expression.Lambda(
+                                    Expression.Convert(outerKeySelector.Body, innerKeySelector.ReturnType),
+                                    outerKeySelector.Parameters);
+                        }
+                    }
+
+                    genericArguments[2] = outerKeySelector.ReturnType;
+
+                    if (node.Method.IsQueryableMethod())
+                    {
+                        arguments[2] = Expression.Quote(outerKeySelector);
+                        arguments[3] = Expression.Quote(innerKeySelector);
+                    }
+                    else
+                    {
+                        arguments[2] = outerKeySelector;
+                        arguments[3] = innerKeySelector;
+                    }
+
+                    return Expression.Call(
+                        node.Method.GetGenericMethodDefinition().MakeGenericMethod(genericArguments),
+                        arguments);
                 }
 
                 case nameof(Queryable.Contains):

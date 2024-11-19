@@ -12603,6 +12603,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Projecting_entity_as_well_as_correlated_collection_followed_by_Distinct" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Join_with_complex_key_selector" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Join_with_complex_key_selector" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -19653,6 +19659,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.Projecting_entity_as_well_as_correlated_collection_followed_by_Distinct" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.Projecting_entity_as_well_as_correlated_collection_followed_by_Distinct" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.Join_with_complex_key_selector" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.Join_with_complex_key_selector" />
                       </Rule>
                     </Rule>
                   </Rule>
@@ -29821,6 +29833,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Streaming_correlated_collection_issue_11403_returning_ordered_enumerable_throws" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Streaming_correlated_collection_issue_11403_returning_ordered_enumerable_throws" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Join_with_complex_key_selector" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Join_with_complex_key_selector" />
                       </Rule>
                     </Rule>
                   </Rule>

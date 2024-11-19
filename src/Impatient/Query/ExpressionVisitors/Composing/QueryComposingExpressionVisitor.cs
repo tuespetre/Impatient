@@ -190,36 +190,62 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
 
     private Expression VisitQueryableOrEnumerableMethodCall(MethodCallExpression node)
     {
+        Debug.Assert(node.Method.IsStatic);
+
         var visitedArguments = new Expression[node.Arguments.Count];
 
-        Expression FallbackToEnumerable()
+        Expression FallbackToEnumerableCore()
         {
-            var fallbackArguments
-                = node.Arguments
-                    .Zip(visitedArguments, (original, visited) => visited ?? Visit(original))
-                    .Select(a => node.ContainsNonLambdaExpressions() ? a : a.UnwrapLambda() ?? a);
-
             if (node.ContainsNonLambdaExpressions())
             {
-                return Expression.Call(node.Method, fallbackArguments);
-            }
+                for (var i = 0; i < node.Arguments.Count; i++)
+                {
+                    visitedArguments[i] ??= Visit(node.Arguments[i]);
+                }
 
-            return Expression.Call(MatchQueryableMethod(node.Method), fallbackArguments);
+                return node.Update(null, visitedArguments);
+            }
+            else
+            {
+                for (var i = 0; i < node.Arguments.Count; i++)
+                {
+                    var argument = visitedArguments[i] ?? Visit(node.Arguments[i]);
+
+                    visitedArguments[i] = argument.UnwrapLambda() ?? argument;
+                }
+
+                if (node.Method.IsEnumerableMethod())
+                {
+                    return node.Update(null, visitedArguments);
+                }
+                else
+                {
+                    return Expression.Call(MatchQueryableMethod(node.Method), visitedArguments);
+                }
+            }
         }
 
-        if (node.Arguments.Count == 0
-            || node.Method.HasComparerArgument()
+        // For debugging purposes. Set a breakpoint on this line to break when a query operator handler method falls back to enumerable.
+        Expression FallbackToEnumerable() => FallbackToEnumerableCore();
+
+        if (node.Arguments.Count == 0)
+        {
+            // At the time of writing, this can only be Enumerable.Empty
+            return node;
+        }
+
+        if (node.Method.HasComparerArgument()
             || node.ContainsNonLambdaDelegates()
             || node.ContainsNonLambdaExpressions())
         {
-            return FallbackToEnumerable();
+            return FallbackToEnumerableCore();
         }
 
         var outerSource = visitedArguments[0] = ProcessQuerySource(Visit(node.Arguments[0]));
 
         if (outerSource is not EnumerableRelationalQueryExpression outerQuery)
         {
-            return FallbackToEnumerable();
+            return FallbackToEnumerableCore();
         }
 
         switch (node.Method.Name)
@@ -3295,7 +3321,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
                 }
                 else
                 {
-                    throw new NotImplementedException();
+                    return node;
                 }
             }
 
@@ -3337,7 +3363,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
                 }
                 else
                 {
-                    throw new NotImplementedException();
+                    return node;
                 }
             }
 
