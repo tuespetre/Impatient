@@ -37,10 +37,7 @@ public class PolymorphicExpression : Expression, ISemanticHashCodeProvider
     {
         if (!Type.IsAssignableFrom(type))
         {
-            return new PolymorphicExpression(
-                type,
-                Row,
-                Enumerable.Empty<PolymorphicTypeDescriptor>());
+            return new PolymorphicExpression(type, Row, []);
         }
 
         return new PolymorphicExpression(

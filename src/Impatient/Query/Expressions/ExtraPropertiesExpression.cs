@@ -37,7 +37,7 @@ public abstract class ExtraPropertiesExpression : Expression, ISemanticHashCodeP
         return Update(expression, properties);
     }
 
-    public virtual IEnumerable<MemberInfo> GetMemberPath(int index) => Enumerable.Empty<MemberInfo>();
+    public virtual IEnumerable<MemberInfo> GetMemberPath(int index) => [];
 
     public abstract ExtraPropertiesExpression Update(Expression expression, IEnumerable<Expression> properties);
 

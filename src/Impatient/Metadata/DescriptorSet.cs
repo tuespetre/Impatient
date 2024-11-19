@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 
 namespace Impatient.Metadata;
 
@@ -17,8 +16,5 @@ public sealed class DescriptorSet
 
     public IEnumerable<NavigationDescriptor> NavigationDescriptors { get; }
 
-    public static DescriptorSet Empty { get; }
-        = new DescriptorSet(
-            Enumerable.Empty<PrimaryKeyDescriptor>(),
-            Enumerable.Empty<NavigationDescriptor>());
+    public static DescriptorSet Empty { get; } = new DescriptorSet([], []);
 }
