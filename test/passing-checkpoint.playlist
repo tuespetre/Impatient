@@ -25007,6 +25007,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Filter_on_property_inside_complex_type_on_derived_type" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Is_operator_on_result_of_FirstOrDefault" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTInheritanceQueryImpatientTest.Is_operator_on_result_of_FirstOrDefault" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -34577,6 +34583,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCInheritanceQueryImpatientTest.Filter_on_property_inside_complex_type_on_derived_type" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCInheritanceQueryImpatientTest.Is_operator_on_result_of_FirstOrDefault" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCInheritanceQueryImpatientTest.Is_operator_on_result_of_FirstOrDefault" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -38024,6 +38036,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPHInheritanceQueryImpatientTest.Member_access_on_intermediate_type_works" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPHInheritanceQueryImpatientTest.Is_operator_on_result_of_FirstOrDefault" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPHInheritanceQueryImpatientTest.Is_operator_on_result_of_FirstOrDefault" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -39430,6 +39448,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Can_join_on_indexer_property_on_query" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Can_join_on_indexer_property_on_query" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Indexer_property_is_pushdown_into_subquery" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Indexer_property_is_pushdown_into_subquery" />
                       </Rule>
                     </Rule>
                   </Rule>

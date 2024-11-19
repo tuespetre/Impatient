@@ -50,4 +50,19 @@ public class OwnedQueryImpatientTest : OwnedQueryRelationalTestBase<OwnedQueryIm
             ORDER BY [o_1].[Name] ASC, [o_1].[Id] ASC
             """);
     }
+
+    public override async Task Indexer_property_is_pushdown_into_subquery(bool async)
+    {
+        await base.Indexer_property_is_pushdown_into_subquery(async);
+
+        AssertSql("""
+            SELECT [o].[Name]
+            FROM [OwnedPerson] AS [o]
+            WHERE [o].[Discriminator] IN (N'OwnedPerson', N'Branch', N'LeafB', N'LeafA') AND ((
+                SELECT TOP (1) [o_0].[Name]
+                FROM [OwnedPerson] AS [o_0]
+                WHERE [o_0].[Discriminator] IN (N'OwnedPerson', N'Branch', N'LeafB', N'LeafA') AND ([o_0].[Id] = [o].[Id])
+            ) = N'Mona Cy')
+            """);
+    }
 }

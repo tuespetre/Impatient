@@ -10,6 +10,14 @@ public class TPHInheritanceQueryImpatientTest : TPHInheritanceQueryTestBase<TPHI
 {
     public TPHInheritanceQueryImpatientTest(Fixture fixture, ITestOutputHelper testOutputHelper) : base(fixture, testOutputHelper)
     {
+        fixture.TestSqlLoggerFactory.Clear();
+    }
+
+    private void AssertSql(string expected) => base.Fixture.TestSqlLoggerFactory.AssertSql(expected);
+
+    public new class Fixture : TPHInheritanceQueryFixture
+    {
+        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 
     [ConditionalTheory(Skip = FromSql)]
@@ -36,8 +44,19 @@ public class TPHInheritanceQueryImpatientTest : TPHInheritanceQueryTestBase<TPHI
         base.FromSql_on_root();
     }
 
-    public new class Fixture : TPHInheritanceQueryFixture
+    public override async Task Is_operator_on_result_of_FirstOrDefault(bool async)
     {
-        protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
+        await base.Is_operator_on_result_of_FirstOrDefault(async);
+
+        AssertSql("""
+            SELECT [a].[Id] AS [Item1], [a].[CountryId] AS [Item2], [a].[Discriminator] AS [Item3], [a].[Name] AS [Item4], [a].[Species] AS [Item5], [a].[EagleId] AS [Item6], [a].[IsFlightless] AS [Item7], [a].[Group] AS [Rest.Item1], [a].[FoundOn] AS [Rest.Item2]
+            FROM [Animals] AS [a]
+            WHERE [a].[Discriminator] IN (N'Eagle', N'Kiwi') AND ((
+                SELECT TOP (1) CAST((CASE WHEN [a1].[Discriminator] = N'Kiwi' THEN 1 ELSE 0 END) AS bit)
+                FROM [Animals] AS [a1]
+                WHERE [a1].[Discriminator] IN (N'Eagle', N'Kiwi') AND ([a1].[Name] = N'Great spotted kiwi')
+            ) = 1)
+            ORDER BY [a].[Species] ASC
+            """);
     }
 }
