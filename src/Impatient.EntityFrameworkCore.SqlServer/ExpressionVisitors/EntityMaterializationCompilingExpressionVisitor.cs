@@ -14,9 +14,8 @@ using static System.Linq.Expressions.Expression;
 
 namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
 
-public class EntityMaterializationCompilingExpressionVisitor(IModel model) : ExpressionVisitor
+public class EntityMaterializationCompilingExpressionVisitor : ExpressionVisitor
 {
-    private readonly IModel model = model ?? throw new ArgumentNullException(nameof(model));
     private readonly Dictionary<string, int> identifierCounts = [];
 
     public override Expression Visit(Expression node)
@@ -30,7 +29,7 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
 
                 var entityType = entityMaterializationExpression.EntityType;
                 var materializer = Visit(entityMaterializationExpression.Expression);
-                var materializerInvocation = new CollectionNavigationFixupExpressionVisitor(model, entityType).Visit(materializer);
+                var materializerInvocation = new CollectionNavigationFixupExpressionVisitor(entityType).Visit(materializer);
 
                 var identifier = $"MaterializeEntity_{entityType.DisplayName()}";
 
@@ -98,6 +97,7 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
                                         typeof(EFCoreDbCommandExecutor)),
                                     Constant(entityMaterializationExpression.QueryTrackingBehavior == QueryTrackingBehavior.NoTrackingWithIdentityResolution),
                                     Constant(entityType),
+                                    Constant(entityType.FindPrimaryKey(), typeof(IKey)),
                                     entityMaterializationExpression.KeyExpression
                                         .UnwrapLambda()
                                         .ExpandParameters(entityVariable, shadowPropertiesVariable),
@@ -117,13 +117,13 @@ public class EntityMaterializationCompilingExpressionVisitor(IModel model) : Exp
         }
     }
 
-    private class CollectionNavigationFixupExpressionVisitor(IModel model, IEntityType entityType) : ExpressionVisitor
+    private class CollectionNavigationFixupExpressionVisitor(IEntityType entityType) : ExpressionVisitor
     {
         protected override Expression VisitExtension(Expression node)
         {
             switch (node)
             {
-                case EntityMaterializationExpression entityMaterializationExpression:
+                case EntityMaterializationExpression:
                 {
                     throw new NotImplementedException();
                 }

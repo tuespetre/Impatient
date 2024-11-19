@@ -7655,6 +7655,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_update_delete_proxyable_shared_type_entity_type_unidirectional" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_update_delete_shared_type_entity_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_update_delete_shared_type_entity_type" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
