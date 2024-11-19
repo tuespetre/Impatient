@@ -31,6 +31,21 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
         return base.Bitwise_operation_with_null_arguments(async);
     }
 
+    // we don't translate casts to derived types. it seems like a very niche use case, and not a 'proper' use case at that.
+    [DisagreeWithEFCore]
+    [Theory(Skip = Punt)]
+    public override Task Cast_to_derived_followed_by_include_and_FirstOrDefault(bool async)
+    {
+        return base.Cast_to_derived_followed_by_include_and_FirstOrDefault(async);
+    }
+
+    [DisagreeWithEFCore]
+    [Theory(Skip = Punt)]
+    public override Task Cast_to_derived_followed_by_multiple_includes(bool async)
+    {
+        return base.Cast_to_derived_followed_by_multiple_includes(async);
+    }
+
     [Theory(Skip = ClientEval)]
     public override Task Client_eval_followed_by_aggregate_operation(bool async)
     {

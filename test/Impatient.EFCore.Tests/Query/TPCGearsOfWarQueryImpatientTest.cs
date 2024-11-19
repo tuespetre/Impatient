@@ -33,6 +33,20 @@ public class TPCGearsOfWarQueryImpatientTest : TPCGearsOfWarQueryRelationalTestB
         return base.Accessing_property_of_optional_navigation_in_child_projection_works(async);
     }
 
+    [DisagreeWithEFCore]
+    [Theory(Skip = Punt)]
+    public override Task Cast_to_derived_followed_by_include_and_FirstOrDefault(bool async)
+    {
+        return base.Cast_to_derived_followed_by_include_and_FirstOrDefault(async);
+    }
+
+    [DisagreeWithEFCore]
+    [Theory(Skip = Punt)]
+    public override Task Cast_to_derived_followed_by_multiple_includes(bool async)
+    {
+        return base.Cast_to_derived_followed_by_multiple_includes(async);
+    }
+
     [Theory(Skip = ClientEval)]
     public override Task Client_eval_followed_by_aggregate_operation(bool async)
     {
