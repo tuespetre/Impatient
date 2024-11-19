@@ -2998,16 +2998,14 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
             return fallbackToEnumerable();
         }
 
+        if (outerSelectExpression.HasOrdering && !outerSelectExpression.HasOffsetOrLimit)
+        {
+            outerSelectExpression = outerSelectExpression.UpdateOrderBy(null);
+        }
+
         outerSelectExpression
             = outerSelectExpression
                 .UpdateProjection(new ServerProjectionExpression(Expression.Constant(1)));
-
-        if (outerSelectExpression.Offset is null
-            && outerSelectExpression.Limit is null)
-        {
-            outerSelectExpression
-                = outerSelectExpression.UpdateOrderBy(null);
-        }
 
         return new SingleValueRelationalQueryExpression(
             new SelectExpression(
@@ -3025,7 +3023,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
         var outerSelectExpression = outerQuery.SelectExpression;
         var outerProjection = outerSelectExpression.Projection.Flatten().Body;
 
-        if (!IsTranslatable(outerProjection) || !outerProjection.Type.IsScalarType())
+        if (!IsTranslatable(outerProjection))
         {
             return fallbackToEnumerable();
         }
@@ -3044,8 +3042,32 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
             outerSelectExpression = outerSelectExpression.UpdateOrderBy(null);
         }
 
-        // TODO: Test with a scalar subquery as the value e.g. (SELECT 1) IN (SELECT 1)
-        return new ContainsRelationalQueryExpression(new SqlInExpression(valueExpression, outerSelectExpression));
+        if (outerProjection.Type.IsScalarType())
+        {
+            // TODO: Test with a scalar subquery as the value e.g. (SELECT 1) IN (SELECT 1)
+            return new ContainsRelationalQueryExpression(
+                new SqlInExpression(
+                    valueExpression, 
+                    outerSelectExpression));
+        }
+        else
+        {
+            outerSelectExpression
+                = outerSelectExpression
+                    .AddToPredicate(
+                        Expression.Equal(
+                            outerProjection,
+                            valueExpression))
+                    .UpdateProjection(
+                        new ServerProjectionExpression(
+                            Expression.Constant(1)));
+
+            return new SingleValueRelationalQueryExpression(
+                new SelectExpression(
+                    new ServerProjectionExpression(
+                        new SqlExistsExpression(
+                            outerSelectExpression))));
+        }
     }
 
     protected Expression HandlePredefinedAggregate(

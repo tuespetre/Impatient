@@ -545,4 +545,23 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
     {
         return base.Where_compare_anonymous_types(async);
     }
+
+    public override async Task Where_contains_on_navigation_with_composite_keys(bool async)
+    {
+        await base.Where_contains_on_navigation_with_composite_keys(async);
+
+        AssertSql("""
+            SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOfBirthName] AS [Item4], [g].[Discriminator] AS [Item5], [g].[FullName] AS [Item6], [g].[HasSoulPatch] AS [Item7], [g].[LeaderNickname] AS [Rest.Item1], [g].[LeaderSquadId] AS [Rest.Item2], [g].[Rank] AS [Rest.Item3]
+            FROM [Gears] AS [g]
+            WHERE [g].[Discriminator] IN (N'Gear', N'Officer') AND EXISTS (
+                SELECT 1
+                FROM [Cities] AS [c]
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM [Gears] AS [g_0]
+                    WHERE ([g_0].[Discriminator] IN (N'Gear', N'Officer') AND ([c].[Name] = [g_0].[CityOfBirthName])) AND (([g_0].[Nickname] = [g].[Nickname]) AND ([g_0].[SquadId] = [g].[SquadId]))
+                )
+            )
+            """);
+    }
 }

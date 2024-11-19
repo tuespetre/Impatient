@@ -378,6 +378,15 @@ public static class ExpressionExtensions
             return expression;
         }
 
+        // TODO: this is pretty horrendous. there really should be a dedicated ExistsQueryExpression.
+        if (expression is SingleValueRelationalQueryExpression singleValueRelationalQueryExpression
+            && singleValueRelationalQueryExpression.SelectExpression.Table is null
+            && singleValueRelationalQueryExpression.SelectExpression.Projection is ServerProjectionExpression serverProjectionExpression
+            && serverProjectionExpression.ResultLambda.Body.IsLogicalBooleanSqlExpression())
+        {
+            return serverProjectionExpression.ResultLambda.Body;
+        }
+
         var test = true;
 
         expression = expression.UnwrapInnerExpression();

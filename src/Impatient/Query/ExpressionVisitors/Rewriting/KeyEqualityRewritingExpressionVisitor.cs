@@ -247,7 +247,7 @@ public class KeyEqualityRewritingExpressionVisitor : ExpressionVisitor
                             .PrimaryKeyDescriptors
                             .FirstOrDefault(d => d.TargetType.IsAssignableFrom(sequenceType));
 
-                    if (primaryKeyDescriptor is null || !primaryKeyDescriptor.KeySelector.ReturnType.IsScalarType())
+                    if (primaryKeyDescriptor is null)
                     {
                         break;
                     }
