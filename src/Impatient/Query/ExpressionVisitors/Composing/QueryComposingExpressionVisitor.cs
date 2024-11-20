@@ -132,27 +132,25 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
 
     protected override Expression VisitLambda<T>(Expression<T> node)
     {
-        if (node.ReturnType.IsQueryableType())
-        {
-            var parameters = node.Parameters.Select(p => VisitAndConvert(p, nameof(VisitLambda))).ToArray();
-            var body = Visit(node.Body);
+        var parameters = node.Parameters.Select(p => VisitAndConvert(p, nameof(VisitLambda))).ToArray();
+        var body = Visit(node.Body);
 
-            if (node.ReturnType.IsOrderedQueryableType())
+        if (node.ReturnType.IsOrderedQueryableType())
+        {
+            if (!body.Type.IsOrderedQueryableType())
             {
-                if (!body.Type.IsOrderedQueryableType())
-                {
-                    body = body.AsOrderedQueryable();
-                }
+                body = body.AsOrderedQueryable();
             }
-            else if (!body.Type.IsQueryableType())
+        }
+        else if (node.ReturnType.IsQueryableType())
+        {
+            if (!body.Type.IsQueryableType())
             {
                 body = body.AsQueryable();
             }
-
-            return node.Update(body, parameters);
         }
 
-        return base.VisitLambda(node);
+        return node.Update(body, parameters);
     }
 
     protected override Expression VisitMethodCall(MethodCallExpression node)
@@ -1873,7 +1871,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
         var outerSelectExpression = outerQuery.SelectExpression;
         var outerProjection = outerSelectExpression.Projection.Flatten().Body;
 
-        if (outerSelectExpression.RequiresPushdownForLimit())
+        if (outerSelectExpression.RequiresPushdownForOffset())
         {
             if (!IsTranslatable(outerProjection))
             {
@@ -1931,7 +1929,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
         var outerSelectExpression = outerQuery.SelectExpression;
         var outerProjection = outerSelectExpression.Projection.Flatten().Body;
 
-        if (outerSelectExpression.RequiresPushdownForLimit())
+        if (outerSelectExpression.RequiresPushdownForOffset())
         {
             if (!IsTranslatable(outerProjection))
             {

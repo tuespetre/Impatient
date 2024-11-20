@@ -227,6 +227,60 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
             """);
     }
 
+    [TranslationExceedsEFCore]
+    [TestCaseRewritten]
+    public override async Task Include_multiple_one_to_one_and_one_to_many_self_reference(bool async)
+    {
+        await AssertQuery(
+            async,
+            ss => ss.Set<Weapon>().Include(w => w.Owner.Weapons),
+            elementAsserter: (e, a) => QueryAsserter.AssertInclude(e, a, [new ExpectedInclude<Weapon>(w => w.Owner, "Weapons")]));
+
+        AssertSql("""
+            SELECT [w].[Id] AS [Id], [w].[AmmunitionType] AS [AmmunitionType], [w].[IsAutomatic] AS [IsAutomatic], [w].[Name] AS [Name], [w].[OwnerFullName] AS [OwnerFullName], [w].[SynergyWithId] AS [SynergyWithId], [g].[$empty] AS [Owner.$empty], (
+                SELECT [w_0].[Id] AS [Id], [w_0].[AmmunitionType] AS [AmmunitionType], [w_0].[IsAutomatic] AS [IsAutomatic], [w_0].[Name] AS [Name], [w_0].[OwnerFullName] AS [OwnerFullName], [w_0].[SynergyWithId] AS [SynergyWithId]
+                FROM [Weapons] AS [w_0]
+                WHERE [g].[Item6] = [w_0].[OwnerFullName]
+                FOR JSON PATH
+            ) AS [Owner.Weapons], [g].[Item1] AS [Owner.Item1], [g].[Item2] AS [Owner.Item2], [g].[Item3] AS [Owner.Item3], [g].[Item4] AS [Owner.Item4], [g].[Item5] AS [Owner.Item5], [g].[Item6] AS [Owner.Item6], [g].[Item7] AS [Owner.Item7], [g].[Rest.Item1] AS [Owner.Rest.Item1], [g].[Rest.Item2] AS [Owner.Rest.Item2], [g].[Rest.Item3] AS [Owner.Rest.Item3]
+            FROM [Weapons] AS [w]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [g_0].[Nickname] AS [Item1], [g_0].[SquadId] AS [Item2], [g_0].[AssignedCityName] AS [Item3], [g_0].[CityOfBirthName] AS [Item4], [g_0].[Discriminator] AS [Item5], [g_0].[FullName] AS [Item6], [g_0].[HasSoulPatch] AS [Item7], [g_0].[LeaderNickname] AS [Rest.Item1], [g_0].[LeaderSquadId] AS [Rest.Item2], [g_0].[Rank] AS [Rest.Item3]
+                FROM [Gears] AS [g_0]
+                WHERE [g_0].[Discriminator] IN (N'Gear', N'Officer')
+            ) AS [g] ON [w].[OwnerFullName] = [g].[Item6]
+            """);
+    }
+
+    [TranslationExceedsEFCore]
+    [TestCaseRewritten]
+    public override async Task Include_multiple_one_to_one_and_one_to_one_and_one_to_many(bool async)
+    {
+        await AssertQuery(
+            async,
+            ss => ss.Set<CogTag>().Include(t => t.Gear.Squad.Members),
+            elementAsserter: (e, a) => QueryAsserter.AssertInclude(e, a, [new ExpectedInclude<CogTag>(c => c.Gear, "Squad.Members")]));
+
+        AssertSql("""
+            SELECT [t].[Id] AS [Id], [t].[GearNickName] AS [GearNickName], [t].[GearSquadId] AS [GearSquadId], [t].[IssueDate] AS [IssueDate], [t].[Note] AS [Note], [g].[$empty] AS [Gear.$empty], [s].[$empty] AS [Gear.Squad.$empty], [s].[Id] AS [Gear.Squad.Id], [s].[Banner] AS [Gear.Squad.Banner], [s].[Banner5] AS [Gear.Squad.Banner5], [s].[InternalNumber] AS [Gear.Squad.InternalNumber], [s].[Name] AS [Gear.Squad.Name], (
+                SELECT [g_0].[Nickname] AS [Item1], [g_0].[SquadId] AS [Item2], [g_0].[AssignedCityName] AS [Item3], [g_0].[CityOfBirthName] AS [Item4], [g_0].[Discriminator] AS [Item5], [g_0].[FullName] AS [Item6], [g_0].[HasSoulPatch] AS [Item7], [g_0].[LeaderNickname] AS [Rest.Item1], [g_0].[LeaderSquadId] AS [Rest.Item2], [g_0].[Rank] AS [Rest.Item3]
+                FROM [Gears] AS [g_0]
+                WHERE [g_0].[Discriminator] IN (N'Gear', N'Officer') AND ([s].[Id] = [g_0].[SquadId])
+                FOR JSON PATH
+            ) AS [Gear.Squad.Members], [g].[Item1] AS [Gear.Item1], [g].[Item2] AS [Gear.Item2], [g].[Item3] AS [Gear.Item3], [g].[Item4] AS [Gear.Item4], [g].[Item5] AS [Gear.Item5], [g].[Item6] AS [Gear.Item6], [g].[Item7] AS [Gear.Item7], [g].[Rest.Item1] AS [Gear.Rest.Item1], [g].[Rest.Item2] AS [Gear.Rest.Item2], [g].[Rest.Item3] AS [Gear.Rest.Item3]
+            FROM [Tags] AS [t]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [g_1].[Nickname] AS [Item1], [g_1].[SquadId] AS [Item2], [g_1].[AssignedCityName] AS [Item3], [g_1].[CityOfBirthName] AS [Item4], [g_1].[Discriminator] AS [Item5], [g_1].[FullName] AS [Item6], [g_1].[HasSoulPatch] AS [Item7], [g_1].[LeaderNickname] AS [Rest.Item1], [g_1].[LeaderSquadId] AS [Rest.Item2], [g_1].[Rank] AS [Rest.Item3]
+                FROM [Gears] AS [g_1]
+                WHERE [g_1].[Discriminator] IN (N'Gear', N'Officer')
+            ) AS [g] ON ([t].[GearNickName] = [g].[Item1]) AND ([t].[GearSquadId] = [g].[Item2])
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [s_0].[Id] AS [Id], [s_0].[Banner] AS [Banner], [s_0].[Banner5] AS [Banner5], [s_0].[InternalNumber] AS [InternalNumber], [s_0].[Name] AS [Name]
+                FROM [Squads] AS [s_0]
+            ) AS [s] ON [g].[Item2] = [s].[Id]
+            """);
+    }
+
     public override async Task Join_with_complex_key_selector(bool async)
     {
         await base.Join_with_complex_key_selector(async);
@@ -519,6 +573,20 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
             FROM [Gears] AS [g]
             WHERE [g].[Discriminator] IN (N'Gear', N'Officer')
             ORDER BY [g].[Nickname] ASC
+            """);
+    }
+
+    // TODO: consider what this test even means?
+    public override async Task String_concat_on_various_types(bool async)
+    {
+        await Assert.ThrowsAsync<ThrowsException>(() => base.String_concat_on_various_types(async));
+
+        AssertSql("""
+            SELECT [g].[Nickname] AS [g.Item1], [g].[SquadId] AS [g.Item2], [g].[AssignedCityName] AS [g.Item3], [g].[CityOfBirthName] AS [g.Item4], [g].[Discriminator] AS [g.Item5], [g].[FullName] AS [g.Item6], [g].[HasSoulPatch] AS [g.Item7], [g].[LeaderNickname] AS [g.Rest.Item1], [g].[LeaderSquadId] AS [g.Rest.Item2], [g].[Rank] AS [g.Rest.Item3], [m].[Id] AS [m.Id], [m].[CodeName] AS [m.CodeName], [m].[Date] AS [m.Date], [m].[Duration] AS [m.Duration], [m].[Rating] AS [m.Rating], [m].[Time] AS [m.Time], [m].[Timeline] AS [m.Timeline]
+            FROM [Gears] AS [g]
+            CROSS JOIN [Missions] AS [m]
+            WHERE [g].[Discriminator] IN (N'Gear', N'Officer')
+            ORDER BY [g].[Nickname] ASC, [m].[Id] ASC
             """);
     }
 
