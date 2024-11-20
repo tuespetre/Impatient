@@ -56,7 +56,7 @@ public class OwnedTypeIncludeComposingExpressionVisitor : ExpressionVisitor
             = entityType
                 .GetNavigations()
                 .Concat(entityType.GetDerivedNavigations())
-                .Where(n => n.ForeignKey.IsOwnership && !n.IsOnDependent);
+                .Where(n => n.ForeignKey.IsOwnership && n.IsEagerLoaded && !n.IsOnDependent);
 
         foreach (var navigation in navigations)
         {

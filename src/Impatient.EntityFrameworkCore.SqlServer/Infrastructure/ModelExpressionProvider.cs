@@ -1137,9 +1137,12 @@ public class ModelExpressionProvider
 
         var navigations
             = (from n in entityType.GetNavigations()
-               where n.ForeignKey.IsOwnership && TablesMatch(entityType, n.TargetEntityType)
+               where n.ForeignKey.IsOwnership && n.IsEagerLoaded
+               where TablesMatch(entityType, n.TargetEntityType)
                where !n.IsOnDependent && (!n.IsCollection || n.TargetEntityType.IsMappedToJson())
                select n).ToList();
+
+        var includedNavigations = navigations.ToList();
 
         var services
             = (from s in entityType.GetServiceProperties()
@@ -1268,7 +1271,8 @@ public class ModelExpressionProvider
                     keySelector,
                     shadowProperties,
                     shadowProperties.Select(s => propertyExpressions[s]),
-                    materializer);
+                    materializer,
+                    includedNavigations);
         }
 
         if (isOptional)
@@ -1436,7 +1440,7 @@ public class ModelExpressionProvider
             }
         }
 
-        foreach (var owned in type.GetNavigations().Where(n => n.ForeignKey.IsOwnership))
+        foreach (var owned in type.GetNavigations().Where(n => n.ForeignKey.IsOwnership && n.IsEagerLoaded))
         {
             if (!owned.IsOnDependent && !owned.IsCollection && !owned.TargetEntityType.IsMappedToJson())
             {
@@ -1466,7 +1470,7 @@ public class ModelExpressionProvider
             }
         }
 
-        foreach (var owned in type.GetNavigations().Where(n => n.ForeignKey.IsOwnership))
+        foreach (var owned in type.GetNavigations().Where(n => n.ForeignKey.IsOwnership && n.IsEagerLoaded))
         {
             if (!TablesMatch(type, owned.TargetEntityType))
             {
