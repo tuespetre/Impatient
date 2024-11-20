@@ -89,6 +89,53 @@ public class TPCGearsOfWarQueryImpatientTest : TPCGearsOfWarQueryRelationalTestB
         return base.Client_side_equality_with_parameter_works_with_optional_navigations(async);
     }
 
+    public override async Task Comparing_two_collection_navigations_inheritance(bool async)
+    {
+        await base.Comparing_two_collection_navigations_inheritance(async);
+
+        // TODO: equality of collection navigations should probably be translated to equality of the navigated-from entities, instead
+        AssertSql("""
+            SELECT [f].[Name] AS [Name], [o].[Item1] AS [Nickname]
+            FROM [LocustHordes] AS [f]
+            CROSS JOIN (
+                SELECT [set].[Item1] AS [Item1], [set].[Item2] AS [Item2], [set].[Item3] AS [Item3], [set].[Item4] AS [Item4], [set].[Item5] AS [Item5], [set].[Item6] AS [Item6], [set].[Item7] AS [Item7], [set].[Rest.Item1] AS [Rest.Item1], [set].[Rest.Item2] AS [Rest.Item2], [set].[Rest.Item3] AS [Rest.Item3]
+                FROM (
+                    SELECT [g].[Nickname] AS [Item1], [g].[SquadId] AS [Item2], [g].[AssignedCityName] AS [Item3], [g].[CityOfBirthName] AS [Item4], [g].[FullName] AS [Item5], [g].[HasSoulPatch] AS [Item6], [g].[LeaderNickname] AS [Item7], [g].[LeaderSquadId] AS [Rest.Item1], [g].[Rank] AS [Rest.Item2], N'Gear' AS [Rest.Item3]
+                    FROM [Gears] AS [g]
+                    UNION ALL
+                    SELECT [o_0].[Nickname] AS [Item1], [o_0].[SquadId] AS [Item2], [o_0].[AssignedCityName] AS [Item3], [o_0].[CityOfBirthName] AS [Item4], [o_0].[FullName] AS [Item5], [o_0].[HasSoulPatch] AS [Item6], [o_0].[LeaderNickname] AS [Item7], [o_0].[LeaderSquadId] AS [Rest.Item1], [o_0].[Rank] AS [Rest.Item2], N'Officer' AS [Rest.Item3]
+                    FROM [Officers] AS [o_0]
+                ) AS [set]
+                WHERE [set].[Rest.Item3] = N'Officer'
+            ) AS [o]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [l].[LocustHordeId] AS [LocustHordeId], [l].[Name] AS [Name], [l].[ThreatLevel] AS [ThreatLevel], [l].[ThreatLevelByte] AS [ThreatLevelByte], [l].[ThreatLevelNullableByte] AS [ThreatLevelNullableByte], [l].[DefeatedByNickname] AS [DefeatedByNickname], [l].[DefeatedBySquadId] AS [DefeatedBySquadId], [l].[HighCommandId] AS [HighCommandId]
+                FROM [LocustCommanders] AS [l]
+            ) AS [l_0] ON [f].[CommanderName] = [l_0].[Name]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [set_0].[Item1] AS [Item1], [set_0].[Item2] AS [Item2], [set_0].[Item3] AS [Item3], [set_0].[Item4] AS [Item4], [set_0].[Item5] AS [Item5], [set_0].[Item6] AS [Item6], [set_0].[Item7] AS [Item7], [set_0].[Rest.Item1] AS [Rest.Item1], [set_0].[Rest.Item2] AS [Rest.Item2], [set_0].[Rest.Item3] AS [Rest.Item3]
+                FROM (
+                    SELECT [g_0].[Nickname] AS [Item1], [g_0].[SquadId] AS [Item2], [g_0].[AssignedCityName] AS [Item3], [g_0].[CityOfBirthName] AS [Item4], [g_0].[FullName] AS [Item5], [g_0].[HasSoulPatch] AS [Item6], [g_0].[LeaderNickname] AS [Item7], [g_0].[LeaderSquadId] AS [Rest.Item1], [g_0].[Rank] AS [Rest.Item2], N'Gear' AS [Rest.Item3]
+                    FROM [Gears] AS [g_0]
+                    UNION ALL
+                    SELECT [o_1].[Nickname] AS [Item1], [o_1].[SquadId] AS [Item2], [o_1].[AssignedCityName] AS [Item3], [o_1].[CityOfBirthName] AS [Item4], [o_1].[FullName] AS [Item5], [o_1].[HasSoulPatch] AS [Item6], [o_1].[LeaderNickname] AS [Item7], [o_1].[LeaderSquadId] AS [Rest.Item1], [o_1].[Rank] AS [Rest.Item2], N'Officer' AS [Rest.Item3]
+                    FROM [Officers] AS [o_1]
+                ) AS [set_0]
+            ) AS [g_1] ON ([l_0].[DefeatedByNickname] = [g_1].[Item1]) AND ([l_0].[DefeatedBySquadId] = [g_1].[Item2])
+            WHERE ([o].[Item6] = 1) AND ((
+                SELECT [w].[Id] AS [Id], [w].[AmmunitionType] AS [AmmunitionType], [w].[IsAutomatic] AS [IsAutomatic], [w].[Name] AS [Name], [w].[OwnerFullName] AS [OwnerFullName], [w].[SynergyWithId] AS [SynergyWithId]
+                FROM [Weapons] AS [w]
+                WHERE [g_1].[Item5] = [w].[OwnerFullName]
+                FOR JSON PATH
+            ) = (
+                SELECT [w_0].[Id] AS [Id], [w_0].[AmmunitionType] AS [AmmunitionType], [w_0].[IsAutomatic] AS [IsAutomatic], [w_0].[Name] AS [Name], [w_0].[OwnerFullName] AS [OwnerFullName], [w_0].[SynergyWithId] AS [SynergyWithId]
+                FROM [Weapons] AS [w_0]
+                WHERE [o].[Item5] = [w_0].[OwnerFullName]
+                FOR JSON PATH
+            ))
+            """);
+    }
+
     [Theory(Skip = ClientEval)]
     public override Task Correlated_collection_order_by_constant_null_of_non_mapped_type(bool async)
     {

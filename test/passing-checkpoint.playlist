@@ -12675,6 +12675,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Where_contains_on_navigation_with_composite_keys" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Comparing_two_collection_navigations_inheritance" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Comparing_two_collection_navigations_inheritance" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">

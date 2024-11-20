@@ -1516,7 +1516,7 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
 
     private Expression VisitBinaryOperand(Expression operand)
     {
-        switch (operand)
+        switch (operand.UnwrapInnerExpression())
         {
             case BinaryExpression binaryExpression:
             {
