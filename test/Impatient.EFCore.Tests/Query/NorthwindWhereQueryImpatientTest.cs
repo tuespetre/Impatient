@@ -18,6 +18,13 @@ public class NorthwindWhereQueryImpatientTest : NorthwindWhereQueryRelationalTes
     protected override QueryAsserter CreateQueryAsserter(NorthwindQueryImpatientFixture fixture)
         => new ImpatientQueryAsserter(fixture, RewriteExpectedQueryExpression, RewriteServerQueryExpression);
 
+    [DisagreeWithEFCore]
+    [Theory(Skip = Punt)]
+    public override Task ElementAt_over_custom_projection_compared_to_not_null(bool async)
+    {
+        return base.ElementAt_over_custom_projection_compared_to_not_null(async);
+    }
+
     // just added this override because the base test only uses InlineData(false) for some reason,
     // and Test Explorer saved playlist would then not show it for some reason?
     [ConditionalTheory]

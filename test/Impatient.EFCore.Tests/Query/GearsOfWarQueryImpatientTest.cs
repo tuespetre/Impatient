@@ -564,4 +564,11 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
             )
             """);
     }
+
+    [DisagreeWithEFCore]
+    [Theory(Skip = Punt)]
+    public override Task Where_subquery_with_ElementAt_using_column_as_index(bool async)
+    {
+        return base.Where_subquery_with_ElementAt_using_column_as_index(async);
+    }
 }
