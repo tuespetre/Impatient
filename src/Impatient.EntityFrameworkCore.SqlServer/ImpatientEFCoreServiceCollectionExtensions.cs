@@ -28,7 +28,7 @@ public static class ImpatientEFCoreServiceCollectionExtensions
 
         services.AddSingleton<ModelQueryExpressionCache>();
 
-        services.AddSingleton<TranslatabilityAnalyzingExpressionVisitor>();
+        services.AddSingleton<ExpressionTranslatabilityAnalyzer>();
 
         services.AddSingleton<IQueryTranslatingExpressionVisitorFactory, DefaultQueryTranslatingExpressionVisitorFactory>();
 

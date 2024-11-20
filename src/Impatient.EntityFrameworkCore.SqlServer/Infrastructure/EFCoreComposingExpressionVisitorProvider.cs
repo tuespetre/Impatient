@@ -13,18 +13,18 @@ namespace Impatient.EntityFrameworkCore.SqlServer.Infrastructure;
 public class EFCoreComposingExpressionVisitorProvider : IComposingExpressionVisitorProvider
 {
     private readonly ICurrentDbContext currentDbContext;
-    private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
+    private readonly ExpressionTranslatabilityAnalyzer translatabilityAnalyzer;
     private readonly IRewritingExpressionVisitorProvider rewritingExpressionVisitorProvider;
     private readonly IProviderSpecificRewritingExpressionVisitorProvider providerSpecificRewritingExpressionVisitor;
 
     public EFCoreComposingExpressionVisitorProvider(
         ICurrentDbContext currentDbContext,
-        TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor,
+        ExpressionTranslatabilityAnalyzer translatabilityAnalyzer,
         IRewritingExpressionVisitorProvider rewritingExpressionVisitorProvider,
         IProviderSpecificRewritingExpressionVisitorProvider providerSpecificRewritingExpressionVisitor)
     {
         this.currentDbContext = currentDbContext ?? throw new ArgumentNullException(nameof(currentDbContext));
-        this.translatabilityAnalyzingExpressionVisitor = translatabilityAnalyzingExpressionVisitor ?? throw new ArgumentNullException(nameof(translatabilityAnalyzingExpressionVisitor));
+        this.translatabilityAnalyzer = translatabilityAnalyzer ?? throw new ArgumentNullException(nameof(translatabilityAnalyzer));
         this.rewritingExpressionVisitorProvider = rewritingExpressionVisitorProvider ?? throw new ArgumentNullException(nameof(rewritingExpressionVisitorProvider));
         this.providerSpecificRewritingExpressionVisitor = providerSpecificRewritingExpressionVisitor ?? throw new ArgumentNullException(nameof(providerSpecificRewritingExpressionVisitor));
     }
@@ -92,7 +92,7 @@ public class EFCoreComposingExpressionVisitorProvider : IComposingExpressionVisi
         // Compose the actual relational query from the modified tree
 
         yield return new QueryComposingExpressionVisitor(
-            translatabilityAnalyzingExpressionVisitor,
+            translatabilityAnalyzer,
             rewritingExpressionVisitorProvider.CreateExpressionVisitors(context),
             providerSpecificRewritingExpressionVisitor.CreateExpressionVisitors(context),
             new SqlParameterRewritingExpressionVisitor(context.ParameterMapping.Values));

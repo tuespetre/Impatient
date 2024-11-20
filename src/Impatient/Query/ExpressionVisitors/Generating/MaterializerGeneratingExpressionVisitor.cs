@@ -14,14 +14,14 @@ namespace Impatient.Query.ExpressionVisitors.Generating;
 
 public class MaterializerGeneratingExpressionVisitor : ExpressionVisitor
 {
-    private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
+    private readonly ExpressionTranslatabilityAnalyzer translatabilityAnalyzer;
     private readonly IReadValueExpressionFactoryProvider readValueExpressionFactoryProvider;
 
     public MaterializerGeneratingExpressionVisitor(
-        TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor,
+        ExpressionTranslatabilityAnalyzer translatabilityAnalyzer,
         IReadValueExpressionFactoryProvider readValueExpressionFactoryProvider)
     {
-        this.translatabilityAnalyzingExpressionVisitor = translatabilityAnalyzingExpressionVisitor;
+        this.translatabilityAnalyzer = translatabilityAnalyzer;
         this.readValueExpressionFactoryProvider = readValueExpressionFactoryProvider;
     }
 
@@ -36,7 +36,7 @@ public class MaterializerGeneratingExpressionVisitor : ExpressionVisitor
 
                 var visitor
                     = new MaterializerBuildingExpressionVisitor(
-                        translatabilityAnalyzingExpressionVisitor,
+                        translatabilityAnalyzer,
                         readValueExpressionFactoryProvider.GetReadValueExpressionFactories(),
                         readerParameter);
 
@@ -90,7 +90,7 @@ public class MaterializerGeneratingExpressionVisitor : ExpressionVisitor
         private static readonly MethodInfo isDBNullMethodInfo
             = typeof(DbDataReader).GetTypeInfo().GetDeclaredMethod(nameof(DbDataReader.IsDBNull));
 
-        private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor;
+        private readonly ExpressionTranslatabilityAnalyzer translatabilityAnalyzer;
         private readonly IEnumerable<IReadValueExpressionFactory> readValueExpressionFactories;
         private readonly ParameterExpression readerParameter;
         private int readerIndex;
@@ -99,18 +99,18 @@ public class MaterializerGeneratingExpressionVisitor : ExpressionVisitor
         private readonly Dictionary<string, int> identifierCounts = [];
 
         public MaterializerBuildingExpressionVisitor(
-            TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor,
+            ExpressionTranslatabilityAnalyzer translatabilityAnalyzer,
             IEnumerable<IReadValueExpressionFactory> readValueExpressionFactories,
             ParameterExpression readerParameter)
         {
-            this.translatabilityVisitor = translatabilityVisitor;
+            this.translatabilityAnalyzer = translatabilityAnalyzer;
             this.readValueExpressionFactories = readValueExpressionFactories;
             this.readerParameter = readerParameter;
         }
 
         protected override Expression VisitLeaf(Expression node)
         {
-            if (translatabilityVisitor.Visit(node) is TranslatableExpression)
+            if (translatabilityAnalyzer.CanTranslate(node))
             {
                 var path = string.Join(".", GetNameParts());
 

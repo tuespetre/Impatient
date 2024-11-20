@@ -28,7 +28,7 @@ public class TPCGearsOfWarQueryImpatientTest : TPCGearsOfWarQueryRelationalTestB
 
     public override Task Accessing_property_of_optional_navigation_in_child_projection_works(bool async)
     {
-        // failing because TranslatabilityAnalyzingExpressionVisitor.VisitConditional not currently allowing non-scalar types
+        // failing because ExpressionTranslatabilityAnalyzer.VisitConditional not currently allowing non-scalar types
 
         return base.Accessing_property_of_optional_navigation_in_child_projection_works(async);
     }
@@ -410,7 +410,7 @@ public class TPCGearsOfWarQueryImpatientTest : TPCGearsOfWarQueryRelationalTestB
 
     public override async Task Projecting_property_converted_to_nullable_and_use_it_in_order_by(bool async)
     {
-        // failing because TranslatabilityAnalyzingExpressionVisitor.VisitConditional not currently allowing non-scalar types
+        // failing because ExpressionTranslatabilityAnalyzer.VisitConditional not currently allowing non-scalar types
 
         await base.Projecting_property_converted_to_nullable_and_use_it_in_order_by(async);
     }

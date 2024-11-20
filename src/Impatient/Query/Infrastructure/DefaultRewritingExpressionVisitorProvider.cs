@@ -8,16 +8,16 @@ namespace Impatient.Query.Infrastructure;
 
 public class DefaultRewritingExpressionVisitorProvider : IRewritingExpressionVisitorProvider
 {
-    private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
+    private readonly ExpressionTranslatabilityAnalyzer translatabilityAnalyzer;
     private readonly ITypeMappingProvider typeMappingProvider;
 
     public DefaultRewritingExpressionVisitorProvider(
-        TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor,
+        ExpressionTranslatabilityAnalyzer translatabilityAnalyzer,
         ITypeMappingProvider typeMappingProvider)
     {
-        this.translatabilityAnalyzingExpressionVisitor
-            = translatabilityAnalyzingExpressionVisitor
-            ?? throw new ArgumentNullException(nameof(translatabilityAnalyzingExpressionVisitor));
+        this.translatabilityAnalyzer
+            = translatabilityAnalyzer
+            ?? throw new ArgumentNullException(nameof(translatabilityAnalyzer));
 
         this.typeMappingProvider
             = typeMappingProvider

@@ -9,14 +9,14 @@ namespace Impatient.Query.ExpressionVisitors.Rewriting;
 
 public class GroupingAggregationRewritingExpressionVisitor : ExpressionVisitor
 {
-    private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
+    private readonly ExpressionTranslatabilityAnalyzer translatabilityAnalyzer;
 
     public GroupingAggregationRewritingExpressionVisitor(
-        TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor)
+        ExpressionTranslatabilityAnalyzer translatabilityAnalyzer)
     {
-        this.translatabilityAnalyzingExpressionVisitor
-            = translatabilityAnalyzingExpressionVisitor
-                ?? throw new ArgumentNullException(nameof(translatabilityAnalyzingExpressionVisitor));
+        this.translatabilityAnalyzer
+            = translatabilityAnalyzer
+                ?? throw new ArgumentNullException(nameof(translatabilityAnalyzer));
     }
 
     protected override Expression VisitMethodCall(MethodCallExpression node)
@@ -45,7 +45,7 @@ public class GroupingAggregationRewritingExpressionVisitor : ExpressionVisitor
                     // TODO: Find a suitable place to perform lifting of subqueries out into an OUTER APPLY or LEFT JOIN.
                     if (selector.ContainsAggregateOrSubquery()
                         || !selector.Type.IsScalarType()
-                        || translatabilityAnalyzingExpressionVisitor.Visit(selector) is not TranslatableExpression)
+                        || !translatabilityAnalyzer.CanTranslate(selector))
                     {
                         break;
                     }
@@ -98,7 +98,7 @@ public class GroupingAggregationRewritingExpressionVisitor : ExpressionVisitor
                     {
                         var predicate = node.Arguments[1].UnwrapLambda().ExpandParameters(selector);
 
-                        if (translatabilityAnalyzingExpressionVisitor.Visit(predicate) is not TranslatableExpression)
+                        if (!translatabilityAnalyzer.CanTranslate(predicate))
                         {
                             break;
                         }
@@ -150,7 +150,7 @@ public class GroupingAggregationRewritingExpressionVisitor : ExpressionVisitor
                         = selectorLambda
                             .ExpandParameters(relationalGrouping.ElementSelector);
 
-                    if (translatabilityAnalyzingExpressionVisitor.Visit(selectorBody) is not TranslatableExpression)
+                    if (!translatabilityAnalyzer.CanTranslate(selectorBody))
                     {
                         break;
                     }

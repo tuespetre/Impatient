@@ -18,10 +18,10 @@ public class EFCoreCompilingExpressionVisitorProvider : DefaultCompilingExpressi
 
     public EFCoreCompilingExpressionVisitorProvider(
         ICurrentDbContext currentDbContext,
-        TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor,
+        ExpressionTranslatabilityAnalyzer translatabilityAnalyzer,
         IQueryTranslatingExpressionVisitorFactory queryTranslatingExpressionVisitorFactory,
         IReadValueExpressionFactoryProvider readValueExpressionFactoryProvider)
-        : base(translatabilityAnalyzingExpressionVisitor,
+        : base(translatabilityAnalyzer,
               queryTranslatingExpressionVisitorFactory,
               readValueExpressionFactoryProvider)
     {

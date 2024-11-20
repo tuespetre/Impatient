@@ -7,16 +7,16 @@ namespace Impatient.Query.Infrastructure;
 
 public class DefaultCompilingExpressionVisitorProvider : ICompilingExpressionVisitorProvider
 {
-    private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
+    private readonly ExpressionTranslatabilityAnalyzer translatabilityAnalyzer;
     private readonly IQueryTranslatingExpressionVisitorFactory queryTranslatingExpressionVisitorFactory;
     private readonly IReadValueExpressionFactoryProvider readValueExpressionFactoryProvider;
 
     public DefaultCompilingExpressionVisitorProvider(
-        TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor,
+        ExpressionTranslatabilityAnalyzer translatabilityAnalyzer,
         IQueryTranslatingExpressionVisitorFactory queryTranslatingExpressionVisitorFactory,
         IReadValueExpressionFactoryProvider readValueExpressionFactoryProvider)
     {
-        this.translatabilityAnalyzingExpressionVisitor = translatabilityAnalyzingExpressionVisitor;
+        this.translatabilityAnalyzer = translatabilityAnalyzer;
         this.queryTranslatingExpressionVisitorFactory = queryTranslatingExpressionVisitorFactory;
         this.readValueExpressionFactoryProvider = readValueExpressionFactoryProvider;
     }
@@ -24,10 +24,10 @@ public class DefaultCompilingExpressionVisitorProvider : ICompilingExpressionVis
     public virtual IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
     {
         yield return new QueryCompilingExpressionVisitor(
-            translatabilityAnalyzingExpressionVisitor,
+            translatabilityAnalyzer,
             queryTranslatingExpressionVisitorFactory,
             new MaterializerGeneratingExpressionVisitor(
-                translatabilityAnalyzingExpressionVisitor,
+                translatabilityAnalyzer,
                 readValueExpressionFactoryProvider));
     }
 }

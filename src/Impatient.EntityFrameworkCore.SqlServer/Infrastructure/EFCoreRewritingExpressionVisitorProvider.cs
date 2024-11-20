@@ -13,9 +13,9 @@ public class EFCoreRewritingExpressionVisitorProvider : DefaultRewritingExpressi
 
     public EFCoreRewritingExpressionVisitorProvider(
         ICurrentDbContext currentDbContext,
-        TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor,
+        ExpressionTranslatabilityAnalyzer translatabilityAnalyzer,
         ITypeMappingProvider typeMappingProvider)
-        : base(translatabilityAnalyzingExpressionVisitor, typeMappingProvider)
+        : base(translatabilityAnalyzer, typeMappingProvider)
     {
         this.currentDbContext = currentDbContext ?? throw new System.ArgumentNullException(nameof(currentDbContext));
     }

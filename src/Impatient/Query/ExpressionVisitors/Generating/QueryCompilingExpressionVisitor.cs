@@ -24,16 +24,16 @@ public class QueryCompilingExpressionVisitor : ExpressionVisitor
     private static readonly MethodInfo executeScalarMethodInfo
         = typeof(IDbCommandExecutor).GetTypeInfo().GetDeclaredMethod(nameof(IDbCommandExecutor.ExecuteScalar));
 
-    private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor;
+    private readonly ExpressionTranslatabilityAnalyzer translatabilityAnalyzer;
     private readonly IQueryTranslatingExpressionVisitorFactory queryTranslatingExpressionVisitorFactory;
     private readonly MaterializerGeneratingExpressionVisitor materializerGeneratingExpressionVisitor;
 
     public QueryCompilingExpressionVisitor(
-        TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor,
+        ExpressionTranslatabilityAnalyzer translatabilityAnalyzer,
         IQueryTranslatingExpressionVisitorFactory queryTranslatingExpressionVisitorFactory,
         MaterializerGeneratingExpressionVisitor materializerGeneratingExpressionVisitor)
     {
-        this.translatabilityVisitor = translatabilityVisitor ?? throw new ArgumentNullException(nameof(translatabilityVisitor));
+        this.translatabilityAnalyzer = translatabilityAnalyzer ?? throw new ArgumentNullException(nameof(translatabilityAnalyzer));
         this.queryTranslatingExpressionVisitorFactory = queryTranslatingExpressionVisitorFactory ?? throw new ArgumentNullException(nameof(queryTranslatingExpressionVisitorFactory));
         this.materializerGeneratingExpressionVisitor = materializerGeneratingExpressionVisitor ?? throw new ArgumentNullException(nameof(materializerGeneratingExpressionVisitor));
     }

@@ -19,7 +19,7 @@ public static class ExtensionMethods
 
         services.AddSingleton<IImpatientQueryCache, DefaultImpatientQueryCache>();
 
-        services.AddSingleton<TranslatabilityAnalyzingExpressionVisitor>();
+        services.AddSingleton<ExpressionTranslatabilityAnalyzer>();
 
         services.AddSingleton<ITypeMappingProvider, DefaultTypeMappingProvider>();
 

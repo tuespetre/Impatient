@@ -1937,7 +1937,7 @@ ORDER BY ROW_NUMBER() OVER(ORDER BY (SELECT 1) ASC) DESC",
 
         expression
             = new QueryComposingExpressionVisitor(
-                services.GetService<TranslatabilityAnalyzingExpressionVisitor>(),
+                services.GetService<ExpressionTranslatabilityAnalyzer>(),
                 services.GetService<IRewritingExpressionVisitorProvider>().CreateExpressionVisitors(context),
                 services.GetService<IProviderSpecificRewritingExpressionVisitorProvider>().CreateExpressionVisitors(context),
                 new SqlParameterRewritingExpressionVisitor(context.ParameterMapping.Values))
@@ -1985,7 +1985,7 @@ FROM [dbo].[MyClass1] AS [m_0]",
 
         expression
             = new QueryComposingExpressionVisitor(
-                services.GetService<TranslatabilityAnalyzingExpressionVisitor>(),
+                services.GetService<ExpressionTranslatabilityAnalyzer>(),
                 services.GetService<IRewritingExpressionVisitorProvider>().CreateExpressionVisitors(context),
                 services.GetService<IProviderSpecificRewritingExpressionVisitorProvider>().CreateExpressionVisitors(context),
                 new SqlParameterRewritingExpressionVisitor(context.ParameterMapping.Values))

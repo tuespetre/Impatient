@@ -20,18 +20,18 @@ public class GroupExpandingExpressionVisitor : ExpressionVisitor
     private static readonly MethodInfo toListGenericMethodInfo
         = GetGenericMethodDefinition((IEnumerable<object> s) => s.ToList());
 
-    private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
+    private readonly ExpressionTranslatabilityAnalyzer translatabilityAnalyzer;
     private readonly IEnumerable<ExpressionVisitor> postExpansionVisitors;
 
     public GroupExpandingExpressionVisitor(
-        TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor,
+        ExpressionTranslatabilityAnalyzer translatabilityAnalyzer,
         IEnumerable<ExpressionVisitor> postExpansionVisitors)
     {
-        this.translatabilityAnalyzingExpressionVisitor = translatabilityAnalyzingExpressionVisitor;
+        this.translatabilityAnalyzer = translatabilityAnalyzer;
         this.postExpansionVisitors = postExpansionVisitors;
     }
 
-    private bool IsTranslatable(Expression node) => translatabilityAnalyzingExpressionVisitor.Visit(node) is TranslatableExpression;
+    private bool IsTranslatable(Expression node) => translatabilityAnalyzer.CanTranslate(node);
 
     public override Expression Visit(Expression node)
     {

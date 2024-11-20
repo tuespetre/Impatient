@@ -19,7 +19,7 @@ namespace Impatient.Query.ExpressionVisitors.Composing;
 
 public class QueryComposingExpressionVisitor : ExpressionVisitor
 {
-    private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor;
+    private readonly ExpressionTranslatabilityAnalyzer translatabilityAnalyzer;
     private readonly IEnumerable<ExpressionVisitor> rewritingExpressionVisitors;
     private readonly IEnumerable<ExpressionVisitor> providerSpecificRewritingExpressionVisitors;
     private readonly ExpressionVisitor parameterizingExpressionVisitor;
@@ -28,12 +28,12 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
     private bool topLevel = true;
 
     public QueryComposingExpressionVisitor(
-        TranslatabilityAnalyzingExpressionVisitor translatabilityVisitor,
+        ExpressionTranslatabilityAnalyzer translatabilityAnalyzer,
         IEnumerable<ExpressionVisitor> rewritingExpressionVisitors,
         IEnumerable<ExpressionVisitor> providerSpecificRewritingExpressionVisitors,
         ExpressionVisitor parameterizingExpressionVisitor)
     {
-        this.translatabilityVisitor = translatabilityVisitor ?? throw new ArgumentNullException(nameof(translatabilityVisitor));
+        this.translatabilityAnalyzer = translatabilityAnalyzer ?? throw new ArgumentNullException(nameof(translatabilityAnalyzer));
         this.rewritingExpressionVisitors = rewritingExpressionVisitors ?? throw new ArgumentNullException(nameof(rewritingExpressionVisitors));
         this.providerSpecificRewritingExpressionVisitors = providerSpecificRewritingExpressionVisitors ?? throw new ArgumentNullException(nameof(providerSpecificRewritingExpressionVisitors));
         this.parameterizingExpressionVisitor = parameterizingExpressionVisitor ?? throw new ArgumentNullException(nameof(parameterizingExpressionVisitor));
@@ -43,7 +43,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
     {
         get
         {
-            yield return new GroupingAggregationRewritingExpressionVisitor(translatabilityVisitor);
+            yield return new GroupingAggregationRewritingExpressionVisitor(translatabilityAnalyzer);
 
             yield return this;
 
@@ -93,7 +93,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
 
             visited
                 = new GroupExpandingExpressionVisitor(
-                    translatabilityVisitor,
+                    translatabilityAnalyzer,
                     ServerPostExpansionVisitors)
                     .Visit(visited);
 
@@ -3264,7 +3264,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
 
     #endregion
 
-    private bool IsTranslatable(Expression node) => translatabilityVisitor.Visit(node) is TranslatableExpression;
+    private bool IsTranslatable(Expression node) => translatabilityAnalyzer.CanTranslate(node);
 
     private void Pushdown(string alias, ref SelectExpression selectExpression, ref Expression projection)
     {

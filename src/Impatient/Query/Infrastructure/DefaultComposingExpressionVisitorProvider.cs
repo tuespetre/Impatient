@@ -9,16 +9,16 @@ namespace Impatient.Query.Infrastructure;
 
 public class DefaultComposingExpressionVisitorProvider : IComposingExpressionVisitorProvider
 {
-    private readonly TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor;
+    private readonly ExpressionTranslatabilityAnalyzer translatabilityAnalyzer;
     private readonly IRewritingExpressionVisitorProvider rewritingExpressionVisitorProvider;
     private readonly IProviderSpecificRewritingExpressionVisitorProvider providerSpecificRewritingExpressionVisitorProvider;
 
     public DefaultComposingExpressionVisitorProvider(
-        TranslatabilityAnalyzingExpressionVisitor translatabilityAnalyzingExpressionVisitor,
+        ExpressionTranslatabilityAnalyzer translatabilityAnalyzer,
         IRewritingExpressionVisitorProvider rewritingExpressionVisitorProvider,
         IProviderSpecificRewritingExpressionVisitorProvider providerSpecificRewritingExpressionVisitorProvider)
     {
-        this.translatabilityAnalyzingExpressionVisitor = translatabilityAnalyzingExpressionVisitor ?? throw new ArgumentNullException(nameof(translatabilityAnalyzingExpressionVisitor));
+        this.translatabilityAnalyzer = translatabilityAnalyzer ?? throw new ArgumentNullException(nameof(translatabilityAnalyzer));
         this.rewritingExpressionVisitorProvider = rewritingExpressionVisitorProvider ?? throw new ArgumentNullException(nameof(rewritingExpressionVisitorProvider));
         this.providerSpecificRewritingExpressionVisitorProvider = providerSpecificRewritingExpressionVisitorProvider ?? throw new ArgumentNullException(nameof(providerSpecificRewritingExpressionVisitorProvider));
     }
@@ -32,7 +32,7 @@ public class DefaultComposingExpressionVisitorProvider : IComposingExpressionVis
         yield return new TableAliasComposingExpressionVisitor();
 
         yield return new QueryComposingExpressionVisitor(
-            translatabilityAnalyzingExpressionVisitor, 
+            translatabilityAnalyzer, 
             rewritingExpressionVisitorProvider.CreateExpressionVisitors(context),
             providerSpecificRewritingExpressionVisitorProvider.CreateExpressionVisitors(context),
             new SqlParameterRewritingExpressionVisitor(context.ParameterMapping.Values));
