@@ -1854,6 +1854,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ConvertToProviderTypesImpatientTest.Can_insert_and_read_back_nullable_backed_data_types" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ConvertToProviderTypesImpatientTest.Can_query_using_any_nullable_data_type_as_literal" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ConvertToProviderTypesImpatientTest.Can_query_using_any_nullable_data_type_as_literal" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -4118,6 +4124,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.BuiltInDataTypesImpatientTest.Can_insert_and_read_back_nullable_backed_data_types" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.BuiltInDataTypesImpatientTest.Can_insert_and_read_back_nullable_backed_data_types" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.BuiltInDataTypesImpatientTest.Can_query_using_any_nullable_data_type_as_literal" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.BuiltInDataTypesImpatientTest.Can_query_using_any_nullable_data_type_as_literal" />
                       </Rule>
                     </Rule>
                   </Rule>

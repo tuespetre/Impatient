@@ -413,7 +413,7 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
 
             case TimeOnly value:
             {
-                Builder.Append($"'{value}'");
+                Builder.Append($"'{value:HH:mm:ss.fffffff}'");
 
                 return node;
             }
