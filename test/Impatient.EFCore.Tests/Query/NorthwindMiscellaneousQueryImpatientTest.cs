@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace Impatient.EFCore.Tests.Query;
 
@@ -576,29 +577,69 @@ public class NorthwindMiscellaneousQueryImpatientTest : NorthwindMiscellaneousQu
         return base.Where_subquery_expression_same_parametername(async);
     }
 
-    private const string ListExistsSkipReason = "Need to translate List.Exists";
-
-    [Theory(Skip = ListExistsSkipReason)]
-    public override Task Where_Join_Exists(bool async)
+    [TranslationExceedsEFCore]
+    public override async Task Where_Join_Exists(bool async)
     {
-        return base.Where_Join_Exists(async);
+        await Assert.ThrowsAsync<ContainsException>(() => base.Where_Join_Exists(async));
+
+        AssertSql("""
+            SELECT [c].[CustomerID] AS [CustomerID], [c].[Address] AS [Address], [c].[City] AS [City], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Country] AS [Country], [c].[Fax] AS [Fax], [c].[Phone] AS [Phone], [c].[PostalCode] AS [PostalCode], [c].[Region] AS [Region]
+            FROM [Customers] AS [c]
+            WHERE ([c].[CustomerID] = N'ALFKI') AND EXISTS (
+                SELECT 1
+                FROM [Orders] AS [o]
+                WHERE ([c].[CustomerID] = [o].[CustomerID]) AND ([o].[OrderDate] = '2008-10-24T00:00:00.000')
+            )
+            """);
     }
 
-    [Theory(Skip = ListExistsSkipReason)]
-    public override Task Where_Join_Exists_Constant(bool async)
+    [TranslationExceedsEFCore]
+    public override async Task Where_Join_Exists_Constant(bool async)
     {
-        return base.Where_Join_Exists_Constant(async);
+        await Assert.ThrowsAsync<ContainsException>(() => base.Where_Join_Exists_Constant(async));
+
+        AssertSql("""
+            SELECT [c].[CustomerID] AS [CustomerID], [c].[Address] AS [Address], [c].[City] AS [City], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Country] AS [Country], [c].[Fax] AS [Fax], [c].[Phone] AS [Phone], [c].[PostalCode] AS [PostalCode], [c].[Region] AS [Region]
+            FROM [Customers] AS [c]
+            WHERE ([c].[CustomerID] = N'ALFKI') AND EXISTS (
+                SELECT 1
+                FROM [Orders] AS [o]
+                WHERE 0 = 1
+            )
+            """);
     }
 
-    [Theory(Skip = ListExistsSkipReason)]
-    public override Task Where_Join_Exists_Inequality(bool async)
+    [TranslationExceedsEFCore]
+    public override async Task Where_Join_Exists_Inequality(bool async)
     {
-        return base.Where_Join_Exists_Inequality(async);
+        await Assert.ThrowsAsync<ThrowsException>(() => base.Where_Join_Exists_Inequality(async));
+
+        AssertSql("""
+            SELECT [c].[CustomerID] AS [CustomerID], [c].[Address] AS [Address], [c].[City] AS [City], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Country] AS [Country], [c].[Fax] AS [Fax], [c].[Phone] AS [Phone], [c].[PostalCode] AS [PostalCode], [c].[Region] AS [Region]
+            FROM [Customers] AS [c]
+            WHERE ([c].[CustomerID] = N'ALFKI') AND EXISTS (
+                SELECT 1
+                FROM [Orders] AS [o]
+                WHERE ([c].[CustomerID] = [o].[CustomerID]) AND (([o].[OrderDate] IS NULL OR ([o].[OrderDate] <> '2008-10-24T00:00:00.000')))
+            )
+            """);
     }
 
-    [Theory(Skip = ListExistsSkipReason)]
-    public override Task Where_Join_Not_Exists(bool async)
+    [TranslationExceedsEFCore]
+    public override async Task Where_Join_Not_Exists(bool async)
     {
-        return base.Where_Join_Not_Exists(async);
+        await Assert.ThrowsAsync<ThrowsException>(() => base.Where_Join_Not_Exists(async));
+
+        AssertSql("""
+            SELECT [c].[CustomerID] AS [CustomerID], [c].[Address] AS [Address], [c].[City] AS [City], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Country] AS [Country], [c].[Fax] AS [Fax], [c].[Phone] AS [Phone], [c].[PostalCode] AS [PostalCode], [c].[Region] AS [Region]
+            FROM [Customers] AS [c]
+            WHERE ([c].[CustomerID] = N'ALFKI') AND ((
+                SELECT CAST((CASE WHEN EXISTS (
+                    SELECT 1
+                    FROM [Orders] AS [o]
+                    WHERE 0 = 1
+                ) THEN 1 ELSE 0 END) AS bit)
+            ) = 0)
+            """);
     }
 }

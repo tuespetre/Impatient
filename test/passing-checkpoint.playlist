@@ -13529,6 +13529,18 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_with_projection_of_mix_of_json_collections_json_references_and_entity_collection" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_within_collection_Count" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_within_collection_Count" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_in_projection_with_composition_count" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_in_projection_with_composition_count" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -24814,6 +24826,30 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Entity_equality_local_inline_composite_key" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Entity_equality_local_inline_composite_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Where_Join_Exists_Constant" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Where_Join_Exists_Constant" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Where_Join_Not_Exists" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Where_Join_Not_Exists" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Where_Join_Exists_Inequality" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Where_Join_Exists_Inequality" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Where_Join_Exists" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindMiscellaneousQueryImpatientTest.Where_Join_Exists" />
                       </Rule>
                     </Rule>
                   </Rule>
