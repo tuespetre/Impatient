@@ -5,12 +5,12 @@ using System.Linq.Expressions;
 using System.Reflection;
 using static Impatient.Extensions.ReflectionExtensions;
 
-namespace Impatient.Query.ExpressionVisitors.Rewriting;
+namespace Impatient.Query.ExpressionVisitors.Normalizing;
 
 /// <summary>
-/// Rewrites <see cref="ICollection{T}.Contains(T)"/> calls as <see cref="Enumerable.Contains{T}(IEnumerable{T}, T)}"/> calls.
+/// Rewrites <see cref="List{T}.Contains(T)"/> calls as <see cref="Enumerable.Contains{T}(IEnumerable{T}, T)}"/> calls.
 /// </summary>
-public class CollectionContainsRewritingExpressionVisitor : ExpressionVisitor
+public class ListMemberNormalizingExpressionVisitor : ExpressionVisitor
 {
     private static readonly MethodInfo enumerableContainsMethodInfo
         = GetGenericMethodDefinition((IEnumerable<object> e) => e.Contains(null));
@@ -20,12 +20,12 @@ public class CollectionContainsRewritingExpressionVisitor : ExpressionVisitor
         var @object = Visit(node.Object);
         var arguments = Visit(node.Arguments);
 
-        var collectionType = node.Method.DeclaringType.FindGenericType(typeof(ICollection<>));
+        var listType = node.Method.DeclaringType.FindGenericType(typeof(List<>));
 
-        if (collectionType is not null && node.Method.Name is nameof(ICollection<object>.Contains))
+        if (listType is not null && node.Method.Equals(listType.GetMethod(nameof(List<object>.Contains))))
         {
             return Expression.Call(
-                enumerableContainsMethodInfo.MakeGenericMethod(@object.Type.GetSequenceType()),
+                enumerableContainsMethodInfo.MakeGenericMethod(listType.GetGenericArguments().Single()),
                 [@object, .. arguments]);
         }
 

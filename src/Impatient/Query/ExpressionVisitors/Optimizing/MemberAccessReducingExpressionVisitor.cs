@@ -204,7 +204,7 @@ public class MemberAccessReducingExpressionVisitor : ExpressionVisitor
                     {
                         return polymorphicExpression.Filter(node.Type);
                     }
-                    else
+                    else if (node.Type != typeof(object))
                     {
                         return polymorphicExpression.Upcast(node.Type);
                     }

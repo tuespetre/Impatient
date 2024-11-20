@@ -2,65 +2,70 @@
 using System;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.ExpressionVisitors.Rewriting;
+namespace Impatient.Query.ExpressionVisitors.Normalizing;
 
-public class NullableMemberRewritingExpressionVisitor : ExpressionVisitor
+public class NullableMemberNormalizingExpressionVisitor : ExpressionVisitor
 {
     protected override Expression VisitMember(MemberExpression node)
     {
-        if (node.Expression is not null && node.Expression.Type.IsNullableType())
+        var expression = Visit(node.Expression);
+
+        if (expression is not null && expression.Type.IsNullableType())
         {
             switch (node.Member.Name)
             {
                 case nameof(Nullable<int>.Value):
                 {
                     return Expression.Convert(
-                        node.Expression,
+                        expression,
                         Nullable.GetUnderlyingType(
-                            node.Expression.Type));
+                            expression.Type));
                 }
 
                 case nameof(Nullable<int>.HasValue):
                 {
                     return Expression.NotEqual(
-                        node.Expression,
+                        expression,
                         Expression.Constant(
                             null,
-                            node.Expression.Type));
+                            expression.Type));
                 }
             }
         }
 
-        return base.VisitMember(node);
+        return node.Update(expression);
     }
 
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
-        if (node.Object is not null && node.Object.Type.IsNullableType())
+        var @object = Visit(node.Object);
+        var arguments = Visit(node.Arguments);
+
+        if (@object is not null && @object.Type.IsNullableType())
         {
             switch (node.Method.Name)
             {
                 case nameof(Nullable<int>.GetValueOrDefault):
                 {
-                    if (node.Arguments.Count == 1)
+                    if (arguments.Count == 1)
                     {
                         return Expression.Coalesce(
-                            node.Object,
-                            node.Arguments[0]);
+                            @object,
+                            arguments[0]);
                     }
                     else
                     {
                         return Expression.Coalesce(
-                            node.Object,
+                            @object,
                             Expression.Constant(
                                 Activator.CreateInstance(
                                     Nullable.GetUnderlyingType(
-                                        node.Object.Type))));
+                                        @object.Type))));
                     }
                 }
             }
         }
 
-        return base.VisitMethodCall(node);
+        return node.Update(@object, arguments);
     }
 }

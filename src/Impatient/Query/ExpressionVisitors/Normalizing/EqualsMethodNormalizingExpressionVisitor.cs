@@ -1,16 +1,18 @@
 ﻿using Impatient.Extensions;
 using System;
-using System.Linq;
 using System.Linq.Expressions;
 
-namespace Impatient.Query.ExpressionVisitors.Rewriting;
+namespace Impatient.Query.ExpressionVisitors.Normalizing;
 
-public class EqualsMethodRewritingExpressionVisitor : ExpressionVisitor
+public class EqualsMethodNormalizingExpressionVisitor : ExpressionVisitor
 {
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
-        if (node.Method.Name == nameof(object.Equals)
-            && (node.Method.IsStatic || node.Arguments.Count == 1))
+        var @object = Visit(node.Object);
+        var arguments = Visit(node.Arguments);
+
+        if (node.Method.Name == nameof(Equals)
+            && (node.Method.IsStatic || arguments.Count == 1))
         {
             if (node.Method.DeclaringType == typeof(object)
                 || node.Method.DeclaringType.IsGenericType(typeof(IEquatable<>)))
@@ -19,13 +21,13 @@ public class EqualsMethodRewritingExpressionVisitor : ExpressionVisitor
 
                 if (node.Method.IsStatic)
                 {
-                    left = node.Arguments[0];
-                    right = node.Arguments[1];
+                    left = arguments[0];
+                    right = arguments[1];
                 }
                 else
                 {
-                    left = node.Object;
-                    right = node.Arguments.Single();
+                    left = @object;
+                    right = arguments[0];
                 }
 
                 var type = node.Method.GetParameters()[0].ParameterType;
@@ -35,7 +37,7 @@ public class EqualsMethodRewritingExpressionVisitor : ExpressionVisitor
                     var leftType = left.UnwrapInnerExpression().Type.UnwrapNullableType();
                     var rightType = right.UnwrapInnerExpression().Type.UnwrapNullableType();
 
-                    if (!leftType.IsAssignableFrom(rightType) 
+                    if (!leftType.IsAssignableFrom(rightType)
                         && !rightType.IsAssignableFrom(leftType))
                     {
                         return Expression.Constant(false);
@@ -56,6 +58,6 @@ public class EqualsMethodRewritingExpressionVisitor : ExpressionVisitor
             }
         }
 
-        return base.VisitMethodCall(node);
+        return node.Update(@object, arguments);
     }
 }

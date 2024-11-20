@@ -88,6 +88,23 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
         return base.Client_side_equality_with_parameter_works_with_optional_navigations(async);
     }
 
+    public override async Task Comparing_entities_using_Equals_inheritance(bool async)
+    {
+        await base.Comparing_entities_using_Equals_inheritance(async);
+
+        AssertSql("""
+            SELECT [g].[Nickname] AS [Nickname1], [o].[Item1] AS [Nickname2]
+            FROM [Gears] AS [g]
+            CROSS JOIN (
+                SELECT [g_0].[Nickname] AS [Item1], [g_0].[SquadId] AS [Item2], [g_0].[AssignedCityName] AS [Item3], [g_0].[CityOfBirthName] AS [Item4], [g_0].[Discriminator] AS [Item5], [g_0].[FullName] AS [Item6], [g_0].[HasSoulPatch] AS [Item7], [g_0].[LeaderNickname] AS [Rest.Item1], [g_0].[LeaderSquadId] AS [Rest.Item2], [g_0].[Rank] AS [Rest.Item3]
+                FROM [Gears] AS [g_0]
+                WHERE [g_0].[Discriminator] IN (N'Gear', N'Officer') AND ([g_0].[Discriminator] = N'Officer')
+            ) AS [o]
+            WHERE [g].[Discriminator] IN (N'Gear', N'Officer') AND (([g].[Nickname] = [o].[Item1]) AND ([g].[SquadId] = [o].[Item2]))
+            ORDER BY [g].[Nickname] ASC, [o].[Item1] ASC
+            """);
+    }
+
     [TranslationExceedsEFCore]
     public override async Task Correlated_collection_after_distinct_3_levels_without_original_identifiers(bool async)
     {

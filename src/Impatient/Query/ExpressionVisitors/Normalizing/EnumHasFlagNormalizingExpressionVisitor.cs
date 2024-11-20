@@ -4,16 +4,16 @@ using System;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Impatient.Query.ExpressionVisitors.Rewriting;
+namespace Impatient.Query.ExpressionVisitors.Normalizing;
 
-public class EnumHasFlagRewritingExpressionVisitor : ExpressionVisitor
+public class EnumHasFlagNormalizingExpressionVisitor : ExpressionVisitor
 {
     private static readonly MethodInfo enumHasFlagMethodInfo
         = ReflectionExtensions.GetMethodInfo(() => DayOfWeek.Friday.HasFlag(DayOfWeek.Friday));
 
     private readonly ITypeMappingProvider typeMappingProvider;
 
-    public EnumHasFlagRewritingExpressionVisitor(ITypeMappingProvider typeMappingProvider)
+    public EnumHasFlagNormalizingExpressionVisitor(ITypeMappingProvider typeMappingProvider)
     {
         this.typeMappingProvider = typeMappingProvider ?? throw new ArgumentNullException(nameof(typeMappingProvider));
     }
@@ -31,19 +31,19 @@ public class EnumHasFlagRewritingExpressionVisitor : ExpressionVisitor
             {
                 var underlyingType = Enum.GetUnderlyingType(node.Object.Type);
 
-                var flag 
+                var flag
                     = Expression.Convert(
                         Expression.Convert(
-                            node.Arguments[0], 
+                            node.Arguments[0],
                             node.Object.Type),
                         underlyingType);
 
                 return Expression.Equal(
                     Expression.And(
                         Expression.Convert(
-                            node.Object, 
+                            node.Object,
                             underlyingType),
-                        flag), 
+                        flag),
                     flag);
             }
         }
