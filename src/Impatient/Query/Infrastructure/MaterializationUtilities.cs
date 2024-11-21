@@ -123,7 +123,7 @@ public static class MaterializationUtilities
 
         return Expression.Call(
             invokeMethodInfo.MakeGenericMethod(expression.Type),
-            Expression.Lambda(expression, identifier, Array.Empty<ParameterExpression>()));
+            Expression.Lambda(expression, identifier, []));
     }
 #else
     public static Expression Invoke(Expression expression, string identifier)

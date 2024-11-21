@@ -166,11 +166,7 @@ public class IncludeRewritingExpressionVisitor : ExpressionVisitor
 
                     if (row is not SimpleExtraPropertiesExpression extraProperties)
                     {
-                        extraProperties
-                            = new SimpleExtraPropertiesExpression(
-                                polymorphicExpression.Row,
-                                Array.Empty<string>(),
-                                Array.Empty<Expression>());
+                        extraProperties = new SimpleExtraPropertiesExpression(polymorphicExpression.Row, [], []);
                     }
 
                     var navigation = path.Peek();

@@ -302,7 +302,7 @@ public class SqlServerForJsonReadValueExpressionFactory : IReadValueExpressionFa
                         Expression.Lambda(
                             materializer,
                             GetMaterializerName(),
-                            Array.Empty<ParameterExpression>())),
+                            [])),
                     node.Type);
             }
             else
@@ -328,8 +328,8 @@ public class SqlServerForJsonReadValueExpressionFactory : IReadValueExpressionFa
                     jsonTextReader,
                     Expression.Lambda(
                         result, 
-                        GetMaterializerName(), 
-                        Array.Empty<ParameterExpression>()));
+                        GetMaterializerName(),
+                        []));
             }
         }
 
@@ -343,8 +343,8 @@ public class SqlServerForJsonReadValueExpressionFactory : IReadValueExpressionFa
                     GetNameParts().LastOrDefault(),
                     Expression.Lambda(
                         visited, 
-                        GetMaterializerName(), 
-                        Array.Empty<ParameterExpression>()));
+                        GetMaterializerName(),
+                        []));
             }
 
             return visited;
