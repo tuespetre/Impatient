@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Impatient.EntityFrameworkCore.SqlServer.ExpressionVisitors;
 
@@ -47,7 +48,16 @@ public class ShadowPropertyRewritingExpressionVisitor : ExpressionVisitor
 
                 if (property is not null && !property.IsShadowProperty())
                 {
-                    result = Expression.MakeMemberAccess(entityExpression, property.GetSemanticReadableMemberInfo());
+                    var member = property.GetSemanticReadableMemberInfo();
+
+                    if (property.IsIndexerProperty())
+                    {
+                        result = Expression.MakeIndex(entityExpression, (PropertyInfo)member, [Expression.Constant(property.Name)]);
+                    }
+                    else
+                    {
+                        result = Expression.MakeMemberAccess(entityExpression, member);
+                    }
                 }
 
                 var navigation = entityType.FindNavigation(propertyName);

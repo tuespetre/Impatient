@@ -23,6 +23,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
     private readonly IEnumerable<ExpressionVisitor> rewritingExpressionVisitors;
     private readonly IEnumerable<ExpressionVisitor> providerSpecificRewritingExpressionVisitors;
     private readonly ExpressionVisitor parameterizingExpressionVisitor;
+    private readonly GroupingAggregationRewritingExpressionVisitor groupingAggregationRewritingExpressionVisitor;
     private readonly StaticMemberSqlParameterRewritingExpressionVisitor staticMemberSqlParameterRewritingExpressionVisitor = new();
 
     private bool topLevel = true;
@@ -37,13 +38,15 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
         this.rewritingExpressionVisitors = rewritingExpressionVisitors ?? throw new ArgumentNullException(nameof(rewritingExpressionVisitors));
         this.providerSpecificRewritingExpressionVisitors = providerSpecificRewritingExpressionVisitors ?? throw new ArgumentNullException(nameof(providerSpecificRewritingExpressionVisitors));
         this.parameterizingExpressionVisitor = parameterizingExpressionVisitor ?? throw new ArgumentNullException(nameof(parameterizingExpressionVisitor));
+
+        groupingAggregationRewritingExpressionVisitor = new(translatabilityAnalyzer);
     }
 
     private IEnumerable<ExpressionVisitor> ServerPostExpansionVisitors
     {
         get
         {
-            yield return new GroupingAggregationRewritingExpressionVisitor(translatabilityAnalyzer);
+            yield return groupingAggregationRewritingExpressionVisitor;
 
             yield return this;
 
@@ -3060,6 +3063,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
                         new ServerProjectionExpression(
                             Expression.Constant(1)));
 
+            // TODO: use ContainsRelationalQueryExpression instead
             return new SingleValueRelationalQueryExpression(
                 new SelectExpression(
                     new ServerProjectionExpression(

@@ -39,7 +39,7 @@ public class GroupingAggregationRewritingExpressionVisitor : ExpressionVisitor
 
                     if (node.Arguments.Count == 2)
                     {
-                        selector = node.Arguments[1].UnwrapLambda().ExpandParameters(selector);
+                        selector = arguments[1].UnwrapLambda().ExpandParameters(selector);
                     }
 
                     // TODO: Find a suitable place to perform lifting of subqueries out into an OUTER APPLY or LEFT JOIN.
@@ -96,7 +96,7 @@ public class GroupingAggregationRewritingExpressionVisitor : ExpressionVisitor
 
                     if (node.Arguments.Count == 2)
                     {
-                        var predicate = node.Arguments[1].UnwrapLambda().ExpandParameters(selector);
+                        var predicate = arguments[1].UnwrapLambda().ExpandParameters(selector);
 
                         if (!translatabilityAnalyzer.CanTranslate(predicate))
                         {
@@ -138,7 +138,7 @@ public class GroupingAggregationRewritingExpressionVisitor : ExpressionVisitor
 
                 case nameof(Queryable.Select):
                 {
-                    var selectorLambda = node.Arguments[1].UnwrapLambda();
+                    var selectorLambda = arguments[1].UnwrapLambda();
 
                     if (selectorLambda is null || selectorLambda.Parameters.Count == 2)
                     {

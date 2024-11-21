@@ -197,6 +197,14 @@ public static class ExpressionExtensions
                     }
                 }
 
+                for (var i = 0; i < memberInitExpression.IndexerKeys.Count; i++)
+                {
+                    if (memberInitExpression.IndexerKeys[i] == segment)
+                    {
+                        return memberInitExpression.IndexerValues[i];
+                    }
+                }
+
                 return null;
             }
 

@@ -5939,6 +5939,30 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyFieldsLoadImpatientTest.Query_with_Include_marks_only_left_as_loaded" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyFieldsLoadImpatientTest.Load_collection_already_loaded_untyped" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyFieldsLoadImpatientTest.Load_collection_already_loaded_untyped" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyFieldsLoadImpatientTest.Load_collection_using_Query_already_loaded_untyped" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyFieldsLoadImpatientTest.Load_collection_using_Query_already_loaded_untyped" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyFieldsLoadImpatientTest.Load_collection_using_Query_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyFieldsLoadImpatientTest.Load_collection_using_Query_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyFieldsLoadImpatientTest.Load_collection_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyFieldsLoadImpatientTest.Load_collection_already_loaded" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -6474,6 +6498,42 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Query_with_Include_marks_only_left_as_loaded" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Query_with_Include_marks_only_left_as_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_using_Query_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_using_Query_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_already_loaded" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_already_loaded" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_using_Query_already_loaded_untyped_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_using_Query_already_loaded_untyped_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_using_Query_already_loaded_untyped" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_using_Query_already_loaded_untyped" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_already_loaded_untyped" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_already_loaded_untyped" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_using_Query_already_loaded_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyLoadImpatientTest.Load_collection_using_Query_already_loaded_unidirectional" />
                       </Rule>
                     </Rule>
                   </Rule>
@@ -7719,6 +7779,204 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_update_delete_shared_type_entity_type" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_update_delete_shared_type_entity_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_replace_dependent_with_many_to_many" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_replace_dependent_with_many_to_many" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_delete_with_many_to_many" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_delete_with_many_to_many" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_self" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_self" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_with_inheritance" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_with_inheritance" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_Attach_or_Update_a_many_to_many_with_mixed_set_and_unset_keys" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_Attach_or_Update_a_many_to_many_with_mixed_set_and_unset_keys" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_with_navs_by_join_entity" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_with_navs_by_join_entity" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_with_inheritance_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_with_inheritance_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_with_dangling_join_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_with_dangling_join_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_composite_with_navs" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_composite_with_navs" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_self_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_self_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_delete_with_many_to_many_composite_with_navs" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_delete_with_many_to_many_composite_with_navs" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_shared_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_shared_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_delete_with_many_to_many_composite_shared_with_navs" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_delete_with_many_to_many_composite_shared_with_navs" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_shared" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_shared" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_composite_shared_with_navs" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_composite_shared_with_navs" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_with_navs" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_with_navs" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_composite_shared_with_navs" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_composite_shared_with_navs" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_composite_with_navs" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_composite_with_navs" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_self_shared" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_self_shared" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_fully_by_convention_generated_keys" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_fully_by_convention_generated_keys" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_delete_with_many_to_many_composite_with_navs_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_delete_with_many_to_many_composite_with_navs_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_with_inheritance_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_with_inheritance_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_shared_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_shared_unidirectional" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_with_inheritance" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_with_inheritance" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_shared" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_shared" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_fully_by_convention" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_fully_by_convention" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_delete_with_many_to_many_with_navs" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_delete_with_many_to_many_with_navs" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_with_navs" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_with_navs" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Initial_tracking_uses_skip_navigations" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Initial_tracking_uses_skip_navigations" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_with_dangling_join" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_insert_many_to_many_with_dangling_join" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_composite_with_navs_unidirectional" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.ManyToManyTrackingImpatientTest.Can_update_many_to_many_composite_with_navs_unidirectional" />
                       </Rule>
                     </Rule>
                   </Rule>

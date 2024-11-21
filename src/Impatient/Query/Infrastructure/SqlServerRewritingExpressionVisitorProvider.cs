@@ -12,11 +12,15 @@ public class SqlServerRewritingExpressionVisitorProvider : IProviderSpecificRewr
 
     public virtual IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
     {
+        // this one just tweaks a SqlExpression slightly
+
+        yield return new SqlServerCountRewritingExpressionVisitor();
+
+        // these should be rewritten as member/method translators instead of complete visitors
+
         yield return new SqlServerObjectToStringRewritingExpressionVisitor();
 
         yield return new SqlServerStringToNumberAsciiRewritingExpressionVisitor();
-
-        yield return new SqlServerCountRewritingExpressionVisitor();
 
         yield return new SqlServerMathMethodRewritingExpressionVisitor();
 

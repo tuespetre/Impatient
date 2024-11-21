@@ -26,9 +26,19 @@ public class DefaultRewritingExpressionVisitorProvider : IRewritingExpressionVis
 
     public virtual IEnumerable<ExpressionVisitor> CreateExpressionVisitors(QueryProcessingContext context)
     {
+        // this one might be better place with the 'normalizing' visitors
+
+        yield return new EnumerableQueryEqualityRewritingExpressionVisitor();
+
+        // this one may need to be special-cased 
+
         yield return new KeyEqualityRewritingExpressionVisitor(context.DescriptorSet, context.ParameterMapping.Values);
 
+        // this one is kind of an odd duck, it might be special-cased
+
         yield return new TypeBinaryExpressionRewritingExpressionVisitor();
+
+        // these should be rewritten as member/method translators instead of complete visitors
 
         yield return new DateOnlyMemberRewritingExpressionVisitor();
 
@@ -37,7 +47,5 @@ public class DefaultRewritingExpressionVisitorProvider : IRewritingExpressionVis
         yield return new StringMemberRewritingExpressionVisitor();
 
         yield return new EnumerableContainsRewritingExpressionVisitor();
-
-        yield return new EnumerableQueryEqualityRewritingExpressionVisitor();
     }
 }
