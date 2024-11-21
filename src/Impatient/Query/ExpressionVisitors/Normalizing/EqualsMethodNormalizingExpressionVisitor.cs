@@ -54,7 +54,7 @@ public class EqualsMethodNormalizingExpressionVisitor : ExpressionVisitor
                     }
                 }
 
-                return Expression.Equal(left, right);
+                return ExpressionExtensions.Equal(left, right);
             }
         }
 

@@ -5,6 +5,7 @@ using Impatient.Query.Infrastructure;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
@@ -117,7 +118,7 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
                 if (FlattenExpressionLists(left, right, out var leftExpressions, out var rightExpressions))
                 {
                     return Visit(Enumerable
-                        .Zip(leftExpressions, rightExpressions, Expression.Equal)
+                        .Zip(leftExpressions, rightExpressions, ExpressionExtensions.Equal)
                         .Aggregate(Expression.AndAlso)
                         .Balance());
                 }
@@ -176,7 +177,7 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
                 if (FlattenExpressionLists(left, right, out var leftExpressions, out var rightExpressions))
                 {
                     return Visit(Enumerable
-                        .Zip(leftExpressions, rightExpressions, Expression.NotEqual)
+                        .Zip(leftExpressions, rightExpressions, ExpressionExtensions.NotEqual)
                         .Aggregate(Expression.OrElse)
                         .Balance());
                 }
@@ -1549,67 +1550,78 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
         leftExpressions = default;
         rightExpressions = default;
 
-        switch (left)
+        // This condition is an Or because EF Core introduced struct keys,
+        // and some tests (e.g. Can_insert_and_read_back_with_struct_key_and_required_dependents)
+        // compare a singular column to a NewExpression with a single argument.
+        // It is not an OrElse because we always want both calls to be made
+        if (FlattenExpressionList(left, out leftExpressions) | FlattenExpressionList(right, out rightExpressions))
         {
-            case NewExpression leftNewExpression
-            when right is NewExpression rightNewExpression:
-            {
-                leftExpressions = leftNewExpression.Arguments;
-                rightExpressions = rightNewExpression.Arguments;
-
-                return true;
-            }
-
-            case MemberInitExpression leftMemberInitExpression
-            when right is MemberInitExpression rightMemberInitExpression:
-            {
-                leftExpressions
-                    = leftMemberInitExpression.NewExpression.Arguments.Concat(
-                        leftMemberInitExpression.Bindings.Iterate()
-                            .Cast<MemberAssignment>().Select(m => m.Expression));
-
-                rightExpressions
-                    = rightMemberInitExpression.NewExpression.Arguments.Concat(
-                        rightMemberInitExpression.Bindings.Iterate()
-                            .Cast<MemberAssignment>().Select(m => m.Expression));
-
-                return true;
-            }
-
-            case ExtendedNewExpression leftNewExpression
-            when right is ExtendedNewExpression rightNewExpression:
-            {
-                leftExpressions = leftNewExpression.Arguments;
-                rightExpressions = rightNewExpression.Arguments;
-
-                return true;
-            }
-
-            case ExtendedMemberInitExpression leftMemberInitExpression
-            when right is ExtendedMemberInitExpression rightMemberInitExpression:
-            {
-                leftExpressions
-                    = leftMemberInitExpression.NewExpression.Arguments.Concat(
-                        leftMemberInitExpression.Arguments);
-
-                rightExpressions
-                    = rightMemberInitExpression.NewExpression.Arguments.Concat(
-                        rightMemberInitExpression.Arguments);
-
-                return true;
-            }
-
-            case NewArrayExpression leftNewArrayExpression
-            when right is NewArrayExpression rightNewArrayExpression:
-            {
-                leftExpressions = leftNewArrayExpression.Expressions;
-                rightExpressions = rightNewArrayExpression.Expressions;
-
-                return true;
-            }
+            return leftExpressions.Count() == rightExpressions.Count();
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Tries to flatten a complex expression into a list of expressions.
+    /// Even if it cannot be flattened, the <paramref name="list"/> will still contain the given expression.
+    /// </summary>
+    /// <param name="expression">The expression to flatten into a list of expressions</param>
+    /// <param name="list">The resulting list of expressions</param>
+    /// <returns><c>true</c> if the expression was flattened, <c>false</c> otherwise</returns>
+    private static bool FlattenExpressionList(Expression expression, out IEnumerable<Expression> list)
+    {
+        list = default;
+        
+        switch (expression.UnwrapInnerExpression())
+        {
+            case NewExpression newExpression:
+            {
+                list = newExpression.Arguments;
+                return true;
+            }
+
+            case ExtendedNewExpression newExpression:
+            {
+                list = newExpression.Arguments;
+                return true;
+            }
+
+            case MemberInitExpression memberInitExpression:
+            {
+                list = Enumerable.Concat(
+                    memberInitExpression.NewExpression.Arguments,
+                    memberInitExpression.Bindings.Iterate().Cast<MemberAssignment>().Select(m => m.Expression));
+                return true;
+            }
+
+            case ExtendedMemberInitExpression memberInitExpression:
+            {
+                list = Enumerable.Concat(
+                    memberInitExpression.NewExpression.Arguments,
+                    memberInitExpression.Arguments);
+                return true;
+            }
+
+            case NewArrayExpression newArrayExpression:
+            {
+                list = newArrayExpression.Expressions;
+                return true;
+            }
+
+            case Expression:
+            {
+                list = [expression];
+                return false;
+            }
+
+            default:
+            {
+                Debug.Fail("Expression should never be null");
+                list = default;
+                return false;
+            }
+        }
     }
 
     protected string GetTableAlias(AliasedTableExpression table)

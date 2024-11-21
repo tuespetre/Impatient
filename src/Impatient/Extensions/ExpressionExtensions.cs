@@ -330,33 +330,10 @@ public static class ExpressionExtensions
         
         if (isLogical)
         {
-            if (left.Type != right.Type)
-            {
-                if (left.Type == right.Type.UnwrapNullableType())
-                {
-                    left = Expression.Convert(left, right.Type);
-                }
-                else if (right.Type == left.Type.UnwrapNullableType())
-                {
-                    right = Expression.Convert(right, left.Type);
-                }
-                else
-                {
-                    if (left.Type != node.Left.Type)
-                    {
-                        left = Expression.Convert(left, node.Left.Type);
-                    }
-
-                    if (right.Type != node.Right.Type)
-                    {
-                        right = Expression.Convert(right, node.Right.Type);
-                    }
-                }
-            }
-
-            return Expression.MakeBinary(node.NodeType, left, right);
+            MatchNullableTypes(ref left, ref right);
         }
-        else
+        
+        if (!isLogical || left.Type != right.Type || left.Type.RequiresBoxingForEqualityComparison())
         {
             if (left.Type != node.Left.Type)
             {
@@ -369,7 +346,14 @@ public static class ExpressionExtensions
             }
         }
 
-        return node.Update(left, node.Conversion, right);
+        if (left.Type == node.Left.Type)
+        {
+            return node.Update(left, node.Conversion, right);
+        }
+        else
+        {
+            return Expression.MakeBinary(node.NodeType, left, right);
+        }
     }
 
     /// <summary>
@@ -723,7 +707,7 @@ public static class ExpressionExtensions
     /// <summary>
     /// Removes any wrapping <see cref="AnnotationExpression"/>s, <see cref="ExtraPropertiesExpression"/>s,
     /// and <see cref="UnaryExpression"/>s with type <see cref="ExpressionType.Convert"/> or
-    /// <see cref="ExpressionType.ConvertChecked"/> and returns the inner expression.
+    /// <see cref="ExpressionType.ConvertChecked"/> and returns the right expression.
     /// </summary>
     public static Expression UnwrapInnerExpression(this Expression expression)
     {
@@ -815,5 +799,30 @@ public static class ExpressionExtensions
         var outerTables = selectExpression.Table.Flatten().ToArray();
 
         return leafExpressions.All(e => outerTables.Any(t => e.References(t)));
+    }
+
+    public static BinaryExpression Equal(Expression left, Expression right)
+    {
+        MatchTypesForEqualityComparison(ref left, ref right);
+
+        return Expression.Equal(left, right);
+    }
+
+    public static BinaryExpression NotEqual(Expression left, Expression right)
+    {
+        MatchTypesForEqualityComparison(ref left, ref right);
+
+        return Expression.NotEqual(left, right);
+    }
+
+    private static void MatchTypesForEqualityComparison(ref Expression left, ref Expression right)
+    {
+        MatchNullableTypes(ref left, ref right);
+
+        if (left.Type != right.Type || left.Type.RequiresBoxingForEqualityComparison())
+        {
+            left = Expression.Convert(left, typeof(object));
+            right = Expression.Convert(right, typeof(object));
+        }
     }
 }

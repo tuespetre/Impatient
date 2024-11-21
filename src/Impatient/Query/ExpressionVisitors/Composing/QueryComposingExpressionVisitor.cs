@@ -768,8 +768,9 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
         {
             var innerKeySelector = innerKeyLambda.ExpandParameters(innerProjection);
 
+            // TODO: possible struct comparison
             joinPredicate
-                = Expression
+                = ExpressionExtensions
                     .Equal(
                         JoinKeyDenullifyingExpressionVisitor.Instance.Visit(outerKeySelector),
                         JoinKeyDenullifyingExpressionVisitor.Instance.Visit(innerKeySelector))
@@ -901,7 +902,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
             = new InnerJoinTableExpression(
                 outerSelectExpression.Table,
                 innerSelectExpression.Table as AliasedTableExpression,
-                Expression.Equal(
+                ExpressionExtensions.Equal(
                     JoinKeyDenullifyingExpressionVisitor.Instance.Visit(outerKeySelector),
                     JoinKeyDenullifyingExpressionVisitor.Instance.Visit(innerKeySelector)),
                 resultSelector.Type);
@@ -3329,7 +3330,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
                 }
 
                 var predicate
-                    = Expression
+                    = ExpressionExtensions
                         .Equal(outerKeySelector, innerKeySelector)
                         .VisitWith(ServerPostExpansionVisitors);
 
@@ -3369,7 +3370,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
                         .Visit(groupByResultExpression.InnerKeySelector);
 
                 var predicate
-                    = Expression
+                    = ExpressionExtensions
                         .Equal(outerKeySelector, innerKeySelector)
                         .VisitWith(ServerPostExpansionVisitors);
 

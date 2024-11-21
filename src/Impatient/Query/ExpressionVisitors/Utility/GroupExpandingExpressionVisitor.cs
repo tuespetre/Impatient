@@ -62,7 +62,7 @@ public class GroupExpandingExpressionVisitor : ExpressionVisitor
                             .VisitWith(postExpansionVisitors);
 
                     var predicate
-                        = Expression
+                        = ExpressionExtensions
                             .Equal(outerKeySelector, innerKeySelector)
                             .VisitWith(postExpansionVisitors);
 
@@ -97,7 +97,7 @@ public class GroupExpandingExpressionVisitor : ExpressionVisitor
                     }
 
                     var predicate
-                        = Expression
+                        = ExpressionExtensions
                             .Equal(outerKeySelector, innerKeySelector)
                             .VisitWith(postExpansionVisitors);
 
@@ -115,7 +115,7 @@ public class GroupExpandingExpressionVisitor : ExpressionVisitor
                 {
                     var predicate
                         = Expression.Lambda(
-                            Expression.Equal(
+                            ExpressionExtensions.Equal(
                                 outerKeySelector,
                                 groupedRelationalQueryExpression.InnerKeyLambda.Body),
                             groupedRelationalQueryExpression.InnerKeyLambda.Parameters);

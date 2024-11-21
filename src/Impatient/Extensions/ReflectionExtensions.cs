@@ -301,6 +301,11 @@ public static class ReflectionExtensions
         typeof(bool?),
     ];
 
+    public static bool RequiresBoxingForEqualityComparison(this Type type)
+    {
+        return type.IsValueType && !type.IsScalarType();
+    }
+
     #endregion
 
     #region 
