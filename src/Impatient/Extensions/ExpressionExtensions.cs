@@ -768,7 +768,12 @@ public static class ExpressionExtensions
             lambdaBody = lambdaBody.Replace(lambdaExpression.Parameters[i], expansions[i]);
         }
 
-        return new MemberAccessReducingExpressionVisitor().Visit(lambdaBody);
+        return lambdaBody.ReduceMemberAccesses();
+    }
+
+    public static Expression ReduceMemberAccesses(this Expression expression)
+    {
+        return MemberAccessReducingExpressionVisitor.Instance.Visit(expression);
     }
 
     public static bool References(this Expression expression, Expression targetExpression)

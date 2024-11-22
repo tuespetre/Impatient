@@ -10,6 +10,8 @@ namespace Impatient.Query.ExpressionVisitors.Optimizing;
 
 public class MemberAccessReducingExpressionVisitor : ExpressionVisitor
 {
+    public static readonly MemberAccessReducingExpressionVisitor Instance = new();
+
     protected override Expression VisitExtension(Expression node)
     {
         switch (node)

@@ -438,13 +438,13 @@ public class ModelExpressionProvider
 
         var propertyExpressions
             = (from p in properties
-               from m in p.GetTableColumnMappings()
-               where tables.Contains(m.Column.Table)
-               group m.Column by p into g
+               from m in GetTableColumnMappings(p)
+               where tables.Contains(m.Table)
+               group m by p into g
                let p = g.Key
                let c = g.First()
                let t = tableLookup[c.Table]
-               let x = MakeColumnExpression(t, c.Name, p)
+               let x = MakeColumnExpression(t, c.Column, p)
                select (p, x)).ToDictionary(t => t.p, t => (Expression)t.x);
 
         var materializer
@@ -475,12 +475,12 @@ public class ModelExpressionProvider
 
         var propertyExpressions
             = (from p in IterateProperties(targetType, includeDerived: false).Distinct()
-               from m in p.GetViewColumnMappings()
-               group m.Column by p into g
+               from m in GetViewColumnMappings(p)
+               group m by p into g
                let p = g.Key
                let c = g.First()
                let t = viewLookup[c.View]
-               let x = MakeColumnExpression(t, c.Name, p)
+               let x = MakeColumnExpression(t, c.Column, p)
                select (p, x)).ToDictionary(t => t.p, t => (Expression)t.x);
 
         var materializer
@@ -544,15 +544,15 @@ public class ModelExpressionProvider
 
         var propertyMappings
             = (from p in IterateProperties(targetType, includeDerived: true).Distinct()
-               from m in p.GetTableColumnMappings()
+               from m in GetTableColumnMappings(p)
                select (Property: p, Mapping: m)).ToArray();
 
         var columnExpressions
             = (from p in propertyMappings
-               group p.Property by p.Mapping.Column into properties
+               group p.Property by (p.Mapping.Table, p.Mapping.Column) into properties
                let column = properties.Key
                let table = tableLookup[column.Table]
-               let expression = MakeColumnExpression(table, column.Name, properties.First())
+               let expression = MakeColumnExpression(table, column.Column, properties.First())
                select (expression, properties)).ToArray();
 
         var tupleType = ValueTupleHelper.CreateTupleType(columnExpressions.Select(c => c.expression.IsNullable ? c.expression.Type.AsNullableType() : c.expression.Type));
@@ -716,11 +716,11 @@ public class ModelExpressionProvider
                 }
                 else
                 {
-                    var columnMapping = p2.GetTableColumnMappings().First(m => tableLookup.ContainsKey(m.TableMapping.Table));
+                    var columnMapping = GetTableColumnMappings(p2).First(m => tableLookup.ContainsKey(m.Table));
 
                     columnExpressions.Add(
                         Expression.Convert(
-                            MakeColumnExpression(tableLookup[columnMapping.TableMapping.Table], columnMapping.Column.Name, p2),
+                            MakeColumnExpression(tableLookup[columnMapping.Table], columnMapping.Column, p2),
                             p2.ClrType.AsNullableType()));
                 }
             }
@@ -901,17 +901,16 @@ public class ModelExpressionProvider
 
         var propertyMappings
             = (from p in IterateProperties(targetType, includeDerived: true).Distinct()
-               from m in p.GetTableColumnMappings().OrderBy(m => Array.IndexOf(hierarchy, m.TableMapping.TypeBase))
-               where tableLookup.ContainsKey(m.Column.Table)
+               from m in GetTableColumnMappings(p).OrderBy(m => Array.IndexOf(hierarchy, m.TypeBase))
+               where tableLookup.ContainsKey(m.Table)
                select (Property: p, Mapping: m)).Distinct().ToArray();
 
         var columnExpressions
             = (from p in propertyMappings
-               group p.Property by p.Mapping.Column into properties
+               group p.Property by (p.Mapping.Table, p.Mapping.Column) into properties
                let property = properties.First()
-               let column = properties.Key
-               let table = tableLookup[column.Table]
-               let expression = new SqlColumnExpression(table, column.Name, property.ClrType.AsNullableType(), true, GetColumnTypeMapping(property))
+               let table = tableLookup[properties.Key.Table]
+               let expression = new SqlColumnExpression(table, properties.Key.Column, property.ClrType.AsNullableType(), true, GetColumnTypeMapping(property))
                select (expression, properties)).ToArray();
 
         var tupleType = ValueTupleHelper.CreateTupleType(columnExpressions.Select(c => c.expression.Type.AsNullableType()).Append(typeof(string)));
@@ -984,7 +983,7 @@ public class ModelExpressionProvider
         return new EnumerableRelationalQueryExpression(selectExpression);
     }
 
-    private static ExtendedNewExpression CreateNewExpression(ITypeBase type, Dictionary<IProperty, Expression> propertyExpressions)
+    private static ExtendedNewExpression CreateNewExpression(ITypeBase type, Dictionary<IPropertyBase, Expression> propertyExpressions)
     {
         var instantiationBinding = type.ConstructorBinding;
 
@@ -1019,7 +1018,7 @@ public class ModelExpressionProvider
         }
     }
 
-    private static ExtendedNewExpression CreateNewExpression(ITypeBase type, ConstructorBinding constructorBinding, Dictionary<IProperty, Expression> propertyExpressions)
+    private static ExtendedNewExpression CreateNewExpression(ITypeBase type, ConstructorBinding constructorBinding, Dictionary<IPropertyBase, Expression> propertyExpressions)
     {
         var constructor = constructorBinding.Constructor;
         var arguments = new Expression[constructor.GetParameters().Length];
@@ -1042,7 +1041,7 @@ public class ModelExpressionProvider
         return new ExtendedNewExpression(type.ClrType, constructor, arguments, readableMembers, writableMembers);
     }
 
-    private static EFCoreProxyNewExpression CreateNewExpression(ITypeBase type, FactoryMethodBinding factoryMethodBinding, Dictionary<IProperty, Expression> propertyExpressions)
+    private static EFCoreProxyNewExpression CreateNewExpression(ITypeBase type, FactoryMethodBinding factoryMethodBinding, Dictionary<IPropertyBase, Expression> propertyExpressions)
     {
         var factoryInstance
             = typeof(FactoryMethodBinding)
@@ -1116,7 +1115,7 @@ public class ModelExpressionProvider
     private static Expression CreateEntityMaterializationExpression(
         IEntityType entityType,
         Dictionary<ITableBase, AliasedTableExpression> tableLookup,
-        Dictionary<IProperty, Expression> propertyExpressions,
+        Dictionary<IPropertyBase, Expression> propertyExpressions,
         bool isOptional = false)
     {
         var properties
@@ -1137,9 +1136,9 @@ public class ModelExpressionProvider
 
         var navigations
             = (from n in entityType.GetNavigations()
-               where n.ForeignKey.IsOwnership && n.IsEagerLoaded
+               where n.ForeignKey.IsOwnership && n.IsEagerLoaded && !n.IsOnDependent
                where TablesMatch(entityType, n.TargetEntityType)
-               where !n.IsOnDependent && (!n.IsCollection || n.TargetEntityType.IsMappedToJson())
+               where !n.IsCollection || n.TargetEntityType.IsMappedToJson()
                select n).ToList();
 
         var includedNavigations = navigations.ToList();
@@ -1192,19 +1191,12 @@ public class ModelExpressionProvider
         {
             var navigation = navigations[i - d];
 
-            Debug.Assert(navigation.ForeignKey.IsOwnership);
-
             var ownedType = navigation.TargetEntityType;
 
             if (ownedType.IsMappedToJson())
             {
                 // TODO: properly handle nullability, type mapping, possibly property path names need work?
-                arguments[i] = new SqlColumnExpression(
-                    tableLookup[entityType.GetTableMappings().Single().Table],
-                    ownedType.GetContainerColumnName(),
-                    navigation.ClrType,
-                    true,
-                    null);
+                arguments[i] = propertyExpressions[navigation];
             }
             else
             {
@@ -1302,7 +1294,7 @@ public class ModelExpressionProvider
     private static Expression CreateComplexMaterializationExpression(
         IComplexType complexType,
         Dictionary<ITableBase, AliasedTableExpression> tableLookup,
-        Dictionary<IProperty, Expression> propertyExpressions)
+        Dictionary<IPropertyBase, Expression> propertyExpressions)
     {
         var properties
             = (from p in complexType.GetProperties()
@@ -1380,7 +1372,7 @@ public class ModelExpressionProvider
         return materializer;
     }
 
-    private static Expression GetBindingExpression(ITypeBase type, ParameterBinding binding, Dictionary<IProperty, Expression> propertyExpressions)
+    private static Expression GetBindingExpression(ITypeBase type, ParameterBinding binding, Dictionary<IPropertyBase, Expression> propertyExpressions)
     {
         switch (binding)
         {
@@ -1440,9 +1432,9 @@ public class ModelExpressionProvider
             }
         }
 
-        foreach (var owned in type.GetNavigations().Where(n => n.ForeignKey.IsOwnership && n.IsEagerLoaded))
+        foreach (var owned in type.GetNavigations().Where(n => n.ForeignKey.IsOwnership && n.IsEagerLoaded && !n.IsOnDependent))
         {
-            if (!owned.IsOnDependent && !owned.IsCollection && !owned.TargetEntityType.IsMappedToJson())
+            if (!owned.IsCollection && !owned.TargetEntityType.IsMappedToJson())
             {
                 foreach (var mapping in IterateTableMappings(owned.TargetEntityType, true))
                 {
@@ -1452,7 +1444,7 @@ public class ModelExpressionProvider
         }
     }
 
-    private static IEnumerable<IProperty> IterateProperties(IEntityType type, bool includeDerived)
+    private static IEnumerable<IPropertyBase> IterateProperties(IEntityType type, bool includeDerived)
     {
         foreach (var property in type.GetFlattenedProperties())
         {
@@ -1470,14 +1462,18 @@ public class ModelExpressionProvider
             }
         }
 
-        foreach (var owned in type.GetNavigations().Where(n => n.ForeignKey.IsOwnership && n.IsEagerLoaded))
+        foreach (var owned in type.GetNavigations().Where(n => n.ForeignKey.IsOwnership && n.IsEagerLoaded && !n.IsOnDependent))
         {
             if (!TablesMatch(type, owned.TargetEntityType))
             {
                 continue;
             }
 
-            if (!owned.IsOnDependent && !owned.IsCollection && !owned.TargetEntityType.IsMappedToJson())
+            if (owned.TargetEntityType.IsMappedToJson())
+            {
+                yield return owned;
+            }
+            else if (!owned.IsCollection)
             {
                 foreach (var property in IterateProperties(owned.TargetEntityType, true))
                 {
@@ -1513,7 +1509,7 @@ public class ModelExpressionProvider
         return !tables2.Except(tables1).Any();
     }
 
-    private SqlColumnExpression MakeColumnExpression(AliasedTableExpression table, string columnName, IProperty property)
+    private SqlColumnExpression MakeColumnExpression(AliasedTableExpression table, string columnName, IPropertyBase property)
     {
         var typeMapping = GetColumnTypeMapping(property);
 
@@ -1527,9 +1523,14 @@ public class ModelExpressionProvider
             typeMapping);
     }
 
-    private ITypeMapping GetColumnTypeMapping(IProperty property)
+    private ITypeMapping GetColumnTypeMapping(IPropertyBase propertyBase)
     {
         ITypeMapping typeMapping = default;
+
+        if (propertyBase is not IProperty property)
+        {
+            return typeMapping;
+        }
 
         var sourceMapping = relationalTypeMappingSource.FindMapping(property);
 
@@ -1548,11 +1549,11 @@ public class ModelExpressionProvider
         return typeMapping;
     }
 
-    private static bool GetColumnNullability(IProperty property)
+    private static bool GetColumnNullability(IPropertyBase property)
     {
         // If the property is nullable, it can be null, who would've thought
 
-        if (property.IsNullable)
+        if (property is IProperty { IsNullable: true })
         {
             return true;
         }
@@ -1670,4 +1671,52 @@ public class ModelExpressionProvider
 
         return (entityType.GetSchema(), entityType.GetTableName());
     }
+
+    private static IEnumerable<ZColumnMapping> GetTableColumnMappings(IPropertyBase propertyBase)
+    {
+        if (propertyBase is IProperty property)
+        {
+            return property.GetTableColumnMappings().Select(m => new ZColumnMapping(m.Column.Table, m.Column.Name, m.TableMapping.TypeBase));
+        }
+        else if (propertyBase is INavigation navigation)
+        {
+            var tableMapping
+                = navigation.DeclaringEntityType
+                    .GetTableMappings()
+                    .OrderByDescending(m => m.IsSharedTablePrincipal ?? true)
+                    .ThenByDescending(m => m.IsSplitEntityTypePrincipal ?? true);
+
+            return [new ZColumnMapping(tableMapping.First().Table, navigation.TargetEntityType.GetContainerColumnName(), tableMapping.First().TypeBase)];
+        }
+        else
+        {
+            throw new InvalidOperationException();
+        }
+    }
+
+    private record struct ZColumnMapping(ITable Table, string Column, ITypeBase TypeBase);
+
+    private static IEnumerable<ZViewColumnMapping> GetViewColumnMappings(IPropertyBase propertyBase)
+    {
+        if (propertyBase is IProperty property)
+        {
+            return property.GetViewColumnMappings().Select(m => new ZViewColumnMapping(m.Column.View, m.Column.Name));
+        }
+        else if (propertyBase is INavigation navigation)
+        {
+            var viewMapping
+                = navigation.DeclaringEntityType
+                    .GetViewMappings()
+                    .OrderByDescending(m => m.IsSharedTablePrincipal ?? true)
+                    .ThenByDescending(m => m.IsSplitEntityTypePrincipal ?? true);
+
+            return [new ZViewColumnMapping(viewMapping.First().View, navigation.TargetEntityType.GetContainerColumnName())];
+        }
+        else
+        {
+            throw new InvalidOperationException();
+        }
+    }
+
+    private record struct ZViewColumnMapping(IView View, string Column);
 }

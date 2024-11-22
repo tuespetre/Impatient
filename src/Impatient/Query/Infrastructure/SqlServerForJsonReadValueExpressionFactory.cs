@@ -636,6 +636,11 @@ public class SqlServerForJsonReadValueExpressionFactory : IReadValueExpressionFa
 
 internal static class SqlServerJsonValueReader
 {
+    private static readonly JsonSerializerSettings jsonSerializerSettings = new()
+    {
+        ObjectCreationHandling = ObjectCreationHandling.Replace,
+    };
+
     public static Expression CreateReadScalarExpression(
         Type type,
         Expression reader,
@@ -749,13 +754,35 @@ internal static class SqlServerJsonValueReader
         }
         else if (type.IsEnum())
         {
-            var method = typeof(SqlServerJsonValueReader).GetMethod(nameof(ReadEnum)).MakeGenericMethod(type);
-            return Expression.Call(method, reader, Expression.Constant(name));
+            if (name is null)
+            {
+                return Expression.Call(
+                    typeof(SqlServerJsonValueReader).GetMethod(nameof(ReadEnum), [typeof(JsonTextReader)]).MakeGenericMethod(type), 
+                    reader);
+            }
+            else
+            {
+                return Expression.Call(
+                    typeof(SqlServerJsonValueReader).GetMethod(nameof(ReadEnum), [typeof(JsonTextReader), typeof(string)]).MakeGenericMethod(type),
+                    reader,
+                    Expression.Constant(name));
+            }
         }
         else if (type.UnwrapNullableType().IsEnum())
         {
-            var method = typeof(SqlServerJsonValueReader).GetMethod(nameof(ReadEnum)).MakeGenericMethod(type.UnwrapNullableType());
-            return Expression.Call(method, reader, Expression.Constant(name));
+            if (name is null)
+            {
+                return Expression.Call(
+                    typeof(SqlServerJsonValueReader).GetMethod(nameof(ReadNullableEnum), [typeof(JsonTextReader)]).MakeGenericMethod(type.UnwrapNullableType()),
+                    reader);
+            }
+            else
+            {
+                return Expression.Call(
+                    typeof(SqlServerJsonValueReader).GetMethod(nameof(ReadNullableEnum), [typeof(JsonTextReader), typeof(string)]).MakeGenericMethod(type.UnwrapNullableType()),
+                    reader,
+                    Expression.Constant(name));
+            }
         }
         else
         {
@@ -1468,9 +1495,7 @@ internal static class SqlServerJsonValueReader
     {
         Debug.Assert(reader.TokenType is JsonToken.None);
 
-        var serializer = new JsonSerializer();
-
-        var result = serializer.Deserialize<TResult>(reader);
+        var result = JsonSerializer.Create(jsonSerializerSettings).Deserialize<TResult>(reader);
 
         return result;
     }
@@ -1486,11 +1511,11 @@ internal static class SqlServerJsonValueReader
 
         if (reader.TokenType is JsonToken.String)
         {
-            result = JsonConvert.DeserializeObject<TResult>((string)reader.Value);
+            result = JsonConvert.DeserializeObject<TResult>((string)reader.Value, jsonSerializerSettings);
         }
         else
         {
-            result = new JsonSerializer().Deserialize<TResult>(reader);
+            result = JsonSerializer.Create(jsonSerializerSettings).Deserialize<TResult>(reader);
         }
 
         reader.Read();
