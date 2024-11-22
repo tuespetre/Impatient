@@ -22,7 +22,7 @@ public class SqlServerJsonMemberRewritingExpressionVisitor : ExpressionVisitor
         }
         while (current is not null);
 
-        switch (root)
+        switch (root.UnwrapInnerExpression())
         {
             case SqlExpression sqlExpression
             when !sqlExpression.Type.IsScalarType():
