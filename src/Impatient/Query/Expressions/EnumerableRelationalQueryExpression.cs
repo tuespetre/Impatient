@@ -58,7 +58,21 @@ public class EnumerableRelationalQueryExpression : RelationalQueryExpression
 
     public EnumerableRelationalQueryExpression UpdateSelectExpression(SelectExpression selectExpression)
     {
-        return new EnumerableRelationalQueryExpression(selectExpression);
+        if (selectExpression != SelectExpression)
+        {
+            if (TransformationMethod is not null && selectExpression.Type == SelectExpression.Type)
+            {
+                return new EnumerableRelationalQueryExpression(selectExpression, TransformationMethod);
+            }
+            else
+            {
+                return new EnumerableRelationalQueryExpression(selectExpression);
+            }
+        }
+        else
+        {
+            return this;
+        }
     }
 
     public EnumerableRelationalQueryExpression WithTransformationMethod(MethodInfo transformationMethod)

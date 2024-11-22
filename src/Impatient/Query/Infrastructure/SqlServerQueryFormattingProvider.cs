@@ -23,22 +23,6 @@ public class SqlServerQueryFormattingProvider : IQueryFormattingProvider
         builder.IncreaseIndent();
         builder.AppendLine();
 
-        var projection = subquery.Projection.Flatten().Body;
-        var leafGatherer = new ProjectionLeafGatheringExpressionVisitor();
-        leafGatherer.Visit(projection);
-
-        if (leafGatherer.GatheredExpressions.Count == 1 
-            && string.IsNullOrEmpty(leafGatherer.GatheredExpressions.Keys.Single())
-            && !(projection is SqlColumnExpression || projection is SqlAliasExpression))
-        {
-            subquery
-                = subquery.UpdateProjection(
-                    new ServerProjectionExpression(
-                        new SqlAliasExpression(
-                            subquery.Projection.ResultLambda.Body,
-                            "$c")));
-        }
-
         // Strip DefaultIfEmptyExpressions out because FOR JSON will leave out the null values
 
         var strippingVisitor = new DefaultIfEmptyStrippingExpressionVisitor();

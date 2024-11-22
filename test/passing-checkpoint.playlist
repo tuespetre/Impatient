@@ -13823,6 +13823,90 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_in_projection_with_composition_count" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Group_by_First_on_json_scalar" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Group_by_First_on_json_scalar" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Entity_including_collection_with_json" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Entity_including_collection_with_json" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Group_by_FirstOrDefault_on_json_scalar" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Group_by_FirstOrDefault_on_json_scalar" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Group_by_json_scalar_Skip_First_project_json_scalar" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Group_by_json_scalar_Skip_First_project_json_scalar" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_branch_collection_distinct_and_other_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_branch_collection_distinct_and_other_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_skip_take_in_projection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_skip_take_in_projection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_distinct_in_projection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_distinct_in_projection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_filter_in_projection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_filter_in_projection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_leaf_collection_distinct_and_other_collection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_leaf_collection_distinct_and_other_collection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_nested_collection_filter_in_projection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_nested_collection_filter_in_projection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_leaf_filter_in_projection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_leaf_filter_in_projection" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_multiple_collection_projections" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_multiple_collection_projections" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_skip_take_in_projection_project_into_anonymous_type" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_skip_take_in_projection_project_into_anonymous_type" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_skip_take_in_projection_with_json_reference_access_as_final_operation" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.JsonQueryImpatientTest.Json_collection_skip_take_in_projection_with_json_reference_access_as_final_operation" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -16062,12 +16146,6 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Skip_Take_on_grouping_element_into_non_entity" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Skip_Take_on_grouping_element_into_non_entity" />
-                      </Rule>
-                    </Rule>
-                    <Rule Match="All">
-                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_ThenInclude_ThenInclude_followed_by_two_nested_selects" />
-                      <Rule Match="Any">
-                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitQueryImpatientTest.Include_ThenInclude_ThenInclude_followed_by_two_nested_selects" />
                       </Rule>
                     </Rule>
                     <Rule Match="All">
@@ -22123,12 +22201,6 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_with_groupby_in_subquery_and_filter_after_groupby" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_collection_with_groupby_in_subquery_and_filter_after_groupby" />
-                      </Rule>
-                    </Rule>
-                    <Rule Match="All">
-                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_ThenInclude_ThenInclude_followed_by_two_nested_selects" />
-                      <Rule Match="Any">
-                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSplitSharedTypeQueryImpatientTest.Include_ThenInclude_ThenInclude_followed_by_two_nested_selects" />
                       </Rule>
                     </Rule>
                     <Rule Match="All">
@@ -30809,12 +30881,6 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsQueryImpatientTest.Include_reference_ThenInclude_collection_order_by" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsQueryImpatientTest.Include_reference_ThenInclude_collection_order_by" />
-                      </Rule>
-                    </Rule>
-                    <Rule Match="All">
-                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsQueryImpatientTest.Include_ThenInclude_ThenInclude_followed_by_two_nested_selects" />
-                      <Rule Match="Any">
-                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsQueryImpatientTest.Include_ThenInclude_ThenInclude_followed_by_two_nested_selects" />
                       </Rule>
                     </Rule>
                     <Rule Match="All">
@@ -43717,12 +43783,6 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSharedTypeQueryImpatientTest.Multiple_SelectMany_with_Include" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSharedTypeQueryImpatientTest.Multiple_SelectMany_with_Include" />
-                      </Rule>
-                    </Rule>
-                    <Rule Match="All">
-                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSharedTypeQueryImpatientTest.Include_ThenInclude_ThenInclude_followed_by_two_nested_selects" />
-                      <Rule Match="Any">
-                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsCollectionsSharedTypeQueryImpatientTest.Include_ThenInclude_ThenInclude_followed_by_two_nested_selects" />
                       </Rule>
                     </Rule>
                     <Rule Match="All">

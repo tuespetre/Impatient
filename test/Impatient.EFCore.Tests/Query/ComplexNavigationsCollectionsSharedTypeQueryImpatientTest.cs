@@ -307,6 +307,12 @@ public class ComplexNavigationsCollectionsSharedTypeQueryImpatientTest : Complex
     }
 
     [Theory(Skip = LiftedInclude)]
+    public override async Task Include_ThenInclude_ThenInclude_followed_by_two_nested_selects(bool async)
+    {
+        await base.Include_ThenInclude_ThenInclude_followed_by_two_nested_selects(async);
+    }
+
+    [Theory(Skip = LiftedInclude)]
     public override Task Multiple_optional_navigation_with_Include(bool async)
     {
         return base.Multiple_optional_navigation_with_Include(async);

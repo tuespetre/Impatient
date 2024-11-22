@@ -3032,6 +3032,7 @@ INNER JOIN [dbo].[MyClass2] AS [m2_1] ON [m1].[Prop1] = [m2_1].[Prop1]",
 
         var log = services.GetService<TestDbCommandExecutorFactory>().Log.ToString();
 
+        // TODO: aggregate subqueries need to be SingleValueRelationalQuery, not Enumerable
         Assert.IsTrue(
             log.StartsWith(
                 @"SELECT [c].[CustomerID] AS [CustomerID], [c].[CompanyName] AS [CompanyName], [c].[ContactName] AS [ContactName], [c].[ContactTitle] AS [ContactTitle], [c].[Address] AS [Address], [c].[City] AS [City], [c].[Region] AS [Region], [c].[PostalCode] AS [PostalCode], [c].[Country] AS [Country], [c].[Phone] AS [Phone], [c].[Fax] AS [Fax]
@@ -3045,7 +3046,7 @@ SELECT (
     SELECT COUNT(*)
     FROM [dbo].[Order Details] AS [d]
     WHERE [o].[OrderID] = [d].[OrderID]
-)
+) AS [$c]
 FROM [dbo].[Orders] AS [o]
 WHERE @p0 = [o].[CustomerID]"));
     }

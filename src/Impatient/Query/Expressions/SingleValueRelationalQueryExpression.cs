@@ -32,6 +32,11 @@ public class SingleValueRelationalQueryExpression : RelationalQueryExpression
 
     public SingleValueRelationalQueryExpression UpdateSelectExpression(SelectExpression selectExpression)
     {
-        return new SingleValueRelationalQueryExpression(selectExpression);
+        if (selectExpression != SelectExpression)
+        {
+            return new SingleValueRelationalQueryExpression(selectExpression);
+        }
+
+        return this;
     }
 }

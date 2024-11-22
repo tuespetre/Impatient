@@ -1,5 +1,6 @@
 ﻿using Impatient.Extensions;
 using Impatient.Query.Expressions;
+using Impatient.Query.ExpressionVisitors.Projection;
 using Impatient.Query.ExpressionVisitors.Utility;
 using Impatient.Query.Infrastructure;
 using System;
@@ -28,6 +29,8 @@ public class QueryCompilingExpressionVisitor : ExpressionVisitor
     private readonly IQueryTranslatingExpressionVisitorFactory queryTranslatingExpressionVisitorFactory;
     private readonly MaterializerGeneratingExpressionVisitor materializerGeneratingExpressionVisitor;
 
+    private static readonly RecursiveSubqueryAliasDecoratingExpressionVisitor recursiveSubqueryAliasDecoratingExpressionVisitor = new();
+
     public QueryCompilingExpressionVisitor(
         ExpressionTranslatabilityAnalyzer translatabilityAnalyzer,
         IQueryTranslatingExpressionVisitorFactory queryTranslatingExpressionVisitorFactory,
@@ -44,7 +47,12 @@ public class QueryCompilingExpressionVisitor : ExpressionVisitor
         {
             case EnumerableRelationalQueryExpression enumerableRelationalQueryExpression:
             {
-                var selectExpression = enumerableRelationalQueryExpression.SelectExpression;
+                var selectExpression
+                    = recursiveSubqueryAliasDecoratingExpressionVisitor
+                        .VisitAndConvert(
+                            enumerableRelationalQueryExpression.SelectExpression,
+                            nameof(Visit));
+
                 var commandBuilderLambda = queryTranslatingExpressionVisitorFactory.Create().Translate(selectExpression);
                 var sequenceType = node.Type.GetSequenceType();
                 var materializer = Visit(materializerGeneratingExpressionVisitor.Visit(selectExpression));
@@ -61,7 +69,12 @@ public class QueryCompilingExpressionVisitor : ExpressionVisitor
 
             case SingleValueRelationalQueryExpression singleValueRelationalQueryExpression:
             {
-                var selectExpression = singleValueRelationalQueryExpression.SelectExpression;
+                var selectExpression
+                    = recursiveSubqueryAliasDecoratingExpressionVisitor
+                        .VisitAndConvert(
+                            singleValueRelationalQueryExpression.SelectExpression,
+                            nameof(Visit));
+
                 var commandBuilderLambda = queryTranslatingExpressionVisitorFactory.Create().Translate(selectExpression);
                 var materializer = Visit(materializerGeneratingExpressionVisitor.Visit(selectExpression));
 
@@ -81,6 +94,58 @@ public class QueryCompilingExpressionVisitor : ExpressionVisitor
             {
                 return base.Visit(node);
             }
+        }
+    }
+
+    private class RecursiveSubqueryAliasDecoratingExpressionVisitor : ExpressionVisitor
+    {
+        protected override Expression VisitExtension(Expression node)
+        {
+            if (node is EnumerableRelationalQueryExpression enumerableRelationalQueryExpression)
+            {
+                var selectExpression = VisitAndConvert(enumerableRelationalQueryExpression.SelectExpression, nameof(VisitExtension));
+
+                selectExpression = HandleSelectExpression(selectExpression);
+
+                return enumerableRelationalQueryExpression.UpdateSelectExpression(selectExpression);
+            }
+            if (node is SingleValueRelationalQueryExpression singleValueRelationalQueryExpression
+                && !node.Type.IsScalarType())
+            {
+                var selectExpression = VisitAndConvert(singleValueRelationalQueryExpression.SelectExpression, nameof(VisitExtension));
+
+                selectExpression = HandleSelectExpression(selectExpression);
+
+                return singleValueRelationalQueryExpression.UpdateSelectExpression(selectExpression);
+            }
+
+            return base.VisitExtension(node);
+        }
+
+        private static SelectExpression HandleSelectExpression(SelectExpression selectExpression)
+        {
+            if (selectExpression.Projection is not ServerProjectionExpression)
+            {
+                return selectExpression;
+            }
+
+            var projection = selectExpression.Projection.Flatten().Body;
+            var leafGatherer = new ProjectionLeafGatheringExpressionVisitor();
+            leafGatherer.Visit(projection);
+
+            if (leafGatherer.GatheredExpressions.Count == 1
+                && string.IsNullOrEmpty(leafGatherer.GatheredExpressions.Keys.Single())
+                && !(projection is SqlColumnExpression || projection is SqlAliasExpression))
+            {
+                selectExpression
+                    = selectExpression.UpdateProjection(
+                        new ServerProjectionExpression(
+                            new SqlAliasExpression(
+                                selectExpression.Projection.ResultLambda.Body,
+                                "$c")));
+            }
+
+            return selectExpression;
         }
     }
 }

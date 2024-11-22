@@ -73,6 +73,10 @@ public static class ExpressionExtensions
 
         var sequenceType = expression.Type.GetSequenceType();
 
+        var enumerableType
+            = typeof(IEnumerable<>)
+                .MakeGenericType(sequenceType);
+
         var enumerableQueryConstructor
             = typeof(EnumerableQuery<>)
                 .MakeGenericType(sequenceType)
@@ -92,8 +96,25 @@ public static class ExpressionExtensions
                 expressionCallMethodInfo,
                 Expression.Constant(asQueryableMethodInfo.MakeGenericMethod(sequenceType)),
                 Expression.Call(
-                    typeof(Expression).GetRuntimeMethod(nameof(Expression.Constant), [typeof(object)]),
-                    expression)));
+                    typeof(Expression).GetRuntimeMethod(nameof(Expression.Constant), [typeof(object), typeof(Type)]),
+                    expression,
+                    Expression.Constant(enumerableType, typeof(Type)))));
+    }
+
+    public static Expression AsArray(this Expression expression)
+    {
+        Debug.Assert(expression.Type.IsSequenceType());
+
+        if (expression.Type.IsArray)
+        {
+            return expression;
+        }
+
+        return Expression.Call(
+            ReflectionExtensions
+                .GetGenericMethodDefinition((IEnumerable<object> o) => o.ToArray())
+                .MakeGenericMethod(expression.Type.GetGenericArguments()[0]),
+            expression);
     }
 
     public static Expression AsQueryable(this Expression expression)
