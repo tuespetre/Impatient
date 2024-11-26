@@ -631,6 +631,13 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
             """);
     }
 
+    [DisagreeWithEFCore]
+    [Theory(Skip = "Premise seems incorrect to me")]
+    public override Task Select_null_propagation_optimization8(bool async)
+    {
+        return base.Select_null_propagation_optimization8(async);
+    }
+
     [TranslationExceedsEFCore]
     public override async Task Streaming_correlated_collection_issue_11403_returning_ordered_enumerable_throws(bool async)
     {

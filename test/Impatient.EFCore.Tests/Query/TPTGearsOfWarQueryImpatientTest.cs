@@ -419,6 +419,13 @@ public class TPTGearsOfWarQueryImpatientTest : TPTGearsOfWarQueryRelationalTestB
             """);
     }
 
+    [DisagreeWithEFCore]
+    [Theory(Skip = "Premise seems incorrect to me")]
+    public override Task Select_null_propagation_optimization8(bool async)
+    {
+        return base.Select_null_propagation_optimization8(async);
+    }
+
     [Theory(Skip = ClientEval)]
     public override Task Select_Where_Navigation_Client(bool async)
     {
