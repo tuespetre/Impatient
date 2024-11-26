@@ -12,6 +12,25 @@ public class MemberAccessReducingExpressionVisitor : ExpressionVisitor
 {
     public static readonly MemberAccessReducingExpressionVisitor Instance = new();
 
+    public override Expression Visit(Expression node)
+    {
+        if (node is null)
+        {
+            return null;
+        }
+        else
+        {
+            var visited = base.Visit(node);
+
+            if (node.Type == typeof(object) && visited.Type.IsValueType && !visited.Type.IsNullableType())
+            {
+                visited = Expression.Convert(visited, typeof(object));
+            }
+
+            return visited;
+        }
+    }
+
     protected override Expression VisitExtension(Expression node)
     {
         switch (node)

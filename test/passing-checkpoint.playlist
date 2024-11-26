@@ -40314,6 +40314,12 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Client_method_skip_take_loads_owned_navigations_variation_2" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Projecting_indexer_property_ignores_include" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.OwnedQueryImpatientTest.Projecting_indexer_property_ignores_include" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
