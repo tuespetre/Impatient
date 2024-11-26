@@ -239,11 +239,31 @@ public class ModelExpressionProvider
                 var tupleType = ValueTupleHelper.CreateTupleType([middleType.ClrType, rightType.ClrType]);
                 var tupleParameter = Expression.Parameter(tupleType);
 
+                var rightMiddleKeyType = rightMiddleKeySelector.ReturnType;
+                var rightKeyType = rightKeySelector.ReturnType;
+
+                if (rightKeyType != rightMiddleKeyType)
+                {
+                    if (rightKeyType.UnwrapNullableType() == rightMiddleKeyType)
+                    {
+                        rightMiddleKeySelector = Expression.Lambda(rightMiddleKeySelector.Body.AsNullable(), rightMiddleKeySelector.Parameters);
+                    }
+                    else if (rightMiddleKeyType.UnwrapNullableType() == rightKeyType)
+                    {
+                        rightKeySelector = Expression.Lambda(rightKeySelector.Body.AsNullable(), rightKeySelector.Parameters);
+                        rightKeyType = rightKeySelector.ReturnType;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Issue creating navigation key descriptors for many-to-many navigation");
+                    }
+                }
+
                 var expansion = Expression.Call(
                     queryableJoinMethodInfo.MakeGenericMethod(
                         middleType.ClrType,
                         rightType.ClrType,
-                        rightKeySelector.ReturnType,
+                        rightKeyType,
                         tupleType),
                     CreateQueryExpression(middleType, context),
                     CreateQueryExpression(rightType, context),
