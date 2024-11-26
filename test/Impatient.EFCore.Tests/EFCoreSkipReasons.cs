@@ -40,4 +40,7 @@ public static class EFCoreSkipReasons
 
     public const string OrderByEntity =
         "This test relies on ordering by an entity being translated to ordering by its primary key, which is not yet implemented.";
+
+    public const string ProjectionSplitting =
+        "This test needs us to implement 'projection splitting', i.e. plucking translatable expressions out of a client projection and fetching from the server so as to avoid simultaneous DataReader creation.";
 }

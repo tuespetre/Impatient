@@ -26,6 +26,30 @@ public class QueryNavigationsImpatientTest : NorthwindNavigationsQueryRelational
     }
 
     [Theory(Skip = ClientEval)]
+    public override Task Collection_where_nav_prop_all_client(bool async)
+    {
+        return base.Collection_where_nav_prop_all_client(async);
+    }
+
+    [Theory(Skip = ClientEval)]
+    public override Task Join_with_nav_in_orderby_in_subquery_when_client_eval(bool async)
+    {
+        return base.Join_with_nav_in_orderby_in_subquery_when_client_eval(async);
+    }
+
+    [Theory(Skip = ClientEval)]
+    public override Task Join_with_nav_in_predicate_in_subquery_when_client_eval(bool async)
+    {
+        return base.Join_with_nav_in_predicate_in_subquery_when_client_eval(async);
+    }
+
+    [Theory(Skip = ClientEval)]
+    public override Task Join_with_nav_projected_in_subquery_when_client_eval(bool async)
+    {
+        return base.Join_with_nav_projected_in_subquery_when_client_eval(async);
+    }
+
+    [Theory(Skip = ClientEval)]
     public override Task Select_Where_Navigation_Client(bool async)
     {
         return base.Select_Where_Navigation_Client(async);
@@ -79,5 +103,11 @@ public class QueryNavigationsImpatientTest : NorthwindNavigationsQueryRelational
                 )))
             )
             """);
+    }
+
+    [Theory(Skip = ClientEval)]
+    public override Task Where_subquery_on_navigation_client_eval(bool async)
+    {
+        return base.Where_subquery_on_navigation_client_eval(async);
     }
 }

@@ -75,4 +75,10 @@ public class NorthwindWhereQueryImpatientTest : NorthwindWhereQueryRelationalTes
     {
         return base.Where_equals_method_string_with_ignore_case(async);
     }
+
+    [Theory(Skip = ClientEval)]
+    public override Task Where_subquery_correlated_client_eval(bool async)
+    {
+        return base.Where_subquery_correlated_client_eval(async);
+    }
 }
