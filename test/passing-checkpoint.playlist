@@ -3661,6 +3661,138 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_query_and_update_owned_entity_with_generic_comparable_int_struct_key" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_generic_comparable_struct_binary_key_and_required_dependents_with_shadow_FK" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_generic_comparable_struct_binary_key_and_required_dependents_with_shadow_FK" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_generic_comparable_struct_key_and_required_dependents" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_generic_comparable_struct_key_and_required_dependents" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_structural_struct_binary_key_and_optional_dependents_with_shadow_FK" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_structural_struct_binary_key_and_optional_dependents_with_shadow_FK" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_struct_binary_key_and_required_dependents_with_shadow_FK" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_struct_binary_key_and_required_dependents_with_shadow_FK" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_comparable_struct_key_and_required_dependents_with_shadow_FK" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_comparable_struct_key_and_required_dependents_with_shadow_FK" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_struct_binary_key_and_required_dependents" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_struct_binary_key_and_required_dependents" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_comparable_struct_binary_key_and_optional_dependents_with_shadow_FK" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_comparable_struct_binary_key_and_optional_dependents_with_shadow_FK" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_struct_binary_key_and_optional_dependents_with_shadow_FK" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_struct_binary_key_and_optional_dependents_with_shadow_FK" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_comparable_struct_binary_key_and_required_dependents_with_shadow_FK" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_comparable_struct_binary_key_and_required_dependents_with_shadow_FK" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_comparable_struct_binary_key_and_required_dependents" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_comparable_struct_binary_key_and_required_dependents" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_generic_comparable_struct_binary_key_and_optional_dependents_with_shadow_FK" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_generic_comparable_struct_binary_key_and_optional_dependents_with_shadow_FK" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_generic_comparable_struct_key_and_required_dependents_with_shadow_FK" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_generic_comparable_struct_key_and_required_dependents_with_shadow_FK" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_structural_struct_binary_key_and_required_dependents_with_shadow_FK" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_structural_struct_binary_key_and_required_dependents_with_shadow_FK" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_structural_struct_binary_key_and_optional_dependents" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_structural_struct_binary_key_and_optional_dependents" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_struct_key_and_required_dependents" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_struct_key_and_required_dependents" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_comparable_struct_binary_key_and_optional_dependents" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_comparable_struct_binary_key_and_optional_dependents" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_generic_comparable_struct_binary_key_and_optional_dependents" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_generic_comparable_struct_binary_key_and_optional_dependents" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_struct_binary_key_and_optional_dependents" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_struct_binary_key_and_optional_dependents" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_comparable_struct_key_and_required_dependents" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_comparable_struct_key_and_required_dependents" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_struct_key_and_required_dependents_with_shadow_FK" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_struct_key_and_required_dependents_with_shadow_FK" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_generic_comparable_struct_binary_key_and_required_dependents" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_generic_comparable_struct_binary_key_and_required_dependents" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_structural_struct_binary_key_and_required_dependents" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.KeysWithConvertersImpatientTest.Can_insert_and_read_back_with_structural_struct_binary_key_and_required_dependents" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -5317,6 +5449,36 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.StoreGeneratedImpatientTest.Computed_property_on_Modified_entity_is_read_from_store_when_not_modified" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.StoreGeneratedImpatientTest.Computed_property_on_Modified_entity_is_read_from_store_when_not_modified" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.StoreGeneratedImpatientTest.Insert_update_and_delete_with_Uri_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.StoreGeneratedImpatientTest.Insert_update_and_delete_with_Uri_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.StoreGeneratedImpatientTest.Insert_update_and_delete_with_wrapped_int_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.StoreGeneratedImpatientTest.Insert_update_and_delete_with_wrapped_int_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.StoreGeneratedImpatientTest.Insert_update_and_delete_with_wrapped_string_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.StoreGeneratedImpatientTest.Insert_update_and_delete_with_wrapped_string_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.StoreGeneratedImpatientTest.Insert_update_and_delete_with_wrapped_Guid_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.StoreGeneratedImpatientTest.Insert_update_and_delete_with_wrapped_Guid_key" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.StoreGeneratedImpatientTest.Insert_update_and_delete_with_wrapped_Uri_key" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.StoreGeneratedImpatientTest.Insert_update_and_delete_with_wrapped_Uri_key" />
                       </Rule>
                     </Rule>
                   </Rule>

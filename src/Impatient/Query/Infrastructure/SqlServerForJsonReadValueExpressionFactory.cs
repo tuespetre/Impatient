@@ -262,24 +262,28 @@ public class SqlServerForJsonReadValueExpressionFactory : IReadValueExpressionFa
 
         protected override Expression VisitLeaf(Expression node)
         {
-            if (node.Type.IsScalarType())
+            var typeMapping = (node as SqlColumnExpression)?.TypeMapping;
+            var sourceType = typeMapping?.SourceType ?? node.Type;
+
+            if (sourceType.IsScalarType())
             {
-                var sqlColumnExpression = node as SqlColumnExpression;
-                var typeMapping = sqlColumnExpression?.TypeMapping ?? typeMappingProvider.FindMapping(node.Type);
+                var name = GetNameParts().LastOrDefault() ?? GetLeafName(node);
+
+                typeMapping ??= typeMappingProvider.FindMapping(node.Type);
 
                 if (typeMapping?.TargetConversion is null)
                 {
                     return SqlServerJsonValueReader.CreateReadScalarExpression(
                         node.Type,
                         jsonTextReader,
-                        GetNameParts().Last());
+                        name);
                 }
 
                 var result
                     = SqlServerJsonValueReader.CreateReadScalarExpression(
                         typeMapping.SourceType,
                         jsonTextReader,
-                        GetNameParts().Last());
+                        name);
 
                 var mappingParameter = typeMapping.TargetConversion.Parameters.Single();
 
