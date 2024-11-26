@@ -60,7 +60,7 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
         public override Expression Visit(Expression node)
         {
             var visited = base.Visit(node);
-            
+
             if (!(node is null || visited is null)
                 && node.Type.IsGenericType(typeof(IOrderedQueryable<>))
                 && !visited.Type.IsGenericType(typeof(IOrderedQueryable<>)))
@@ -209,19 +209,35 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
         {
             var queryable = originalNode.Method.IsQueryableMethod();
 
-            var terminalSelectMethod = queryable ? queryableSelectMethodInfo : enumerableSelectMethodInfo;
+            var resultSequenceType = result.Type.GetSequenceType();
+            var originalSequenceType = originalNode.Type.GetSequenceType();
 
-            var terminalSelectorArgument = (Expression)context.OuterTerminalSelector;
+            var terminalSelector = context.OuterTerminalSelector;
+
+            if (terminalSelector.ReturnType != originalSequenceType)
+            {
+                terminalSelector 
+                    = Expression.Lambda(
+                        typeof(Func<,>).MakeGenericType(
+                            terminalSelector.Parameters.Single().Type,
+                            originalSequenceType),
+                        terminalSelector.Body, 
+                        terminalSelector.Parameters);
+            }
+
+            var terminalSelectMethod = enumerableSelectMethodInfo;
+            var terminalSelectorArgument = (Expression)terminalSelector;
 
             if (queryable)
             {
                 terminalSelectorArgument = Expression.Quote(terminalSelectorArgument);
+                terminalSelectMethod = queryableSelectMethodInfo;
             }
 
             return Expression.Call(
                 terminalSelectMethod.MakeGenericMethod(
-                    result.Type.GetSequenceType(),
-                    originalNode.Type.GetSequenceType()),
+                    resultSequenceType,
+                    originalSequenceType),
                 result,
                 terminalSelectorArgument);
         }
@@ -1652,8 +1668,8 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                 {
                     targetMapping = new ExpansionMapping
                     {
-                        OldPath = targetOldPath.ToList(),
-                        NewPath = terminalPath.Concat(targetOldPath).ToList(),
+                        OldPath = [.. targetOldPath],
+                        NewPath = [.. terminalPath, .. targetOldPath],
                         Parameter = parameter,
                     };
 
@@ -1935,10 +1951,10 @@ public class NavigationComposingExpressionVisitor : ExpressionVisitor
                 Parameter = context.currentParameter,
             });
 
-            var expander 
+            var expander
                 = new NavigationExpandingExpressionVisitor(
-                    parameter, 
-                    context.currentParameter, 
+                    parameter,
+                    context.currentParameter,
                     context.mappings);
 
             var resultSelectorBody = expander.Visit(selector.Body);

@@ -744,7 +744,7 @@ public static class ExpressionExtensions
         {
             return extraPropertiesExpression.Expression.UnwrapInnerExpression();
         }
-        else if (expression.NodeType == ExpressionType.Convert || expression.NodeType == ExpressionType.ConvertChecked)
+        else if (expression.NodeType is ExpressionType.Convert or ExpressionType.ConvertChecked or ExpressionType.TypeAs)
         {
             return ((UnaryExpression)expression).Operand.UnwrapInnerExpression();
         }

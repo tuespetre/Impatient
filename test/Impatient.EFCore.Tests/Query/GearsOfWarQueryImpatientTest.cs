@@ -482,6 +482,23 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
         return base.Order_by_entity_qsre_with_other_orderbys(async);
     }
 
+    public override async Task Project_navigation_defined_on_base_from_entity_with_inheritance_using_soft_cast(bool async)
+    {
+        await base.Project_navigation_defined_on_base_from_entity_with_inheritance_using_soft_cast(async);
+
+        AssertSql("""
+            SELECT [g].[Nickname] AS [Gear.Item1], [g].[SquadId] AS [Gear.Item2], [g].[AssignedCityName] AS [Gear.Item3], [g].[CityOfBirthName] AS [Gear.Item4], [g].[Discriminator] AS [Gear.Item5], [g].[FullName] AS [Gear.Item6], [g].[HasSoulPatch] AS [Gear.Item7], [g].[LeaderNickname] AS [Gear.Rest.Item1], [g].[LeaderSquadId] AS [Gear.Rest.Item2], [g].[Rank] AS [Gear.Rest.Item3], [c].[$empty] AS [Tag.$empty], [c].[Id] AS [Tag.Id], [c].[GearNickName] AS [Tag.GearNickName], [c].[GearSquadId] AS [Tag.GearSquadId], [c].[IssueDate] AS [Tag.IssueDate], [c].[Note] AS [Tag.Note], CAST((CASE WHEN [c].[Id] IS NULL THEN 1 ELSE 0 END) AS bit) AS [IsNull], [g].[Nickname] AS [Property], [c].[Id] AS [PropertyAfterNavigation], [c_0].[Name] AS [NestedOuter.CityOfBirth.Name], [c_0].[Location] AS [NestedOuter.CityOfBirth.Location], [c_0].[Nation] AS [NestedOuter.CityOfBirth.Nation], CAST((CASE WHEN [c_0].[Name] IS NULL THEN 1 ELSE 0 END) AS bit) AS [NestedOuter.IsNull], [g].[Nickname] AS [NestedOuter.Property], [c_0].[Name] AS [NestedOuter.PropertyAfterNavigation], [s].[Id] AS [NestedOuter.NestedInner.Squad.Id], [s].[Banner] AS [NestedOuter.NestedInner.Squad.Banner], [s].[Banner5] AS [NestedOuter.NestedInner.Squad.Banner5], [s].[InternalNumber] AS [NestedOuter.NestedInner.Squad.InternalNumber], [s].[Name] AS [NestedOuter.NestedInner.Squad.Name], CAST((CASE WHEN [s].[Id] IS NULL THEN 1 ELSE 0 END) AS bit) AS [NestedOuter.NestedInner.IsNull], [g].[Nickname] AS [NestedOuter.NestedInner.Property], [s].[Id] AS [NestedOuter.NestedInner.PropertyAfterNavigation]
+            FROM [Gears] AS [g]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [c_1].[Id] AS [Id], [c_1].[GearNickName] AS [GearNickName], [c_1].[GearSquadId] AS [GearSquadId], [c_1].[IssueDate] AS [IssueDate], [c_1].[Note] AS [Note]
+                FROM [Tags] AS [c_1]
+            ) AS [c] ON ([g].[Nickname] = [c].[GearNickName]) AND ([g].[SquadId] = [c].[GearSquadId])
+            INNER JOIN [Cities] AS [c_0] ON [g].[CityOfBirthName] = [c_0].[Name]
+            INNER JOIN [Squads] AS [s] ON [g].[SquadId] = [s].[Id]
+            WHERE [g].[Discriminator] IN (N'Gear', N'Officer')
+            """);
+    }
+
     public override async Task Project_one_value_type_with_client_projection_from_empty_collection(bool async)
     {
         await base.Project_one_value_type_with_client_projection_from_empty_collection(async);
