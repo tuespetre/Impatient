@@ -3044,13 +3044,10 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
             outerSelectExpression = outerSelectExpression.UpdateOrderBy(null);
         }
 
-        if (outerProjection.Type.IsScalarType())
+        if (outerProjection.Type.IsScalarType() && !valueExpression.IsNullableScalar())
         {
             // TODO: Test with a scalar subquery as the value e.g. (SELECT 1) IN (SELECT 1)
-            return new ContainsRelationalQueryExpression(
-                new SqlInExpression(
-                    valueExpression, 
-                    outerSelectExpression));
+            return new ContainsRelationalQueryExpression(new(valueExpression, outerSelectExpression));
         }
         else
         {
@@ -3064,12 +3061,7 @@ public class QueryComposingExpressionVisitor : ExpressionVisitor
                         new ServerProjectionExpression(
                             Expression.Constant(1)));
 
-            // TODO: use ContainsRelationalQueryExpression instead
-            return new SingleValueRelationalQueryExpression(
-                new SelectExpression(
-                    new ServerProjectionExpression(
-                        new SqlExistsExpression(
-                            outerSelectExpression))));
+            return new ExistsRelationalQueryExpression(new(outerSelectExpression));
         }
     }
 

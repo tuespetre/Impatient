@@ -851,4 +851,36 @@ public static class ExpressionExtensions
             right = Expression.Convert(right, typeof(object));
         }
     }
+
+    public static bool IsNullableScalar(this Expression expression)
+    {
+        switch (expression.UnwrapInnerExpression())
+        {
+            case SqlAliasExpression alias:
+            {
+                return IsNullableScalar(alias.Expression);
+            }
+
+            case SqlColumnExpression column:
+            {
+                return column.IsNullable;
+            }
+
+            case ConstantExpression constant:
+            {
+                return constant.Value is null;
+            }
+
+            case ConditionalExpression condition:
+            {
+                return condition.IfTrue.IsNullableScalar() || condition.IfFalse.IsNullableScalar();
+            }
+
+            // TODO: determine whatever other cases we might need to consider
+            default:
+            {
+                return expression.Type.IsNullableType();
+            }
+        }
+    }
 }

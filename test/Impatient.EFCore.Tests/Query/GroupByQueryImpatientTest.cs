@@ -78,22 +78,23 @@ ORDER BY [o].[CustomerID] ASC
     {
         await base.GroupBy_aggregate_Contains(async);
 
-        AssertSql(@"
-SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
-FROM [Orders] AS [o]
-WHERE [o].[CustomerID] IN (
-    SELECT [g].[Key]
-    FROM (
-        SELECT [g_0].[CustomerID] AS [Key]
-        FROM [Orders] AS [g_0]
-        GROUP BY [g_0].[CustomerID]
-    ) AS [g]
-    WHERE (
-        SELECT COUNT(*)
-        FROM [Orders] AS [g_1]
-        WHERE (([g].[Key] IS NULL AND [g_1].[CustomerID] IS NULL) OR ([g].[Key] = [g_1].[CustomerID]))
-    ) > 30
-)");
+        AssertSql("""
+            SELECT [o].[OrderID] AS [OrderID], [o].[CustomerID] AS [CustomerID], [o].[EmployeeID] AS [EmployeeID], [o].[OrderDate] AS [OrderDate]
+            FROM [Orders] AS [o]
+            WHERE EXISTS (
+                SELECT 1
+                FROM (
+                    SELECT [g].[CustomerID] AS [Key]
+                    FROM [Orders] AS [g]
+                    GROUP BY [g].[CustomerID]
+                ) AS [g_0]
+                WHERE ((
+                    SELECT COUNT(*)
+                    FROM [Orders] AS [g_1]
+                    WHERE (([g_0].[Key] IS NULL AND [g_1].[CustomerID] IS NULL) OR ([g_0].[Key] = [g_1].[CustomerID]))
+                ) > 30) AND ((([g_0].[Key] IS NULL AND [o].[CustomerID] IS NULL) OR ([g_0].[Key] = [o].[CustomerID])))
+            )
+            """);
     }
 
     // this test uses FirstOrDefault on a complex subquery. may or may not want to support that.

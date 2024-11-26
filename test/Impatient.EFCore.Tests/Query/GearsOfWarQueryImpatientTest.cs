@@ -105,6 +105,21 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
             """);
     }
 
+    public override async Task Contains_on_collection_of_nullable_byte_subquery(bool async)
+    {
+        await base.Contains_on_collection_of_nullable_byte_subquery(async);
+
+        AssertSql("""
+            SELECT [l].[Name] AS [Item1], [l].[Discriminator] AS [Item2], [l].[LocustHordeId] AS [Item3], [l].[ThreatLevel] AS [Item4], [l].[ThreatLevelByte] AS [Item5], [l].[ThreatLevelNullableByte] AS [Item6], [l].[DefeatedByNickname] AS [Item7], [l].[DefeatedBySquadId] AS [Rest.Item1], [l].[HighCommandId] AS [Rest.Item2]
+            FROM [LocustLeaders] AS [l]
+            WHERE [l].[Discriminator] IN (N'LocustLeader', N'LocustCommander') AND EXISTS (
+                SELECT 1
+                FROM [LocustLeaders] AS [ll]
+                WHERE [ll].[Discriminator] IN (N'LocustLeader', N'LocustCommander') AND ((([ll].[ThreatLevelNullableByte] IS NULL AND [l].[ThreatLevelNullableByte] IS NULL) OR ([ll].[ThreatLevelNullableByte] = [l].[ThreatLevelNullableByte])))
+            )
+            """);
+    }
+
     [TranslationExceedsEFCore]
     public override async Task Correlated_collection_after_distinct_3_levels_without_original_identifiers(bool async)
     {

@@ -34,7 +34,7 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
 
     public LambdaExpression Translate(SelectExpression selectExpression)
     {
-        var expression = ContainsQueryUnwrappingExpressionVisitor.Instance.Visit(selectExpression);
+        var expression = ContainsAndExistsUnwrappingExpressionVisitor.Instance.Visit(selectExpression);
 
         Visit(expression);
 
@@ -1882,15 +1882,19 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
         }
     }
 
-    private class ContainsQueryUnwrappingExpressionVisitor : ExpressionVisitor
+    private class ContainsAndExistsUnwrappingExpressionVisitor : ExpressionVisitor
     {
-        public static ContainsQueryUnwrappingExpressionVisitor Instance { get; } = new();
+        public static ContainsAndExistsUnwrappingExpressionVisitor Instance { get; } = new();
 
         public override Expression Visit(Expression node)
         {
             if (node is ContainsRelationalQueryExpression contains)
             {
                 return Visit(contains.SelectExpression.Projection.ResultLambda.Body);
+            }
+            else if (node is ExistsRelationalQueryExpression exists)
+            {
+                return Visit(exists.SelectExpression.Projection.ResultLambda.Body);
             }
 
             return base.Visit(node);
