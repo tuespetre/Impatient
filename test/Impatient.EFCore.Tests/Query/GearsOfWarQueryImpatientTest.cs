@@ -674,13 +674,27 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
             """);
     }
 
-    // TODO: consider what this test even means?
-    public override async Task String_concat_on_various_types(bool async)
+    public override async Task String_compare_with_null_conditional_argument(bool async)
     {
-        await Assert.ThrowsAsync<ThrowsException>(() => base.String_concat_on_various_types(async));
+        await base.String_compare_with_null_conditional_argument(async);
 
         AssertSql("""
-            SELECT [g].[Nickname] AS [g.Item1], [g].[SquadId] AS [g.Item2], [g].[AssignedCityName] AS [g.Item3], [g].[CityOfBirthName] AS [g.Item4], [g].[Discriminator] AS [g.Item5], [g].[FullName] AS [g.Item6], [g].[HasSoulPatch] AS [g.Item7], [g].[LeaderNickname] AS [g.Rest.Item1], [g].[LeaderSquadId] AS [g.Rest.Item2], [g].[Rank] AS [g.Rest.Item3], [m].[Id] AS [m.Id], [m].[CodeName] AS [m.CodeName], [m].[Date] AS [m.Date], [m].[Duration] AS [m.Duration], [m].[Rating] AS [m.Rating], [m].[Time] AS [m.Time], [m].[Timeline] AS [m.Timeline]
+            SELECT [w].[$empty] AS [$empty], [w].[Id] AS [Id], [w].[AmmunitionType] AS [AmmunitionType], [w].[IsAutomatic] AS [IsAutomatic], [w].[Name] AS [Name], [w].[OwnerFullName] AS [OwnerFullName], [w].[SynergyWithId] AS [SynergyWithId]
+            FROM [Weapons] AS [w_0]
+            LEFT JOIN (
+                SELECT 0 AS [$empty], [w_1].[Id] AS [Id], [w_1].[AmmunitionType] AS [AmmunitionType], [w_1].[IsAutomatic] AS [IsAutomatic], [w_1].[Name] AS [Name], [w_1].[OwnerFullName] AS [OwnerFullName], [w_1].[SynergyWithId] AS [SynergyWithId]
+                FROM [Weapons] AS [w_1]
+            ) AS [w] ON [w_0].[SynergyWithId] = [w].[Id]
+            ORDER BY (CASE WHEN [w].[Name] = N'Marcus'' Lancer' THEN 1 ELSE 0 END) ASC
+            """);
+    }
+
+    public override async Task String_concat_on_various_types(bool async)
+    {
+        await base.String_concat_on_various_types(async);
+
+        AssertSql("""
+            SELECT CONCAT(N'HasSoulPatch ', [g].[HasSoulPatch], N' HasSoulPatch') AS [HasSoulPatch], CONCAT(N'Rank ', [g].[Rank], N' Rank') AS [Rank], CONCAT(N'SquadId ', [g].[SquadId], N' SquadId') AS [SquadId], CONCAT(N'Rating ', [m].[Rating], N' Rating') AS [Rating], CONCAT(N'Timeline ', [m].[Timeline], N' Timeline') AS [Timeline]
             FROM [Gears] AS [g]
             CROSS JOIN [Missions] AS [m]
             WHERE [g].[Discriminator] IN (N'Gear', N'Officer')

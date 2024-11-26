@@ -58,5 +58,7 @@ public class DefaultOptimizingExpressionVisitorProvider : IOptimizingExpressionV
         yield return new NullableMemberNormalizingExpressionVisitor();
 
         yield return new EnumHasFlagNormalizingExpressionVisitor(typeMappingProvider);
+
+        yield return new StringMemberNormalizingExpressionVisitor();
     }
 }

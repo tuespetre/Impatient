@@ -43,11 +43,13 @@ public class StringMemberRewritingExpressionVisitor : ExpressionVisitor
                     var segments = arguments.ToArray();
                     var parameters = node.Method.GetParameters();
                     
-                    if (parameters.Select(p => p.ParameterType).All(t => t == typeof(string)))
+                    // TODO: maybe the check against string or object is not necessary. maybe checking the given expressions is more important
+                    if (parameters.Select(p => p.ParameterType).All(t => t == typeof(string) || t == typeof(object)))
                     {
-                            return new SqlConcatExpression(segments);
+                            return new SqlConcatExpression(segments.SelectMany(s => s is SqlConcatExpression c ? c.Segments : [s]));
                     }
-                    else if (parameters[0].ParameterType == typeof(string[]))
+                    else if (parameters[0].ParameterType == typeof(string[])
+                        || parameters[0].ParameterType == typeof(object[]))
                     {
                         if (segments[0] is NewArrayExpression newArrayExpression)
                         {

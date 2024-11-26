@@ -1166,14 +1166,18 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
 
     protected virtual Expression VisitSqlConcat(SqlConcatExpression sqlConcatExpression)
     {
+        Builder.Append("CONCAT(");
+
         Visit(sqlConcatExpression.Segments.First());
 
         foreach (var segment in sqlConcatExpression.Segments.Skip(1))
         {
-            Builder.Append(" + ");
+            Builder.Append(", ");
 
             Visit(segment);
         }
+
+        Builder.Append(")");
 
         return sqlConcatExpression;
     }

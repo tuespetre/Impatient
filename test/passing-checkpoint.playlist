@@ -9563,6 +9563,18 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NullSemanticsQueryImpatientTest.Null_semantics_contains_nullable_item_with_non_nullable_subquery" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NullSemanticsQueryImpatientTest.String_concat_with_both_arguments_being_null" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NullSemanticsQueryImpatientTest.String_concat_with_both_arguments_being_null" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NullSemanticsQueryImpatientTest.Null_semantics_applied_to_CompareTo_equality" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NullSemanticsQueryImpatientTest.Null_semantics_applied_to_CompareTo_equality" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -13161,6 +13173,30 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.Navigation_based_on_complex_expression1" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.String_compare_with_null_conditional_argument" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.String_compare_with_null_conditional_argument" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.String_compare_with_null_conditional_argument2" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.String_compare_with_null_conditional_argument2" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.String_concat_on_various_types" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.String_concat_on_various_types" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.String_concat_with_null_conditional_argument" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPCGearsOfWarQueryImpatientTest.String_concat_with_null_conditional_argument" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -13336,6 +13372,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.CompositeKeysQueryImpatientTest.Projecting_multiple_collections_with_ordering_same_level_top_level_ordering" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.CompositeKeysQueryImpatientTest.Projecting_multiple_collections_with_ordering_same_level_top_level_ordering" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.CompositeKeysQueryImpatientTest.Projecting_multiple_collections_on_multiple_levels_some_explicit_ordering" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.CompositeKeysQueryImpatientTest.Projecting_multiple_collections_on_multiple_levels_some_explicit_ordering" />
                       </Rule>
                     </Rule>
                   </Rule>
@@ -20583,6 +20625,24 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.Project_navigation_defined_on_derived_from_entity_with_inheritance_using_soft_cast" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.Project_navigation_defined_on_derived_from_entity_with_inheritance_using_soft_cast" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.String_compare_with_null_conditional_argument" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.String_compare_with_null_conditional_argument" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.String_compare_with_null_conditional_argument2" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.String_compare_with_null_conditional_argument2" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.String_concat_with_null_conditional_argument" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.GearsOfWarQueryImpatientTest.String_concat_with_null_conditional_argument" />
                       </Rule>
                     </Rule>
                   </Rule>
@@ -30867,6 +30927,30 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.Navigation_based_on_complex_expression1" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.String_compare_with_null_conditional_argument" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.String_compare_with_null_conditional_argument" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.String_compare_with_null_conditional_argument2" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.String_compare_with_null_conditional_argument2" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.String_concat_with_null_conditional_argument" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.String_concat_with_null_conditional_argument" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.String_concat_on_various_types" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.TPTGearsOfWarQueryImpatientTest.String_concat_on_various_types" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -35665,6 +35749,12 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.CompositeKeysSplitQueryImpatientTest.Projecting_collections_multi_level" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.CompositeKeysSplitQueryImpatientTest.Projecting_collections_multi_level" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.CompositeKeysSplitQueryImpatientTest.Projecting_multiple_collections_on_multiple_levels_some_explicit_ordering" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.CompositeKeysSplitQueryImpatientTest.Projecting_multiple_collections_on_multiple_levels_some_explicit_ordering" />
                       </Rule>
                     </Rule>
                   </Rule>

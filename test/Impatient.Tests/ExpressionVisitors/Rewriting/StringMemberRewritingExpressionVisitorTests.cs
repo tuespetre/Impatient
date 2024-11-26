@@ -48,7 +48,7 @@ FROM [dbo].[Customers] AS [c]",
         query.ToList();
 
         Assert.AreEqual(
-            @"SELECT [c].[City] + [c].[Address]
+            @"SELECT CONCAT([c].[City], [c].[Address])
 FROM [dbo].[Customers] AS [c]",
             context.SqlLog);
     }
@@ -62,7 +62,7 @@ FROM [dbo].[Customers] AS [c]",
         query.ToList();
 
         Assert.AreEqual(
-            @"SELECT [c].[City] + N' ' + [c].[Address]
+            @"SELECT CONCAT([c].[City], N' ', [c].[Address])
 FROM [dbo].[Customers] AS [c]",
             context.SqlLog);
     }
@@ -76,7 +76,7 @@ FROM [dbo].[Customers] AS [c]",
         query.ToList();
 
         Assert.AreEqual(
-            @"SELECT [c].[City] + N' ' + [c].[Address] + N' '
+            @"SELECT CONCAT([c].[City], N' ', [c].[Address], N' ')
 FROM [dbo].[Customers] AS [c]",
             context.SqlLog);
     }
@@ -90,7 +90,7 @@ FROM [dbo].[Customers] AS [c]",
         query.ToList();
 
         Assert.AreEqual(
-            @"SELECT [c].[City] + N' ' + [c].[Address] + N' ' + [c].[PostalCode]
+            @"SELECT CONCAT([c].[City], N' ', [c].[Address], N' ', [c].[PostalCode])
 FROM [dbo].[Customers] AS [c]",
             context.SqlLog);
     }
