@@ -27202,6 +27202,18 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsSharedTypeQueryImpatientTest.Contains_over_optional_navigation_with_null_entity_reference" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsSharedTypeQueryImpatientTest.Contains_over_optional_navigation_with_null_parameter" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsSharedTypeQueryImpatientTest.Contains_over_optional_navigation_with_null_parameter" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsSharedTypeQueryImpatientTest.Contains_over_optional_navigation_with_null_constant" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsSharedTypeQueryImpatientTest.Contains_over_optional_navigation_with_null_constant" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -37955,6 +37967,18 @@
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsQueryImpatientTest.Contains_over_optional_navigation_with_null_column" />
                       </Rule>
                     </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsQueryImpatientTest.Contains_over_optional_navigation_with_null_constant" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsQueryImpatientTest.Contains_over_optional_navigation_with_null_constant" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsQueryImpatientTest.Contains_over_optional_navigation_with_null_parameter" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.ComplexNavigationsQueryImpatientTest.Contains_over_optional_navigation_with_null_parameter" />
+                      </Rule>
+                    </Rule>
                   </Rule>
                 </Rule>
                 <Rule Match="All">
@@ -39893,6 +39917,24 @@
                       <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindAggregateOperatorsQueryImpatientTest.Contains_over_entityType_with_null_should_rewrite_to_identity_equality_subquery_negated" />
                       <Rule Match="Any">
                         <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindAggregateOperatorsQueryImpatientTest.Contains_over_entityType_with_null_should_rewrite_to_identity_equality_subquery_negated" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindAggregateOperatorsQueryImpatientTest.Contains_over_entityType_with_null_should_rewrite_to_false" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindAggregateOperatorsQueryImpatientTest.Contains_over_entityType_with_null_should_rewrite_to_false" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindAggregateOperatorsQueryImpatientTest.Contains_over_entityType_with_null_should_rewrite_to_identity_equality_subquery" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindAggregateOperatorsQueryImpatientTest.Contains_over_entityType_with_null_should_rewrite_to_identity_equality_subquery" />
+                      </Rule>
+                    </Rule>
+                    <Rule Match="All">
+                      <Property Name="TestWithNormalizedFullyQualifiedName" Value="Impatient.EFCore.Tests.Query.NorthwindAggregateOperatorsQueryImpatientTest.Contains_over_entityType_with_null_in_projection" />
+                      <Rule Match="Any">
+                        <Property Name="DisplayName" Value="Impatient.EFCore.Tests.Query.NorthwindAggregateOperatorsQueryImpatientTest.Contains_over_entityType_with_null_in_projection" />
                       </Rule>
                     </Rule>
                   </Rule>

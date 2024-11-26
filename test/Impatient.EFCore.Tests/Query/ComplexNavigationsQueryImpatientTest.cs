@@ -23,6 +23,12 @@ public class ComplexNavigationsQueryImpatientTest : ComplexNavigationsQueryRelat
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 
+    public override Task Accessing_optional_property_inside_result_operator_subquery(bool async)
+    {
+        // fails because of using Any on a local parameter -- need to handle in ProcessQuerySource
+        return base.Accessing_optional_property_inside_result_operator_subquery(async);
+    }
+
     // I'm not sure I agree with the EF Core reasoning here.
     // It seems like an opinionated decision where I just have a different opinion.
     [DisagreeWithEFCore]
@@ -36,6 +42,23 @@ public class ComplexNavigationsQueryImpatientTest : ComplexNavigationsQueryRelat
     public override Task Complex_query_with_let_collection_SelectMany(bool async)
     {
         return base.Complex_query_with_let_collection_SelectMany(async);
+    }
+
+    public override async Task Contains_over_optional_navigation_with_null_constant(bool async)
+    {
+        await base.Contains_over_optional_navigation_with_null_constant(async);
+
+        AssertSql("""
+            SELECT CAST((CASE WHEN EXISTS (
+                SELECT 1
+                FROM [LevelOne] AS [l1]
+                LEFT JOIN (
+                    SELECT 0 AS [$empty], [l].[OneToMany_Optional_Inverse2Id] AS [OneToMany_Optional_Inverse2Id], [l].[OneToMany_Optional_Self_Inverse2Id] AS [OneToMany_Optional_Self_Inverse2Id], [l].[OneToMany_Required_Inverse2Id] AS [OneToMany_Required_Inverse2Id], [l].[OneToMany_Required_Self_Inverse2Id] AS [OneToMany_Required_Self_Inverse2Id], [l].[OneToOne_Optional_PK_Inverse2Id] AS [OneToOne_Optional_PK_Inverse2Id], [l].[OneToOne_Optional_Self2Id] AS [OneToOne_Optional_Self2Id], [l].[Id] AS [Id], [l].[Date] AS [Date], [l].[Level1_Optional_Id] AS [Level1_Optional_Id], [l].[Level1_Required_Id] AS [Level1_Required_Id], [l].[Name] AS [Name]
+                    FROM [LevelTwo] AS [l]
+                ) AS [l_0] ON [l1].[Id] = [l_0].[Level1_Optional_Id]
+                WHERE [l_0].[Id] IS NULL
+            ) THEN 1 ELSE 0 END) AS bit)
+            """);
     }
 
     [Theory(Skip = LiftedInclude)]

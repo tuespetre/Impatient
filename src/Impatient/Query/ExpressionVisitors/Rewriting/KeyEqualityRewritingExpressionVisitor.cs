@@ -43,8 +43,8 @@ public class KeyEqualityRewritingExpressionVisitor : ExpressionVisitor
 
         var left = visitedLeft.UnwrapInnerExpression();
         var right = visitedRight.UnwrapInnerExpression();
-        var leftIsNullConstant = left is ConstantExpression leftConstant && leftConstant.Value is null;
-        var rightIsNullConstant = right is ConstantExpression rightConstant && rightConstant.Value is null;
+        var leftIsNullConstant = left.IsNullConstant();
+        var rightIsNullConstant = right.IsNullConstant();
         var canRewriteLeft = CanRewrite(left);
         var canRewriteRight = CanRewrite(right);
 
@@ -252,11 +252,26 @@ public class KeyEqualityRewritingExpressionVisitor : ExpressionVisitor
                         break;
                     }
 
-                    var keyType = primaryKeyDescriptor.KeySelector.ReturnType;
-                    var arguments = Visit(node.Arguments).ToArray();
+                    var arguments = Visit(node.Arguments);
+
+                    // TODO: might consider changing member access reduction to reduce things like "null.Id" to "null".
+                    var valueExpression
+                        = arguments[1].IsNullConstant()
+                            ? Expression.Constant(null, primaryKeyDescriptor.KeySelector.ReturnType.AsNullableType())
+                            : primaryKeyDescriptor.KeySelector.ExpandParameters(arguments[1]);
+
+                    var keyType = valueExpression.Type;
 
                     var setSelector = (Expression)primaryKeyDescriptor.KeySelector;
                     var selectMethod = enumerableSelect.MakeGenericMethod(sequenceType, keyType);
+
+                    if (keyType != primaryKeyDescriptor.KeySelector.ReturnType)
+                    {
+                        setSelector
+                            = Expression.Lambda(
+                                Expression.Convert(primaryKeyDescriptor.KeySelector.Body, keyType),
+                                primaryKeyDescriptor.KeySelector.Parameters);
+                    }
 
                     if (node.Method.IsQueryableMethod())
                     {
@@ -267,7 +282,7 @@ public class KeyEqualityRewritingExpressionVisitor : ExpressionVisitor
                     return Expression.Call(
                         node.Method.GetGenericMethodDefinition().MakeGenericMethod(keyType),
                         Expression.Call(selectMethod, arguments[0], setSelector),
-                        primaryKeyDescriptor.KeySelector.ExpandParameters(arguments[1]));
+                        valueExpression);
                 }
             }
         }
