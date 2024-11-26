@@ -26,9 +26,51 @@ public class GearsOfWarQueryImpatientTest : GearsOfWarQueryRelationalTestBase<Fi
         protected override ITestStoreFactory TestStoreFactory => ImpatientTestStoreFactory.Instance;
     }
 
-    public override Task Bitwise_operation_with_null_arguments(bool async)
+    public override async Task Bitwise_operation_with_null_arguments(bool async)
     {
-        return base.Bitwise_operation_with_null_arguments(async);
+        await base.Bitwise_operation_with_null_arguments(async);
+
+        // TODO: fix issue with SQL parameter being duplicated due to conversion
+        AssertSql("""
+            @p0='1'
+
+            SELECT [w].[Id] AS [Id], [w].[AmmunitionType] AS [AmmunitionType], [w].[IsAutomatic] AS [IsAutomatic], [w].[Name] AS [Name], [w].[OwnerFullName] AS [OwnerFullName], [w].[SynergyWithId] AS [SynergyWithId]
+            FROM [Weapons] AS [w]
+            WHERE CAST(CAST([w].[AmmunitionType] AS int) & CAST(@p0 AS int) AS int) IS NULL
+
+            @p0='2'
+
+            SELECT [w].[Id] AS [Id], [w].[AmmunitionType] AS [AmmunitionType], [w].[IsAutomatic] AS [IsAutomatic], [w].[Name] AS [Name], [w].[OwnerFullName] AS [OwnerFullName], [w].[SynergyWithId] AS [SynergyWithId]
+            FROM [Weapons] AS [w]
+            WHERE CAST(CAST([w].[AmmunitionType] AS int) | CAST(@p0 AS int) AS int) IS NULL
+
+            @p0='2'
+            @p1=NULL (Nullable = false) (DbType = Int32)
+
+            SELECT [w].[Id] AS [Id], [w].[AmmunitionType] AS [AmmunitionType], [w].[IsAutomatic] AS [IsAutomatic], [w].[Name] AS [Name], [w].[OwnerFullName] AS [OwnerFullName], [w].[SynergyWithId] AS [SynergyWithId]
+            FROM [Weapons] AS [w]
+            WHERE ((CAST([w].[AmmunitionType] AS int) | CAST(@p0 AS int) IS NULL AND @p1 IS NULL) OR (CAST([w].[AmmunitionType] AS int) | CAST(@p0 AS int) = @p1))
+
+            @p0=NULL (Nullable = false) (DbType = Int32)
+            @p1=NULL (Nullable = false) (DbType = Int32)
+
+            SELECT [w].[Id] AS [Id], [w].[AmmunitionType] AS [AmmunitionType], [w].[IsAutomatic] AS [IsAutomatic], [w].[Name] AS [Name], [w].[OwnerFullName] AS [OwnerFullName], [w].[SynergyWithId] AS [SynergyWithId]
+            FROM [Weapons] AS [w]
+            WHERE ((CAST([w].[AmmunitionType] AS int) & CAST(@p0 AS int) IS NULL AND @p1 IS NULL) OR (CAST([w].[AmmunitionType] AS int) & CAST(@p0 AS int) = @p1))
+
+            @p0='2'
+
+            SELECT [w].[Id] AS [Id], [w].[AmmunitionType] AS [AmmunitionType], [w].[IsAutomatic] AS [IsAutomatic], [w].[Name] AS [Name], [w].[OwnerFullName] AS [OwnerFullName], [w].[SynergyWithId] AS [SynergyWithId]
+            FROM [Weapons] AS [w]
+            WHERE (CAST([w].[AmmunitionType] AS int) & CAST(@p0 AS int) IS NULL OR (CAST([w].[AmmunitionType] AS int) & CAST(@p0 AS int) <> CAST(0 AS int)))
+
+            @p0='1'
+            @p1='1'
+
+            SELECT [w].[Id] AS [Id], [w].[AmmunitionType] AS [AmmunitionType], [w].[IsAutomatic] AS [IsAutomatic], [w].[Name] AS [Name], [w].[OwnerFullName] AS [OwnerFullName], [w].[SynergyWithId] AS [SynergyWithId]
+            FROM [Weapons] AS [w]
+            WHERE ((CAST([w].[AmmunitionType] AS int) & CAST(@p0 AS int) IS NULL AND @p1 IS NULL) OR (CAST([w].[AmmunitionType] AS int) & CAST(@p0 AS int) = @p1))
+            """);
     }
 
     // we don't translate casts to derived types. it seems like a very niche use case, and not a 'proper' use case at that.

@@ -1759,30 +1759,29 @@ public class QueryTranslatingExpressionVisitor : ExpressionVisitor
             }
 
             case UnaryExpression unaryExpression
-            when node.NodeType == ExpressionType.Convert
-                || node.NodeType == ExpressionType.Not:
+            when node.NodeType is ExpressionType.Convert or ExpressionType.Not or ExpressionType.Negate:
             {
                 return IsNullableOperand(unaryExpression.Operand);
             }
 
-            case BinaryExpression binaryExpression
-            when node.NodeType == ExpressionType.Coalesce:
+            case BinaryExpression binaryExpression:
+            //when node.NodeType is ExpressionType.Coalesce:
             {
                 return IsNullableOperand(binaryExpression.Left)
-                    && IsNullableOperand(binaryExpression.Right);
+                    || IsNullableOperand(binaryExpression.Right);
             }
 
             case ConditionalExpression conditionalExpression:
             {
-                return (node.Type.IsNullableType() || !node.Type.GetTypeInfo().IsValueType)
+                return node.Type.IsNullableType() 
+                    || !node.Type.IsValueType
                     || IsNullableOperand(conditionalExpression.IfTrue)
                     || IsNullableOperand(conditionalExpression.IfFalse);
             }
 
-            case SqlExpression sqlExpression
-            when sqlExpression.IsNullable:
+            case SqlExpression sqlExpression:
             {
-                return true;
+                return sqlExpression.IsNullable;
             }
 
             default:
